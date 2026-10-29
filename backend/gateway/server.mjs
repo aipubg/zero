@@ -494,6 +494,7 @@ async function handleListModels(req, res) {
     return;
   }
 
+  // Include local GGUF models
   const localModels = await localGgufService.scanModels();
   const models = localModels.map((m) => ({
     id: m.id,
@@ -502,17 +503,38 @@ async function handleListModels(req, res) {
     owned_by: 'zero-gateway',
     name: m.name,
     capabilities: m.capabilities,
+    companionProjector: m.companionProjector,
   }));
 
-  // Add default gateway models
-  models.unshift({
-    id: 'zero-gateway/default',
-    object: 'model',
-    created: Math.floor(Date.now() / 1000),
-    owned_by: 'zero-gateway',
-    name: 'Zero Gateway Default Model',
-    capabilities: { reasoning: true, image: true, tools: true, embedding: false },
-  });
+  // Also include configured cloud providers' models if present from models/gateway-providers.json
+  try {
+    const configPath = path.resolve(process.cwd(), 'models', 'gateway-providers.json');
+    if (fs.existsSync(configPath)) {
+      const providers = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (Array.isArray(providers)) {
+        for (const p of providers) {
+          if (Array.isArray(p.models)) {
+            for (const m of p.models) {
+              const modelId = typeof m === 'string' ? m : (m.id || m.name);
+              const modelName = typeof m === 'object' && m.name ? m.name : modelId;
+              if (modelId && !models.some(existing => existing.id === modelId)) {
+                models.push({
+                  id: modelId,
+                  object: 'model',
+                  created: Math.floor(Date.now() / 1000),
+                  owned_by: p.id || p.name || 'cloud-provider',
+                  name: modelName,
+                  capabilities: { reasoning: true, image: false, tools: true, embedding: false }
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Zero Gateway] Note loading gateway-providers.json:', err.message);
+  }
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json');

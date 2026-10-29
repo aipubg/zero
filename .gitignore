@@ -16,11 +16,25 @@ __pycache__/
 .env.*
 !.env.example
 .zero-data/
+zero-data/
 .openclaw/
 *.sqlite
-*.sqlite3
+*.sqlite*
 *.db
 *.log
+
+# Large offline model binaries & weights
+models/*.gguf
+models/*.bin
+models/**/*.gguf
+models/**/*.bin
+!models/.keep
+!models/gateway-providers.json
+
+# Test outputs & temporary artifacts
+test-results/
+playwright-report/
+blob-report/
 
 # OS/editor files
 .DS_Store

@@ -21,6 +21,8 @@ export interface LocalGgufModel {
     image: boolean;
     embedding: boolean;
   };
+  companionProjector?: string;
+  companionProjectorPath?: string;
   type: 'chat' | 'embedding';
   status: 'loaded' | 'ready' | 'error';
   loadedAt?: number;
@@ -44,6 +46,13 @@ export interface GgufModelManifest {
   filename: string;
   modelPath: string;
   zeroCopy: boolean;
+  capabilities?: {
+    reasoning?: boolean;
+    image?: boolean;
+    embedding?: boolean;
+  };
+  companionProjector?: string;
+  companionProjectorPath?: string;
   systemPrompt?: string;
   parameters: {
     temperature?: number;
@@ -146,6 +155,66 @@ class LocalGgufEngineService {
 
   public getModelsDir(): string {
     return this.modelsDir;
+  }
+
+  /**
+   * Automatic Vision Multimodal Companion Projector Pairing:
+   * e.g. Automatically pairs moondream2-text-model-f16_ct-vicuna.gguf with moondream2-mmproj-f16_ct-vicuna.gguf
+   */
+  public findCompanionProjector(modelFilename: string): string | null {
+    if (!modelFilename) return null;
+    try {
+      const dir = this.modelsDir;
+      if (!fs.existsSync(dir)) return null;
+      const files = fs.readdirSync(dir);
+      const lower = modelFilename.toLowerCase();
+
+      // Skip if this file is itself a projector
+      if (lower.includes('mmproj') || lower.includes('clip')) return null;
+
+      // Rule 1: Direct token replacement (e.g. "text-model" -> "mmproj", "text" -> "mmproj")
+      if (lower.includes('text-model')) {
+        const candidate = modelFilename.replace(/text-model/i, 'mmproj');
+        if (files.includes(candidate)) return candidate;
+      }
+      if (lower.includes('text')) {
+        const candidate = modelFilename.replace(/text/i, 'mmproj');
+        if (files.includes(candidate)) return candidate;
+      }
+
+      // Rule 2: Moondream2 specific pairing
+      if (lower.includes('moondream')) {
+        const moondreamProj = files.find((f) => {
+          const fl = f.toLowerCase();
+          return fl.endsWith('.gguf') && fl.includes('moondream') && (fl.includes('mmproj') || fl.includes('clip'));
+        });
+        if (moondreamProj) return moondreamProj;
+      }
+
+      // Rule 3: Prefix family heuristic (e.g. "llava-v1.6-7b" -> "llava-v1.6-7b-mmproj...")
+      const basePrefix = lower.split(/[-_]/)[0];
+      if (basePrefix && basePrefix.length >= 3) {
+        const proj = files.find((f) => {
+          const fl = f.toLowerCase();
+          return fl.endsWith('.gguf') && fl.startsWith(basePrefix) && (fl.includes('mmproj') || fl.includes('clip'));
+        });
+        if (proj) return proj;
+      }
+
+      // Rule 4: If exactly one mmproj exists in the models directory and this model has vision capability
+      const allMmprojs = files.filter((f) => {
+        const fl = f.toLowerCase();
+        return fl.endsWith('.gguf') && (fl.includes('mmproj') || fl.includes('clip'));
+      });
+      if (allMmprojs.length === 1 && (lower.includes('vision') || lower.includes('vl') || lower.includes('moondream'))) {
+        return allMmprojs[0];
+      }
+
+      return null;
+    } catch (err: any) {
+      console.warn(`[LocalGguf] findCompanionProjector note for ${modelFilename}:`, err?.message);
+      return null;
+    }
   }
 
   /**
@@ -571,9 +640,20 @@ class LocalGgufEngineService {
         // Load existing manifest if present
         const manifest = await this.loadManifest(id);
 
+        const companion = this.findCompanionProjector(filename);
+        const resolvedReasoning = manifest?.capabilities?.reasoning !== undefined
+          ? manifest.capabilities.reasoning
+          : metadata.isReasoning;
+        const resolvedImage = manifest?.capabilities?.image !== undefined
+          ? manifest.capabilities.image
+          : (metadata.isVision || Boolean(companion));
+        const resolvedEmbedding = manifest?.capabilities?.embedding !== undefined
+          ? manifest.capabilities.embedding
+          : metadata.isEmbedding;
+
         modelsMap.set(id, {
           id,
-          name: `${cleanName} (${metadata.quantization})`,
+          name: manifest?.name || `${cleanName} (${metadata.quantization})`,
           filename,
           fullPath,
           sizeBytes: stat.size,
@@ -582,10 +662,12 @@ class LocalGgufEngineService {
           architecture: metadata.architecture,
           contextLength: manifest?.parameters?.num_ctx || metadata.contextLength,
           capabilities: {
-            reasoning: metadata.isReasoning,
-            image: metadata.isVision,
-            embedding: metadata.isEmbedding,
+            reasoning: resolvedReasoning,
+            image: resolvedImage,
+            embedding: resolvedEmbedding,
           },
+          companionProjector: companion || manifest?.companionProjector,
+          companionProjectorPath: companion ? path.join(this.modelsDir, companion) : manifest?.companionProjectorPath,
           type: metadata.isEmbedding ? 'embedding' : 'chat',
           status: isLoaded ? 'loaded' : 'ready',
           loadedAt: isLoaded ? Date.now() : undefined,
@@ -615,6 +697,22 @@ class LocalGgufEngineService {
             const stat = await fs.promises.stat(manifest.modelPath);
             const isLoaded = this.loadedModelId === manifest.id;
 
+            const companion = (manifest.filename ? this.findCompanionProjector(manifest.filename) : null) || (manifest.modelPath ? this.findCompanionProjector(path.basename(manifest.modelPath)) : null);
+            const resolvedReasoning = manifest.capabilities?.reasoning !== undefined
+              ? manifest.capabilities.reasoning
+              : ((manifest.id + manifest.modelPath).toLowerCase().includes('r1') ||
+                 (manifest.id + manifest.modelPath).toLowerCase().includes('reason') ||
+                 (manifest.id + manifest.modelPath).toLowerCase().includes('think'));
+            const resolvedImage = manifest.capabilities?.image !== undefined
+              ? manifest.capabilities.image
+              : ((manifest.id + manifest.modelPath).toLowerCase().includes('vl') ||
+                 (manifest.id + manifest.modelPath).toLowerCase().includes('vision') ||
+                 (manifest.id + manifest.modelPath).toLowerCase().includes('moondream') ||
+                 Boolean(companion));
+            const resolvedEmbedding = manifest.capabilities?.embedding !== undefined
+              ? manifest.capabilities.embedding
+              : (manifest.id + manifest.modelPath).toLowerCase().includes('embed');
+
             modelsMap.set(manifest.id, {
               id: manifest.id,
               name: manifest.name || manifest.id,
@@ -626,12 +724,12 @@ class LocalGgufEngineService {
               architecture: manifest.metadata?.architecture || 'general',
               contextLength: manifest.parameters?.num_ctx || manifest.metadata?.contextLength || 4096,
               capabilities: {
-                reasoning: (manifest.id + manifest.modelPath).toLowerCase().includes('r1') ||
-                  (manifest.id + manifest.modelPath).toLowerCase().includes('reason'),
-                image: (manifest.id + manifest.modelPath).toLowerCase().includes('vl') ||
-                  (manifest.id + manifest.modelPath).toLowerCase().includes('vision'),
-                embedding: (manifest.id + manifest.modelPath).toLowerCase().includes('embed'),
+                reasoning: resolvedReasoning,
+                image: resolvedImage,
+                embedding: resolvedEmbedding,
               },
+              companionProjector: companion || manifest.companionProjector,
+              companionProjectorPath: companion ? path.join(this.modelsDir, companion) : manifest.companionProjectorPath,
               type: 'chat',
               status: isLoaded ? 'loaded' : 'ready',
               loadedAt: isLoaded ? Date.now() : undefined,
@@ -1143,6 +1241,10 @@ class LocalGgufEngineService {
         }
       }
 
+      if (target.companionProjectorPath && fs.existsSync(target.companionProjectorPath)) {
+        console.log(`[LocalGguf] Multimodal Vision Projector Paired: "${target.name}" <-> "${target.companionProjector}" (${target.companionProjectorPath})`);
+      }
+
       // 3. Dynamic RAM Balancer: Check free system RAM vs model size before context allocation
       const freeRam = os.freemem?.() || 8 * 1024 * 1024 * 1024;
       const modelBytes = target.sizeBytes || 2 * 1024 * 1024 * 1024;
@@ -1453,6 +1555,12 @@ class LocalGgufEngineService {
         filename: target.filename,
         modelPath: target.fullPath,
         zeroCopy: target.zeroCopy ?? false,
+        capabilities: {
+          ...target.capabilities,
+          ...(updates.capabilities || {}),
+        },
+        companionProjector: target.companionProjector,
+        companionProjectorPath: target.companionProjectorPath,
         systemPrompt: updates.systemPrompt !== undefined ? updates.systemPrompt : target.systemPrompt,
         parameters: {
           num_ctx: updates.contextLength || target.contextLength || 2048,
@@ -1475,6 +1583,12 @@ class LocalGgufEngineService {
     } else {
       if (updates.name !== undefined && updates.name.trim()) {
         manifest.name = updates.name.trim();
+      }
+      if (updates.capabilities) {
+        manifest.capabilities = {
+          ...(manifest.capabilities || {}),
+          ...updates.capabilities,
+        };
       }
       if (updates.systemPrompt !== undefined) {
         manifest.systemPrompt = updates.systemPrompt;
@@ -1977,7 +2091,10 @@ class LocalGgufEngineService {
       }
 
       // If reasoning toggle is explicitly turned OFF, append /no_think directive
-      if (options.reasoningEnabled === false) {
+      const isReasoningOff = options.reasoningEnabled === false ||
+        (options.reasoningEnabled === undefined && target.capabilities?.reasoning === false);
+
+      if (isReasoningOff) {
         const noThinkDirective = '/no_think\nRespond directly and concisely in 1-2 sentences without generating internal monologue or <think> reasoning tags.';
         effectiveSystemPrompt = effectiveSystemPrompt ? `${effectiveSystemPrompt}\n\n${noThinkDirective}` : noThinkDirective;
       }

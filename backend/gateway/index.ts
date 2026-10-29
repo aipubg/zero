@@ -28,9 +28,3 @@ export * from './telemetry';
 export * from './cache';
 export * from './sanitizer';
 export { ModularGatewayClient, gateway } from './sdk';
-
-export { GatewayView } from './components/GatewayView';
-export { ProvidersList } from './components/ProvidersList';
-export { CustomProviderModal } from './components/CustomProviderModal';
-export { LocalGgufManager } from './components/LocalGgufManager';
-import './gateway.css';
