@@ -1,0 +1,30 @@
+{
+  "name": "zero-control-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Native Zero Control UI contribution: one private assistant over the local Gateway.",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/mount.test.mjs test/product-path.test.mjs test/product-surface.test.mjs test/delegation-gateway.test.mjs test/computer-hold.test.mjs test/observation.test.mjs test/observation-tool.test.mjs test/observation-lifecycle.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.10.6"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ],
+    "controlUi": "./browser.js",
+    "compat": {
+      "pluginApi": ">=2026.10.6"
+    },
+    "build": {
+      "bundledDist": true,
+      "openclawVersion": "2026.10.6"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+# Third-party software notices for the Zero app workspace
+
+Zero's own code in `E:\zero\app` is a product of the Zero AI project.
+
+## Native Control UI plugin (`zero-control-ui/`)
+
+The plugin is Zero-authored plain DOM/ES modules. It does not embed React,
+CopilotKit, AG-UI, OpenDots client code, or noVNC. It runs inside the OpenClaw
+Control UI host and uses the plugin SDK contract.
+
+## Gateway bridge library (`src/bridge/`)
+
+- **OpenClaw** (`upstream/openclaw`, pinned commit
+  `013240515205573248c27ab6b8eec7303f0da1a8`) — MIT License (OpenClaw
+  Foundation) with `THIRD_PARTY_NOTICES.md`. Re-used as npm packages
+  `@openclaw/gateway-client@2026.10.6` and
+  `@openclaw/gateway-protocol@2026.10.6` (exact pins, same release train as
+  the backend's `openclaw@2026.10.6`). The device-pairing flow follows the
+  Gateway client contract.
+
+## Removed prototype dependencies
+
+The earlier OpenDots-derived React client and its CopilotKit/AG-UI runtime were
+removed on 2026-10-25. They are no longer installed, built, or shipped by this
+workspace. Historical provenance remains in `REUSE-LEDGER.md` and
+`reports/ui/` for audit purposes only.
+
+## Remaining npm dependencies
+
+`@openclaw/gateway-client`, `@openclaw/gateway-protocol`, `zod`, TypeScript, and
+`@types/node` keep their upstream licenses. Check `node_modules/<pkg>/LICENSE`
+at packaging time.

@@ -1,0 +1,19 @@
+{
+  "name": "zero-policy",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "description": "Zero-owned OpenClaw plugin: computer hold gate, action budgets, zero.computer.control Gateway method.",
+  "main": "index.js",
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.10.6"
+    },
+    "install": {
+      "minHostVersion": ">=2026.10.6"
+    }
+  }
+}

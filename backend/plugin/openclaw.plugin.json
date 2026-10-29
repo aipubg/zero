@@ -1,0 +1,70 @@
+{
+  "id": "zero-policy",
+  "name": "Zero Policy",
+  "description": "Zero-owned computer-hold gate, action budgets, and the zero.computer.control Gateway method.",
+  "version": "0.1.3",
+  "contracts": {
+    "trustedToolPolicies": [
+      "zero-policy.computer-hold"
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "controlMethodName": {
+        "type": "string",
+        "description": "Gateway RPC method name exposed for human take/release."
+      },
+      "holdToolNames": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Tool names gated by the human hold. Default: [\"computer\"]."
+      },
+      "codeModeToolNames": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Tool names that can reach the computer through a code-mode `{code}` envelope. Default: [\"exec\"]. Treated as opaque input: refused during a hold, counted otherwise."
+      },
+      "observeActions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Computer actions treated as observation (allowed during a hold and exempt from stale-reference gating)."
+      },
+      "blockedActions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Computer actions always refused, regardless of hold state. Default: []."
+      },
+      "highRiskActions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Actions recorded as high risk for audit/budget review. NOT blocked by default."
+      },
+      "maxActionsPerRun": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "Hard ceiling on gated tool calls per run. Default 400."
+      },
+      "maxInputActionsPerRun": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Hard ceiling on input actions per run. Default 200."
+      },
+      "requireFreshSnapshotAfterRelease": {
+        "type": "boolean",
+        "description": "After a human release, refuse every non-observation action until a fresh screenshot. Default true."
+      }
+    }
+  }
+}

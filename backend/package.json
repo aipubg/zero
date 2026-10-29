@@ -1,0 +1,13 @@
+{
+  "name": "zero-backend-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Zero AI backend runtime host. Pins the OpenClaw release we run; contains no Zero application code.",
+  "scripts": {
+    "sync:zero-instructions": "node scripts/sync-zero-instructions.mjs"
+  },
+  "dependencies": {
+    "openclaw": "2026.10.6"
+  }
+}

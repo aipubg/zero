@@ -1,0 +1,123 @@
+{
+  "id": "zero-control-ui",
+  "name": "Zero",
+  "description": "Zero: unified private assistant over the local Gateway, with native Control UI, computer hold policy, and observation context.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "controlMethodName": {
+        "type": "string"
+      },
+      "holdToolNames": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "codeModeToolNames": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "observeActions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "blockedActions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "highRiskActions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "maxActionsPerRun": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "maxInputActionsPerRun": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "requireFreshSnapshotAfterRelease": {
+        "type": "boolean"
+      },
+      "observationSuggestions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "minEvidence": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 50,
+            "default": 3
+          },
+          "cooldownSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400,
+            "default": 600
+          },
+          "maxSuggestions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 3
+          }
+        }
+      }
+    }
+  },
+  "uiCapabilities": [],
+  "activation": {
+    "onStartup": true
+  },
+  "controlUi": {
+    "entry": "dist/control-ui/a764aa287c1f18015c98cb562bf2e800f985a925e6f2e1d36e844c300b7f3d10/index.js",
+    "styles": [
+      "dist/control-ui/a764aa287c1f18015c98cb562bf2e800f985a925e6f2e1d36e844c300b7f3d10/index.css"
+    ]
+  },
+  "contracts": {
+    "tools": [
+      "zero_screen_context",
+      "zero_computer"
+    ],
+    "trustedToolPolicies": [
+      "zero-policy.computer-hold"
+    ]
+  },
+  "toolMetadata": {
+    "zero_screen_context": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": true,
+      "sideEffecting": false
+    },
+    "zero_computer": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": false,
+      "sideEffecting": true
+    }
+  }
+}

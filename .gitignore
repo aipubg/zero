@@ -1,0 +1,29 @@
+# Upstream source snapshots are separate shallow clones, not vendored into Zero's history.
+/upstream/
+
+# JS/TS and Python dependencies/build output
+node_modules/
+**/node_modules/
+dist/
+build/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Local secrets and runtime state
+.env
+.env.*
+!.env.example
+.zero-data/
+.openclaw/
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

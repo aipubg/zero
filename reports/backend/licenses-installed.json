@@ -1,0 +1,4223 @@
+{
+  "Apache-2.0": [
+    {
+      "name": "@agentclientprotocol/sdk",
+      "versions": [
+        "1.7.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@agentclientprotocol+sdk@1.7.0_zod@4.6.5\\node_modules\\@agentclientprotocol/sdk"
+      ],
+      "license": "Apache-2.0",
+      "author": "Zed Industries",
+      "homepage": "https://github.com/agentclientprotocol/typescript-sdk#readme",
+      "description": "The Agent Client Protocol (ACP) is a protocol that standardizes communication between *code editors* (interactive programs for viewing and editing source code) and *coding agents* (programs that use generative AI to autonomously modify code)."
+    },
+    {
+      "name": "@google/genai",
+      "versions": [
+        "2.27.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@google+genai@2.27.0_@model_4bf27f540a4f3671bbf96e1dd8f81eb5\\node_modules\\@google/genai"
+      ],
+      "license": "Apache-2.0",
+      "author": "",
+      "homepage": "https://github.com/googleapis/js-genai#readme",
+      "description": ""
+    },
+    {
+      "name": "@mistralai/mistralai",
+      "versions": [
+        "2.7.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@mistralai+mistralai@2.7.0\\node_modules\\@mistralai/mistralai"
+      ],
+      "license": "Apache-2.0",
+      "author": "Mistral AI",
+      "homepage": "https://github.com/mistralai/client-ts#readme",
+      "description": "TypeScript client library for the Mistral AI API"
+    },
+    {
+      "name": "@mozilla/readability",
+      "versions": [
+        "0.6.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@mozilla+readability@0.6.0\\node_modules\\@mozilla/readability"
+      ],
+      "license": "Apache-2.0",
+      "author": "",
+      "homepage": "https://github.com/mozilla/readability",
+      "description": "A standalone version of the readability library used for Firefox Reader View."
+    },
+    {
+      "name": "@opentelemetry/semantic-conventions",
+      "versions": [
+        "1.43.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@opentelemetry+semantic-conventions@1.43.0\\node_modules\\@opentelemetry/semantic-conventions"
+      ],
+      "license": "Apache-2.0",
+      "author": "OpenTelemetry Authors",
+      "homepage": "https://github.com/open-telemetry/opentelemetry-js/tree/main/semantic-conventions",
+      "description": "OpenTelemetry semantic conventions"
+    },
+    {
+      "name": "@silvia-odwyer/photon-node",
+      "versions": [
+        "0.3.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@silvia-odwyer+photon-node@0.3.4\\node_modules\\@silvia-odwyer/photon-node"
+      ],
+      "license": "Apache-2.0",
+      "homepage": "https://silvia-odwyer.github.io/photon/",
+      "description": "High-performance image processing library for native use and the web"
+    },
+    {
+      "name": "ecdsa-sig-formatter",
+      "versions": [
+        "1.0.11"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ecdsa-sig-formatter@1.0.11\\node_modules\\ecdsa-sig-formatter"
+      ],
+      "license": "Apache-2.0",
+      "author": "D2L Corporation",
+      "homepage": "https://github.com/Brightspace/node-ecdsa-sig-formatter#readme",
+      "description": "Translate ECDSA signatures between ASN.1/DER and JOSE-style concatenation"
+    },
+    {
+      "name": "gaxios",
+      "versions": [
+        "7.3.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\gaxios@7.3.1\\node_modules\\gaxios"
+      ],
+      "license": "Apache-2.0",
+      "author": "Google, LLC",
+      "homepage": "https://github.com/googleapis/google-cloud-node/tree/main/core/packages/gaxios",
+      "description": "A simple common HTTP client specifically for Google APIs and services."
+    },
+    {
+      "name": "gcp-metadata",
+      "versions": [
+        "8.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\gcp-metadata@8.1.2\\node_modules\\gcp-metadata"
+      ],
+      "license": "Apache-2.0",
+      "author": "Google LLC",
+      "homepage": "https://github.com/googleapis/google-cloud-node-core/tree/main/packages/gcp-metadata",
+      "description": "Get the metadata from a Google Cloud Platform environment"
+    },
+    {
+      "name": "google-auth-library",
+      "versions": [
+        "10.9.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\google-auth-library@10.9.1\\node_modules\\google-auth-library"
+      ],
+      "license": "Apache-2.0",
+      "author": "Google Inc.",
+      "homepage": "https://github.com/googleapis/google-cloud-node/tree/main/core/packages/google-auth-library-nodejs",
+      "description": "Google APIs Authentication Client Library for Node.js"
+    },
+    {
+      "name": "google-logging-utils",
+      "versions": [
+        "1.1.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\google-logging-utils@1.1.3\\node_modules\\google-logging-utils"
+      ],
+      "license": "Apache-2.0",
+      "author": "Google API Authors",
+      "homepage": "https://github.com/googleapis/google-cloud-node-core/tree/main/dev-packages/logging-utils",
+      "description": "A debug logger package for other Google libraries"
+    },
+    {
+      "name": "human-signals",
+      "versions": [
+        "8.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\human-signals@8.0.1\\node_modules\\human-signals"
+      ],
+      "license": "Apache-2.0",
+      "author": "ehmicky",
+      "homepage": "https://www.github.com/ehmicky/human-signals",
+      "description": "Human-friendly process signals"
+    },
+    {
+      "name": "long",
+      "versions": [
+        "5.3.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\long@5.3.2\\node_modules\\long"
+      ],
+      "license": "Apache-2.0",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/long.js#readme",
+      "description": "A Long class for representing a 64-bit two's-complement integer value."
+    },
+    {
+      "name": "openai",
+      "versions": [
+        "7.27.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\openai@7.27.0_undici@8.11.2_ws@8.22.0_zod@4.6.5\\node_modules\\openai"
+      ],
+      "license": "Apache-2.0",
+      "author": "OpenAI",
+      "homepage": "https://github.com/openai/openai-node#readme",
+      "description": "The official TypeScript library for the OpenAI API"
+    },
+    {
+      "name": "playwright-core",
+      "versions": [
+        "1.63.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\playwright-core@1.63.0\\node_modules\\playwright-core"
+      ],
+      "license": "Apache-2.0",
+      "author": "Microsoft Corporation",
+      "homepage": "https://playwright.dev",
+      "description": "A high-level API to automate web browsers"
+    }
+  ],
+  "MIT": [
+    {
+      "name": "@anthropic-ai/sdk",
+      "versions": [
+        "0.131.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@anthropic-ai+sdk@0.131.0_zod@4.6.5\\node_modules\\@anthropic-ai/sdk"
+      ],
+      "license": "MIT",
+      "author": "Anthropic",
+      "homepage": "https://github.com/anthropics/anthropic-sdk-typescript#readme",
+      "description": "The official TypeScript library for the Anthropic API"
+    },
+    {
+      "name": "@babel/code-frame",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+code-frame@8.0.6\\node_modules\\@babel/code-frame"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-code-frame",
+      "description": "Generate errors that contain a code frame that point to source locations."
+    },
+    {
+      "name": "@babel/generator",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+generator@8.0.6\\node_modules\\@babel/generator"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-generator",
+      "description": "Turns an AST into code."
+    },
+    {
+      "name": "@babel/helper-globals",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+helper-globals@8.0.6\\node_modules\\@babel/helper-globals"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://github.com/babel/babel#readme",
+      "description": "A collection of JavaScript globals for Babel internal usage"
+    },
+    {
+      "name": "@babel/helper-string-parser",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+helper-string-parser@8.0.6\\node_modules\\@babel/helper-string-parser"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-helper-string-parser",
+      "description": "A utility package to parse strings"
+    },
+    {
+      "name": "@babel/helper-validator-identifier",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+helper-validator-identifier@8.0.6\\node_modules\\@babel/helper-validator-identifier"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://github.com/babel/babel#readme",
+      "description": "Validate identifier/keywords name"
+    },
+    {
+      "name": "@babel/parser",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+parser@8.0.6\\node_modules\\@babel/parser"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-parser",
+      "description": "A JavaScript parser"
+    },
+    {
+      "name": "@babel/runtime",
+      "versions": [
+        "7.29.10"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+runtime@7.29.10\\node_modules\\@babel/runtime"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-runtime",
+      "description": "babel's modular runtime helpers"
+    },
+    {
+      "name": "@babel/template",
+      "versions": [
+        "8.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+template@8.0.0\\node_modules\\@babel/template"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-template",
+      "description": "Generate an AST from a string template."
+    },
+    {
+      "name": "@babel/traverse",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+traverse@8.0.6\\node_modules\\@babel/traverse"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-traverse",
+      "description": "The Babel Traverse module maintains the overall tree state, and is responsible for replacing, removing, and adding nodes"
+    },
+    {
+      "name": "@babel/types",
+      "versions": [
+        "8.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@babel+types@8.0.6\\node_modules\\@babel/types"
+      ],
+      "license": "MIT",
+      "author": "The Babel Team",
+      "homepage": "https://babel.dev/docs/en/next/babel-types",
+      "description": "Babel Types is a Lodash-esque utility library for AST nodes"
+    },
+    {
+      "name": "@borewit/text-codec",
+      "versions": [
+        "0.2.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@borewit+text-codec@0.2.2\\node_modules\\@borewit/text-codec"
+      ],
+      "license": "MIT",
+      "author": "Borewit",
+      "homepage": "https://github.com/Borewit/text-codec#readme",
+      "description": "Text Decoder"
+    },
+    {
+      "name": "@clack/core",
+      "versions": [
+        "1.5.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@clack+core@1.5.1\\node_modules\\@clack/core"
+      ],
+      "license": "MIT",
+      "author": "Nate Moore",
+      "homepage": "https://github.com/bombshell-dev/clack/tree/main/packages/core#readme"
+    },
+    {
+      "name": "@clack/prompts",
+      "versions": [
+        "1.8.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@clack+prompts@1.8.1\\node_modules\\@clack/prompts"
+      ],
+      "license": "MIT",
+      "author": "Nate Moore",
+      "homepage": "https://github.com/bombshell-dev/clack/tree/main/packages/prompts#readme"
+    },
+    {
+      "name": "@earendil-works/pi-tui",
+      "versions": [
+        "1.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@earendil-works+pi-tui@1.0.0\\node_modules\\@earendil-works/pi-tui"
+      ],
+      "license": "MIT",
+      "author": "Mario Zechner",
+      "homepage": "https://github.com/earendil-works/pi#readme",
+      "description": "Terminal User Interface library with differential rendering for efficient text-based applications"
+    },
+    {
+      "name": "@esbuild/win32-x64",
+      "versions": [
+        "0.28.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@esbuild+win32-x64@0.28.2\\node_modules\\@esbuild/win32-x64"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/evanw/esbuild#readme",
+      "description": "The Windows 64-bit binary for esbuild, a JavaScript bundler."
+    },
+    {
+      "name": "@grammyjs/transformer-throttler",
+      "versions": [
+        "1.2.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@grammyjs+transformer-throttler@1.2.1_grammy@1.46.0\\node_modules\\@grammyjs/transformer-throttler"
+      ],
+      "license": "MIT",
+      "author": "KnightNiwrem",
+      "homepage": "https://github.com/grammyjs/transformer-throttler",
+      "description": "Throttling transformer for Grammy"
+    },
+    {
+      "name": "@grammyjs/types",
+      "versions": [
+        "5.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@grammyjs+types@5.0.0\\node_modules\\@grammyjs/types"
+      ],
+      "license": "MIT",
+      "author": "KnorpelSenf",
+      "homepage": "https://grammy.dev/",
+      "description": "Telegram Bot API type declarations for grammY"
+    },
+    {
+      "name": "@homebridge/ciao",
+      "versions": [
+        "1.3.12"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@homebridge+ciao@1.3.12\\node_modules\\@homebridge/ciao"
+      ],
+      "license": "MIT",
+      "author": "Andreas Bauer",
+      "homepage": "https://github.com/homebridge/ciao",
+      "description": "ciao is a RFC 6763 compliant dns-sd library, advertising on multicast dns (RFC 6762) implemented in plain Typescript/JavaScript"
+    },
+    {
+      "name": "@hono/node-server",
+      "versions": [
+        "2.1.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@hono+node-server@2.1.5_hono@4.13.13\\node_modules\\@hono/node-server"
+      ],
+      "license": "MIT",
+      "author": "Yusuke Wada",
+      "homepage": "https://github.com/honojs/node-server",
+      "description": "Node.js Adapter for Hono"
+    },
+    {
+      "name": "@jridgewell/gen-mapping",
+      "versions": [
+        "0.4.0-beta.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@jridgewell+gen-mapping@0.4.0-beta.0\\node_modules\\@jridgewell/gen-mapping"
+      ],
+      "license": "MIT",
+      "author": "Justin Ridgewell",
+      "homepage": "https://github.com/jridgewell/sourcemaps/tree/main/packages/gen-mapping",
+      "description": "Generate source maps"
+    },
+    {
+      "name": "@jridgewell/resolve-uri",
+      "versions": [
+        "3.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@jridgewell+resolve-uri@3.1.2\\node_modules\\@jridgewell/resolve-uri"
+      ],
+      "license": "MIT",
+      "author": "Justin Ridgewell",
+      "homepage": "https://github.com/jridgewell/resolve-uri#readme",
+      "description": "Resolve a URI relative to an optional base URI"
+    },
+    {
+      "name": "@jridgewell/sourcemap-codec",
+      "versions": [
+        "1.6.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@jridgewell+sourcemap-codec@1.6.0\\node_modules\\@jridgewell/sourcemap-codec"
+      ],
+      "license": "MIT",
+      "author": "Justin Ridgewell",
+      "homepage": "https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec",
+      "description": "Encode/decode sourcemap mappings"
+    },
+    {
+      "name": "@jridgewell/trace-mapping",
+      "versions": [
+        "0.3.31"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@jridgewell+trace-mapping@0.3.31\\node_modules\\@jridgewell/trace-mapping"
+      ],
+      "license": "MIT",
+      "author": "Justin Ridgewell",
+      "homepage": "https://github.com/jridgewell/sourcemaps/tree/main/packages/trace-mapping",
+      "description": "Trace the original position through a source map"
+    },
+    {
+      "name": "@koromix/koffi-win32-x64",
+      "versions": [
+        "3.3.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@koromix+koffi-win32-x64@3.3.2\\node_modules\\@koromix/koffi-win32-x64"
+      ],
+      "license": "MIT",
+      "author": "Niels Martignène",
+      "homepage": "https://koffi.dev/",
+      "description": "Fast and easy-to-use dynamic C FFI (foreign function interface) for Node.js (@koromix/koffi-win32-x64)"
+    },
+    {
+      "name": "@lydell/node-pty",
+      "versions": [
+        "1.2.0-beta.15"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@lydell+node-pty@1.2.0-beta.15\\node_modules\\@lydell/node-pty"
+      ],
+      "license": "MIT",
+      "author": "Simon Lydell",
+      "homepage": "https://github.com/lydell/node-pty#readme",
+      "description": "Smaller distribution of node-pty."
+    },
+    {
+      "name": "@lydell/node-pty-win32-x64",
+      "versions": [
+        "1.2.0-beta.15"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@lydell+node-pty-win32-x64@1.2.0-beta.15\\node_modules\\@lydell/node-pty-win32-x64"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/lydell/node-pty#readme",
+      "description": "The node-pty package, stripped down only for win32-x64."
+    },
+    {
+      "name": "@modelcontextprotocol/sdk",
+      "versions": [
+        "1.32.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@modelcontextprotocol+sdk@1.32.0_zod@4.6.5\\node_modules\\@modelcontextprotocol/sdk"
+      ],
+      "license": "MIT",
+      "author": "Anthropic, PBC",
+      "homepage": "https://modelcontextprotocol.io",
+      "description": "Model Context Protocol implementation for TypeScript"
+    },
+    {
+      "name": "@openclaw/ai",
+      "versions": [
+        "2026.10.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@openclaw+ai@2026.10.6_@mod_08c0292bb7e7b37fe9c393ad1571c47e\\node_modules\\@openclaw/ai"
+      ],
+      "license": "MIT",
+      "author": "OpenClaw Foundation",
+      "homepage": "https://github.com/openclaw/openclaw#readme",
+      "description": "Reusable model provider adapters and streaming runtime from OpenClaw"
+    },
+    {
+      "name": "@openclaw/fs-safe",
+      "versions": [
+        "0.25.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@openclaw+fs-safe@0.25.0\\node_modules\\@openclaw/fs-safe"
+      ],
+      "license": "MIT",
+      "author": "OpenClaw Team",
+      "homepage": "https://fs-safe.io",
+      "description": "Capability-style filesystem roots for Node.js apps that handle untrusted relative paths."
+    },
+    {
+      "name": "@openclaw/fs-safe-win32-x64-msvc",
+      "versions": [
+        "0.25.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@openclaw+fs-safe-win32-x64-msvc@0.25.0\\node_modules\\@openclaw/fs-safe-win32-x64-msvc"
+      ],
+      "license": "MIT",
+      "author": "OpenClaw Team",
+      "homepage": "https://github.com/openclaw/fs-safe#readme",
+      "description": "Windows x64 MSVC native binding for @openclaw/fs-safe."
+    },
+    {
+      "name": "@openclaw/proxyline",
+      "versions": [
+        "0.4.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@openclaw+proxyline@0.4.0_undici@8.11.2\\node_modules\\@openclaw/proxyline"
+      ],
+      "license": "MIT",
+      "author": "Jesse Merhi",
+      "homepage": "https://proxyline.dev",
+      "description": "Process-global proxy routing for Node.js."
+    },
+    {
+      "name": "@sec-ant/readable-stream",
+      "versions": [
+        "0.4.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@sec-ant+readable-stream@0.4.1\\node_modules\\@sec-ant/readable-stream"
+      ],
+      "license": "MIT",
+      "author": "Ze-Zheng Wu",
+      "homepage": "https://github.com/Sec-ant/readable-stream",
+      "description": "A tiny, zero-dependency yet spec-compliant asynchronous iterator polyfill/ponyfill for ReadableStreams."
+    },
+    {
+      "name": "@sindresorhus/merge-streams",
+      "versions": [
+        "4.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@sindresorhus+merge-streams@4.0.0\\node_modules\\@sindresorhus/merge-streams"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/merge-streams#readme",
+      "description": "Merge multiple streams into a unified stream"
+    },
+    {
+      "name": "@stablelib/base64",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@stablelib+base64@1.0.1\\node_modules\\@stablelib/base64"
+      ],
+      "license": "MIT",
+      "author": "Dmitry Chestnykh",
+      "homepage": "https://github.com/StableLib/stablelib/tree/master/packages/base64",
+      "description": "Base64 encoding and decoding"
+    },
+    {
+      "name": "@tokenizer/inflate",
+      "versions": [
+        "0.4.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@tokenizer+inflate@0.4.1\\node_modules\\@tokenizer/inflate"
+      ],
+      "license": "MIT",
+      "author": "Borewit",
+      "homepage": "https://github.com/Borewit/tokenizer-inflate#readme",
+      "description": "Tokenized zip support"
+    },
+    {
+      "name": "@tokenizer/token",
+      "versions": [
+        "0.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@tokenizer+token@0.3.0\\node_modules\\@tokenizer/token"
+      ],
+      "license": "MIT",
+      "author": "Borewit",
+      "homepage": "https://github.com/Borewit/tokenizer-token#readme",
+      "description": "TypeScript definition for strtok3 token"
+    },
+    {
+      "name": "@trycua/cua-driver",
+      "versions": [
+        "0.32.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@trycua+cua-driver@0.32.0\\node_modules\\@trycua/cua-driver"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/trycua/cua#readme",
+      "description": "Rust-backed Cua Driver SDK and embedded Node host"
+    },
+    {
+      "name": "@types/jsesc",
+      "versions": [
+        "2.5.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@types+jsesc@2.5.1\\node_modules\\@types/jsesc"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped#readme",
+      "description": "TypeScript definitions for jsesc"
+    },
+    {
+      "name": "@types/node",
+      "versions": [
+        "26.6.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@types+node@26.6.5\\node_modules\\@types/node"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
+      "description": "TypeScript definitions for node"
+    },
+    {
+      "name": "@types/retry",
+      "versions": [
+        "0.12.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@types+retry@0.12.0\\node_modules\\@types/retry"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped#readme",
+      "description": "TypeScript definitions for retry"
+    },
+    {
+      "name": "abort-controller",
+      "versions": [
+        "3.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\abort-controller@3.0.0\\node_modules\\abort-controller"
+      ],
+      "license": "MIT",
+      "author": "Toru Nagashima",
+      "homepage": "https://github.com/mysticatea/abort-controller#readme",
+      "description": "An implementation of WHATWG AbortController interface."
+    },
+    {
+      "name": "accepts",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\accepts@2.0.0\\node_modules\\accepts"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/accepts#readme",
+      "description": "Higher-level content negotiation"
+    },
+    {
+      "name": "acorn",
+      "versions": [
+        "8.18.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\acorn@8.18.0\\node_modules\\acorn"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/acornjs/acorn",
+      "description": "ECMAScript parser"
+    },
+    {
+      "name": "agent-base",
+      "versions": [
+        "7.1.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\agent-base@7.1.4\\node_modules\\agent-base"
+      ],
+      "license": "MIT",
+      "author": "Nathan Rajlich",
+      "homepage": "https://github.com/TooTallNate/proxy-agents#readme",
+      "description": "Turn a function into an `http.Agent` instance"
+    },
+    {
+      "name": "ajv",
+      "versions": [
+        "8.20.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ajv@8.20.0\\node_modules\\ajv"
+      ],
+      "license": "MIT",
+      "author": "Evgeny Poberezkin",
+      "homepage": "https://ajv.js.org",
+      "description": "Another JSON Schema Validator"
+    },
+    {
+      "name": "ajv-formats",
+      "versions": [
+        "3.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ajv-formats@3.0.1\\node_modules\\ajv-formats"
+      ],
+      "license": "MIT",
+      "author": "Evgeny Poberezkin",
+      "homepage": "https://github.com/ajv-validator/ajv-formats#readme",
+      "description": "Format validation for Ajv v7+"
+    },
+    {
+      "name": "ansi-regex",
+      "versions": [
+        "5.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ansi-regex@5.0.1\\node_modules\\ansi-regex"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/chalk/ansi-regex#readme",
+      "description": "Regular expression for matching ANSI escape codes"
+    },
+    {
+      "name": "ansi-styles",
+      "versions": [
+        "4.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ansi-styles@4.3.0\\node_modules\\ansi-styles"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/chalk/ansi-styles#readme",
+      "description": "ANSI escape codes for styling strings in the terminal"
+    },
+    {
+      "name": "asn1.js",
+      "versions": [
+        "5.4.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\asn1.js@5.4.1\\node_modules\\asn1.js"
+      ],
+      "license": "MIT",
+      "author": "Fedor Indutny",
+      "homepage": "https://github.com/indutny/asn1.js",
+      "description": "ASN.1 encoder and decoder"
+    },
+    {
+      "name": "balanced-match",
+      "versions": [
+        "4.0.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\balanced-match@4.0.4\\node_modules\\balanced-match"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/juliangruber/balanced-match#readme",
+      "description": "Match balanced character pairs, like \"{\" and \"}\""
+    },
+    {
+      "name": "base64-js",
+      "versions": [
+        "1.5.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\base64-js@1.5.1\\node_modules\\base64-js"
+      ],
+      "license": "MIT",
+      "author": "T. Jameson Little",
+      "homepage": "https://github.com/beatgammit/base64-js",
+      "description": "Base64 encoding/decoding in pure JS"
+    },
+    {
+      "name": "bignumber.js",
+      "versions": [
+        "9.3.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\bignumber.js@9.3.1\\node_modules\\bignumber.js"
+      ],
+      "license": "MIT",
+      "author": "Michael Mclaughlin",
+      "homepage": "https://github.com/MikeMcl/bignumber.js#readme",
+      "description": "A library for arbitrary-precision decimal and non-decimal arithmetic"
+    },
+    {
+      "name": "bn.js",
+      "versions": [
+        "4.12.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\bn.js@4.12.5\\node_modules\\bn.js"
+      ],
+      "license": "MIT",
+      "author": "Fedor Indutny",
+      "homepage": "https://github.com/indutny/bn.js",
+      "description": "Big number implementation in pure javascript"
+    },
+    {
+      "name": "body-parser",
+      "versions": [
+        "2.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\body-parser@2.3.0\\node_modules\\body-parser"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/expressjs/body-parser#readme",
+      "description": "Node.js body parsing middleware"
+    },
+    {
+      "name": "bottleneck",
+      "versions": [
+        "2.19.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\bottleneck@2.19.5\\node_modules\\bottleneck"
+      ],
+      "license": "MIT",
+      "author": "Simon Grondin",
+      "homepage": "https://github.com/SGrondin/bottleneck#readme",
+      "description": "Distributed task scheduler and rate limiter"
+    },
+    {
+      "name": "brace-expansion",
+      "versions": [
+        "5.0.12"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\brace-expansion@5.0.12\\node_modules\\brace-expansion"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/juliangruber/brace-expansion#readme",
+      "description": "Brace expansion as known from sh/bash"
+    },
+    {
+      "name": "buffer-from",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\buffer-from@1.1.2\\node_modules\\buffer-from"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/LinusU/buffer-from#readme"
+    },
+    {
+      "name": "bytes",
+      "versions": [
+        "3.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\bytes@3.1.2\\node_modules\\bytes"
+      ],
+      "license": "MIT",
+      "author": "TJ Holowaychuk",
+      "homepage": "https://github.com/visionmedia/bytes.js#readme",
+      "description": "Utility to parse a string bytes to bytes and vice-versa"
+    },
+    {
+      "name": "call-bind-apply-helpers",
+      "versions": [
+        "1.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\call-bind-apply-helpers@1.0.2\\node_modules\\call-bind-apply-helpers"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/call-bind-apply-helpers#readme",
+      "description": "Helper functions around Function call/apply/bind, for use in `call-bind`"
+    },
+    {
+      "name": "call-bound",
+      "versions": [
+        "1.0.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\call-bound@1.0.4\\node_modules\\call-bound"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/call-bound#readme",
+      "description": "Robust call-bound JavaScript intrinsics, using `call-bind` and `get-intrinsic`."
+    },
+    {
+      "name": "camelcase",
+      "versions": [
+        "5.3.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\camelcase@5.3.1\\node_modules\\camelcase"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/camelcase#readme",
+      "description": "Convert a dash/dot/underscore/space separated string to camelCase or PascalCase: `foo-bar` → `fooBar`"
+    },
+    {
+      "name": "chalk",
+      "versions": [
+        "6.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\chalk@6.0.1\\node_modules\\chalk"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/chalk/chalk#readme",
+      "description": "Terminal string styling done right"
+    },
+    {
+      "name": "clawpdf",
+      "versions": [
+        "0.3.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\clawpdf@0.3.2\\node_modules\\clawpdf"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/openclaw/clawpdf#readme",
+      "description": "Zero-dependency PDFium WASM bindings for PDF text extraction and page rendering."
+    },
+    {
+      "name": "color-convert",
+      "versions": [
+        "2.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\color-convert@2.0.1\\node_modules\\color-convert"
+      ],
+      "license": "MIT",
+      "author": "Heather Arthur",
+      "homepage": "https://github.com/Qix-/color-convert#readme",
+      "description": "Plain color conversion functions"
+    },
+    {
+      "name": "color-name",
+      "versions": [
+        "1.1.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\color-name@1.1.4\\node_modules\\color-name"
+      ],
+      "license": "MIT",
+      "author": "DY",
+      "homepage": "https://github.com/colorjs/color-name",
+      "description": "A list of color names and its values"
+    },
+    {
+      "name": "commander",
+      "versions": [
+        "15.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\commander@15.0.0\\node_modules\\commander"
+      ],
+      "license": "MIT",
+      "author": "TJ Holowaychuk",
+      "homepage": "https://github.com/tj/commander.js#readme",
+      "description": "the complete solution for node.js command-line programs"
+    },
+    {
+      "name": "content-disposition",
+      "versions": [
+        "1.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\content-disposition@1.1.0\\node_modules\\content-disposition"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/jshttp/content-disposition#readme",
+      "description": "Create and parse Content-Disposition header"
+    },
+    {
+      "name": "content-type",
+      "versions": [
+        "1.0.5",
+        "2.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\content-type@1.0.5\\node_modules\\content-type",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\content-type@2.1.0\\node_modules\\content-type"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/jshttp/content-type#readme",
+      "description": "Create and parse HTTP Content-Type header"
+    },
+    {
+      "name": "cookie",
+      "versions": [
+        "0.7.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\cookie@0.7.2\\node_modules\\cookie"
+      ],
+      "license": "MIT",
+      "author": "Roman Shtylman",
+      "homepage": "https://github.com/jshttp/cookie#readme",
+      "description": "HTTP server cookie parsing and serialization"
+    },
+    {
+      "name": "cookie-signature",
+      "versions": [
+        "1.2.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\cookie-signature@1.2.2\\node_modules\\cookie-signature"
+      ],
+      "license": "MIT",
+      "author": "TJ Holowaychuk",
+      "homepage": "https://github.com/visionmedia/node-cookie-signature#readme",
+      "description": "Sign and unsign cookies"
+    },
+    {
+      "name": "core-util-is",
+      "versions": [
+        "1.0.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\core-util-is@1.0.3\\node_modules\\core-util-is"
+      ],
+      "license": "MIT",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/core-util-is#readme",
+      "description": "The `util.is*` functions introduced in Node v0.12."
+    },
+    {
+      "name": "cors",
+      "versions": [
+        "2.8.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\cors@2.8.6\\node_modules\\cors"
+      ],
+      "license": "MIT",
+      "author": "Troy Goode",
+      "homepage": "https://github.com/expressjs/cors#readme",
+      "description": "Node.js CORS middleware"
+    },
+    {
+      "name": "croner",
+      "versions": [
+        "10.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\croner@10.0.1\\node_modules\\croner"
+      ],
+      "license": "MIT",
+      "author": "Hexagon",
+      "homepage": "https://croner.56k.guru",
+      "description": "Trigger functions and/or evaluate cron expressions in JavaScript. No dependencies. Most features. All environments."
+    },
+    {
+      "name": "cross-spawn",
+      "versions": [
+        "7.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\cross-spawn@7.0.6\\node_modules\\cross-spawn"
+      ],
+      "license": "MIT",
+      "author": "André Cruz",
+      "homepage": "https://github.com/moxystudio/node-cross-spawn",
+      "description": "Cross platform child_process#spawn and child_process#spawnSync"
+    },
+    {
+      "name": "cssom",
+      "versions": [
+        "0.5.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\cssom@0.5.0\\node_modules\\cssom"
+      ],
+      "license": "MIT",
+      "author": "Nikita Vasilyev",
+      "homepage": "https://github.com/NV/CSSOM#readme",
+      "description": "CSS Object Model implementation and CSS parser"
+    },
+    {
+      "name": "data-uri-to-buffer",
+      "versions": [
+        "4.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\data-uri-to-buffer@4.0.1\\node_modules\\data-uri-to-buffer"
+      ],
+      "license": "MIT",
+      "author": "Nathan Rajlich",
+      "homepage": "https://github.com/TooTallNate/node-data-uri-to-buffer",
+      "description": "Generate a Buffer instance from a Data URI string"
+    },
+    {
+      "name": "debug",
+      "versions": [
+        "4.4.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\debug@4.4.3\\node_modules\\debug"
+      ],
+      "license": "MIT",
+      "author": "Josh Junon",
+      "homepage": "https://github.com/debug-js/debug#readme",
+      "description": "Lightweight debugging utility for Node.js and the browser"
+    },
+    {
+      "name": "decamelize",
+      "versions": [
+        "1.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\decamelize@1.2.0\\node_modules\\decamelize"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/decamelize#readme",
+      "description": "Convert a camelized string into a lowercased one with a custom separator: unicornRainbow → unicorn_rainbow"
+    },
+    {
+      "name": "depd",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\depd@2.0.0\\node_modules\\depd"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/dougwilson/nodejs-depd#readme",
+      "description": "Deprecate all the things"
+    },
+    {
+      "name": "dijkstrajs",
+      "versions": [
+        "1.0.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\dijkstrajs@1.0.3\\node_modules\\dijkstrajs"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/tcort/dijkstrajs",
+      "description": "A simple JavaScript implementation of Dijkstra's single-source shortest-paths algorithm."
+    },
+    {
+      "name": "dom-serializer",
+      "versions": [
+        "2.0.0",
+        "3.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\dom-serializer@2.0.0\\node_modules\\dom-serializer",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\dom-serializer@3.1.1\\node_modules\\dom-serializer"
+      ],
+      "license": "MIT",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/cheeriojs/dom-serializer#readme",
+      "description": "render domhandler DOM nodes to a string"
+    },
+    {
+      "name": "dunder-proto",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\dunder-proto@1.0.1\\node_modules\\dunder-proto"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/es-shims/dunder-proto#readme",
+      "description": "If available, the `Object.prototype.__proto__` accessor and mutator, call-bound"
+    },
+    {
+      "name": "ee-first",
+      "versions": [
+        "1.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ee-first@1.1.1\\node_modules\\ee-first"
+      ],
+      "license": "MIT",
+      "author": "Jonathan Ong",
+      "homepage": "https://github.com/jonathanong/ee-first#readme",
+      "description": "return the first event in a set of ee/event pairs"
+    },
+    {
+      "name": "emoji-regex",
+      "versions": [
+        "8.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\emoji-regex@8.0.0\\node_modules\\emoji-regex"
+      ],
+      "license": "MIT",
+      "author": "Mathias Bynens",
+      "homepage": "https://mths.be/emoji-regex",
+      "description": "A regular expression to match all Emoji-only symbols as per the Unicode Standard."
+    },
+    {
+      "name": "encodeurl",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\encodeurl@2.0.0\\node_modules\\encodeurl"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/pillarjs/encodeurl#readme",
+      "description": "Encode a URL to a percent-encoded form, excluding already-encoded sequences"
+    },
+    {
+      "name": "es-define-property",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\es-define-property@1.0.1\\node_modules\\es-define-property"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/es-define-property#readme",
+      "description": "`Object.defineProperty`, but not IE 8's broken one."
+    },
+    {
+      "name": "es-errors",
+      "versions": [
+        "1.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\es-errors@1.3.0\\node_modules\\es-errors"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/es-errors#readme",
+      "description": "A simple cache for a few of the JS Error constructors."
+    },
+    {
+      "name": "es-object-atoms",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\es-object-atoms@1.1.2\\node_modules\\es-object-atoms"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/es-object-atoms#readme",
+      "description": "ES Object-related atoms: Object, ToObject, RequireObjectCoercible"
+    },
+    {
+      "name": "esbuild",
+      "versions": [
+        "0.28.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\esbuild@0.28.2\\node_modules\\esbuild"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/evanw/esbuild#readme",
+      "description": "An extremely fast JavaScript and CSS bundler and minifier."
+    },
+    {
+      "name": "escalade",
+      "versions": [
+        "3.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\escalade@3.2.0\\node_modules\\escalade"
+      ],
+      "license": "MIT",
+      "author": "Luke Edwards",
+      "homepage": "https://github.com/lukeed/escalade#readme",
+      "description": "A tiny (183B to 210B) and fast utility to ascend parent directories"
+    },
+    {
+      "name": "escape-html",
+      "versions": [
+        "1.0.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\escape-html@1.0.3\\node_modules\\escape-html"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/component/escape-html#readme",
+      "description": "Escape string for use in HTML"
+    },
+    {
+      "name": "etag",
+      "versions": [
+        "1.8.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\etag@1.8.1\\node_modules\\etag"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/etag#readme",
+      "description": "Create simple HTTP ETags"
+    },
+    {
+      "name": "event-target-shim",
+      "versions": [
+        "5.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\event-target-shim@5.0.1\\node_modules\\event-target-shim"
+      ],
+      "license": "MIT",
+      "author": "Toru Nagashima",
+      "homepage": "https://github.com/mysticatea/event-target-shim",
+      "description": "An implementation of WHATWG EventTarget interface."
+    },
+    {
+      "name": "eventsource",
+      "versions": [
+        "3.0.7"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\eventsource@3.0.7\\node_modules\\eventsource"
+      ],
+      "license": "MIT",
+      "author": "Espen Hovlandsdal",
+      "homepage": "https://github.com/EventSource/eventsource#readme",
+      "description": "WhatWG/W3C compliant EventSource client for Node.js and browsers"
+    },
+    {
+      "name": "eventsource-parser",
+      "versions": [
+        "3.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\eventsource-parser@3.1.1\\node_modules\\eventsource-parser"
+      ],
+      "license": "MIT",
+      "author": "Espen Hovlandsdal",
+      "homepage": "https://github.com/rexxars/eventsource-parser#readme",
+      "description": "Streaming, source-agnostic EventSource/Server-Sent Events parser"
+    },
+    {
+      "name": "execa",
+      "versions": [
+        "10.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\execa@10.0.1\\node_modules\\execa"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/execa#readme",
+      "description": "Process execution for humans"
+    },
+    {
+      "name": "express",
+      "versions": [
+        "5.2.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\express@5.2.1\\node_modules\\express"
+      ],
+      "license": "MIT",
+      "author": "TJ Holowaychuk",
+      "homepage": "https://expressjs.com/",
+      "description": "Fast, unopinionated, minimalist web framework"
+    },
+    {
+      "name": "express-rate-limit",
+      "versions": [
+        "8.7.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\express-rate-limit@8.7.1_express@5.2.1\\node_modules\\express-rate-limit"
+      ],
+      "license": "MIT",
+      "author": "Nathan Friedly",
+      "homepage": "https://github.com/express-rate-limit/express-rate-limit",
+      "description": "Basic IP rate-limiting middleware for Express. Use to limit repeated requests to public APIs and/or endpoints such as password reset."
+    },
+    {
+      "name": "extend",
+      "versions": [
+        "3.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\extend@3.0.2\\node_modules\\extend"
+      ],
+      "license": "MIT",
+      "author": "Stefan Thomas",
+      "homepage": "https://github.com/justmoon/node-extend#readme",
+      "description": "Port of jQuery.extend for node.js and the browser"
+    },
+    {
+      "name": "fast-deep-equal",
+      "versions": [
+        "3.1.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fast-deep-equal@3.1.3\\node_modules\\fast-deep-equal"
+      ],
+      "license": "MIT",
+      "author": "Evgeny Poberezkin",
+      "homepage": "https://github.com/epoberezkin/fast-deep-equal#readme",
+      "description": "Fast deep equal"
+    },
+    {
+      "name": "fast-string-truncated-width",
+      "versions": [
+        "3.0.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fast-string-truncated-width@3.0.3\\node_modules\\fast-string-truncated-width"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/fabiospampinato/fast-string-truncated-width#readme",
+      "description": "A fast function for calculating where a string should be truncated, given an optional width limit and an ellipsis string."
+    },
+    {
+      "name": "fast-string-width",
+      "versions": [
+        "3.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fast-string-width@3.0.2\\node_modules\\fast-string-width"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/fabiospampinato/fast-string-width#readme",
+      "description": "A fast function for calculating the visual width of a string once printed to the terminal."
+    },
+    {
+      "name": "fast-wrap-ansi",
+      "versions": [
+        "0.2.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fast-wrap-ansi@0.2.2\\node_modules\\fast-wrap-ansi"
+      ],
+      "license": "MIT",
+      "author": "James Garbutt",
+      "homepage": "https://github.com/43081j/fast-wrap-ansi#readme",
+      "description": "A tiny and fast text wrap library which takes ANSI escapes into account."
+    },
+    {
+      "name": "fetch-blob",
+      "versions": [
+        "3.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fetch-blob@3.2.0\\node_modules\\fetch-blob"
+      ],
+      "license": "MIT",
+      "author": "Jimmy Wärting",
+      "homepage": "https://github.com/node-fetch/fetch-blob#readme",
+      "description": "Blob & File implementation in Node.js, originally from node-fetch."
+    },
+    {
+      "name": "figures",
+      "versions": [
+        "6.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\figures@6.1.0\\node_modules\\figures"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/figures#readme",
+      "description": "Unicode symbols with fallbacks for older terminals"
+    },
+    {
+      "name": "file-type",
+      "versions": [
+        "22.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\file-type@22.1.1\\node_modules\\file-type"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/file-type#readme",
+      "description": "Detect the file type of a file, stream, or data"
+    },
+    {
+      "name": "finalhandler",
+      "versions": [
+        "2.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\finalhandler@2.1.1\\node_modules\\finalhandler"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/pillarjs/finalhandler#readme",
+      "description": "Node.js final http responder"
+    },
+    {
+      "name": "find-up",
+      "versions": [
+        "4.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\find-up@4.1.0\\node_modules\\find-up"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/find-up#readme",
+      "description": "Find a file or directory by walking up parent directories"
+    },
+    {
+      "name": "formdata-polyfill",
+      "versions": [
+        "4.0.10"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\formdata-polyfill@4.0.10\\node_modules\\formdata-polyfill"
+      ],
+      "license": "MIT",
+      "author": "Jimmy Wärting",
+      "homepage": "https://github.com/jimmywarting/FormData#readme",
+      "description": "HTML5 `FormData` for Browsers and Node."
+    },
+    {
+      "name": "forwarded",
+      "versions": [
+        "0.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\forwarded@0.2.0\\node_modules\\forwarded"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/forwarded#readme",
+      "description": "Parse HTTP X-Forwarded-For header"
+    },
+    {
+      "name": "fresh",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fresh@2.0.0\\node_modules\\fresh"
+      ],
+      "license": "MIT",
+      "author": "TJ Holowaychuk",
+      "homepage": "https://github.com/jshttp/fresh#readme",
+      "description": "HTTP response freshness testing"
+    },
+    {
+      "name": "function-bind",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\function-bind@1.1.2\\node_modules\\function-bind"
+      ],
+      "license": "MIT",
+      "author": "Raynos",
+      "homepage": "https://github.com/Raynos/function-bind",
+      "description": "Implementation of Function.prototype.bind"
+    },
+    {
+      "name": "get-east-asian-width",
+      "versions": [
+        "1.6.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\get-east-asian-width@1.6.0\\node_modules\\get-east-asian-width"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/get-east-asian-width#readme",
+      "description": "Determine the East Asian Width of a Unicode character"
+    },
+    {
+      "name": "get-intrinsic",
+      "versions": [
+        "1.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\get-intrinsic@1.3.0\\node_modules\\get-intrinsic"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/get-intrinsic#readme",
+      "description": "Get and robustly cache all JS language-level intrinsics at first require time"
+    },
+    {
+      "name": "get-proto",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\get-proto@1.0.1\\node_modules\\get-proto"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/get-proto#readme",
+      "description": "Robustly get the [[Prototype]] of an object"
+    },
+    {
+      "name": "get-stream",
+      "versions": [
+        "9.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\get-stream@9.0.1\\node_modules\\get-stream"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/get-stream#readme",
+      "description": "Get a stream as a string, Buffer, ArrayBuffer or array"
+    },
+    {
+      "name": "gopd",
+      "versions": [
+        "1.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\gopd@1.2.0\\node_modules\\gopd"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/gopd#readme",
+      "description": "`Object.getOwnPropertyDescriptor`, but accounts for IE's broken implementation."
+    },
+    {
+      "name": "grammy",
+      "versions": [
+        "1.46.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\grammy@1.46.0\\node_modules\\grammy"
+      ],
+      "license": "MIT",
+      "author": "KnorpelSenf",
+      "homepage": "https://grammy.dev/",
+      "description": "The Telegram Bot Framework."
+    },
+    {
+      "name": "has-symbols",
+      "versions": [
+        "1.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\has-symbols@1.1.0\\node_modules\\has-symbols"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/has-symbols#readme",
+      "description": "Determine if the JS environment has Symbol support. Supports spec, or shams."
+    },
+    {
+      "name": "hasown",
+      "versions": [
+        "2.0.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\hasown@2.0.4\\node_modules\\hasown"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/inspect-js/hasOwn#readme",
+      "description": "A robust, ES3 compatible, \"has own property\" predicate."
+    },
+    {
+      "name": "hono",
+      "versions": [
+        "4.13.13"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\hono@4.13.13\\node_modules\\hono"
+      ],
+      "license": "MIT",
+      "author": "Yusuke Wada",
+      "homepage": "https://hono.dev",
+      "description": "Web framework built on Web Standards"
+    },
+    {
+      "name": "html-escaper",
+      "versions": [
+        "3.0.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\html-escaper@3.0.3\\node_modules\\html-escaper"
+      ],
+      "license": "MIT",
+      "author": "Andrea Giammarchi",
+      "homepage": "https://github.com/WebReflection/html-escaper",
+      "description": "fast and safe way to escape and unescape &<>'\" chars"
+    },
+    {
+      "name": "htmlparser2",
+      "versions": [
+        "10.1.0",
+        "12.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\htmlparser2@10.1.0\\node_modules\\htmlparser2",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\htmlparser2@12.0.0\\node_modules\\htmlparser2"
+      ],
+      "license": "MIT",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/htmlparser2#readme",
+      "description": "Fast & forgiving HTML/XML parser"
+    },
+    {
+      "name": "http_ece",
+      "versions": [
+        "1.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\http_ece@1.2.0\\node_modules\\http_ece"
+      ],
+      "license": "MIT",
+      "author": "Martin Thomson",
+      "homepage": "https://github.com/martinthomson/encrypted-content-encoding",
+      "description": "Encrypted Content-Encoding for HTTP"
+    },
+    {
+      "name": "http-errors",
+      "versions": [
+        "2.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\http-errors@2.0.1\\node_modules\\http-errors"
+      ],
+      "license": "MIT",
+      "author": "Jonathan Ong",
+      "homepage": "https://github.com/jshttp/http-errors#readme",
+      "description": "Create HTTP error objects"
+    },
+    {
+      "name": "https-proxy-agent",
+      "versions": [
+        "7.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\https-proxy-agent@7.0.6\\node_modules\\https-proxy-agent"
+      ],
+      "license": "MIT",
+      "author": "Nathan Rajlich",
+      "homepage": "https://github.com/TooTallNate/proxy-agents#readme",
+      "description": "An HTTP(s) proxy `http.Agent` implementation for HTTPS"
+    },
+    {
+      "name": "iconv-lite",
+      "versions": [
+        "0.7.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\iconv-lite@0.7.3\\node_modules\\iconv-lite"
+      ],
+      "license": "MIT",
+      "author": "Alexander Shtuchkin",
+      "homepage": "https://github.com/pillarjs/iconv-lite",
+      "description": "Convert character encodings in pure javascript."
+    },
+    {
+      "name": "ignore",
+      "versions": [
+        "7.0.12"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ignore@7.0.12\\node_modules\\ignore"
+      ],
+      "license": "MIT",
+      "author": "kael",
+      "homepage": "https://github.com/kaelzhang/node-ignore#readme",
+      "description": "Ignore is a manager and filter for .gitignore rules, the one used by eslint, gitbook and many others."
+    },
+    {
+      "name": "immediate",
+      "versions": [
+        "3.0.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\immediate@3.0.6\\node_modules\\immediate"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/calvinmetcalf/immediate#readme",
+      "description": "A cross browser microtask library"
+    },
+    {
+      "name": "import-meta-resolve",
+      "versions": [
+        "4.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\import-meta-resolve@4.2.0\\node_modules\\import-meta-resolve"
+      ],
+      "license": "MIT",
+      "author": "Titus Wormer",
+      "homepage": "https://github.com/wooorm/import-meta-resolve#readme",
+      "description": "Resolve things like Node.js — ponyfill for `import.meta.resolve`"
+    },
+    {
+      "name": "ip-address",
+      "versions": [
+        "10.7.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ip-address@10.7.4\\node_modules\\ip-address"
+      ],
+      "license": "MIT",
+      "author": "Beau Gunderson",
+      "homepage": "https://github.com/beaugunderson/ip-address#readme",
+      "description": "A library for parsing IPv4 and IPv6 IP addresses in node and the browser."
+    },
+    {
+      "name": "ipaddr.js",
+      "versions": [
+        "1.9.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ipaddr.js@1.9.1\\node_modules\\ipaddr.js"
+      ],
+      "license": "MIT",
+      "author": "whitequark",
+      "homepage": "https://github.com/whitequark/ipaddr.js#readme",
+      "description": "A library for manipulating IPv4 and IPv6 addresses in JavaScript."
+    },
+    {
+      "name": "is-fullwidth-code-point",
+      "versions": [
+        "3.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\is-fullwidth-code-point@3.0.0\\node_modules\\is-fullwidth-code-point"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/is-fullwidth-code-point#readme",
+      "description": "Check if the character represented by a given Unicode code point is fullwidth"
+    },
+    {
+      "name": "is-plain-obj",
+      "versions": [
+        "4.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\is-plain-obj@4.1.0\\node_modules\\is-plain-obj"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/is-plain-obj#readme",
+      "description": "Check if a value is a plain object"
+    },
+    {
+      "name": "is-promise",
+      "versions": [
+        "4.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\is-promise@4.0.0\\node_modules\\is-promise"
+      ],
+      "license": "MIT",
+      "author": "ForbesLindesay",
+      "homepage": "https://github.com/then/is-promise#readme",
+      "description": "Test whether an object looks like a promises-a+ promise"
+    },
+    {
+      "name": "is-stream",
+      "versions": [
+        "4.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\is-stream@4.0.1\\node_modules\\is-stream"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/is-stream#readme",
+      "description": "Check if something is a Node.js stream"
+    },
+    {
+      "name": "is-unicode-supported",
+      "versions": [
+        "2.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\is-unicode-supported@2.1.0\\node_modules\\is-unicode-supported"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/is-unicode-supported#readme",
+      "description": "Detect whether the terminal supports Unicode"
+    },
+    {
+      "name": "isarray",
+      "versions": [
+        "1.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\isarray@1.0.0\\node_modules\\isarray"
+      ],
+      "license": "MIT",
+      "author": "Julian Gruber",
+      "homepage": "https://github.com/juliangruber/isarray",
+      "description": "Array#isArray for older browsers"
+    },
+    {
+      "name": "jiti",
+      "versions": [
+        "2.7.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\jiti@2.7.0\\node_modules\\jiti"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/unjs/jiti#readme",
+      "description": "Runtime typescript and ESM support for Node.js"
+    },
+    {
+      "name": "jose",
+      "versions": [
+        "6.2.13"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\jose@6.2.13\\node_modules\\jose"
+      ],
+      "license": "MIT",
+      "author": "Filip Skokan",
+      "homepage": "https://github.com/panva/jose",
+      "description": "JWA, JWS, JWE, JWT, JWK, JWKS for Node.js, Browser, Cloudflare Workers, Deno, Bun, and other Web-interoperable runtimes"
+    },
+    {
+      "name": "js-tokens",
+      "versions": [
+        "10.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\js-tokens@10.0.0\\node_modules\\js-tokens"
+      ],
+      "license": "MIT",
+      "author": "Simon Lydell",
+      "homepage": "https://github.com/lydell/js-tokens#readme",
+      "description": "Tiny JavaScript tokenizer."
+    },
+    {
+      "name": "jsesc",
+      "versions": [
+        "3.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\jsesc@3.1.0\\node_modules\\jsesc"
+      ],
+      "license": "MIT",
+      "author": "Mathias Bynens",
+      "homepage": "https://mths.be/jsesc",
+      "description": "Given some data, jsesc returns the shortest possible stringified & ASCII-safe representation of that data."
+    },
+    {
+      "name": "json-bigint",
+      "versions": [
+        "1.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\json-bigint@1.0.0\\node_modules\\json-bigint"
+      ],
+      "license": "MIT",
+      "author": "Andrey Sidorov",
+      "homepage": "https://github.com/sidorares/json-bigint#readme",
+      "description": "JSON.parse with bigints support"
+    },
+    {
+      "name": "json-schema-to-ts",
+      "versions": [
+        "3.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\json-schema-to-ts@3.1.1\\node_modules\\json-schema-to-ts"
+      ],
+      "license": "MIT",
+      "author": "Thomas Aribart",
+      "homepage": "https://github.com/ThomasAribart/json-schema-to-ts#readme",
+      "description": "Infer typescript types from your JSON schemas!"
+    },
+    {
+      "name": "json-schema-traverse",
+      "versions": [
+        "1.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\json-schema-traverse@1.0.0\\node_modules\\json-schema-traverse"
+      ],
+      "license": "MIT",
+      "author": "Evgeny Poberezkin",
+      "homepage": "https://github.com/epoberezkin/json-schema-traverse#readme",
+      "description": "Traverse JSON Schema passing each schema object to callback"
+    },
+    {
+      "name": "json5",
+      "versions": [
+        "2.2.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\json5@2.2.3\\node_modules\\json5"
+      ],
+      "license": "MIT",
+      "author": "Aseem Kishore",
+      "homepage": "http://json5.org/",
+      "description": "JSON for Humans"
+    },
+    {
+      "name": "jwa",
+      "versions": [
+        "2.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\jwa@2.0.1\\node_modules\\jwa"
+      ],
+      "license": "MIT",
+      "author": "Brian J. Brennan",
+      "homepage": "https://github.com/brianloveswords/node-jwa#readme",
+      "description": "JWA implementation (supports all JWS algorithms)"
+    },
+    {
+      "name": "jws",
+      "versions": [
+        "4.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\jws@4.0.1\\node_modules\\jws"
+      ],
+      "license": "MIT",
+      "author": "Brian J Brennan",
+      "homepage": "https://github.com/brianloveswords/node-jws#readme",
+      "description": "Implementation of JSON Web Signatures"
+    },
+    {
+      "name": "koffi",
+      "versions": [
+        "3.3.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\koffi@3.3.2\\node_modules\\koffi"
+      ],
+      "license": "MIT",
+      "author": "Niels Martignène",
+      "homepage": "https://koffi.dev/",
+      "description": "Fast and easy-to-use dynamic C FFI (foreign function interface) for Node.js"
+    },
+    {
+      "name": "kysely",
+      "versions": [
+        "0.29.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\kysely@0.29.6\\node_modules\\kysely"
+      ],
+      "license": "MIT",
+      "author": "Sami Koskimäki",
+      "homepage": "https://kysely.dev",
+      "description": "Type safe SQL query builder"
+    },
+    {
+      "name": "lie",
+      "versions": [
+        "3.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\lie@3.3.0\\node_modules\\lie"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/calvinmetcalf/lie#readme",
+      "description": "A basic but performant promise implementation"
+    },
+    {
+      "name": "locate-path",
+      "versions": [
+        "5.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\locate-path@5.0.0\\node_modules\\locate-path"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/locate-path#readme",
+      "description": "Get the first path that exists on disk of multiple paths"
+    },
+    {
+      "name": "marked",
+      "versions": [
+        "18.0.11"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\marked@18.0.11\\node_modules\\marked"
+      ],
+      "license": "MIT",
+      "author": "Christopher Jeffrey",
+      "homepage": "https://marked.js.org",
+      "description": "A markdown parser built for speed"
+    },
+    {
+      "name": "math-intrinsics",
+      "versions": [
+        "1.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\math-intrinsics@1.1.0\\node_modules\\math-intrinsics"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/es-shims/math-intrinsics#readme",
+      "description": "ES Math-related intrinsics and helpers, robustly cached."
+    },
+    {
+      "name": "media-typer",
+      "versions": [
+        "1.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\media-typer@1.1.1\\node_modules\\media-typer"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/jshttp/media-typer#readme",
+      "description": "Simple RFC 6838 media type parser and formatter"
+    },
+    {
+      "name": "merge-descriptors",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\merge-descriptors@2.0.0\\node_modules\\merge-descriptors"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/sindresorhus/merge-descriptors#readme",
+      "description": "Merge objects using their property descriptors"
+    },
+    {
+      "name": "mime-db",
+      "versions": [
+        "1.54.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\mime-db@1.54.0\\node_modules\\mime-db"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/mime-db#readme",
+      "description": "Media Type Database"
+    },
+    {
+      "name": "mime-types",
+      "versions": [
+        "3.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\mime-types@3.0.2\\node_modules\\mime-types"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/mime-types#readme",
+      "description": "The ultimate javascript content-type utility."
+    },
+    {
+      "name": "minimist",
+      "versions": [
+        "1.2.8"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\minimist@1.2.8\\node_modules\\minimist"
+      ],
+      "license": "MIT",
+      "author": "James Halliday",
+      "homepage": "https://github.com/minimistjs/minimist",
+      "description": "parse argument options"
+    },
+    {
+      "name": "minizlib",
+      "versions": [
+        "3.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\minizlib@3.1.0\\node_modules\\minizlib"
+      ],
+      "license": "MIT",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/minizlib#readme",
+      "description": "A small fast zlib stream built on [minipass](http://npm.im/minipass) and Node.js's zlib binding."
+    },
+    {
+      "name": "ms",
+      "versions": [
+        "2.1.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ms@2.1.3\\node_modules\\ms"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/vercel/ms#readme",
+      "description": "Tiny millisecond conversion utility"
+    },
+    {
+      "name": "negotiator",
+      "versions": [
+        "1.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\negotiator@1.1.0\\node_modules\\negotiator"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/negotiator#readme",
+      "description": "HTTP content negotiation"
+    },
+    {
+      "name": "node-domexception",
+      "versions": [
+        "1.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\node-domexception@1.0.0\\node_modules\\node-domexception"
+      ],
+      "license": "MIT",
+      "author": "Jimmy Wärting",
+      "homepage": "https://github.com/jimmywarting/node-domexception#readme",
+      "description": "An implementation of the DOMException class from NodeJS"
+    },
+    {
+      "name": "node-edge-tts",
+      "versions": [
+        "1.2.10"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\node-edge-tts@1.2.10\\node_modules\\node-edge-tts"
+      ],
+      "license": "MIT",
+      "author": "SchneeHertz",
+      "homepage": "https://github.com/SchneeHertz/node-edge-tts",
+      "description": "node-edge-tts is a module that using Microsoft Edge's online TTS (Text-to-Speech) service on the Node.js"
+    },
+    {
+      "name": "node-fetch",
+      "versions": [
+        "2.7.0",
+        "3.3.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\node-fetch@2.7.0\\node_modules\\node-fetch",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\node-fetch@3.3.2\\node_modules\\node-fetch"
+      ],
+      "license": "MIT",
+      "author": "David Frank",
+      "homepage": "https://github.com/node-fetch/node-fetch",
+      "description": "A light-weight module that brings Fetch API to node.js"
+    },
+    {
+      "name": "npm-run-path",
+      "versions": [
+        "6.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\npm-run-path@6.0.0\\node_modules\\npm-run-path"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/npm-run-path#readme",
+      "description": "Get your PATH prepended with locally installed binaries"
+    },
+    {
+      "name": "object-assign",
+      "versions": [
+        "4.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\object-assign@4.1.1\\node_modules\\object-assign"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/object-assign#readme",
+      "description": "ES2015 `Object.assign()` ponyfill"
+    },
+    {
+      "name": "object-inspect",
+      "versions": [
+        "1.13.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\object-inspect@1.13.4\\node_modules\\object-inspect"
+      ],
+      "license": "MIT",
+      "author": "James Halliday",
+      "homepage": "https://github.com/inspect-js/object-inspect",
+      "description": "string representations of objects in node and the browser"
+    },
+    {
+      "name": "obug",
+      "versions": [
+        "2.2.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\obug@2.2.1\\node_modules\\obug"
+      ],
+      "license": "MIT",
+      "author": "Kevin Deng",
+      "homepage": "https://github.com/sxzz/obug#readme",
+      "description": "A lightweight JavaScript debugging utility, forked from debug, featuring TypeScript and ESM support."
+    },
+    {
+      "name": "on-finished",
+      "versions": [
+        "2.4.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\on-finished@2.4.1\\node_modules\\on-finished"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/on-finished#readme",
+      "description": "Execute a callback when a request closes, finishes, or errors"
+    },
+    {
+      "name": "openclaw",
+      "versions": [
+        "2026.10.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\openclaw@2026.10.6\\node_modules\\openclaw"
+      ],
+      "license": "MIT",
+      "author": "OpenClaw Foundation",
+      "homepage": "https://github.com/openclaw/openclaw#readme",
+      "description": "Multi-channel AI gateway with extensible messaging integrations"
+    },
+    {
+      "name": "p-limit",
+      "versions": [
+        "2.3.0",
+        "7.3.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\p-limit@2.3.0\\node_modules\\p-limit",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\p-limit@7.3.3\\node_modules\\p-limit"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/p-limit#readme",
+      "description": "Run multiple promise-returning & async functions with limited concurrency"
+    },
+    {
+      "name": "p-locate",
+      "versions": [
+        "4.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\p-locate@4.1.0\\node_modules\\p-locate"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/p-locate#readme",
+      "description": "Get the first fulfilled promise that satisfies the provided testing function"
+    },
+    {
+      "name": "p-map",
+      "versions": [
+        "7.0.8"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\p-map@7.0.8\\node_modules\\p-map"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/p-map#readme",
+      "description": "Map over promises concurrently"
+    },
+    {
+      "name": "p-retry",
+      "versions": [
+        "4.6.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\p-retry@4.6.2\\node_modules\\p-retry"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/p-retry#readme",
+      "description": "Retry a promise-returning or async function"
+    },
+    {
+      "name": "p-try",
+      "versions": [
+        "2.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\p-try@2.2.0\\node_modules\\p-try"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/p-try#readme",
+      "description": "`Start a promise chain"
+    },
+    {
+      "name": "parse-ms",
+      "versions": [
+        "4.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\parse-ms@4.0.0\\node_modules\\parse-ms"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/parse-ms#readme",
+      "description": "Parse milliseconds into an object"
+    },
+    {
+      "name": "parseurl",
+      "versions": [
+        "1.3.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\parseurl@1.3.3\\node_modules\\parseurl"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/pillarjs/parseurl#readme",
+      "description": "parse a url with memoization"
+    },
+    {
+      "name": "partial-json",
+      "versions": [
+        "0.1.7"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\partial-json@0.1.7\\node_modules\\partial-json"
+      ],
+      "license": "MIT",
+      "author": "Muspi Merol",
+      "homepage": "https://promplate.dev/partial-json-parser",
+      "description": "Parse partial JSON generated by LLM"
+    },
+    {
+      "name": "path-exists",
+      "versions": [
+        "4.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\path-exists@4.0.0\\node_modules\\path-exists"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/path-exists#readme",
+      "description": "Check if a path exists"
+    },
+    {
+      "name": "path-key",
+      "versions": [
+        "3.1.1",
+        "4.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\path-key@3.1.1\\node_modules\\path-key",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\path-key@4.0.0\\node_modules\\path-key"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/path-key#readme",
+      "description": "Get the PATH environment variable key cross-platform"
+    },
+    {
+      "name": "path-to-regexp",
+      "versions": [
+        "8.4.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\path-to-regexp@8.4.2\\node_modules\\path-to-regexp"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/pillarjs/path-to-regexp#readme",
+      "description": "Express style path to RegExp utility"
+    },
+    {
+      "name": "pkce-challenge",
+      "versions": [
+        "5.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\pkce-challenge@5.0.1\\node_modules\\pkce-challenge"
+      ],
+      "license": "MIT",
+      "author": "crouchcd",
+      "homepage": "https://github.com/crouchcd/pkce-challenge#readme",
+      "description": "Generate or verify a Proof Key for Code Exchange (PKCE) challenge pair"
+    },
+    {
+      "name": "pngjs",
+      "versions": [
+        "5.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\pngjs@5.0.0\\node_modules\\pngjs"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/lukeapage/pngjs",
+      "description": "PNG encoder/decoder in pure JS, supporting any bit size & interlace, async & sync with full test suite."
+    },
+    {
+      "name": "pretty-ms",
+      "versions": [
+        "9.3.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\pretty-ms@9.3.1\\node_modules\\pretty-ms"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/pretty-ms#readme",
+      "description": "Convert milliseconds to a human readable string: `1337000000` → `15d 11h 23m 20s`"
+    },
+    {
+      "name": "process-nextick-args",
+      "versions": [
+        "2.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\process-nextick-args@2.0.1\\node_modules\\process-nextick-args"
+      ],
+      "license": "MIT",
+      "author": "",
+      "homepage": "https://github.com/calvinmetcalf/process-nextick-args",
+      "description": "process.nextTick but always with args"
+    },
+    {
+      "name": "proxy-addr",
+      "versions": [
+        "2.0.8"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\proxy-addr@2.0.8\\node_modules\\proxy-addr"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/jshttp/proxy-addr#readme",
+      "description": "Determine address of proxied request"
+    },
+    {
+      "name": "qrcode",
+      "versions": [
+        "1.5.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\qrcode@1.5.4\\node_modules\\qrcode"
+      ],
+      "license": "MIT",
+      "author": "Ryan Day",
+      "homepage": "http://github.com/soldair/node-qrcode",
+      "description": "QRCode / 2d Barcode api with both server side and client side support using canvas"
+    },
+    {
+      "name": "range-parser",
+      "versions": [
+        "1.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\range-parser@1.3.0\\node_modules\\range-parser"
+      ],
+      "license": "MIT",
+      "author": "TJ Holowaychuk",
+      "homepage": "https://github.com/jshttp/range-parser#readme",
+      "description": "Range header field string parser"
+    },
+    {
+      "name": "rastermill",
+      "versions": [
+        "0.4.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\rastermill@0.4.0\\node_modules\\rastermill"
+      ],
+      "license": "MIT",
+      "homepage": "https://rastermill.com/",
+      "description": "Fast, portable image processing for Node agents."
+    },
+    {
+      "name": "raw-body",
+      "versions": [
+        "3.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\raw-body@3.0.2\\node_modules\\raw-body"
+      ],
+      "license": "MIT",
+      "author": "Jonathan Ong",
+      "homepage": "https://github.com/stream-utils/raw-body#readme",
+      "description": "Get and validate the raw body of a readable stream."
+    },
+    {
+      "name": "readable-stream",
+      "versions": [
+        "2.3.8"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\readable-stream@2.3.8\\node_modules\\readable-stream"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/nodejs/readable-stream#readme",
+      "description": "Streams3, a user-land copy of the stream library from Node.js"
+    },
+    {
+      "name": "require-directory",
+      "versions": [
+        "2.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\require-directory@2.1.1\\node_modules\\require-directory"
+      ],
+      "license": "MIT",
+      "author": "Troy Goode",
+      "homepage": "https://github.com/troygoode/node-require-directory/",
+      "description": "Recursively iterates over specified directory, require()'ing each file, and returning a nested hash structure containing those modules."
+    },
+    {
+      "name": "require-from-string",
+      "versions": [
+        "2.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\require-from-string@2.0.2\\node_modules\\require-from-string"
+      ],
+      "license": "MIT",
+      "author": "Vsevolod Strukchinsky",
+      "homepage": "https://github.com/floatdrop/require-from-string#readme",
+      "description": "Require module from string"
+    },
+    {
+      "name": "retry",
+      "versions": [
+        "0.13.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\retry@0.13.1\\node_modules\\retry"
+      ],
+      "license": "MIT",
+      "author": "Tim Koschützki",
+      "homepage": "https://github.com/tim-kos/node-retry",
+      "description": "Abstraction for exponential and custom retry strategies for failed operations."
+    },
+    {
+      "name": "router",
+      "versions": [
+        "2.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\router@2.2.0\\node_modules\\router"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/pillarjs/router#readme",
+      "description": "Simple middleware-style router"
+    },
+    {
+      "name": "safe-buffer",
+      "versions": [
+        "5.1.2",
+        "5.2.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\safe-buffer@5.1.2\\node_modules\\safe-buffer",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\safe-buffer@5.2.1\\node_modules\\safe-buffer"
+      ],
+      "license": "MIT",
+      "author": "Feross Aboukhadijeh",
+      "homepage": "https://github.com/feross/safe-buffer",
+      "description": "Safer Node.js Buffer API"
+    },
+    {
+      "name": "safer-buffer",
+      "versions": [
+        "2.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\safer-buffer@2.1.2\\node_modules\\safer-buffer"
+      ],
+      "license": "MIT",
+      "author": "Nikita Skovoroda",
+      "homepage": "https://github.com/ChALkeR/safer-buffer#readme",
+      "description": "Modern Buffer API polyfill without footguns"
+    },
+    {
+      "name": "send",
+      "versions": [
+        "1.2.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\send@1.2.1\\node_modules\\send"
+      ],
+      "license": "MIT",
+      "author": "TJ Holowaychuk",
+      "homepage": "https://github.com/pillarjs/send#readme",
+      "description": "Better streaming static file server with Range and conditional-GET support"
+    },
+    {
+      "name": "serve-static",
+      "versions": [
+        "2.2.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\serve-static@2.2.1\\node_modules\\serve-static"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/expressjs/serve-static#readme",
+      "description": "Serve static files"
+    },
+    {
+      "name": "setimmediate",
+      "versions": [
+        "1.0.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\setimmediate@1.0.5\\node_modules\\setimmediate"
+      ],
+      "license": "MIT",
+      "author": "YuzuJS",
+      "homepage": "https://github.com/YuzuJS/setImmediate#readme",
+      "description": "A shim for the setImmediate efficient script yielding API"
+    },
+    {
+      "name": "shebang-command",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\shebang-command@2.0.0\\node_modules\\shebang-command"
+      ],
+      "license": "MIT",
+      "author": "Kevin Mårtensson",
+      "homepage": "https://github.com/kevva/shebang-command#readme",
+      "description": "Get the command from a shebang"
+    },
+    {
+      "name": "shebang-regex",
+      "versions": [
+        "3.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\shebang-regex@3.0.0\\node_modules\\shebang-regex"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/shebang-regex#readme",
+      "description": "Regular expression for matching a shebang line"
+    },
+    {
+      "name": "side-channel",
+      "versions": [
+        "1.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\side-channel@1.1.1\\node_modules\\side-channel"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/side-channel#readme",
+      "description": "Store information about any JS value in a side channel. Uses WeakMap if available."
+    },
+    {
+      "name": "side-channel-list",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\side-channel-list@1.0.1\\node_modules\\side-channel-list"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/side-channel-list#readme",
+      "description": "Store information about any JS value in a side channel, using a linked list"
+    },
+    {
+      "name": "side-channel-map",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\side-channel-map@1.0.1\\node_modules\\side-channel-map"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/side-channel-map#readme",
+      "description": "Store information about any JS value in a side channel, using a Map"
+    },
+    {
+      "name": "side-channel-weakmap",
+      "versions": [
+        "1.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\side-channel-weakmap@1.0.2\\node_modules\\side-channel-weakmap"
+      ],
+      "license": "MIT",
+      "author": "Jordan Harband",
+      "homepage": "https://github.com/ljharb/side-channel-weakmap#readme",
+      "description": "Store information about any JS value in a side channel. Uses WeakMap if available."
+    },
+    {
+      "name": "sisteransi",
+      "versions": [
+        "1.0.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\sisteransi@1.0.5\\node_modules\\sisteransi"
+      ],
+      "license": "MIT",
+      "author": "Terkel Gjervig",
+      "homepage": "https://github.com/terkelg/sisteransi#readme",
+      "description": "ANSI escape codes for some terminal swag"
+    },
+    {
+      "name": "source-map-support",
+      "versions": [
+        "0.5.21"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\source-map-support@0.5.21\\node_modules\\source-map-support"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/evanw/node-source-map-support#readme",
+      "description": "Fixes stack traces for files with source maps"
+    },
+    {
+      "name": "standardwebhooks",
+      "versions": [
+        "1.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\standardwebhooks@1.1.1\\node_modules\\standardwebhooks"
+      ],
+      "license": "MIT",
+      "author": "Standard Webhooks",
+      "homepage": "https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries/javascript",
+      "description": "Standard Webhooks for TypeScript"
+    },
+    {
+      "name": "statuses",
+      "versions": [
+        "2.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\statuses@2.0.2\\node_modules\\statuses"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/statuses#readme",
+      "description": "HTTP status utility"
+    },
+    {
+      "name": "string_decoder",
+      "versions": [
+        "1.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\string_decoder@1.1.1\\node_modules\\string_decoder"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/nodejs/string_decoder",
+      "description": "The string_decoder module from Node core"
+    },
+    {
+      "name": "string-width",
+      "versions": [
+        "4.2.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\string-width@4.2.3\\node_modules\\string-width"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/string-width#readme",
+      "description": "Get the visual width of a string - the number of columns required to display it"
+    },
+    {
+      "name": "strip-ansi",
+      "versions": [
+        "6.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\strip-ansi@6.0.1\\node_modules\\strip-ansi"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/chalk/strip-ansi#readme",
+      "description": "Strip ANSI escape codes from a string"
+    },
+    {
+      "name": "strip-final-newline",
+      "versions": [
+        "4.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\strip-final-newline@4.0.0\\node_modules\\strip-final-newline"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/strip-final-newline#readme",
+      "description": "Strip the final newline character from a string or Uint8Array"
+    },
+    {
+      "name": "strtok3",
+      "versions": [
+        "10.6.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\strtok3@10.6.2\\node_modules\\strtok3"
+      ],
+      "license": "MIT",
+      "author": "Borewit",
+      "homepage": "https://github.com/Borewit/strtok3#readme",
+      "description": "A promise based streaming tokenizer"
+    },
+    {
+      "name": "toidentifier",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\toidentifier@1.0.1\\node_modules\\toidentifier"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/component/toidentifier#readme",
+      "description": "Convert a string of words to a JavaScript identifier"
+    },
+    {
+      "name": "token-types",
+      "versions": [
+        "6.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\token-types@6.1.2\\node_modules\\token-types"
+      ],
+      "license": "MIT",
+      "author": "Borewit",
+      "homepage": "https://github.com/Borewit/token-types#readme",
+      "description": "Common token types for decoding and encoding numeric and string values"
+    },
+    {
+      "name": "tr46",
+      "versions": [
+        "0.0.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\tr46@0.0.3\\node_modules\\tr46"
+      ],
+      "license": "MIT",
+      "author": "Sebastian Mayr",
+      "homepage": "https://github.com/Sebmaster/tr46.js#readme",
+      "description": "An implementation of the Unicode TR46 spec"
+    },
+    {
+      "name": "ts-algebra",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ts-algebra@2.0.0\\node_modules\\ts-algebra"
+      ],
+      "license": "MIT",
+      "author": "Thomas Aribart",
+      "homepage": "https://github.com/ThomasAribart/ts-algebra#readme",
+      "description": "Types on steroids 💊"
+    },
+    {
+      "name": "tslog",
+      "versions": [
+        "5.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\tslog@5.2.0\\node_modules\\tslog"
+      ],
+      "license": "MIT",
+      "author": "Eugene",
+      "homepage": "https://tslog.js.org",
+      "description": "Extensible TypeScript Logger for Node.js and Browser."
+    },
+    {
+      "name": "type-is",
+      "versions": [
+        "2.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\type-is@2.1.0\\node_modules\\type-is"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/jshttp/type-is#readme",
+      "description": "Infer the content-type of a request."
+    },
+    {
+      "name": "typebox",
+      "versions": [
+        "1.3.34"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\typebox@1.3.34\\node_modules\\typebox"
+      ],
+      "license": "MIT",
+      "author": "sinclairzx81",
+      "homepage": "https://github.com/sinclairzx81/typebox#readme",
+      "description": "Json Schema Type Builder with Static Type Resolution for TypeScript"
+    },
+    {
+      "name": "uint8array-extras",
+      "versions": [
+        "1.6.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\uint8array-extras@1.6.0\\node_modules\\uint8array-extras"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/uint8array-extras#readme",
+      "description": "Useful utilities for working with Uint8Array (and Buffer)"
+    },
+    {
+      "name": "undici",
+      "versions": [
+        "8.11.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\undici@8.11.2\\node_modules\\undici"
+      ],
+      "license": "MIT",
+      "homepage": "https://undici.nodejs.org",
+      "description": "An HTTP/1.1 client, written from scratch for Node.js"
+    },
+    {
+      "name": "undici-types",
+      "versions": [
+        "8.9.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\undici-types@8.9.0\\node_modules\\undici-types"
+      ],
+      "license": "MIT",
+      "homepage": "https://undici.nodejs.org",
+      "description": "A stand-alone types package for Undici"
+    },
+    {
+      "name": "unicorn-magic",
+      "versions": [
+        "0.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\unicorn-magic@0.3.0\\node_modules\\unicorn-magic"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/unicorn-magic#readme",
+      "description": "Some useful utilities I often need"
+    },
+    {
+      "name": "unpipe",
+      "versions": [
+        "1.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\unpipe@1.0.0\\node_modules\\unpipe"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/stream-utils/unpipe#readme",
+      "description": "Unpipe a stream from all destinations"
+    },
+    {
+      "name": "util-deprecate",
+      "versions": [
+        "1.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\util-deprecate@1.0.2\\node_modules\\util-deprecate"
+      ],
+      "license": "MIT",
+      "author": "Nathan Rajlich",
+      "homepage": "https://github.com/TooTallNate/util-deprecate",
+      "description": "The Node.js `util.deprecate()` function with browser support"
+    },
+    {
+      "name": "vary",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\vary@1.1.2\\node_modules\\vary"
+      ],
+      "license": "MIT",
+      "author": "Douglas Christopher Wilson",
+      "homepage": "https://github.com/jshttp/vary#readme",
+      "description": "Manipulate the HTTP Vary header"
+    },
+    {
+      "name": "web-streams-polyfill",
+      "versions": [
+        "3.3.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\web-streams-polyfill@3.3.3\\node_modules\\web-streams-polyfill"
+      ],
+      "license": "MIT",
+      "author": "Mattias Buelens",
+      "homepage": "https://github.com/MattiasBuelens/web-streams-polyfill#readme",
+      "description": "Web Streams, based on the WHATWG spec reference implementation"
+    },
+    {
+      "name": "web-tree-sitter",
+      "versions": [
+        "0.27.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\web-tree-sitter@0.27.0\\node_modules\\web-tree-sitter"
+      ],
+      "license": "MIT",
+      "author": "Max Brunsfeld",
+      "homepage": "https://github.com/tree-sitter/tree-sitter#readme",
+      "description": "Tree-sitter bindings for the web"
+    },
+    {
+      "name": "whatwg-url",
+      "versions": [
+        "5.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\whatwg-url@5.0.0\\node_modules\\whatwg-url"
+      ],
+      "license": "MIT",
+      "author": "Sebastian Mayr",
+      "homepage": "https://github.com/jsdom/whatwg-url#readme",
+      "description": "An implementation of the WHATWG URL Standard's URL API and parsing machinery"
+    },
+    {
+      "name": "which-command",
+      "versions": [
+        "0.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\which-command@0.1.0\\node_modules\\which-command"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/which-command#readme",
+      "description": "Find the absolute path to a command's executable, like the Unix `which` command"
+    },
+    {
+      "name": "wrap-ansi",
+      "versions": [
+        "6.2.0",
+        "7.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\wrap-ansi@6.2.0\\node_modules\\wrap-ansi",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\wrap-ansi@7.0.0\\node_modules\\wrap-ansi"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/chalk/wrap-ansi#readme",
+      "description": "Wordwrap a string with ANSI escape codes"
+    },
+    {
+      "name": "ws",
+      "versions": [
+        "8.22.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ws@8.22.0\\node_modules\\ws"
+      ],
+      "license": "MIT",
+      "author": "Einar Otto Stangvik",
+      "homepage": "https://github.com/websockets/ws",
+      "description": "Simple to use, blazing fast and thoroughly tested websocket client and server for Node.js"
+    },
+    {
+      "name": "yargs",
+      "versions": [
+        "15.4.1",
+        "17.7.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yargs@15.4.1\\node_modules\\yargs",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yargs@17.7.3\\node_modules\\yargs"
+      ],
+      "license": "MIT",
+      "homepage": "https://yargs.js.org/",
+      "description": "yargs the modern, pirate-themed, successor to optimist."
+    },
+    {
+      "name": "yocto-queue",
+      "versions": [
+        "1.2.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yocto-queue@1.2.2\\node_modules\\yocto-queue"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/yocto-queue#readme",
+      "description": "Tiny queue data structure"
+    },
+    {
+      "name": "yoctocolors",
+      "versions": [
+        "2.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yoctocolors@2.2.0\\node_modules\\yoctocolors"
+      ],
+      "license": "MIT",
+      "author": "Sindre Sorhus",
+      "homepage": "https://github.com/sindresorhus/yoctocolors#readme",
+      "description": "The smallest and fastest command-line coloring package on the internet"
+    },
+    {
+      "name": "zod",
+      "versions": [
+        "4.6.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\zod@4.6.5\\node_modules\\zod"
+      ],
+      "license": "MIT",
+      "author": "Colin McDonnell",
+      "homepage": "https://zod.dev",
+      "description": "TypeScript-first schema declaration and validation library with static type inference"
+    }
+  ],
+  "ISC": [
+    {
+      "name": "@isaacs/fs-minipass",
+      "versions": [
+        "4.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@isaacs+fs-minipass@4.0.1\\node_modules\\@isaacs/fs-minipass"
+      ],
+      "license": "ISC",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/npm/fs-minipass#readme",
+      "description": "fs read and write streams based on minipass"
+    },
+    {
+      "name": "boolbase",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\boolbase@2.0.0\\node_modules\\boolbase"
+      ],
+      "license": "ISC",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/boolbase",
+      "description": "two functions: One that returns true, one that returns false"
+    },
+    {
+      "name": "cliui",
+      "versions": [
+        "6.0.0",
+        "8.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\cliui@6.0.0\\node_modules\\cliui",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\cliui@8.0.1\\node_modules\\cliui"
+      ],
+      "license": "ISC",
+      "author": "Ben Coe",
+      "homepage": "https://github.com/yargs/cliui#readme",
+      "description": "easily create complex multi-column command-line-interfaces"
+    },
+    {
+      "name": "get-caller-file",
+      "versions": [
+        "2.0.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\get-caller-file@2.0.5\\node_modules\\get-caller-file"
+      ],
+      "license": "ISC",
+      "author": "Stefan Penner",
+      "homepage": "https://github.com/stefanpenner/get-caller-file#readme",
+      "description": ""
+    },
+    {
+      "name": "hosted-git-info",
+      "versions": [
+        "10.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\hosted-git-info@10.1.1\\node_modules\\hosted-git-info"
+      ],
+      "license": "ISC",
+      "author": "GitHub Inc.",
+      "homepage": "https://github.com/npm/hosted-git-info",
+      "description": "Provides metadata and conversions from repository urls for GitHub, Bitbucket and GitLab"
+    },
+    {
+      "name": "inherits",
+      "versions": [
+        "2.0.4"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\inherits@2.0.4\\node_modules\\inherits"
+      ],
+      "license": "ISC",
+      "homepage": "https://github.com/isaacs/inherits#readme",
+      "description": "Browser-friendly inheritance fully compatible with standard node.js inherits()"
+    },
+    {
+      "name": "isexe",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\isexe@2.0.0\\node_modules\\isexe"
+      ],
+      "license": "ISC",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/isexe#readme",
+      "description": "Minimal module to check if a file is executable."
+    },
+    {
+      "name": "linkedom",
+      "versions": [
+        "0.18.13"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\linkedom@0.18.13\\node_modules\\linkedom"
+      ],
+      "license": "ISC",
+      "author": "Andrea Giammarchi",
+      "homepage": "https://github.com/WebReflection/linkedom#readme",
+      "description": "A triple-linked lists based DOM implementation"
+    },
+    {
+      "name": "minimalistic-assert",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\minimalistic-assert@1.0.1\\node_modules\\minimalistic-assert"
+      ],
+      "license": "ISC",
+      "author": "",
+      "homepage": "https://github.com/calvinmetcalf/minimalistic-assert",
+      "description": "minimalistic-assert ==="
+    },
+    {
+      "name": "once",
+      "versions": [
+        "1.4.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\once@1.4.0\\node_modules\\once"
+      ],
+      "license": "ISC",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/once#readme",
+      "description": "Run a function exactly one time"
+    },
+    {
+      "name": "require-main-filename",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\require-main-filename@2.0.0\\node_modules\\require-main-filename"
+      ],
+      "license": "ISC",
+      "author": "Ben Coe",
+      "homepage": "https://github.com/yargs/require-main-filename#readme",
+      "description": "shim for require.main.filename() that works in as many environments as possible"
+    },
+    {
+      "name": "semver",
+      "versions": [
+        "7.8.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\semver@7.8.5\\node_modules\\semver"
+      ],
+      "license": "ISC",
+      "author": "GitHub Inc.",
+      "homepage": "https://github.com/npm/node-semver#readme",
+      "description": "The semantic version parser used by npm."
+    },
+    {
+      "name": "set-blocking",
+      "versions": [
+        "2.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\set-blocking@2.0.0\\node_modules\\set-blocking"
+      ],
+      "license": "ISC",
+      "author": "Ben Coe",
+      "homepage": "https://github.com/yargs/set-blocking#readme",
+      "description": "set blocking stdio and stderr ensuring that terminal output does not truncate"
+    },
+    {
+      "name": "setprototypeof",
+      "versions": [
+        "1.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\setprototypeof@1.2.0\\node_modules\\setprototypeof"
+      ],
+      "license": "ISC",
+      "author": "Wes Todd",
+      "homepage": "https://github.com/wesleytodd/setprototypeof",
+      "description": "A small polyfill for Object.setprototypeof"
+    },
+    {
+      "name": "signal-exit",
+      "versions": [
+        "4.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\signal-exit@4.1.0\\node_modules\\signal-exit"
+      ],
+      "license": "ISC",
+      "author": "Ben Coe",
+      "homepage": "https://github.com/tapjs/signal-exit#readme",
+      "description": "when you want to fire an event no matter how a process exits."
+    },
+    {
+      "name": "uhyphen",
+      "versions": [
+        "0.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\uhyphen@0.2.0\\node_modules\\uhyphen"
+      ],
+      "license": "ISC",
+      "author": "Andrea Giammarchi",
+      "homepage": "https://github.com/WebReflection/uhyphen#readme",
+      "description": "A micro utility to hyphenize strings"
+    },
+    {
+      "name": "which",
+      "versions": [
+        "2.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\which@2.0.2\\node_modules\\which"
+      ],
+      "license": "ISC",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/node-which#readme",
+      "description": "Like which(1) unix command. Find the first instance of an executable in the PATH."
+    },
+    {
+      "name": "which-module",
+      "versions": [
+        "2.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\which-module@2.0.1\\node_modules\\which-module"
+      ],
+      "license": "ISC",
+      "author": "nexdrew",
+      "homepage": "https://github.com/nexdrew/which-module#readme",
+      "description": "Find the module object for something that was require()d"
+    },
+    {
+      "name": "wrappy",
+      "versions": [
+        "1.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\wrappy@1.0.2\\node_modules\\wrappy"
+      ],
+      "license": "ISC",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/npm/wrappy",
+      "description": "Callback wrapping utility"
+    },
+    {
+      "name": "y18n",
+      "versions": [
+        "4.0.3",
+        "5.0.8"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\y18n@4.0.3\\node_modules\\y18n",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\y18n@5.0.8\\node_modules\\y18n"
+      ],
+      "license": "ISC",
+      "author": "Ben Coe",
+      "homepage": "https://github.com/yargs/y18n",
+      "description": "the bare-bones internationalization library used by yargs"
+    },
+    {
+      "name": "yaml",
+      "versions": [
+        "2.9.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yaml@2.9.1\\node_modules\\yaml"
+      ],
+      "license": "ISC",
+      "author": "Eemeli Aro",
+      "homepage": "https://eemeli.org/yaml/",
+      "description": "JavaScript parser and stringifier for YAML"
+    },
+    {
+      "name": "yargs-parser",
+      "versions": [
+        "18.1.3",
+        "21.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yargs-parser@18.1.3\\node_modules\\yargs-parser",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yargs-parser@21.1.1\\node_modules\\yargs-parser"
+      ],
+      "license": "ISC",
+      "author": "Ben Coe",
+      "homepage": "https://github.com/yargs/yargs-parser#readme",
+      "description": "the mighty option parser used by yargs"
+    },
+    {
+      "name": "zod-to-json-schema",
+      "versions": [
+        "3.25.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\zod-to-json-schema@3.25.2_zod@4.6.5\\node_modules\\zod-to-json-schema"
+      ],
+      "license": "ISC",
+      "author": "Stefan Terdell",
+      "homepage": "https://github.com/StefanTerdell/zod-to-json-schema#readme",
+      "description": "Converts Zod schemas to Json Schemas"
+    }
+  ],
+  "BSD-3-Clause": [
+    {
+      "name": "@protobufjs/aspromise",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+aspromise@1.1.2\\node_modules\\@protobufjs/aspromise"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "Returns a promise from a node-style callback function."
+    },
+    {
+      "name": "@protobufjs/base64",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+base64@1.1.2\\node_modules\\@protobufjs/base64"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "A minimal base64 implementation for number arrays."
+    },
+    {
+      "name": "@protobufjs/codegen",
+      "versions": [
+        "2.0.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+codegen@2.0.5\\node_modules\\@protobufjs/codegen"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "A minimalistic code generation utility."
+    },
+    {
+      "name": "@protobufjs/eventemitter",
+      "versions": [
+        "1.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+eventemitter@1.1.1\\node_modules\\@protobufjs/eventemitter"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "A minimal event emitter."
+    },
+    {
+      "name": "@protobufjs/fetch",
+      "versions": [
+        "1.1.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+fetch@1.1.1\\node_modules\\@protobufjs/fetch"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "Fetches the contents of a file accross node and browsers."
+    },
+    {
+      "name": "@protobufjs/float",
+      "versions": [
+        "1.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+float@1.0.2\\node_modules\\@protobufjs/float"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "Reads / writes floats / doubles from / to buffers in both modern and ancient browsers."
+    },
+    {
+      "name": "@protobufjs/path",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+path@1.1.2\\node_modules\\@protobufjs/path"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "A minimal path module to resolve Unix, Windows and URL paths alike."
+    },
+    {
+      "name": "@protobufjs/pool",
+      "versions": [
+        "1.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+pool@1.1.0\\node_modules\\@protobufjs/pool"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/dcodeIO/protobuf.js#readme",
+      "description": "A general purpose buffer pool."
+    },
+    {
+      "name": "@protobufjs/utf8",
+      "versions": [
+        "1.1.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@protobufjs+utf8@1.1.2\\node_modules\\@protobufjs/utf8"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://github.com/protobufjs/protobuf.js#readme",
+      "description": "A minimal UTF8 implementation for number arrays."
+    },
+    {
+      "name": "buffer-equal-constant-time",
+      "versions": [
+        "1.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\buffer-equal-constant-time@1.0.1\\node_modules\\buffer-equal-constant-time"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "GoInstant Inc., a salesforce.com company",
+      "homepage": "https://github.com/goinstant/buffer-equal-constant-time#readme",
+      "description": "Constant-time comparison of Buffers"
+    },
+    {
+      "name": "diff",
+      "versions": [
+        "9.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\diff@9.0.0\\node_modules\\diff"
+      ],
+      "license": "BSD-3-Clause",
+      "homepage": "https://github.com/kpdecker/jsdiff#readme",
+      "description": "A JavaScript text diff implementation."
+    },
+    {
+      "name": "fast-uri",
+      "versions": [
+        "3.1.9"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fast-uri@3.1.9\\node_modules\\fast-uri"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Vincent Le Goff",
+      "homepage": "https://github.com/fastify/fast-uri",
+      "description": "Dependency-free RFC 3986 URI toolbox"
+    },
+    {
+      "name": "highlight.js",
+      "versions": [
+        "11.12.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\highlight.js@11.12.0\\node_modules\\highlight.js"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Josh Goebel",
+      "homepage": "https://highlightjs.org/",
+      "description": "Syntax highlighting with language autodetection."
+    },
+    {
+      "name": "ieee754",
+      "versions": [
+        "1.2.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\ieee754@1.2.1\\node_modules\\ieee754"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Feross Aboukhadijeh",
+      "homepage": "https://github.com/feross/ieee754#readme",
+      "description": "Read/write IEEE754 floating point numbers from/to a Buffer or array-like object"
+    },
+    {
+      "name": "protobufjs",
+      "versions": [
+        "7.6.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\protobufjs@7.6.6\\node_modules\\protobufjs"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Daniel Wirtz",
+      "homepage": "https://protobufjs.github.io/protobuf.js/",
+      "description": "Protocol Buffers for JavaScript (& TypeScript)."
+    },
+    {
+      "name": "qs",
+      "versions": [
+        "6.16.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\qs@6.16.1\\node_modules\\qs"
+      ],
+      "license": "BSD-3-Clause",
+      "homepage": "https://github.com/ljharb/qs",
+      "description": "A querystring parser that supports nesting and arrays, with a depth limit"
+    },
+    {
+      "name": "source-map",
+      "versions": [
+        "0.6.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\source-map@0.6.1\\node_modules\\source-map"
+      ],
+      "license": "BSD-3-Clause",
+      "author": "Nick Fitzgerald",
+      "homepage": "https://github.com/mozilla/source-map",
+      "description": "Generates and consumes source maps"
+    }
+  ],
+  "MIT AND MPL-2.0": [
+    {
+      "name": "@trycua/cua-driver-win32-x64-msvc",
+      "versions": [
+        "0.32.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@trycua+cua-driver-win32-x64-msvc@0.32.0\\node_modules\\@trycua/cua-driver-win32-x64-msvc"
+      ],
+      "license": "MIT AND MPL-2.0",
+      "homepage": "https://github.com/trycua/cua#readme",
+      "description": "Native Cua Driver SDK library for win32-x64-msvc"
+    }
+  ],
+  "MPL-2.0": [
+    {
+      "name": "@ubjs/core",
+      "versions": [
+        "0.31.0-3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@ubjs+core@0.31.0-3\\node_modules\\@ubjs/core"
+      ],
+      "license": "MPL-2.0",
+      "author": "James Hugman",
+      "homepage": "https://github.com/jhugman/uniffi-bindgen-react-native",
+      "description": "Runtime support for uniffi-bindgen-javascript generated bindings."
+    },
+    {
+      "name": "@ubjs/node",
+      "versions": [
+        "0.31.0-3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@ubjs+node@0.31.0-3\\node_modules\\@ubjs/node"
+      ],
+      "license": "MPL-2.0",
+      "author": "James Hugman",
+      "homepage": "https://github.com/jhugman/uniffi-bindgen-react-native/tree/main/runtimes/napi",
+      "description": "Call Rust libraries from Node.js without hand-written glue — the N-API runtime backend for uniffi-bindgen-react-native."
+    },
+    {
+      "name": "@ubjs/node-win32-x64-msvc",
+      "versions": [
+        "0.31.0-3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\@ubjs+node-win32-x64-msvc@0.31.0-3\\node_modules\\@ubjs/node-win32-x64-msvc"
+      ],
+      "license": "MPL-2.0",
+      "author": "James Hugman",
+      "homepage": "https://github.com/jhugman/uniffi-bindgen-react-native/tree/main/runtimes/napi",
+      "description": "Call Rust libraries from Node.js without hand-written glue — the N-API runtime backend for uniffi-bindgen-react-native."
+    },
+    {
+      "name": "web-push",
+      "versions": [
+        "3.6.7"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\web-push@3.6.7\\node_modules\\web-push"
+      ],
+      "license": "MPL-2.0",
+      "author": "Marco Castelluccio",
+      "homepage": "https://github.com/web-push-libs/web-push#readme",
+      "description": "Web Push library for Node.js"
+    }
+  ],
+  "BlueOak-1.0.0": [
+    {
+      "name": "chownr",
+      "versions": [
+        "3.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\chownr@3.0.0\\node_modules\\chownr"
+      ],
+      "license": "BlueOak-1.0.0",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/chownr#readme",
+      "description": "like `chown -R`"
+    },
+    {
+      "name": "lru-cache",
+      "versions": [
+        "11.5.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\lru-cache@11.5.3\\node_modules\\lru-cache"
+      ],
+      "license": "BlueOak-1.0.0",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "description": "A cache object that deletes the least-recently-used items."
+    },
+    {
+      "name": "minimatch",
+      "versions": [
+        "10.2.6"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\minimatch@10.2.6\\node_modules\\minimatch"
+      ],
+      "license": "BlueOak-1.0.0",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/minimatch#readme",
+      "description": "a glob matcher in javascript"
+    },
+    {
+      "name": "minipass",
+      "versions": [
+        "7.1.3"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\minipass@7.1.3\\node_modules\\minipass"
+      ],
+      "license": "BlueOak-1.0.0",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/minipass#readme",
+      "description": "minimal implementation of a PassThrough stream"
+    },
+    {
+      "name": "tar",
+      "versions": [
+        "7.5.22"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\tar@7.5.22\\node_modules\\tar"
+      ],
+      "license": "BlueOak-1.0.0",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/node-tar#readme",
+      "description": "tar for node"
+    },
+    {
+      "name": "yallist",
+      "versions": [
+        "5.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\yallist@5.0.0\\node_modules\\yallist"
+      ],
+      "license": "BlueOak-1.0.0",
+      "author": "Isaac Z. Schlueter",
+      "homepage": "https://github.com/isaacs/yallist#readme",
+      "description": "Yet Another Linked List"
+    }
+  ],
+  "BSD-2-Clause": [
+    {
+      "name": "css-select",
+      "versions": [
+        "7.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\css-select@7.0.0\\node_modules\\css-select"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/css-select#readme",
+      "description": "a CSS selector compiler/engine"
+    },
+    {
+      "name": "css-what",
+      "versions": [
+        "8.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\css-what@8.0.0\\node_modules\\css-what"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Felix Böhm",
+      "homepage": "https://github.com/fb55/css-what#readme",
+      "description": "a CSS selector parser"
+    },
+    {
+      "name": "domelementtype",
+      "versions": [
+        "2.3.0",
+        "3.0.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\domelementtype@2.3.0\\node_modules\\domelementtype",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\domelementtype@3.0.0\\node_modules\\domelementtype"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/domelementtype#readme",
+      "description": "all the types of nodes in htmlparser2's dom"
+    },
+    {
+      "name": "domhandler",
+      "versions": [
+        "5.0.3",
+        "6.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\domhandler@5.0.3\\node_modules\\domhandler",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\domhandler@6.0.1\\node_modules\\domhandler"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/domhandler#readme",
+      "description": "Handler for htmlparser2 that turns pages into a dom"
+    },
+    {
+      "name": "domutils",
+      "versions": [
+        "3.2.2",
+        "4.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\domutils@3.2.2\\node_modules\\domutils",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\domutils@4.0.2\\node_modules\\domutils"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/domutils#readme",
+      "description": "Utilities for working with htmlparser2's dom"
+    },
+    {
+      "name": "dotenv",
+      "versions": [
+        "18.0.5"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\dotenv@18.0.5\\node_modules\\dotenv"
+      ],
+      "license": "BSD-2-Clause",
+      "homepage": "https://github.com/motdotla/dotenv#readme",
+      "description": "Loads environment variables from .env file"
+    },
+    {
+      "name": "entities",
+      "versions": [
+        "4.5.0",
+        "7.0.1",
+        "8.1.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\entities@4.5.0\\node_modules\\entities",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\entities@7.0.1\\node_modules\\entities",
+        "E:\\zero\\backend\\node_modules\\.pnpm\\entities@8.1.0\\node_modules\\entities"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/entities#readme",
+      "description": "Encode & decode XML and HTML entities with ease & speed"
+    },
+    {
+      "name": "json-schema-typed",
+      "versions": [
+        "8.0.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\json-schema-typed@8.0.2\\node_modules\\json-schema-typed"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Remy Rylan",
+      "homepage": "https://github.com/RemyRylan/json-schema-typed/tree/main/dist/node",
+      "description": "JSON Schema TypeScript definitions with complete inline documentation."
+    },
+    {
+      "name": "nth-check",
+      "versions": [
+        "3.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\nth-check@3.0.1\\node_modules\\nth-check"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Felix Boehm",
+      "homepage": "https://github.com/fb55/nth-check",
+      "description": "Parses and compiles CSS nth-checks to highly optimized functions."
+    },
+    {
+      "name": "webidl-conversions",
+      "versions": [
+        "3.0.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\webidl-conversions@3.0.1\\node_modules\\webidl-conversions"
+      ],
+      "license": "BSD-2-Clause",
+      "author": "Domenic Denicola",
+      "homepage": "https://github.com/jsdom/webidl-conversions#readme",
+      "description": "Implements the WebIDL algorithms for converting to and from JavaScript values"
+    }
+  ],
+  "Unlicense": [
+    {
+      "name": "fast-sha256",
+      "versions": [
+        "1.3.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\fast-sha256@1.3.0\\node_modules\\fast-sha256"
+      ],
+      "license": "Unlicense",
+      "author": "Dmitry Chestnykh",
+      "homepage": "https://github.com/dchest/fast-sha256-js#readme",
+      "description": "SHA-256, HMAC and PBKDF2 implementation with typed arrays for modern browsers and Node.js"
+    }
+  ],
+  "(MIT OR GPL-3.0-or-later)": [
+    {
+      "name": "jszip",
+      "versions": [
+        "3.10.2"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\jszip@3.10.2\\node_modules\\jszip"
+      ],
+      "license": "(MIT OR GPL-3.0-or-later)",
+      "author": "Stuart Knightley",
+      "homepage": "https://github.com/Stuk/jszip#readme",
+      "description": "Create, read and edit .zip files with JavaScript http://stuartk.com/jszip"
+    }
+  ],
+  "Artistic-2.0": [
+    {
+      "name": "npm",
+      "versions": [
+        "12.2.0"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\npm@12.2.0\\node_modules\\npm"
+      ],
+      "license": "Artistic-2.0",
+      "author": "GitHub Inc.",
+      "homepage": "https://docs.npmjs.com/",
+      "description": "a package manager for JavaScript"
+    }
+  ],
+  "(MIT AND Zlib)": [
+    {
+      "name": "pako",
+      "versions": [
+        "1.0.11"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\pako@1.0.11\\node_modules\\pako"
+      ],
+      "license": "(MIT AND Zlib)",
+      "homepage": "https://github.com/nodeca/pako",
+      "description": "zlib port to javascript - fast, modularized, with browser support"
+    }
+  ],
+  "MIT OR Apache": [
+    {
+      "name": "sqlite-vec",
+      "versions": [
+        "0.1.9"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\sqlite-vec@0.1.9\\node_modules\\sqlite-vec"
+      ],
+      "license": "MIT OR Apache",
+      "author": "Alex Garcia",
+      "homepage": "https://github.com/asg017/sqlite-vec#readme",
+      "description": "A vector search SQLite extension."
+    },
+    {
+      "name": "sqlite-vec-windows-x64",
+      "versions": [
+        "0.1.9"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\sqlite-vec-windows-x64@0.1.9\\node_modules\\sqlite-vec-windows-x64"
+      ],
+      "license": "MIT OR Apache",
+      "author": "Alex Garcia",
+      "homepage": "https://github.com/asg017/sqlite-vec#readme",
+      "description": "A vector search SQLite extension."
+    }
+  ],
+  "0BSD": [
+    {
+      "name": "tslib",
+      "versions": [
+        "2.8.1"
+      ],
+      "paths": [
+        "E:\\zero\\backend\\node_modules\\.pnpm\\tslib@2.8.1\\node_modules\\tslib"
+      ],
+      "license": "0BSD",
+      "author": "Microsoft Corp.",
+      "homepage": "https://www.typescriptlang.org/",
+      "description": "Runtime library for TypeScript helper functions"
+    }
+  ]
+}

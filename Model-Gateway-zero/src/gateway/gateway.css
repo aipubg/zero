@@ -1,0 +1,384 @@
+/* ==========================================================================
+   MODULAR MODEL GATEWAY - DESIGN SYSTEM & POLISHED DARK THEME
+   ========================================================================== */
+
+:root {
+  --gw-bg: #090d16;
+  --gw-card-bg: #0d1322;
+  --gw-card-border: #1e293b;
+  --gw-card-hover: #26334d;
+  --gw-text-main: #f8fafc;
+  --gw-text-muted: #94a3b8;
+  --gw-text-dim: #64748b;
+  --gw-primary: #2563eb;
+  --gw-primary-hover: #1d4ed8;
+  --gw-primary-glow: rgba(37, 99, 235, 0.25);
+  --gw-border-subtle: #1e293b;
+  --gw-border-active: #3b82f6;
+  --gw-success: #10b981;
+  --gw-warning: #f59e0b;
+  --gw-danger: #ef4444;
+  --gw-purple: #a855f7;
+}
+
+.gateway-container,
+.gw-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--gw-bg);
+  color: var(--gw-text-main);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Gateway Top Navigation Tabs */
+.gateway-header {
+  padding: 14px 24px;
+  background: #0d1322;
+  border-bottom: 1px solid var(--gw-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.gw-nav-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #070b14;
+  padding: 3px;
+  border-radius: 9px;
+  border: 1px solid var(--gw-border-subtle);
+}
+
+.gateway-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.gateway-tab-btn.active {
+  background: var(--gw-primary);
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px var(--gw-primary-glow);
+}
+
+.gateway-tab-btn:not(.active) {
+  background: transparent;
+  color: var(--gw-text-muted);
+}
+
+.gateway-tab-btn:not(.active):hover {
+  background: #141c2e;
+  color: #f1f5f9;
+}
+
+.gateway-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ==========================================================================
+   CARDS & PROVIDER BLOCKS
+   ========================================================================== */
+.gw-provider-card,
+.gateway-card {
+  background: var(--gw-card-bg);
+  border: 1px solid var(--gw-card-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+.gw-provider-card:hover,
+.gateway-card:hover {
+  border-color: #334155;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.gw-provider-card-top,
+.gw-provider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gw-provider-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gw-provider-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gw-provider-title,
+.gw-provider-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.gw-provider-subtext {
+  font-size: 12px;
+  color: var(--gw-text-muted);
+  line-height: 1.5;
+}
+
+.gw-provider-id-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--gw-text-dim);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gw-provider-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.gw-provider-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--gw-text-muted);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================================================
+   BUTTONS & CONTROLS
+   ========================================================================== */
+.gw-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.gw-btn-primary {
+  background: var(--gw-primary);
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px var(--gw-primary-glow);
+}
+
+.gw-btn-primary:hover {
+  background: var(--gw-primary-hover);
+  border-color: #60a5fa;
+  transform: translateY(-1px);
+}
+
+.gw-icon-btn {
+  background: #090d16;
+  border: 1px solid var(--gw-border-subtle);
+  color: var(--gw-text-muted);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.gw-icon-btn:hover {
+  color: #f8fafc;
+  border-color: #334155;
+  background: #141c2e;
+}
+
+.gw-trash-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gw-trash-btn:hover {
+  color: var(--gw-danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.gw-action-pill-btn {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+/* ==========================================================================
+   CONFIGURED SECTIONS & HEADERS
+   ========================================================================== */
+.gw-configured-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.gw-configured-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gw-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   BADGES & MODEL CHIPS
+   ========================================================================== */
+.gw-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.gw-badge-custom {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.badge-green {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-blue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-purple {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.badge-amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Models Chip List */
+.gw-models-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.gw-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #090d16;
+  border: 1px solid var(--gw-border-subtle);
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+  transition: all 0.15s ease;
+}
+
+.gw-chip-badge:hover {
+  border-color: #3b82f6;
+  color: #f8fafc;
+}
+
+.gw-chip-reasoning {
+  color: #c084fc;
+}
+
+.gw-chip-image {
+  color: #60a5fa;
+}
+
+.gw-chip-embedding {
+  color: #34d399;
+}
+
+/* Animations */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Custom dark scrollbar for models dropdown & lists */
+.custom-gateway-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-gateway-scrollbar::-webkit-scrollbar-track {
+  background: #141414;
+}
+.custom-gateway-scrollbar::-webkit-scrollbar-thumb {
+  background: #2c2c2c;
+  border-radius: 4px;
+}
+.custom-gateway-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #404040;
+}

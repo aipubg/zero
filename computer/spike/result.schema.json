@@ -1,0 +1,999 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "zero/computer/spike/result.schema.json",
+  "title": "CU-01 Windows CUA spike result",
+  "description": "Evidence contract for reports/computer/spikes/<runid>/result.json. AUTHORED 2026-10-23, NOT YET PRODUCED BY A RUN — every field is a claim about where a value comes from, derived from pinned OpenClaw 013240515205573248c27ab6b8eec7303f0da1a8 plus zero-policy v0.1.3, and is [needs GO] until a live run fills it. OpenCode's five CU-01 asks are folded in; the two that the desktop relay cannot supply are declared `unavailableFromRelay` rather than quietly dropped. DeepSeek's two G-G captures are refusalObserved and inputKind/codeModePathUnreachableUnderD011. `holdRecovery` (G-G item 15) records the no-pagehide disconnect path separately because it cannot be inferred from a normal release.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run",
+    "environment",
+    "baseline",
+    "steps",
+    "holdRecovery",
+    "verdict"
+  ],
+  "properties": {
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "startedAtUtc",
+        "ticket",
+        "openclawVersion",
+        "openclawCommit",
+        "cuaDriverVersion",
+        "protocolContractVersion"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "description": "Synthetic id, e.g. cu01-2026-10-23-a. Never a machine name."
+        },
+        "startedAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endedAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ticket": {
+          "type": "string",
+          "const": "CU-01"
+        },
+        "operatorRoleLabel": {
+          "type": "string",
+          "description": "Role label only. Never a Windows account name."
+        },
+        "openclawVersion": {
+          "type": "string"
+        },
+        "openclawCommit": {
+          "type": "string",
+          "const": "013240515205573248c27ab6b8eec7303f0da1a8"
+        },
+        "cuaDriverVersion": {
+          "type": "string",
+          "description": "Resolved @trycua/cua-driver version; expected 0.32.0."
+        },
+        "zeroPolicyVersion": {
+          "type": "string",
+          "description": "zero-policy plugin version. 0.1.3 is the first release whose hold is bound to the owning connection's abort signal; k7 is not attributable to an older version."
+        },
+        "pluginEnabled": {
+          "type": "boolean",
+          "description": "plugins.entries.cua-computer.enabled === true (required on non-macOS: index.ts:30-38)."
+        },
+        "doctorDriverArtifacts": {
+          "type": "string",
+          "enum": [
+            "no findings",
+            "COMPUTER_DRIVER_PACKAGE_MISSING",
+            "COMPUTER_DRIVER_VERSION_MISMATCH",
+            "COMPUTER_DRIVER_DIGEST_MISMATCH",
+            "COMPUTER_DRIVER_PLATFORM_UNSUPPORTED",
+            "other"
+          ],
+          "description": "Gate G-C pass condition is `no findings`."
+        },
+        "protocolContractVersion": {
+          "type": "integer",
+          "const": 2,
+          "description": "Provider descriptor contractVersion; mismatch => COMPUTER_CONTRACT_MISMATCH."
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "Copied from computer/spike/preflight.ps1 output, with the account name redacted.",
+      "additionalProperties": false,
+      "required": [
+        "osBuild",
+        "cpuNativeTarget",
+        "sessionKind",
+        "displayCount",
+        "scalingPercent",
+        "loopbackRfbListener"
+      ],
+      "properties": {
+        "osBuild": {
+          "type": "string"
+        },
+        "cpuNativeTarget": {
+          "type": "string",
+          "enum": [
+            "win32-x64-msvc",
+            "win32-arm64-msvc"
+          ]
+        },
+        "sessionKind": {
+          "type": "string",
+          "enum": [
+            "console",
+            "rdp",
+            "disconnected",
+            "lock-screen",
+            "unknown"
+          ],
+          "description": "CU-00 4.5: the node must start inside the interactive desktop session. This field is how a later COMPUTER_DRIVER_UNAVAILABLE is explained."
+        },
+        "sessionUnlockedAtStart": {
+          "type": "boolean"
+        },
+        "displayCount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Only index 0 is controllable (commands.ts:103-109)."
+        },
+        "primaryResolution": {
+          "type": "string",
+          "description": "WxH of the delivered screenshot, not the physical panel."
+        },
+        "scalingPercent": {
+          "type": "integer",
+          "description": "Non-100 is expected to throw COMPUTER_UNSUPPORTED_DISPLAY on non-macOS (commands.ts:498-506)."
+        },
+        "loopbackRfbListener": {
+          "type": "boolean",
+          "description": "Live-view prerequisite (config-browser-ui-desktop.md:345-348,282-283)."
+        },
+        "vncServerProduct": {
+          "type": "string"
+        },
+        "freeDiskGB": {
+          "type": "number"
+        },
+        "freeRamGB": {
+          "type": "number"
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "description": "The advertised provider surface, read BEFORE any action, compared against computer/contracts/computer-act-actions.json.",
+      "additionalProperties": false,
+      "properties": {
+        "providerId": {
+          "type": "string",
+          "const": "cua-computer"
+        },
+        "nodeId": {
+          "type": "string",
+          "description": "Opaque node reference; not a hostname."
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "gateway",
+            "node"
+          ]
+        },
+        "advertisedActionCount": {
+          "type": "integer",
+          "description": "Derived expectation on win32 = 36."
+        },
+        "advertisedActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missingVsDerived": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Must be empty, else upstream drifted and the taxonomy doc needs regenerating."
+        },
+        "unexpectedVsDerived": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "recording": {
+              "type": "boolean"
+            },
+            "agentCursor": {
+              "type": "boolean"
+            },
+            "multiDisplay": {
+              "type": "boolean",
+              "description": "Expect false (commands.ts:416)."
+            }
+          }
+        },
+        "pairingApprovedCommands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Expect computer.act + screen.snapshot + desktop.stream present."
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 11,
+      "description": "S1..S11 from reports/computer/cu01-spike-protocol.md. S11 is EXPECTED to fail on unmodified upstream (takeover gap) — recording that failure is the deliverable, not a defect to hide.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "verb",
+          "intent",
+          "result"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^S([1-9]|1[01])$"
+          },
+          "verb": {
+            "type": "string",
+            "enum": [
+              "observe",
+              "act",
+              "verify",
+              "live-view",
+              "stop",
+              "recovery",
+              "takeover",
+              "negative-check"
+            ]
+          },
+          "intent": {
+            "type": "string"
+          },
+          "action": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The computer/computer.act action name actually sent, from the derived taxonomy."
+          },
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "screen.snapshot",
+              "computer.act",
+              "none"
+            ],
+            "description": "Routing proof: screenshot/wait ride screen.snapshot; every other action including structured observation rides computer.act (computer-tool-request.ts:20-23)."
+          },
+          "request": {
+            "type": "object",
+            "description": "Synthetic arguments only. Strip absolute paths and real account data.",
+            "additionalProperties": true
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "refused-as-expected",
+              "not-attempted"
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stable COMPUTER_* or zero-policy/computer-hold:* code."
+          },
+          "effect": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "applied",
+              "partial",
+              "refused",
+              "unverified",
+              null
+            ],
+            "description": "Provider effect evidence. `applied` is NOT proof the app responded (computer-use.md:130) - that is what step S6 proves."
+          },
+          "frame": {
+            "type": "object",
+            "description": "Model-side observation identity. Exists only on the screen.snapshot / get_window_state paths.",
+            "additionalProperties": false,
+            "properties": {
+              "displayFrameId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observationId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "width": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "height": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "referenceWidth": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Expected default 1600 for jpeg (commands.ts:489-491)."
+              },
+              "coordinateSpace": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "CUA reports image-pixels (computer-use.md:88)."
+              },
+              "format": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "jpeg",
+                  "png",
+                  null
+                ]
+              },
+              "capturedAtUtc": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "SPIKE-LOCAL timestamp. Upstream snapshot results do NOT carry a capture timestamp; the rig stamps receive time. Declared so nobody reads it as provider-produced."
+              },
+              "unchangedFromPrevious": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Upstream returns metadata-only when the screen is pixel-identical (computer-use.md:102); the frameId then stays valid."
+              }
+            }
+          },
+          "holder": {
+            "type": "object",
+            "description": "OpenCode ask 2 + 4. Control-holder state at this step. The authoritative source is the D-009 zero.computer.control snapshot, NOT the relay.",
+            "additionalProperties": false,
+            "properties": {
+              "current": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "human",
+                  "agent",
+                  "none",
+                  null
+                ]
+              },
+              "pendingTransition": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "controlLeaseId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Opaque, server-minted. Present only when owned===true (verified backend/plugin/index.js:349); a status poll by a non-holding client legitimately omits it, so absence is not a failure."
+              },
+              "resumeSnapshotRequired": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "True after a human release. Freshness clears only on a desktop capture: screenshot, wait, or get_window_state WITH includeScreenshot=true — a window observation without an image does not prove the desktop underneath is unchanged."
+              },
+              "viewOnlyForcedOnViewer": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "inputRefusedWithReason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Expect computer-hold:human-control while held; zero-policy:unknown-action fails closed; computer-hold:stale-frame after release until a fresh screenshot."
+              },
+              "scope": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "global",
+                  null
+                ],
+                "description": "Mirrors the plugin snapshot (backend/plugin/index.js:346). Load-bearing, not an ignorable extra: it is the only signal that the hold is not per-target (C7). A panel must not imply per-conversation ownership from it."
+              },
+              "recentCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Length of the plugin bounded recent-decision ring in the snapshot; evidence that a refusal was recorded for audit, not just returned."
+              }
+            }
+          },
+          "liveView": {
+            "type": "object",
+            "description": "OpenCode ask 1 + 3, and the honest limit: the desktop relay is raw RFB over a dedicated binary WebSocket (config-browser-ui-desktop.md:406-408) and its client surface exposes only connect/disconnect/securityFailure + input methods (ui/src/components/desktop/desktop-client.ts:28-60). There is NO frameId, NO sequence, NO capturedAt and NO per-frame geometry event on the relay path. Staleness on the panel MUST be derived from local receive/paint time, never claimed as provider metadata.",
+            "additionalProperties": false,
+            "properties": {
+              "nodeVisibleInPicker": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "relayState": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "connecting",
+                  "ready",
+                  "refused",
+                  "closed",
+                  "reconnecting",
+                  null
+                ]
+              },
+              "closeCode": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "1006 alone does not identify a network failure (computer-use.md:342)."
+              },
+              "reconnectBackoffObserved": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "secondsSinceLastPaint": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "SPIKE-LOCAL derivation. This is the only staleness signal the MVP can honestly produce for the human view."
+              },
+              "humanInputReachedDesktop": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Measured at S11: whether interactive RFB input and agent foreground input collide, and in what order effects landed."
+              },
+              "unavailableFromRelay": {
+                "type": "array",
+                "description": "Declared-missing, not silently omitted. Anything a consumer wants here needs a separate, explicit mechanism.",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "frameId",
+                  "frameSequence",
+                  "providerCapturedAt",
+                  "perFrameGeometryEvent"
+                ]
+              }
+            }
+          },
+          "hostSideVerification": {
+            "type": "object",
+            "description": "S6. The only step that can prove the task happened. A screenshot never counts.",
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "file.fetch",
+                  "file.stat",
+                  "system.run",
+                  null
+                ]
+              },
+              "approved": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "file.* and system.run need their own pairing/approval; exec host=node is a separate opt-in."
+              },
+              "sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "byteLength": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "sentinelMatched": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Decoded content equals the synthetic sentinel."
+              }
+            }
+          },
+          "stop": {
+            "type": "object",
+            "description": "S9. Two deliberately different layers: agent-side refusal vs gateway command denial.",
+            "additionalProperties": false,
+            "properties": {
+              "lever": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "run-interrupt",
+                  "commands-deny",
+                  "plugin-disable",
+                  "node-stop",
+                  null
+                ]
+              },
+              "hotAppliedWithoutGatewayRestart": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "inFlightNativeActionStopped": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Expected FALSE for a tool-layer hold (it gates new calls); run interrupt is what cancels in-flight via SDK (computer-use.md:242,303). Record, do not fix."
+              },
+              "screenshotStillWorkedAfterDeny": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Expected TRUE: screenshot rides screen.snapshot, so the global stop degrades observation rather than blinding it."
+              }
+            }
+          },
+          "evidenceFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Relative names inside the run folder. Synthetic fixture content only; discard anything that caught personal data."
+          },
+          "refusalObserved": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "description": "DeepSeek G-G capture (a): the refusal EXACTLY as the model receives it, not what the plugin returned internally. If the host re-wraps it, OpenCode cannot render the hold reason and DeepSeek audit keys mismatch. Record raw text and structured fields separately.",
+            "properties": {
+              "rawToolResultText": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Verbatim tool-result text returned to the model."
+              },
+              "reasonAsSeenByModel": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Expected: computer-hold:human-control verbatim. Record any host-added wrapping."
+              },
+              "structuredErrorPresent": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "degradedToGenericPolicyFailure": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "True if it arrived as `blocked by zero-policy.computer-hold: policy evaluation failed` or similar instead of our code — that means the Operator cannot explain the hold to the user."
+              },
+              "surfacesInSessionToolEvents": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "OpenCode dependency: does the refusal appear as a session.tool event?"
+              }
+            }
+          },
+          "inputKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "direct",
+              "code_mode_exec",
+              null
+            ],
+            "description": "Matches the plugin audit field (backend/plugin/index.js:247). Under D-011 the Operator cannot reach the code-mode path at all (exec denied), so `code_mode_exec` rows appear only if exec is deliberately re-enabled in the test environment."
+          }
+        }
+      }
+    },
+    "negativeChecks": {
+      "type": "array",
+      "description": "Cheap guardrail proofs. Each is a refusal, not a failure.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "input",
+          "expectedCode",
+          "observedCode",
+          "guardrailProven"
+        ],
+        "properties": {
+          "input": {
+            "type": "string"
+          },
+          "expectedCode": {
+            "type": "string"
+          },
+          "observedCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "guardrailProven": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "holdRecovery": {
+      "type": "object",
+      "description": "G-G item 15 / CU-02: connection death without pagehide. The core claim (the hold is freed and the fresh-capture gate is armed) was proven live at the Gateway layer on 2026-10-23 08:34 IST with zero-policy 0.1.3; this block records the re-proof on the designated environment, where the agent-side stale-frame half can also be exercised. A normal release button is NOT this check: if pagehide ran, set ownerConnectionClosedWithoutPagehide=false and k7 cannot pass.",
+      "additionalProperties": false,
+      "required": [
+        "attempted",
+        "ownerConnectionClosedWithoutPagehide",
+        "ownerConnectionPath",
+        "statusReadFromNewConnection",
+        "resumeSnapshotRequiredBefore",
+        "statusFromNewConnection",
+        "releasedByDisconnectBefore",
+        "releasedByDisconnectAfter",
+        "connectionClosedAuditRow",
+        "inputBeforeFreshCapture",
+        "freshCaptureClearedGate",
+        "result"
+      ],
+      "properties": {
+        "attempted": {
+          "type": "boolean"
+        },
+        "ownerConnectionClosedWithoutPagehide": {
+          "type": "boolean",
+          "description": "True only if the holding connection died without running its pagehide handler: renderer/tab kill, network loss, or a raw WS close. Say which one in `note`. A clicked Release, or a pagehide that ran, does not count."
+        },
+        "ownerConnectionPath": {
+          "type": "string",
+          "enum": [
+            "control-ui",
+            "raw-ws",
+            "cli"
+          ],
+          "description": "How the owner connection was held and killed. `cli` is the k7-run one-shot process close; `raw-ws` is a long-lived socket destroyed without close; `control-ui` is the real panel/tab kill. The host abort path is the same, but the run must say which one it actually did."
+        },
+        "statusReadFromNewConnection": {
+          "type": "boolean",
+          "description": "The status below was read on a connection created after the owner died, not on the dead or a pre-existing connection."
+        },
+        "resumeSnapshotRequiredBefore": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Expected false. H3's true is attributable to this disconnect only if the gate was clear before the take; if it is true, capture a fresh frame first. Null only when the run was refused or the before-status was unreadable."
+        },
+        "statusFromNewConnection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "held",
+            "owned",
+            "resumeSnapshotRequired"
+          ],
+          "properties": {
+            "held": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Expected false: the dead owner's hold must be gone, not merely unowned."
+            },
+            "owned": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Expected false: a new connection never inherits the lease."
+            },
+            "resumeSnapshotRequired": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Expected true: the same gate a normal hand-back arms."
+            }
+          }
+        },
+        "releasedByDisconnectBefore": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "stats.releasedByDisconnect read immediately before the owner connection is killed."
+        },
+        "releasedByDisconnectAfter": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Expected before + 1. This is what attributes the release to the disconnect rather than to an earlier hand-back."
+        },
+        "connectionClosedAuditRow": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "recent[] contains {kind:\"lease\", action:\"release\", reason:\"connection-closed\", decision:\"allow\"}."
+        },
+        "inputBeforeFreshCapture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "errorCode",
+            "refused",
+            "desktopEffect"
+          ],
+          "properties": {
+            "action": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Synthetic input action, e.g. left_click or type."
+            },
+            "errorCode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Expected computer-hold:stale-frame."
+            },
+            "refused": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "True if the tool layer refused the input."
+            },
+            "desktopEffect": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "none",
+                "landed",
+                "unknown",
+                null
+              ],
+              "description": "Observed desktop effect of the refused input. k7 requires `none`; `landed` means the refusal did not prevent the action and is a bug, not a pass."
+            }
+          }
+        },
+        "freshCaptureClearedGate": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "After a screenshot (or wait), the same input action is no longer stale-frame refused. A window observation without includeScreenshot:true does not clear it."
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail",
+            "not-attempted"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "description": "How the owner connection was killed, and any host-side error code. Synthetic text only."
+        }
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "k1",
+        "k2",
+        "k3",
+        "k4",
+        "k5",
+        "k6",
+        "k7",
+        "summary"
+      ],
+      "properties": {
+        "k1": {
+          "type": "boolean",
+          "description": "Provider registered on Windows with the expected surface."
+        },
+        "k2": {
+          "type": "boolean",
+          "description": "End-to-end task verified HOST-SIDE."
+        },
+        "k3": {
+          "type": "boolean",
+          "description": "Human watched the run through the relay."
+        },
+        "k4": {
+          "type": "boolean",
+          "description": "A global stop worked without a restart."
+        },
+        "k5": {
+          "type": "boolean",
+          "description": "Takeover arbitration. Expected FALSE on unmodified upstream; the recorded refusal IS the CU-03 evidence."
+        },
+        "k6": {
+          "type": "boolean",
+          "description": "Recovery revoked refs and did not replay the interrupted action."
+        },
+        "k7": {
+          "type": "boolean",
+          "description": "G-G item 15: the owning connection died WITHOUT pagehide, a new connection saw held:false / resumeSnapshotRequired:true, releasedByDisconnect incremented, a connection-closed lease row exists, agent input was stale-frame refused, and a fresh capture cleared the gate. A normal release cannot satisfy this."
+        },
+        "takeoverGapConfirmed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "S11 result: upstream throws `take_control is only available for an attached or session desktop` for gateway/node targets. Expected true."
+        },
+        "dpiOutcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "100-percent-ok",
+            "geometry-mismatch-threw",
+            "not-tested",
+            null
+          ]
+        },
+        "sessionOutcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "console-ok",
+            "rdp-ok",
+            "rdp-failed",
+            "locked-failed",
+            "not-tested",
+            null
+          ]
+        },
+        "backgroundDeliveryOutcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "worked",
+            "refused-background_unavailable",
+            "refused-background_occluded",
+            "not-tested",
+            null
+          ],
+          "description": "Assumption A5. If it always refuses, pixel-only driving is the norm and the custom-provider case strengthens."
+        },
+        "summary": {
+          "type": "string"
+        },
+        "notClaimed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Explicit list of things this run does NOT prove. Required so a green K2 is never read as production-readiness."
+        },
+        "missingScopeVsUnavailable": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "missingScope",
+            "unavailable",
+            "both-seen",
+            "not-tested",
+            null
+          ],
+          "description": "OpenCode panel-state dependency: distinguish `missingScope` (credential/privilege refusal, e.g. desktop.observe needs operator.admin) from `unavailable` (node down or desktop absent). Rendered identically, a permission gap looks like an outage."
+        }
+      },
+      "codeModePathUnreachableUnderD011": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "G-G item 8(a): confirm Operator exec denial removes the code-mode route to the computer entirely, so the plugin matcher is genuinely defence in depth rather than the only control."
+      },
+      "visionPathVerified": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "G-G/G-F item 11: the selected NVIDIA NIM model actually received the delivered desktop frame and returned coordinates in that image space. Catalogue image-input claim is not evidence for this lane."
+      }
+    }
+  }
+}
