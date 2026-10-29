@@ -9,6 +9,7 @@ import { localGgufService, type PipelineProgressEvent } from './local-gguf-servi
  */
 export function createGatewayConfigMiddleware() {
   const configFile = path.resolve(process.cwd(), 'models', 'gateway-providers.json');
+  const defaultsFile = path.resolve(process.cwd(), 'models', 'gateway-defaults.json');
   return async (req: IncomingMessage, res: ServerResponse) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -22,16 +23,24 @@ export function createGatewayConfigMiddleware() {
 
     if (req.method === 'GET') {
       try {
+        let providers = [];
+        let defaults = null;
+        let agentBindings = null;
+
         if (fs.existsSync(configFile)) {
           const raw = await fs.promises.readFile(configFile, 'utf-8');
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ success: true, providers: JSON.parse(raw) }));
-          return;
+          providers = JSON.parse(raw);
         }
+        if (fs.existsSync(defaultsFile)) {
+          const rawDef = await fs.promises.readFile(defaultsFile, 'utf-8');
+          const parsed = JSON.parse(rawDef);
+          defaults = parsed.defaults || null;
+          agentBindings = parsed.agentBindings || null;
+        }
+
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ success: true, providers: null }));
+        res.end(JSON.stringify({ success: true, providers, defaults, agentBindings }));
       } catch (err: any) {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');
@@ -49,23 +58,101 @@ export function createGatewayConfigMiddleware() {
         const text = Buffer.concat(chunks).toString('utf-8');
         const body = text ? JSON.parse(text) : {};
         const providers = Array.isArray(body) ? body : body.providers;
+        const defaults = body.defaults;
+        const agentBindings = body.agentBindings;
 
-        if (!Array.isArray(providers)) {
-          res.statusCode = 400;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Expected { providers: [...] } or array of providers' }));
-          return;
+        if (Array.isArray(providers)) {
+          const dir = path.dirname(configFile);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          await fs.promises.writeFile(configFile, JSON.stringify(providers, null, 2), 'utf-8');
         }
 
-        const dir = path.dirname(configFile);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
+        if (defaults || agentBindings) {
+          const dir = path.dirname(defaultsFile);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          let existing = {};
+          if (fs.existsSync(defaultsFile)) {
+            try {
+              existing = JSON.parse(await fs.promises.readFile(defaultsFile, 'utf-8'));
+            } catch {}
+          }
+          const merged = {
+            ...existing,
+            ...(defaults ? { defaults } : {}),
+            ...(agentBindings ? { agentBindings } : {}),
+          };
+          await fs.promises.writeFile(defaultsFile, JSON.stringify(merged, null, 2), 'utf-8');
         }
-        await fs.promises.writeFile(configFile, JSON.stringify(providers, null, 2), 'utf-8');
+
+        // Sync with openclaw.json configs
+        const openclawConfigs = [
+          path.resolve(process.cwd(), 'backend', 'config', 'openclaw.json'),
+          path.resolve(process.cwd(), 'backend', 'config', 'openclaw.template.json'),
+          path.resolve(process.cwd(), '.zero-data', 'fresh-workspace', 'openclaw.json'),
+        ];
+
+        for (const cfgPath of openclawConfigs) {
+          if (fs.existsSync(cfgPath)) {
+            try {
+              const cfgRaw = await fs.promises.readFile(cfgPath, 'utf-8');
+              const cfg = JSON.parse(cfgRaw);
+              cfg.agents = cfg.agents || {};
+              cfg.agents.defaults = cfg.agents.defaults || {};
+              cfg.agents.defaults.model = cfg.agents.defaults.model || {};
+              cfg.agents.entries = cfg.agents.entries || {};
+              cfg.agents.entries.zero = cfg.agents.entries.zero || {};
+              cfg.agents.entries.zero.model = cfg.agents.entries.zero.model || {};
+
+              if (defaults) {
+                if (defaults.primary) cfg.agents.defaults.model.primary = defaults.primary;
+                if (defaults.utility) cfg.agents.defaults.utilityModel = defaults.utility;
+                if (defaults.fallback) cfg.agents.defaults.model.fallbacks = [defaults.fallback];
+              }
+
+              if (agentBindings?.zero) {
+                if (agentBindings.zero.model) {
+                  cfg.agents.entries.zero.model.primary = agentBindings.zero.model;
+                }
+                if (agentBindings.zero.allowOverride !== undefined) {
+                  cfg.agents.entries.zero.model.allowUnverifiedOverride = Boolean(agentBindings.zero.allowOverride);
+                }
+              }
+
+              // Update semantic aliases in models.providers['zero-gateway'].models
+              const activePrimary = defaults?.primary || agentBindings?.zero?.model;
+              if (activePrimary) {
+                const primary = activePrimary;
+                const fast = defaults?.fastMode && defaults.fastMode !== 'disabled' ? defaults.fastMode : primary;
+                const reasoning = defaults?.thinking && defaults.thinking !== 'default' ? defaults.thinking : primary;
+                cfg.models = cfg.models || { mode: 'replace', providers: {} };
+                cfg.models.providers = cfg.models.providers || {};
+                cfg.models.providers['zero-gateway'] = cfg.models.providers['zero-gateway'] || {
+                  baseUrl: 'http://127.0.0.1:18790/v1',
+                  api: 'openai-completions',
+                  models: [],
+                };
+                cfg.models.providers['zero-gateway'].models = [
+                  { id: primary, name: `${primary} (Primary)` },
+                  { id: '@fast', name: `${fast} (@fast)` },
+                  { id: '@coder', name: `${primary} (@coder)` },
+                  { id: '@reasoning', name: `${reasoning} (@reasoning)` },
+                ];
+              }
+
+              await fs.promises.writeFile(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8');
+            } catch (cfgErr: any) {
+              console.warn('[GatewayConfig] Failed syncing openclaw config:', cfgErr?.message);
+            }
+          }
+        }
 
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ success: true, count: providers.length, path: configFile }));
+        res.end(JSON.stringify({ success: true, count: Array.isArray(providers) ? providers.length : 0, path: configFile, defaults, agentBindings }));
       } catch (err: any) {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');

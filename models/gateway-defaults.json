@@ -1,0 +1,7 @@
+{
+  "defaults": {
+    "primary": "gguf/moondream2-text-model-f16_ct-vicuna",
+    "thinking": "default",
+    "fastMode": "disabled"
+  }
+}

@@ -20,6 +20,16 @@ CREATE TABLE IF NOT EXISTS observations (
   text_length INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS observations_captured_at ON observations(captured_at_ms);
+CREATE TABLE IF NOT EXISTS video_and_media_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  captured_at_ms INTEGER NOT NULL,
+  app TEXT NOT NULL DEFAULT '',
+  window TEXT NOT NULL DEFAULT '',
+  scene_summary TEXT NOT NULL DEFAULT '',
+  frame_count INTEGER NOT NULL DEFAULT 1,
+  duration_seconds REAL NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS video_logs_captured_at ON video_and_media_logs(captured_at_ms);
 CREATE TABLE IF NOT EXISTS workflow_patterns (
   key TEXT PRIMARY KEY,
   app TEXT NOT NULL DEFAULT '',
@@ -93,6 +103,37 @@ export function createObservationStore({
         Number.isInteger(observation?.textLength) ? observation.textLength : summary.length,
       );
     return { ok: true, capturedAtMs };
+  };
+
+  const insertVideoLog = (log) => {
+    const database = ensureOpen();
+    const capturedAtMs = Number.isFinite(log?.capturedAtMs) ? log.capturedAtMs : clock();
+    database
+      .prepare(
+        `INSERT INTO video_and_media_logs
+          (captured_at_ms, app, window, scene_summary, frame_count, duration_seconds)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        capturedAtMs,
+        cap(log?.app, 200),
+        cap(log?.window, 300),
+        cap(log?.sceneSummary, maxSummaryChars),
+        Number.isInteger(log?.frameCount) ? log.frameCount : 1,
+        Number.isFinite(log?.durationSeconds) ? log.durationSeconds : 0,
+      );
+    return { ok: true, capturedAtMs };
+  };
+
+  const recentVideoLogs = ({ limit = 10 } = {}) => {
+    const database = ensureOpen();
+    const boundedLimit = Math.min(50, Math.max(1, Number.isInteger(limit) ? limit : 10));
+    return database
+      .prepare(
+        `SELECT id, captured_at_ms, app, window, scene_summary, frame_count, duration_seconds
+         FROM video_and_media_logs ORDER BY captured_at_ms DESC LIMIT ?`,
+      )
+      .all(boundedLimit);
   };
 
   const recent = ({ limit = 20, sinceMs = null, query = "" } = {}) => {
@@ -239,6 +280,7 @@ export function createObservationStore({
     return {
       opened: true,
       observations: count("observations"),
+      videoLogs: count("video_and_media_logs"),
       workflowCandidates: count("workflow_patterns"),
       importantSnapshots: count("important_snapshots"),
       dbPath,
@@ -261,6 +303,8 @@ export function createObservationStore({
 
   return {
     insertObservation,
+    insertVideoLog,
+    recentVideoLogs,
     recent,
     prune,
     deleteAll,

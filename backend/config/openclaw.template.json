@@ -3,9 +3,9 @@
     "mode": "local",
     "port": 18789,
     "bind": "loopback",
-  "auth": {
-    "mode": "none"
-  },
+    "auth": {
+      "mode": "none"
+    },
     "reload": {
       "mode": "hybrid"
     },
@@ -28,7 +28,24 @@
       "zero-gateway": {
         "baseUrl": "http://127.0.0.1:18790/v1",
         "api": "openai-completions",
-        "models": []
+        "models": [
+          {
+            "id": "gguf/moondream2-text-model-f16_ct-vicuna",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (Primary)"
+          },
+          {
+            "id": "@fast",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@fast)"
+          },
+          {
+            "id": "@coder",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@coder)"
+          },
+          {
+            "id": "@reasoning",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@reasoning)"
+          }
+        ]
       }
     }
   },
@@ -39,7 +56,7 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "",
+        "primary": "gguf/moondream2-text-model-f16_ct-vicuna",
         "fallbacks": []
       },
       "utilityModel": "",
@@ -57,7 +74,11 @@
         },
         "tools": {
           "profile": "coding",
-          "alsoAllow": ["computer", "zero_computer", "zero_screen_context"],
+          "alsoAllow": [
+            "computer",
+            "zero_computer",
+            "zero_screen_context"
+          ],
           "exec": {
             "mode": "ask"
           }
@@ -65,7 +86,8 @@
         "subagents": {
           "allowAgents": [],
           "requireAgentId": true
-        }
+        },
+        "model": {}
       }
     }
   },
@@ -86,15 +108,21 @@
   },
   "plugins": {
     "load": {
-      "paths": ["E:\\zero\\app\\zero-control-ui"]
+      "paths": [
+        "E:\\zero\\app\\zero-control-ui"
+      ]
     },
     "entries": {
       "zero-control-ui": {
         "enabled": true,
         "config": {
           "controlMethodName": "zero.computer.control",
-          "holdToolNames": ["computer"],
-          "codeModeToolNames": ["exec"],
+          "holdToolNames": [
+            "computer"
+          ],
+          "codeModeToolNames": [
+            "exec"
+          ],
           "observeActions": [
             "screenshot",
             "wait",
@@ -107,7 +135,9 @@
             "get_browser_state",
             "get_recording_state"
           ],
-          "blockedActions": ["escalate_scope"],
+          "blockedActions": [
+            "escalate_scope"
+          ],
           "highRiskActions": [
             "kill_app",
             "browser_navigate",

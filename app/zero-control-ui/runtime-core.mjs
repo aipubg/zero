@@ -71,6 +71,7 @@ export const METHODS = Object.freeze({
   observationStatus: OBSERVATION_METHODS.status,
   observationControl: OBSERVATION_METHODS.control,
   observationRecent: OBSERVATION_METHODS.recent,
+  observationKillSwitch: "zero.observation.killSwitch",
   gatewayStatus: "zero.gateway.status",
   providersList: "zero.providers.list",
   providersSetActive: "zero.providers.setActive",
@@ -333,6 +334,26 @@ export function createZeroUiRuntimeHandlers({
         connectors: createConnectorStatus(config),
         settingsPath: "/settings/mcp",
       };
+    },
+  );
+
+  const observationKillSwitchHandler = methodHandler(
+    METHODS.observationKillSwitch,
+    async () => {
+      const lifecycle = requireObservationLifecycle();
+      if (lifecycle && typeof lifecycle.control === "function") {
+        try {
+          await lifecycle.control("stop");
+          await lifecycle.control("private-on");
+        } catch {}
+      }
+      try {
+        const engine = requireObservationEngine();
+        if (typeof engine.killSwitch === "function") {
+          return await engine.killSwitch();
+        }
+      } catch {}
+      return { ok: true, stopped: true, ringCleared: true, timestamp: Date.now() };
     },
   );
 
@@ -895,6 +916,7 @@ export function createZeroUiRuntimeHandlers({
     [OBSERVATION_METHODS.status]: observationStatusHandler,
     [OBSERVATION_METHODS.control]: observationControlHandler,
     [OBSERVATION_METHODS.recent]: observationRecentHandler,
+    [METHODS.observationKillSwitch]: observationKillSwitchHandler,
     [METHODS.gatewayStatus]: gatewayStatusHandler,
     [METHODS.providersList]: providersListHandler,
     [METHODS.providersSetActive]: providersSetActiveHandler,

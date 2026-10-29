@@ -23,39 +23,29 @@
     }
   },
   "models": {
-    "mode": "merge",
+    "mode": "replace",
     "providers": {
       "zero-gateway": {
         "baseUrl": "http://127.0.0.1:18790/v1",
         "api": "openai-completions",
         "models": [
           {
-            "id": "default",
-            "name": "Zero Gateway Default Model"
+            "id": "gguf/moondream2-text-model-f16_ct-vicuna",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (Primary)"
+          },
+          {
+            "id": "@fast",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@fast)"
+          },
+          {
+            "id": "@coder",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@coder)"
+          },
+          {
+            "id": "@reasoning",
+            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@reasoning)"
           }
         ]
-      },
-      "groq-test": {
-        "baseUrl": "https://api.groq.com/openai/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "llama-3.3-70b-versatile",
-            "name": "llama-3.3-70b-versatile"
-          }
-        ],
-        "apiKey": "gsk_test12345"
-      },
-      "nv": {
-        "baseUrl": "https://integrate.api.nvidia.com/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "default",
-            "name": "Default Model"
-          }
-        ],
-        "apiKey": "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"
       }
     }
   },
@@ -66,7 +56,7 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "zero-gateway/default",
+        "primary": "gguf/moondream2-text-model-f16_ct-vicuna",
         "fallbacks": []
       },
       "utilityModel": "",
@@ -98,7 +88,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "zero-gateway/default"
+          "primary": ""
         }
       }
     }

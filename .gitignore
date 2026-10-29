@@ -30,6 +30,7 @@ models/**/*.gguf
 models/**/*.bin
 !models/.keep
 !models/gateway-providers.json
+!models/gateway-defaults.json
 
 # Test outputs & temporary artifacts
 test-results/

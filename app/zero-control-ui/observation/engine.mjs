@@ -435,6 +435,22 @@ export function createObservationEngine({
   const workflowCandidates = (params = {}) =>
     storeClosed ? [] : store.listWorkflowCandidates(params);
 
+  const killSwitch = async () => {
+    enabled = false;
+    running = false;
+    privateMode = true;
+    clearTimer();
+    clearPruneTimer();
+    clearVolatile("kill-switch");
+    ring.clear();
+    consecutiveErrors = 0;
+    try {
+      source.stop?.();
+    } catch {}
+    state = OBSERVATION_STATES.stopped;
+    return { ok: true, stopped: true, ringCleared: true, timestamp: clock() };
+  };
+
   const dispose = async () => {
     disposeRequested = true;
     await stop();
@@ -454,6 +470,7 @@ export function createObservationEngine({
     start,
     stop,
     setPrivateMode,
+    killSwitch,
     captureOnce,
     pruneOnce,
     status,
