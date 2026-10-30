@@ -237,7 +237,7 @@ async function handleChatCompletions(req, res) {
       }
     }
 
-    const modelId = body.model || body.modelId || 'zero-gateway/default';
+    const modelId = body.model || body.modelId || 'nv/z-ai/glm-5.3-flash';
     const messages = body.messages || [];
     const stream = body.stream === true;
 

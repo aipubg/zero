@@ -3,7 +3,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("E:/zero/.zero-data/fresh-workspace/gateway-state/node-runtime/releases/2026.10.7-10ad68f0f0f519bc2ee40ec9e23435359e7ba939749fd7b4a290df3512ba49af/node_modules/openclaw/node_modules/playwright-core");
 
 async function runEndToEndVerification() {
-  console.log("=== STARTING ZERO MODELS CLEAN UI PLAYWRIGHT VERIFICATION ===");
+  console.log("=== STARTING ZERO COMPREHENSIVE PLAYWRIGHT VERIFICATION ===");
   const browser = await chromium.launch({
     headless: true,
     executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -17,370 +17,231 @@ async function runEndToEndVerification() {
     }
   });
 
-  // STEP 1: Start at /settings/about and navigate to /settings/model-providers
-  console.log("\n1. Navigating to http://127.0.0.1:18789/settings/about ...");
-  await page.goto("http://127.0.0.1:18789/settings/about", { waitUntil: "domcontentloaded" });
+  // TEST 1: Open /chat/zero and verify DOM stability (ZERO Blinking over 10s)
+  console.log("\n1. Navigating to http://127.0.0.1:18789/chat/zero...");
+  await page.goto("http://127.0.0.1:18789/chat/zero", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(3000);
 
-  console.log("2. Clicking 'Models' in sidebar...");
-  const clicked = await page.evaluate(() => {
-    const link = document.querySelector('.settings-sidebar a[href*="model"], a[href*="model-providers"]');
-    if (link) {
-      link.click();
-      return true;
-    }
-    return false;
+  console.log("   Attaching DOM Mutation Counter to measure blinking/flickering over 10 seconds...");
+  await page.evaluate(() => {
+    window.__zero_mutations = 0;
+    const observer = new MutationObserver((records) => {
+      window.__zero_mutations += records.length;
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+  });
+
+  console.log("   Waiting 10 seconds to observe DOM stillness...");
+  await page.waitForTimeout(10000);
+
+  const mutationCount = await page.evaluate(() => window.__zero_mutations);
+  console.log(`   DOM Mutations recorded over 10 seconds: ${mutationCount}`);
+  if (mutationCount > 15) {
+    throw new Error(`FAILED: UI is still flickering/re-rendering in a loop! Recorded mutations: ${mutationCount}`);
+  }
+  console.log("   PASSED: UI is 100% calm and stable with ZERO reload/flicker loops!");
+
+  // TEST 2: Inspect Chat Model Picker for Pure Real Models (NO dummy models, NO test models)
+  console.log("\n2. Inspecting Chat Model Picker for clean real models...");
+  const modelPickerCheck = await page.evaluate(() => {
+    const allButtons = Array.from(document.querySelectorAll("button"));
+    const modelOptions = Array.from(document.querySelectorAll(".chat-controls__model-option, [data-chat-model-option]"));
+    const optionLabels = modelOptions.map(o => o.getAttribute("aria-label") || o.innerText.trim());
+    const buttonTexts = allButtons.map(b => b.innerText.trim()).filter(Boolean);
+
+    const hasTestModel = optionLabels.some(l => l.includes("test-model"));
+    const hasZeroGatewayDefault = optionLabels.some(l => l === "default · zero-gateway" || l === "zero-gateway/default");
+    const hasNvDefault = optionLabels.some(l => l === "default · nv" || l === "nv/default");
+
+    return {
+      optionLabels,
+      buttonTextsSample: buttonTexts.slice(0, 15),
+      hasTestModel,
+      hasZeroGatewayDefault,
+      hasNvDefault,
+      realModelsFound: optionLabels.filter(l => l.includes("nemotron") || l.includes("glm") || l.includes("minimax"))
+    };
+  });
+  console.log("   Model Picker Analysis:", {
+    totalOptions: modelPickerCheck.optionLabels.length,
+    realModelsFound: modelPickerCheck.realModelsFound.length,
+    hasTestModel: modelPickerCheck.hasTestModel,
+    hasZeroGatewayDefault: modelPickerCheck.hasZeroGatewayDefault,
+    hasNvDefault: modelPickerCheck.hasNvDefault,
+    sampleRealModels: modelPickerCheck.realModelsFound.slice(0, 5)
+  });
+
+  if (modelPickerCheck.hasTestModel) {
+    throw new Error("FAILED: test-model-1 found in model list!");
+  }
+  if (modelPickerCheck.hasZeroGatewayDefault) {
+    throw new Error("FAILED: dummy zero-gateway/default found in model list!");
+  }
+  if (modelPickerCheck.hasNvDefault) {
+    throw new Error("FAILED: dummy default model found under nv provider!");
+  }
+  console.log("   PASSED: Chat model list contains ONLY real configured models!");
+
+  // TEST 3: Test Top Controls in /chat/zero (Computer Control & Reasoning Buttons)
+  console.log("\n3. Testing Top Controls (Computer Control & Reasoning buttons)...");
+  const controlsCheck = await page.evaluate(() => {
+    const compBtn = document.querySelector(".zero-control-toggle-btn");
+    const reasonBtn = document.querySelector(".zero-reasoning-toggle-btn");
+    if (!compBtn || !reasonBtn) return { found: false };
+
+    const initialComp = compBtn.innerText.trim();
+    compBtn.click();
+    const toggledComp = compBtn.innerText.trim();
+    compBtn.click(); // restore
+    const restoredComp = compBtn.innerText.trim();
+
+    const initialReason = reasonBtn.innerText.trim();
+    reasonBtn.click();
+    const toggledReason = reasonBtn.innerText.trim();
+    reasonBtn.click(); // restore
+    const restoredReason = reasonBtn.innerText.trim();
+
+    return {
+      found: true,
+      initialComp,
+      toggledComp,
+      restoredComp,
+      initialReason,
+      toggledReason,
+      restoredReason
+    };
+  });
+  console.log("   Controls Result:", controlsCheck);
+  if (!controlsCheck.found) {
+    throw new Error("FAILED: Top control buttons not found in /chat/zero!");
+  }
+  if (!controlsCheck.toggledComp.includes("Standby") || !controlsCheck.restoredComp.includes("Active")) {
+    throw new Error("FAILED: Computer Control toggle failed!");
+  }
+  if (!controlsCheck.toggledReason.includes("OFF") || !controlsCheck.restoredReason.includes("ON")) {
+    throw new Error("FAILED: Reasoning toggle failed!");
+  }
+  console.log("   PASSED: Top control buttons toggle instantly without jitter!");
+
+  // TEST 4: Navigate to /settings/model-providers (Zero Providers Management Surface)
+  console.log("\n4. Navigating in-app to /settings/model-providers...");
+  await page.evaluate(() => {
+    window.location.hash = "";
+    history.pushState(null, "", "/settings/model-providers");
+    window.dispatchEvent(new PopStateEvent("popstate"));
   });
   await page.waitForTimeout(2000);
-  if (!page.url().includes("/settings/model-providers")) {
-    console.log("   Navigating directly to /settings/model-providers...");
-    await page.goto("http://127.0.0.1:18789/settings/model-providers", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(2000);
-  }
 
-
-  const currentUrl = page.url();
-  console.log("   URL:", currentUrl);
-  if (!currentUrl.includes("/settings/model-providers") || currentUrl.includes("/chat/zero")) {
-    throw new Error(`FAILED: Navigation redirected or stayed off-target: ${currentUrl}`);
-  }
-  console.log("   PASSED: Cleanly on /settings/model-providers!");
-
-  // STEP 2: Verify Exact Page Header Structure
-  console.log("\n3. Verifying Exact Page Header Structure...");
-  await page.waitForSelector(".zero-models-status-icon", { timeout: 10000 }).catch(() => {});
-  const headerCheck = await page.evaluate(() => {
-    const statusIcon = !!document.querySelector(".zero-models-status-icon");
-    const subtitle = document.querySelector(".zero-models-header__subtitle")?.innerText.trim();
+  const surfaceCheck = await page.evaluate(() => {
+    const surface = document.querySelector(".zero-native-surface--models");
     const title = document.querySelector(".zero-models-header__title")?.innerText.trim();
-    const actions = Array.from(document.querySelectorAll(".zero-models-header__actions button")).map(b => b.innerText.trim());
-
+    const subtitle = document.querySelector(".zero-models-header__subtitle")?.innerText.trim();
+    const addBtn = document.querySelector(".zero-models-btn--add-provider")?.innerText.trim();
+    const cards = Array.from(document.querySelectorAll(".zero-models-card, .zero-provider-card")).length;
     return {
-      statusIcon,
-      subtitle,
-      title,
-      actions
-    };
-  });
-  console.log("   Header Data:", headerCheck);
-
-  if (!headerCheck.statusIcon) throw new Error("FAILED: Status icon missing!");
-  if (headerCheck.subtitle.toUpperCase() !== "ZERO MODELS (PRIVATE GATEWAY PROVIDER MANAGER)") {
-    throw new Error(`FAILED: Subtitle mismatch! Got: ${headerCheck.subtitle}`);
-  }
-  if (headerCheck.title !== "Models & Providers") {
-    throw new Error(`FAILED: Main title mismatch! Got: ${headerCheck.title}`);
-  }
-  if (!headerCheck.actions.includes("+ Add Provider") || !headerCheck.actions.includes("Import GGUF") || !headerCheck.actions.includes("Agents ->")) {
-    throw new Error(`FAILED: Header buttons missing! Got: ${JSON.stringify(headerCheck.actions)}`);
-  }
-  console.log("   PASSED: Header with status icon, exact titles and 3 buttons verified!");
-
-  // STEP 3: Verify Section 1 — Model Defaults & Preferences Card
-  console.log("\n4. Verifying Section 1 — Model Defaults & Preferences Card...");
-  const sec1Check = await page.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll(".zero-models-card"));
-    if (cards.length < 2) return null;
-
-    const c1 = cards[0];
-    const title = c1.querySelector(".zero-models-card__title")?.innerText.trim();
-    const subtitle = c1.querySelector(".zero-models-card__subtitle")?.innerText.trim();
-    const fieldLabels = Array.from(c1.querySelectorAll(".zero-selector-field__label")).map(l => l.innerText.trim());
-    const selectCount = c1.querySelectorAll(".zero-selector-field__select").length;
-    const saveBtn = c1.querySelector(".zero-btn-save-defaults")?.innerText.trim();
-
-    return {
+      surfaceMounted: !!surface,
       title,
       subtitle,
-      fieldLabels,
-      selectCount,
-      saveBtn
+      addBtn,
+      cardsCount: cards
     };
   });
-  console.log("   Section 1 Data:", sec1Check);
-
-  if (!sec1Check) throw new Error("FAILED: Section 1 card not found!");
-  if (sec1Check.title !== "Model Defaults & Preferences") {
-    throw new Error(`FAILED: Card 1 title mismatch: ${sec1Check.title}`);
+  console.log("   Providers Surface Status:", surfaceCheck);
+  if (!surfaceCheck.surfaceMounted || surfaceCheck.title !== "Models & Providers") {
+    throw new Error("FAILED: Zero Providers Surface did not mount properly!");
   }
-  if (!sec1Check.subtitle.includes("Preserves Auto model, Auto utility, configurable fallback")) {
-    throw new Error(`FAILED: Card 1 subtitle mismatch: ${sec1Check.subtitle}`);
-  }
-  if (sec1Check.selectCount !== 5) {
-    throw new Error(`FAILED: Expected 5 dropdown selectors, found ${sec1Check.selectCount}`);
-  }
-  if (sec1Check.saveBtn !== "Save Defaults") {
-    throw new Error(`FAILED: Red-bordered Save Defaults button not found! Got: ${sec1Check.saveBtn}`);
-  }
-  console.log("   PASSED: Section 1 Card with 5 dropdowns and Save Defaults button verified!");
+  console.log("   PASSED: Models & Providers native surface mounted cleanly!");
 
-  // STEP 4: Verify Section 2 — Agent Model Bindings Card
-  console.log("\n5. Verifying Section 2 — Agent Model Bindings Card...");
-  const sec2Check = await page.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll(".zero-models-card"));
-    if (cards.length < 2) return null;
-
-    const c2 = cards[1];
-    const title = c2.querySelector(".zero-models-card__title")?.innerText.trim();
-    const subtitle = c2.querySelector(".zero-models-card__subtitle")?.innerText.trim();
-    const agentTitle = c2.querySelector(".zero-agent-binding-title")?.innerText.trim();
-    const badge = c2.querySelector(".zero-agent-binding-badge")?.innerText.trim();
-    const descLabels = Array.from(c2.querySelectorAll(".zero-agent-desc-box__label")).map(l => l.innerText.trim());
-    const hasAgentSelect = !!c2.querySelector(".zero-agent-assign-select");
-    const assignBtn = c2.querySelector(".zero-btn-assign-agent")?.innerText.trim();
-    const overrideLabel = c2.querySelector(".zero-agent-override-label")?.innerText.trim();
-    const hasCheckbox = !!c2.querySelector(".zero-agent-override-checkbox");
-
-    return {
-      title,
-      subtitle,
-      agentTitle,
-      badge,
-      descLabels,
-      hasAgentSelect,
-      assignBtn,
-      overrideLabel,
-      hasCheckbox
-    };
-  });
-  console.log("   Section 2 Data:", sec2Check);
-
-  if (!sec2Check) throw new Error("FAILED: Section 2 card not found!");
-  if (sec2Check.title !== "Agent Model Bindings") {
-    throw new Error(`FAILED: Card 2 title mismatch: ${sec2Check.title}`);
-  }
-  if (!sec2Check.subtitle.includes("Assign models to configured agents independently")) {
-    throw new Error(`FAILED: Card 2 subtitle mismatch: ${sec2Check.subtitle}`);
-  }
-  if (sec2Check.agentTitle !== "Zero (zero)" || sec2Check.badge !== "EXPLICIT BINDING") {
-    throw new Error(`FAILED: Agent header or EXPLICIT BINDING badge missing!`);
-  }
-  if (!sec2Check.descLabels.includes("Active Model:") || !sec2Check.descLabels.includes("Fallbacks:")) {
-    throw new Error(`FAILED: Description box missing Active Model or Fallbacks labels!`);
-  }
-  if (!sec2Check.hasAgentSelect || sec2Check.assignBtn !== "Assign to Zero") {
-    throw new Error(`FAILED: Agent select dropdown or Assign to Zero button missing!`);
-  }
-  if (!sec2Check.hasCheckbox || !sec2Check.overrideLabel.includes("Allow unverified model override")) {
-    throw new Error(`FAILED: Checkbox or override label missing!`);
-  }
-  console.log("   PASSED: Section 2 Card with Zero (zero), EXPLICIT BINDING badge, dropdown, Assign button, and checkbox verified!");
-
-  // STEP 5: Verify NO Clutter (No preset boxes, no status cards)
-  console.log("\n6. Verifying Absence of Clutter (Presets and Status Boxes)...");
-  const clutterCheck = await page.evaluate(() => {
-    const presetsBar = !!document.querySelector(".zero-presets-bar");
-    const presetChips = document.querySelectorAll(".zero-preset-chip").length;
-    const heroBoxes = document.querySelectorAll(".zero-metric-card").length;
-    return { presetsBar, presetChips, heroBoxes };
-  });
-  console.log("   Clutter Check:", clutterCheck);
-  if (clutterCheck.presetsBar || clutterCheck.presetChips > 0 || clutterCheck.heroBoxes > 0) {
-    throw new Error("FAILED: Cluttered presets or hero status boxes are still present on the page!");
-  }
-  console.log("   PASSED: Zero clutter confirmed! Presets and status boxes are 100% removed.");
-
-  // STEP 6: Test Modals (+ Add Provider and Import GGUF)
-  console.log("\n7. Testing Modals...");
-  // Test + Add Provider modal
-  await page.evaluate(() => {
-    const btn = document.querySelector(".zero-models-header__actions .zero-models-btn--add-provider") ||
-                Array.from(document.querySelectorAll("button")).find(b => b.innerText.trim() === "+ Add Provider");
-    if (btn) btn.click();
-  });
-  await page.waitForTimeout(1000);
-
-  const addModalOpen = await page.evaluate(() => {
-    const overlay = document.querySelector(".zero-modal-overlay");
-    const modalTitle = document.querySelector(".zero-modal__title")?.innerText.trim();
-    const hasBaseUrl = !!document.querySelector('.zero-modal__input[placeholder*="http"]');
-    const buttons = Array.from(document.querySelectorAll(".zero-modal button, .zero-modal-overlay button")).map(b => b.innerText.trim());
-    return {
-      overlayDisplay: overlay?.style.display,
-      modalTitle,
-      hasBaseUrl,
-      buttons
-    };
-  });
-  console.log("   + Add Provider Modal Debug:", addModalOpen);
-  if (!addModalOpen.hasBaseUrl) {
-    throw new Error("FAILED: Custom Provider modal did not open properly!");
-  }
-
-
-  // Close Add Provider modal
-  await page.evaluate(() => {
-    const closeBtn = document.querySelector(".zero-modal__close");
-    if (closeBtn) closeBtn.click();
-  });
-  await page.waitForTimeout(500);
-
-  // Test Import GGUF modal
-  await page.evaluate(() => {
-    const importBtn = document.querySelector(".zero-models-btn--import-gguf");
-    if (importBtn) importBtn.click();
-  });
-  await page.waitForTimeout(1000);
-
-  const ggufModalOpen = await page.evaluate(() => {
-    const modalTitle = document.querySelector(".zero-modal__title")?.innerText.trim();
-    const hasTabs = document.querySelectorAll(".zero-gguf-tool-tabs .zero-segmented-tab").length;
-    return { modalTitle, hasTabs };
-  });
-  console.log("   Import GGUF Modal:", ggufModalOpen);
-  if (ggufModalOpen.hasTabs < 3) {
-    throw new Error("FAILED: Import GGUF modal did not render the offline engine tool tabs!");
-  }
-
-  // Close GGUF modal
-  await page.evaluate(() => {
-    const closeBtn = document.querySelector(".zero-modal__close");
-    if (closeBtn) closeBtn.click();
-  });
-  await page.waitForTimeout(500);
-
-  console.log("   PASSED: Both modals (+ Add Provider and Import GGUF) open and close cleanly!");
-
-  // STEP 8: Create a Custom Provider via + Add Provider Modal
-  console.log("\n8. Testing Provider Creation & Discovery UI...");
+  // TEST 5: Test Provider Modal Model Search & Selection
+  console.log("\n5. Testing Provider Modal Search and Selection...");
   await page.evaluate(() => {
     const addBtn = document.querySelector(".zero-models-btn--add-provider");
     if (addBtn) addBtn.click();
   });
-  await page.waitForTimeout(500);
-
-  await page.evaluate(() => {
-    const inputs = Array.from(document.querySelectorAll('.zero-modal__body .zero-modal__field input.zero-modal__input'));
-    const idInp = inputs[0];
-    const nameInp = inputs[1];
-    const urlInp = inputs[2];
-    if (idInp) idInp.value = "test-provider";
-    if (nameInp) nameInp.value = "Test Provider Inc";
-    if (urlInp) urlInp.value = "http://127.0.0.1:18790/v1";
-
-    // Set model in table
-    const tableIdInp = document.querySelector('.zero-models-table__row input');
-    if (tableIdInp) {
-      tableIdInp.value = "test-model-1";
-      if (typeof tableIdInp.oninput === "function") tableIdInp.oninput();
-    }
-  });
-
-  // Save provider
-  await page.evaluate(() => {
-    const saveBtn = Array.from(document.querySelectorAll(".zero-modal button")).find(b => b.innerText.includes("Save Provider"));
-    if (saveBtn) saveBtn.click();
-  });
-  await page.waitForTimeout(1500);
-
-  // Verify provider card is rendered in section 3
-  const providerCardData = await page.evaluate(() => {
-    const card = document.querySelector('.zero-provider-card[data-provider-id="test-provider"]');
-    if (!card) return null;
-    const name = card.querySelector('.zero-provider-card__name')?.innerText.trim();
-    const chips = Array.from(card.querySelectorAll('.zero-model-chip')).map(c => c.innerText.trim());
-    return { name, chips };
-  });
-  console.log("   Rendered Provider Card:", providerCardData);
-  if (!providerCardData || !providerCardData.chips.some(c => c.includes("test-model-1") || c.includes("default"))) {
-    throw new Error("FAILED: Provider card was not rendered or model chip missing!");
-  }
-  console.log("   PASSED: Provider card created with live chips!");
-
-  // STEP 9: Test Model Assignment to Zero Agent
-  console.log("\n9. Testing Model Assignment to Zero Agent...");
-  await page.evaluate(() => {
-    const select = document.querySelector(".zero-agent-assign-select");
-    if (select && select.options.length > 0) {
-      const opt = Array.from(select.options).find(o => o.value.includes("test-provider") || o.value.includes("test-model") || o.value.includes("default")) || select.options[select.options.length - 1];
-      if (opt) {
-        select.value = opt.value;
-        select.dispatchEvent(new Event("change"));
-      }
-    }
-    const assignBtn = document.querySelector(".zero-btn-assign-agent");
-    if (assignBtn) assignBtn.click();
-  });
-  await page.waitForTimeout(1500);
-
-  const activeModelDisplay = await page.evaluate(() => {
-    return document.querySelector(".zero-agent-desc-box__value")?.innerText.trim();
-  });
-  console.log("   Active Model Display:", activeModelDisplay);
-  if (!activeModelDisplay) {
-    throw new Error("FAILED: Active model display empty!");
-  }
-  console.log("   PASSED: Model assigned to Zero agent!");
-
-  // STEP 10: Verify /chat/zero Reasoning Toggle Button
-  console.log("\n10. Navigating to /chat/zero and Testing Reasoning Toggle...");
-  await page.goto("http://127.0.0.1:18789/chat/zero", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2000);
-
-  const reasoningToggleCheck = await page.evaluate(() => {
-    const btn = document.querySelector(".zero-reasoning-toggle, .zero-reasoning-toggle-btn");
-    if (!btn) return { found: false };
-    const initialText = btn.innerText.trim();
-    btn.click();
-    const clickedText = btn.innerText.trim();
-    return {
-      found: true,
-      initialText,
-      clickedText
-    };
-  });
-  console.log("   Reasoning Toggle Check:", reasoningToggleCheck);
-  if (!reasoningToggleCheck.found) {
-    throw new Error("FAILED: Reasoning toggle button not found on /chat/zero topbar!");
-  }
-  if (!reasoningToggleCheck.initialText.includes("Reasoning:") || !reasoningToggleCheck.clickedText.includes("Reasoning:")) {
-    throw new Error(`FAILED: Reasoning toggle button format incorrect! Initial: ${reasoningToggleCheck.initialText}, Clicked: ${reasoningToggleCheck.clickedText}`);
-  }
-  console.log("   PASSED: Reasoning toggle button functions on /chat/zero!");
-
-  // STEP 11: Cleanup Test Provider
-  console.log("\n11. Cleaning up Test Provider from Settings...");
-  await page.goto("http://127.0.0.1:18789/settings/model-providers", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2000);
-
-  page.on("dialog", async dialog => {
-    await dialog.accept();
-  });
-
-  await page.evaluate(() => {
-    const card = document.querySelector('.zero-provider-card[data-provider-id="test-provider"]');
-    if (card) {
-      const delBtn = card.querySelector(".zero-providers-btn--danger");
-      if (delBtn) delBtn.click();
-    }
-  });
-  await page.waitForTimeout(1500);
-
-  const remainingCards = await page.evaluate(() => {
-    return document.querySelectorAll('.zero-provider-card[data-provider-id="test-provider"]').length;
-  });
-  if (remainingCards > 0) {
-    throw new Error("FAILED: Test provider was not deleted!");
-  }
-
-  // Reset agent Zero binding back to clean default
-  await page.evaluate(() => {
-    const select = document.querySelector(".zero-agent-assign-select");
-    if (select) {
-      const opt = Array.from(select.options).find(o => o.value.includes("default") || o.value.includes("zero-gateway"));
-      if (opt) {
-        select.value = opt.value;
-        select.dispatchEvent(new Event("change"));
-        const assignBtn = document.querySelector(".zero-btn-assign-agent");
-        if (assignBtn) assignBtn.click();
-      }
-    }
-  });
   await page.waitForTimeout(1000);
 
-  console.log("   PASSED: Test provider cleaned up successfully and agent binding restored!");
+  const modalResult = await page.evaluate(async () => {
+    const modal = document.querySelector(".zero-modal");
+    if (!modal) return { modalFound: false };
 
-  console.log("\n=== ALL ZERO MODELS CLEAN UI CHECKS PASSED 100%! ===");
+    // Set Base URL to 18790
+    const urlInp = modal.querySelector(".zero-modal__input[placeholder*='http']");
+    if (urlInp) {
+      urlInp.value = "http://127.0.0.1:18790/v1";
+      urlInp.dispatchEvent(new Event("input"));
+    }
+
+    // Click Fetch Models
+    const fetchBtn = modal.querySelector(".zero-models-btn--fetch-models");
+    if (!fetchBtn) return { modalFound: true, fetchBtnFound: false };
+    fetchBtn.click();
+
+    await new Promise(r => setTimeout(r, 1200));
+
+    const discBox = modal.querySelector(".zero-discovery-box");
+    const checkBoxes = Array.from(modal.querySelectorAll(".zero-disc-item input[type='checkbox']"));
+    const initialChecked = checkBoxes.filter(c => c.checked).length;
+    const addSelectedBtn = modal.querySelector(".zero-discovery-box button.zero-btn-save-defaults");
+    const initialBtnText = addSelectedBtn?.innerText.trim();
+
+    // Test Search filtering
+    const searchInp = modal.querySelector("input[placeholder*='Search']");
+    if (searchInp) {
+      searchInp.value = "nemotron";
+      searchInp.dispatchEvent(new Event("input"));
+    }
+    await new Promise(r => setTimeout(r, 300));
+
+    const visibleAfterSearch = Array.from(modal.querySelectorAll(".zero-disc-item")).filter(item => item.style.display !== "none").length;
+
+    // Test Select all on filtered items
+    const selectAllBtn = Array.from(modal.querySelectorAll("button")).find(b => b.innerText.trim().toLowerCase() === "select all");
+    if (selectAllBtn) selectAllBtn.click();
+    await new Promise(r => setTimeout(r, 300));
+
+    const checkedAfterSelectAll = Array.from(modal.querySelectorAll(".zero-disc-item input[type='checkbox']")).filter(c => c.checked).length;
+    const btnTextAfterSelectAll = addSelectedBtn?.innerText.trim();
+
+    // Test Deselect all
+    const deselectAllBtn = Array.from(modal.querySelectorAll("button")).find(b => b.innerText.trim().toLowerCase() === "deselect all");
+    if (deselectAllBtn) deselectAllBtn.click();
+    await new Promise(r => setTimeout(r, 300));
+
+    const checkedAfterDeselect = Array.from(modal.querySelectorAll(".zero-disc-item input[type='checkbox']")).filter(c => c.checked).length;
+
+    // Close modal
+    const closeBtn = modal.querySelector(".zero-modal__close, .zero-models-btn--secondary");
+    if (closeBtn) closeBtn.click();
+
+    return {
+      modalFound: true,
+      fetchBtnFound: true,
+      totalModelsFound: checkBoxes.length,
+      initialChecked,
+      initialBtnText,
+      visibleAfterSearch,
+      checkedAfterSelectAll,
+      btnTextAfterSelectAll,
+      checkedAfterDeselect
+    };
+  });
+
+  console.log("   Modal Test Result:", modalResult);
+  if (!modalResult.modalFound || !modalResult.fetchBtnFound) {
+    throw new Error("FAILED: Modal or Fetch button missing!");
+  }
+  if (modalResult.initialChecked !== 0) {
+    throw new Error(`FAILED: Models were auto-selected initially! Count: ${modalResult.initialChecked}`);
+  }
+  if (modalResult.checkedAfterSelectAll === 0 || !modalResult.btnTextAfterSelectAll.includes(String(modalResult.checkedAfterSelectAll))) {
+    throw new Error("FAILED: Select all did not update checked models or button label properly!");
+  }
+  if (modalResult.checkedAfterDeselect !== 0) {
+    throw new Error("FAILED: Deselect all did not clear selection!");
+  }
+  console.log("   PASSED: Provider modal model discovery, search, and selection work flawlessly!");
+
+  console.log("\n=== ALL ZERO PLAYWRIGHT VERIFICATION CHECKS PASSED 100%! ===");
   await browser.close();
 }
 

@@ -1,11 +1,10 @@
 {
   "defaults": {
-    "primary": "zero-gateway/default",
     "thinking": "default"
   },
   "agentBindings": {
     "zero": {
-      "model": "zero-gateway/default",
+      "model": "nv/z-ai/glm-5.3-flash",
       "allowOverride": true
     }
   }

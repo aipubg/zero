@@ -48,6 +48,50 @@ async function callGateway(host, method, params = {}) {
       const r = await transport(`${GATEWAY_BASE}/api/gateway/config`, { signal: AbortSignal.timeout(5000) });
       return await r.json();
     }
+    if (method === "zero.providers.save") {
+      let currentProviders = [];
+      try {
+        const getRes = await transport(`${GATEWAY_BASE}/api/gateway/config`, { signal: AbortSignal.timeout(3000) });
+        if (getRes.ok) {
+          const data = await getRes.json();
+          currentProviders = Array.isArray(data.providers) ? data.providers : [];
+        }
+      } catch {}
+
+      const cleanId = (params.id || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+      const existingIdx = currentProviders.findIndex(p => p.id === cleanId);
+      if (existingIdx !== -1) {
+        currentProviders[existingIdx] = params;
+      } else {
+        currentProviders.push(params);
+      }
+
+      const saveRes = await transport(`${GATEWAY_BASE}/api/gateway/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providers: currentProviders }),
+        signal: AbortSignal.timeout(5000),
+      });
+      return await saveRes.json();
+    }
+    if (method === "zero.providers.delete") {
+      let currentProviders = [];
+      try {
+        const getRes = await transport(`${GATEWAY_BASE}/api/gateway/config`, { signal: AbortSignal.timeout(3000) });
+        if (getRes.ok) {
+          const data = await getRes.json();
+          currentProviders = Array.isArray(data.providers) ? data.providers : [];
+        }
+      } catch {}
+      const filtered = currentProviders.filter(p => p.id !== params.id);
+      const saveRes = await transport(`${GATEWAY_BASE}/api/gateway/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providers: filtered }),
+        signal: AbortSignal.timeout(5000),
+      });
+      return await saveRes.json();
+    }
     if (method === "zero.gateway.config.save" || method === "zero.providers.setActive") {
       const body = method === "zero.providers.setActive"
         ? {
@@ -1090,7 +1134,7 @@ export function mountModelsPage(container, context = {}) {
     discCount.style.fontWeight = "600";
     discCount.style.color = "#34d399";
 
-    const discSelectActions = element("div", null);
+    const discSelectActions = element("div", "zero-disc-actions");
     discSelectActions.style.display = "flex";
     discSelectActions.style.gap = "8px";
     const selectAllBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Select all");
@@ -1100,7 +1144,7 @@ export function mountModelsPage(container, context = {}) {
     discSelectActions.append(selectAllBtn, deselectAllBtn);
     discHead.append(discCount, discSelectActions);
 
-    const discSearch = element("input", "zero-modal__input");
+    const discSearch = element("input", "zero-modal__input zero-disc-search");
     discSearch.placeholder = "Search models...";
     discSearch.style.marginBottom = "8px";
 
@@ -1405,7 +1449,7 @@ export function mountModelsPage(container, context = {}) {
         baseUrl: bUrl,
         apiKey: pool[0] || "",
         apiKeys: pool,
-        models: validModels.length > 0 ? validModels : [{ id: "default", name: pName, reasoning: false, image: false }],
+        models: validModels.length > 0 ? validModels : [{ id: pId + "-model", name: pName, reasoning: false, image: false }],
         fallbackModel: fbSelect.value || undefined,
       };
 

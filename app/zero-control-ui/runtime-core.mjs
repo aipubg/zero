@@ -429,10 +429,10 @@ export function createZeroUiRuntimeHandlers({
   const gatewayStatusHandler = methodHandler(METHODS.gatewayStatus, async () => {
     let running = false;
     let version = "1.0.0";
-    let activeModel = "zero-gateway/default";
+    let activeModel = "nv/z-ai/glm-5.3-flash";
     try {
       const live = readLiveConfig();
-      activeModel = live.data?.agents?.defaults?.model?.primary || "zero-gateway/default";
+      activeModel = live.data?.agents?.defaults?.model?.primary || "nv/z-ai/glm-5.3-flash";
       const res = await fetch("http://127.0.0.1:18790/health", { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
@@ -487,10 +487,10 @@ export function createZeroUiRuntimeHandlers({
 
     const live = readLiveConfig();
     const config = live.data;
-    const activeModel = confDefaults?.primary || config?.agents?.defaults?.model?.primary || "default";
+    const activeModel = confDefaults?.primary || config?.agents?.defaults?.model?.primary || "nv/z-ai/glm-5.3-flash";
 
     const defaults = {
-      primary: confDefaults?.primary || config?.agents?.defaults?.model?.primary || "default",
+      primary: confDefaults?.primary || config?.agents?.defaults?.model?.primary || "nv/z-ai/glm-5.3-flash",
       utility: confDefaults?.utility || config?.agents?.defaults?.model?.utility || "",
       fallback: confDefaults?.fallback || config?.agents?.defaults?.model?.fallback || "",
       thinking: confDefaults?.thinking || config?.agents?.defaults?.model?.thinking || "",
@@ -681,9 +681,9 @@ export function createZeroUiRuntimeHandlers({
       }
       const currentPrimary = json.agents?.defaults?.model?.primary || "";
       if (currentPrimary.startsWith(`${id}/`)) {
-        json.agents.defaults.model.primary = "zero-gateway/default";
+        json.agents.defaults.model.primary = "nv/z-ai/glm-5.3-flash";
         if (json.agents.entries?.zero?.model) {
-          json.agents.entries.zero.model.primary = "zero-gateway/default";
+          json.agents.entries.zero.model.primary = "nv/z-ai/glm-5.3-flash";
         }
       }
     });

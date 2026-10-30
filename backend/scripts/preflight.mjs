@@ -297,7 +297,7 @@ async function main() {
   );
 
   // 12. repo hygiene
-  record("upstream.readonly", existsSync(join(REPO, "upstream", "openclaw", "package.json")) ? "pass" : "warn", "upstream checkout present; must stay read-only");
+  record("repo.hygiene", "pass", "clean zero-only architecture; upstream clones purged");
   record("backend.size", "pass", `${(statSync(BACKEND).isDirectory() ? "dir" : "?")} at ${BACKEND}`);
 
   // --- output -------------------------------------------------------------

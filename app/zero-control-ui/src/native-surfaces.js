@@ -358,10 +358,13 @@ function installNativeSurfaces(host) {
     }
   };
 
+  let isApplyingChanges = false;
+  let lastMountedPath = null;
+
   const handleLoginAndDisconnectState = () => {
-    // If login or connect form is rendered
+    // Only rebrand text and hide external links if a login/disconnect dialog is actively shown
     const loginPanels = document.querySelectorAll(
-      ".login-panel, .login-dialog, .auth-dialog, form[class*='login'], .mount-fallback__panel, [class*='login-form']"
+      ".login-panel, .login-dialog, .auth-dialog, form[class*='login'], [class*='login-form']"
     );
     for (const panel of loginPanels) {
       rebrandText(panel);
@@ -375,16 +378,6 @@ function installNativeSurfaces(host) {
         if (row && row.style.display !== "none") {
           row.style.display = "none";
         }
-      }
-      // Auto-click retry / connect if present
-      const connectBtn = panel.querySelector("button[type='submit'], #openclaw-mount-retry, .login-submit-btn");
-      if (connectBtn && !connectBtn.disabled && !connectBtn.__zero_auto_clicked) {
-        connectBtn.__zero_auto_clicked = true;
-        setTimeout(() => {
-          try {
-            connectBtn.click();
-          } catch {}
-        }, 800);
       }
     }
   };
@@ -530,7 +523,8 @@ function installNativeSurfaces(host) {
   };
 
   const cleanupChrome = () => {
-    if (disposed) return;
+    if (disposed || isApplyingChanges) return;
+    isApplyingChanges = true;
     try {
       const specialist = specialistConfigId();
       const main = document.querySelector("main");
@@ -548,8 +542,11 @@ function installNativeSurfaces(host) {
       rebrandAboutEntry();
       rebrandChrome();
       syncChatControls();
+      sanitizeChatModelMenu();
     } catch {
       // Product chrome cleanup is best-effort; it must never break the host.
+    } finally {
+      isApplyingChanges = false;
     }
   };
 
@@ -560,8 +557,6 @@ function installNativeSurfaces(host) {
       document.querySelector(".zero-chat-control-pill")?.remove();
       return;
     }
-
-    renderGenerativeWidgets(document.querySelector(".chat-view, .chat-thread, main") || document.body);
 
     const existingBtn = document.querySelector(".zero-chat-control-pill");
     const container = document.querySelector(
@@ -635,88 +630,166 @@ function installNativeSurfaces(host) {
     container.appendChild(pill);
   };
 
+  const sanitizeChatModelMenu = () => {
+    if (disposed) return;
+    try {
+      // 1. Remove obsolete provider groups (zero-gateway, test-provider, etc.)
+      const obsoleteGroups = document.querySelectorAll(
+        '[data-chat-model-provider-group="zero-gateway"], [data-chat-model-provider-group="test-provider"], [data-chat-model-provider-group="test_provider"]'
+      );
+      for (const g of obsoleteGroups) g.remove();
+
+      // Check headings with text
+      const providerHeadings = document.querySelectorAll(".chat-controls__provider-heading, .chat-controls__provider-label");
+      for (const h of providerHeadings) {
+        const txt = (h.textContent || "").trim();
+        if (txt.includes("Zero Gateway") || txt.includes("Test Provider")) {
+          h.closest(".chat-controls__provider-model-group, section")?.remove();
+        }
+      }
+
+      // 2. Remove obsolete model options
+      const modelOptions = document.querySelectorAll(".chat-controls__model-option, [data-chat-model-option]");
+      for (const opt of modelOptions) {
+        const val = opt.getAttribute("data-chat-model-option") || "";
+        const label = opt.getAttribute("aria-label") || opt.textContent || "";
+        if (
+          val.includes("zero-gateway") ||
+          val.includes("test-model") ||
+          val === "default" ||
+          label.includes("zero-gateway") ||
+          label.includes("test-model") ||
+          label.trim() === "default"
+        ) {
+          opt.remove();
+        }
+      }
+
+      // 3. Clean up the trigger button text if stuck on dummy model
+      const triggerBtn = document.querySelector(".chat-controls__session button, .chat-controls__model button");
+      if (triggerBtn) {
+        const currentText = (triggerBtn.textContent || "").trim();
+        if (
+          currentText.includes("zero-gateway") ||
+          currentText.includes("test-model") ||
+          currentText === "default"
+        ) {
+          for (const node of triggerBtn.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+              node.textContent = "z-ai/glm-5.3-flash";
+              break;
+            }
+          }
+        }
+      }
+    } catch {}
+  };
+
   const scheduleChrome = () => {
     if (disposed || chromeTimer) return;
     chromeTimer = window.setTimeout(() => {
       chromeTimer = null;
       cleanupChrome();
-    }, 120);
+    }, 200);
   };
 
   const sync = () => {
-    if (disposed) return;
-    syncComputerSurface();
-    const kind = currentSurface(host);
-    if (!kind) {
-      unmount();
-      scheduleChrome();
-      return;
-    }
-
-    const selector =
-      kind === "models"
-        ? "openclaw-model-providers-page, openclaw-model-setup-page"
-        : "openclaw-about-page";
-    const nativeEl = document.querySelector(selector);
-    if (nativeEl) {
-      // The host (re)rendered the native screen. Replace it in place and mount
-      // the Zero content at the same position in the native route.
-      unmount();
-      const hostEl = document.createElement("div");
-      hostEl.className = `zero-native-surface zero-native-surface--${kind}`;
-      hostEl.setAttribute("data-zero-native-surface", kind);
-      nativeEl.replaceWith(hostEl);
-      try {
-        const handle =
-          kind === "models"
-            ? mountModelsPage(hostEl, mountContext(host))
-            : mountAboutPage(hostEl, { host });
-        mounted = { kind, hostEl, handle };
-      } catch {
-        mounted = { kind, hostEl, handle: null };
+    if (disposed || isApplyingChanges) return;
+    isApplyingChanges = true;
+    try {
+      syncComputerSurface();
+      const currentPath = routePath(currentLocation());
+      const kind = currentSurface(host);
+      if (!kind) {
+        lastMountedPath = null;
+        unmount();
+        scheduleChrome();
+        return;
       }
-      scheduleChrome();
-      return;
-    }
 
-    // A route change removed the native outlet. Drop the mounted page; the
-    // observer will remount it if the host renders the native screen again.
-    if (mounted && mounted.kind === kind && document.contains(mounted.hostEl)) {
+      // If already mounted at this exact route, do not re-mount or wipe innerHTML
+      if (mounted && mounted.kind === kind && document.contains(mounted.hostEl) && lastMountedPath === currentPath) {
+        scheduleChrome();
+        return;
+      }
+
+      const selector =
+        kind === "models"
+          ? "openclaw-model-providers-page, openclaw-model-setup-page"
+          : "openclaw-about-page";
+      const nativeEl = document.querySelector(selector);
+      if (nativeEl) {
+        // The host (re)rendered the native screen. Replace it in place and mount
+        // the Zero content at the same position in the native route.
+        unmount();
+        lastMountedPath = currentPath;
+        const hostEl = document.createElement("div");
+        hostEl.className = `zero-native-surface zero-native-surface--${kind}`;
+        hostEl.setAttribute("data-zero-native-surface", kind);
+        nativeEl.replaceWith(hostEl);
+        try {
+          const handle =
+            kind === "models"
+              ? mountModelsPage(hostEl, mountContext(host))
+              : mountAboutPage(hostEl, { host });
+          mounted = { kind, hostEl, handle };
+        } catch {
+          mounted = { kind, hostEl, handle: null };
+        }
+        scheduleChrome();
+        return;
+      }
+
+      // A route change removed the native outlet. Drop the mounted page; the
+      // observer will remount it if the host renders the native screen again.
+      if (mounted && mounted.kind === kind && document.contains(mounted.hostEl)) {
+        scheduleChrome();
+        return;
+      }
+      lastMountedPath = null;
+      unmount();
       scheduleChrome();
-      return;
+    } finally {
+      isApplyingChanges = false;
     }
-    unmount();
-    scheduleChrome();
   };
 
   const scheduleSync = () => {
     if (disposed || syncScheduled) return;
     syncScheduled = true;
-    queueMicrotask(() => {
+    const scheduleFn = typeof window !== "undefined" && window.requestAnimationFrame ? window.requestAnimationFrame : queueMicrotask;
+    scheduleFn(() => {
       syncScheduled = false;
       sync();
     });
   };
 
+  const isInsideZeroTree = (node) => {
+    if (!node || node.nodeType !== 1) return false;
+    return Boolean(
+      node.closest?.(".zero-native-surface, .zero-computer-hold-host, .zero-chat-control-pill, .zero-gen-widget, .zero-admin-config")
+    );
+  };
+
   const nodeIsRelevant = (node) => {
     if (!node || node.nodeType !== 1) return false;
+    if (isInsideZeroTree(node)) return false;
     const selector = `${SURFACE_SELECTOR}, ${COMPUTER_SELECTOR}, ${CHROME_SELECTOR}`;
     return Boolean(node.matches?.(selector) || node.querySelector?.(selector));
   };
 
-  const insideComputerHold = (node) =>
-    Boolean(
-      node?.nodeType === 1 &&
-        node.closest?.(".zero-computer-hold-host"),
-    );
+  const insideComputerHold = (node) => isInsideZeroTree(node);
 
   const mutationIsRelevant = (record) => {
-    // Zero's own hold bar renders and polls inside its wrapper. Those mutations
-    // are not native surface changes, and treating them as such would re-enter
-    // sync and remount the bar forever.
-    if (insideComputerHold(record.target)) return false;
+    // If Zero is currently executing its own sync or chrome cleanup, ignore self-mutations completely
+    if (isApplyingChanges) return false;
+
+    // Zero's own surfaces and pills render and poll inside their wrappers. Ignore them.
+    if (record.target && isInsideZeroTree(record.target)) return false;
+
     if (record.type === "characterData") {
       const parent = record.target?.parentElement;
+      if (parent && isInsideZeroTree(parent)) return false;
       return Boolean(parent?.closest?.(CHROME_SELECTOR));
     }
     if (record.type === "attributes") return nodeIsRelevant(record.target);
@@ -733,10 +806,10 @@ function installNativeSurfaces(host) {
       return true;
     }
     for (const node of record.addedNodes) {
-      if (!insideComputerHold(node) && nodeIsRelevant(node)) return true;
+      if (!isInsideZeroTree(node) && nodeIsRelevant(node)) return true;
     }
     for (const node of record.removedNodes) {
-      if (!insideComputerHold(node) && nodeIsRelevant(node)) return true;
+      if (!isInsideZeroTree(node) && nodeIsRelevant(node)) return true;
     }
     return false;
   };

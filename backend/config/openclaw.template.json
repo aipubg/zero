@@ -25,23 +25,13 @@
   "models": {
     "mode": "replace",
     "providers": {
-      "zero-gateway": {
-        "baseUrl": "http://127.0.0.1:18790/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "default",
-            "name": "default"
-          }
-        ]
-      },
       "nv": {
         "baseUrl": "https://integrate.api.nvidia.com/v1",
         "api": "openai-completions",
         "models": [
           {
-            "id": "default",
-            "name": "default"
+            "id": "z-ai/glm-5.3-flash",
+            "name": "z-ai/glm-5.3-flash"
           },
           {
             "id": "minimaxai/minimax-m3.1-flash",
@@ -90,10 +80,6 @@
           {
             "id": "nvidia/nemotron-nano-3-30b-a3b",
             "name": "nvidia/nemotron-nano-3-30b-a3b"
-          },
-          {
-            "id": "z-ai/glm-5.3-flash",
-            "name": "z-ai/glm-5.3-flash"
           }
         ],
         "apiKey": "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"
@@ -107,12 +93,10 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "zero-gateway/default",
-        "fallbacks": [
-          "default"
-        ]
+        "primary": "nv/z-ai/glm-5.3-flash",
+        "fallbacks": []
       },
-      "utilityModel": "default",
+      "utilityModel": "nv/z-ai/glm-5.3-flash",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -142,7 +126,8 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "zero-gateway/default"
+          "primary": "nv/z-ai/glm-5.3-flash",
+          "fallbacks": []
         }
       }
     }
