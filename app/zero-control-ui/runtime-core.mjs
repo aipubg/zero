@@ -85,6 +85,14 @@ export const METHODS = Object.freeze({
   ggufScan: "zero.gateway.gguf.scan",
 });
 
+export const GATEWAY_EXTENSION_METHODS = Object.freeze({
+  gatewayProxy: "zero.gateway.proxy",
+  gatewayConfig: "zero.gateway.config",
+  gatewayConfigGet: "zero.gateway.config.get",
+  gatewayConfigSave: "zero.gateway.config.save",
+  localGguf: "zero.gateway.localGguf",
+});
+
 export const ERROR_CODE = "zero-control-ui:bad-request";
 export const UNAVAILABLE_CODE = "zero-control-ui:unavailable";
 
@@ -445,20 +453,28 @@ export function createZeroUiRuntimeHandlers({
   });
 
   const providersListHandler = methodHandler(METHODS.providersList, async () => {
-    const live = readLiveConfig();
-    const config = live.data;
-    const activeModel = config?.agents?.defaults?.model?.primary || "zero-gateway/default";
-    const rawProviders = config?.models?.providers || {};
+    let confProviders = [];
+    let confDefaults = null;
+    let confAgentBindings = null;
 
-    const providers = Object.entries(rawProviders).map(([id, p]) => ({
-      id,
-      name: p.name || id,
-      baseUrl: p.baseUrl || "",
-      api: p.api || "openai-completions",
-      models: Array.isArray(p.models) ? p.models : [],
-      enabled: p.enabled !== false,
-      isActive: (p.models || []).some((m) => `${id}/${m.id}` === activeModel || m.id === activeModel) || activeModel.startsWith(`${id}/`),
-    }));
+    try {
+      const res = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        confProviders = Array.isArray(data.providers) ? data.providers : [];
+        confDefaults = data.defaults || null;
+        confAgentBindings = data.agentBindings || null;
+      }
+    } catch {}
+
+    let offlineModels = [];
+    try {
+      const res = await fetch("http://127.0.0.1:18790/api/gateway/local-gguf/models", { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        offlineModels = Array.isArray(data.models) ? data.models : [];
+      }
+    } catch {}
 
     let gatewayModels = [];
     try {
@@ -469,14 +485,19 @@ export function createZeroUiRuntimeHandlers({
       }
     } catch {}
 
+    const live = readLiveConfig();
+    const config = live.data;
+    const activeModel = confDefaults?.primary || config?.agents?.defaults?.model?.primary || "default";
+
     const defaults = {
-      primary: config?.agents?.defaults?.model?.primary || "zero-gateway/default",
-      utility: config?.agents?.defaults?.model?.utility || "",
-      fallback: config?.agents?.defaults?.model?.fallback || "",
-      thinking: config?.agents?.defaults?.model?.thinking || "",
-      fast: config?.agents?.defaults?.model?.fast || "",
+      primary: confDefaults?.primary || config?.agents?.defaults?.model?.primary || "default",
+      utility: confDefaults?.utility || config?.agents?.defaults?.model?.utility || "",
+      fallback: confDefaults?.fallback || config?.agents?.defaults?.model?.fallback || "",
+      thinking: confDefaults?.thinking || config?.agents?.defaults?.model?.thinking || "",
+      fast: confDefaults?.fastMode || config?.agents?.defaults?.model?.fast || "",
     };
-    const agentZero = {
+
+    const agentZero = confAgentBindings?.zero || {
       primary: config?.agents?.entries?.zero?.model?.primary || defaults.primary,
       fallbacks: config?.agents?.entries?.zero?.model?.fallbacks || [],
       allowUnverifiedOverride: Boolean(config?.agents?.entries?.zero?.model?.allowUnverifiedOverride),
@@ -485,9 +506,11 @@ export function createZeroUiRuntimeHandlers({
     return {
       ok: true,
       activeModel,
-      providers,
+      providers: confProviders,
+      offlineModels,
       gatewayModels,
       defaults,
+      agentBindings: confAgentBindings,
       agentZero,
     };
   });
@@ -497,6 +520,34 @@ export function createZeroUiRuntimeHandlers({
     if (!modelId || typeof modelId !== "string") {
       throw new BadRequestError("zero.providers.setActive requires a valid modelId string.");
     }
+
+    const defaults = {
+      primary: modelId,
+      ...(params?.utility !== undefined ? { utility: params.utility } : {}),
+      ...(params?.fallback !== undefined ? { fallback: params.fallback } : {}),
+      ...(params?.thinking !== undefined ? { thinking: params.thinking } : {}),
+      ...(params?.fast !== undefined ? { fastMode: params.fast } : {}),
+    };
+    const agentBindings = {
+      zero: {
+        model: params?.agentModel || modelId,
+        allowOverride: params?.allowUnverifiedOverride !== undefined ? Boolean(params.allowUnverifiedOverride) : true,
+      },
+    };
+
+    // 1. Sync to 18790
+    try {
+      await fetch("http://127.0.0.1:18790/api/gateway/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ defaults, agentBindings }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch (e) {
+      logger?.warn?.(`[zero-providers] Error syncing defaults to 18790: ${e?.message}`);
+    }
+
+    // 2. Also write live config
     writeLiveConfig((json) => {
       json.agents = json.agents || {};
       json.agents.defaults = json.agents.defaults || {};
@@ -515,12 +566,9 @@ export function createZeroUiRuntimeHandlers({
       } else if (params?.syncAgent !== false) {
         json.agents.entries.zero.model.primary = modelId;
       }
-      if (params?.allowUnverifiedOverride !== undefined) {
-        json.agents.entries.zero.model.allowUnverifiedOverride = Boolean(params.allowUnverifiedOverride);
-      }
     });
     logger?.info?.(`[zero-providers] active model switched to: ${modelId}`);
-    return { ok: true, activeModel: modelId };
+    return { ok: true, activeModel: modelId, defaults, agentBindings };
   });
 
   const providersSaveHandler = methodHandler(METHODS.providersSave, async (params) => {
@@ -538,46 +586,95 @@ export function createZeroUiRuntimeHandlers({
         }))
       : [{ id: "default", name: name || cleanId, reasoning: false, image: false }];
 
+    const newProvider = {
+      id: cleanId,
+      name: name || cleanId,
+      baseUrl: baseUrl.trim(),
+      api: api || "openai-completions",
+      models: modelList,
+    };
+    if (Array.isArray(apiKeys) && apiKeys.length > 0) {
+      newProvider.apiKeys = apiKeys.filter(k => typeof k === "string" && k.trim());
+      newProvider.apiKey = newProvider.apiKeys[0];
+    } else if (apiKey && typeof apiKey === "string" && apiKey.trim()) {
+      newProvider.apiKey = apiKey.trim();
+      newProvider.apiKeys = [apiKey.trim()];
+    }
+    if (fallbackModel) newProvider.fallbackModel = fallbackModel;
+    if (headers) newProvider.headers = headers;
+
+    // 1. Sync with 18790
+    try {
+      const getRes = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(3000) });
+      let currentProviders = [];
+      if (getRes.ok) {
+        const data = await getRes.json();
+        currentProviders = Array.isArray(data.providers) ? data.providers : [];
+      }
+      const existingIdx = currentProviders.findIndex(p => p.id === cleanId);
+      if (existingIdx !== -1) {
+        currentProviders[existingIdx] = newProvider;
+      } else {
+        currentProviders.push(newProvider);
+      }
+      await fetch("http://127.0.0.1:18790/api/gateway/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providers: currentProviders }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch (e) {
+      logger?.warn?.(`[zero-providers] Error syncing save to 18790: ${e?.message}`);
+    }
+
+    // 2. Also write strictly sanitized live config for OpenClaw
+    const openclawProvConfig = {
+      baseUrl: baseUrl || "",
+      api: api || "openai-completions",
+      models: (models || []).map((m) => {
+        if (typeof m === "string") return { id: m };
+        return { id: m.id, ...(m.name ? { name: m.name } : {}) };
+      }),
+    };
+    if (apiKey) {
+      openclawProvConfig.apiKey = apiKey.trim();
+    }
+    if (headers) {
+      openclawProvConfig.headers = headers;
+    }
+
     writeLiveConfig((json) => {
       json.models = json.models || { mode: "merge", providers: {} };
       json.models.providers = json.models.providers || {};
-      const provConfig = {
-        name: name || cleanId,
-        baseUrl: baseUrl.trim(),
-        api: api || "openai-completions",
-        models: modelList,
-      };
-
-      // Support single key or key pool
-      if (Array.isArray(apiKeys) && apiKeys.length > 0) {
-        provConfig.apiKeys = apiKeys.filter(k => typeof k === "string" && k.trim());
-        if (provConfig.apiKeys.length > 0) {
-          provConfig.apiKey = provConfig.apiKeys[0];
-        }
-      } else if (apiKey && typeof apiKey === "string" && apiKey.trim()) {
-        provConfig.apiKey = apiKey.trim();
-        provConfig.apiKeys = [apiKey.trim()];
-      }
-
-      // Optional fallback model
-      if (fallbackModel && typeof fallbackModel === "string" && fallbackModel.trim()) {
-        provConfig.fallbackModel = fallbackModel.trim();
-      }
-
-      // Optional custom headers
-      if (headers && (Array.isArray(headers) || typeof headers === "object")) {
-        provConfig.headers = headers;
-      }
-
-      json.models.providers[cleanId] = provConfig;
+      json.models.providers[cleanId] = openclawProvConfig;
     });
 
-    return { ok: true, providerId: cleanId };
+    return { ok: true, providerId: cleanId, provider: newProvider };
   });
 
   const providersDeleteHandler = methodHandler(METHODS.providersDelete, async (params) => {
     const id = params?.id;
     if (!id) throw new BadRequestError("Missing provider id");
+
+    // 1. Delete on 18790
+    try {
+      const getRes = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(3000) });
+      if (getRes.ok) {
+        const data = await getRes.json();
+        const currentProviders = Array.isArray(data.providers) ? data.providers : [];
+        const filtered = currentProviders.filter(p => p.id !== id);
+        await fetch("http://127.0.0.1:18790/api/gateway/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ providers: filtered }),
+          signal: AbortSignal.timeout(5000),
+        });
+      }
+    } catch (e) {
+      logger?.warn?.(`[zero-providers] Error syncing delete to 18790: ${e?.message}`);
+    }
+
+    // 2. Also remove from openclaw.json
     writeLiveConfig((json) => {
       if (json.models?.providers?.[id]) {
         delete json.models.providers[id];
@@ -591,6 +688,42 @@ export function createZeroUiRuntimeHandlers({
       }
     });
     return { ok: true, deleted: id };
+  });
+
+  const gatewayProxyHandler = methodHandler(METHODS.gatewayProxy, async (params) => {
+    try {
+      const res = await fetch("http://127.0.0.1:18790/api/gateway/proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params || {}),
+        signal: AbortSignal.timeout(30000),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, ...data };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  const gatewayConfigHandler = methodHandler(METHODS.gatewayConfig, async (params) => {
+    try {
+      const isPost = params?.method === "POST" || params?.providers !== undefined || params?.defaults !== undefined || params?.agentBindings !== undefined;
+      if (isPost) {
+        const res = await fetch("http://127.0.0.1:18790/api/gateway/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+          signal: AbortSignal.timeout(5000),
+        });
+        const data = await res.json();
+        return { ok: res.ok, ...data };
+      }
+      const res = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(5000) });
+      const data = await res.json();
+      return { ok: res.ok, ...data };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   });
 
   const providersTestHandler = methodHandler(METHODS.providersTest, async (params) => {
@@ -956,7 +1089,12 @@ export function createZeroUiRuntimeHandlers({
     [METHODS.providersSave]: providersSaveHandler,
     [METHODS.providersDelete]: providersDeleteHandler,
     [METHODS.providersTest]: providersTestHandler,
+    [METHODS.gatewayProxy]: gatewayProxyHandler,
+    [METHODS.gatewayConfig]: gatewayConfigHandler,
+    [METHODS.gatewayConfigGet]: gatewayConfigHandler,
+    [METHODS.gatewayConfigSave]: gatewayConfigHandler,
     [METHODS.ggufScan]: ggufScanHandler,
+    [METHODS.localGguf]: ggufScanHandler,
   };
 }
 
@@ -1027,6 +1165,11 @@ export function registerZeroUiRuntime(api, options = {}) {
             : undefined;
       api.registerGatewayMethod(name, handlers[name], methodOptions);
       registered.push(name);
+    }
+    for (const name of Object.values(GATEWAY_EXTENSION_METHODS)) {
+      if (typeof handlers[name] === "function") {
+        api.registerGatewayMethod(name, handlers[name], { scope: "operator.write" });
+      }
     }
     if (options.initializeObservation !== false) {
       void getObservationLifecycle()

@@ -222,6 +222,129 @@ async function runEndToEndVerification() {
 
   console.log("   PASSED: Both modals (+ Add Provider and Import GGUF) open and close cleanly!");
 
+  // STEP 8: Create a Custom Provider via + Add Provider Modal
+  console.log("\n8. Testing Provider Creation & Discovery UI...");
+  await page.evaluate(() => {
+    const addBtn = document.querySelector(".zero-models-btn--add-provider");
+    if (addBtn) addBtn.click();
+  });
+  await page.waitForTimeout(500);
+
+  await page.evaluate(() => {
+    const inputs = Array.from(document.querySelectorAll('.zero-modal__body .zero-modal__field input.zero-modal__input'));
+    const idInp = inputs[0];
+    const nameInp = inputs[1];
+    const urlInp = inputs[2];
+    if (idInp) idInp.value = "test-provider";
+    if (nameInp) nameInp.value = "Test Provider Inc";
+    if (urlInp) urlInp.value = "http://127.0.0.1:18790/v1";
+
+    // Set model in table
+    const tableIdInp = document.querySelector('.zero-models-table__row input');
+    if (tableIdInp) {
+      tableIdInp.value = "test-model-1";
+      if (typeof tableIdInp.oninput === "function") tableIdInp.oninput();
+    }
+  });
+
+  // Save provider
+  await page.evaluate(() => {
+    const saveBtn = Array.from(document.querySelectorAll(".zero-modal button")).find(b => b.innerText.includes("Save Provider"));
+    if (saveBtn) saveBtn.click();
+  });
+  await page.waitForTimeout(1500);
+
+  // Verify provider card is rendered in section 3
+  const providerCardData = await page.evaluate(() => {
+    const card = document.querySelector('.zero-provider-card[data-provider-id="test-provider"]');
+    if (!card) return null;
+    const name = card.querySelector('.zero-provider-card__name')?.innerText.trim();
+    const chips = Array.from(card.querySelectorAll('.zero-model-chip')).map(c => c.innerText.trim());
+    return { name, chips };
+  });
+  console.log("   Rendered Provider Card:", providerCardData);
+  if (!providerCardData || !providerCardData.chips.some(c => c.includes("test-model-1") || c.includes("default"))) {
+    throw new Error("FAILED: Provider card was not rendered or model chip missing!");
+  }
+  console.log("   PASSED: Provider card created with live chips!");
+
+  // STEP 9: Test Model Assignment to Zero Agent
+  console.log("\n9. Testing Model Assignment to Zero Agent...");
+  await page.evaluate(() => {
+    const select = document.querySelector(".zero-agent-assign-select");
+    if (select && select.options.length > 0) {
+      const opt = Array.from(select.options).find(o => o.value.includes("test-provider") || o.value.includes("test-model") || o.value.includes("default")) || select.options[select.options.length - 1];
+      if (opt) {
+        select.value = opt.value;
+        select.dispatchEvent(new Event("change"));
+      }
+    }
+    const assignBtn = document.querySelector(".zero-btn-assign-agent");
+    if (assignBtn) assignBtn.click();
+  });
+  await page.waitForTimeout(1500);
+
+  const activeModelDisplay = await page.evaluate(() => {
+    return document.querySelector(".zero-agent-desc-box__value")?.innerText.trim();
+  });
+  console.log("   Active Model Display:", activeModelDisplay);
+  if (!activeModelDisplay) {
+    throw new Error("FAILED: Active model display empty!");
+  }
+  console.log("   PASSED: Model assigned to Zero agent!");
+
+  // STEP 10: Verify /chat/zero Reasoning Toggle Button
+  console.log("\n10. Navigating to /chat/zero and Testing Reasoning Toggle...");
+  await page.goto("http://127.0.0.1:18789/chat/zero", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2000);
+
+  const reasoningToggleCheck = await page.evaluate(() => {
+    const btn = document.querySelector(".zero-reasoning-toggle, .zero-reasoning-toggle-btn");
+    if (!btn) return { found: false };
+    const initialText = btn.innerText.trim();
+    btn.click();
+    const clickedText = btn.innerText.trim();
+    return {
+      found: true,
+      initialText,
+      clickedText
+    };
+  });
+  console.log("   Reasoning Toggle Check:", reasoningToggleCheck);
+  if (!reasoningToggleCheck.found) {
+    throw new Error("FAILED: Reasoning toggle button not found on /chat/zero topbar!");
+  }
+  if (!reasoningToggleCheck.initialText.includes("Reasoning:") || !reasoningToggleCheck.clickedText.includes("Reasoning:")) {
+    throw new Error(`FAILED: Reasoning toggle button format incorrect! Initial: ${reasoningToggleCheck.initialText}, Clicked: ${reasoningToggleCheck.clickedText}`);
+  }
+  console.log("   PASSED: Reasoning toggle button functions on /chat/zero!");
+
+  // STEP 11: Cleanup Test Provider
+  console.log("\n11. Cleaning up Test Provider from Settings...");
+  await page.goto("http://127.0.0.1:18789/settings/model-providers", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2000);
+
+  page.on("dialog", async dialog => {
+    await dialog.accept();
+  });
+
+  await page.evaluate(() => {
+    const card = document.querySelector('.zero-provider-card[data-provider-id="test-provider"]');
+    if (card) {
+      const delBtn = card.querySelector(".zero-providers-btn--danger");
+      if (delBtn) delBtn.click();
+    }
+  });
+  await page.waitForTimeout(1500);
+
+  const remainingCards = await page.evaluate(() => {
+    return document.querySelectorAll('.zero-provider-card[data-provider-id="test-provider"]').length;
+  });
+  if (remainingCards > 0) {
+    throw new Error("FAILED: Test provider was not deleted!");
+  }
+  console.log("   PASSED: Test provider cleaned up successfully!");
+
   console.log("\n=== ALL ZERO MODELS CLEAN UI CHECKS PASSED 100%! ===");
   await browser.close();
 }

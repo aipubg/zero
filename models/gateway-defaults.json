@@ -1,14 +1,11 @@
 {
   "defaults": {
-    "primary": "default",
-    "utility": "default",
-    "fallback": "default",
-    "thinking": "default",
-    "fastMode": "disabled"
+    "primary": "zero-gateway/default",
+    "thinking": "default"
   },
   "agentBindings": {
     "zero": {
-      "model": "default",
+      "model": "zero-gateway/default",
       "allowOverride": true
     }
   }

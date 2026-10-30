@@ -30,20 +30,30 @@
         "api": "openai-completions",
         "models": [
           {
-            "id": "gguf/moondream2-text-model-f16_ct-vicuna",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (Primary)"
+            "id": "test-model-1",
+            "name": "test-model-1 (Primary)"
           },
           {
             "id": "@fast",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@fast)"
+            "name": "test-model-1 (@fast)"
           },
           {
             "id": "@coder",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@coder)"
+            "name": "test-model-1 (@coder)"
           },
           {
             "id": "@reasoning",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@reasoning)"
+            "name": "test-model-1 (@reasoning)"
+          }
+        ]
+      },
+      "test-provider": {
+        "baseUrl": "http://127.0.0.1:18790/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "test-model-1",
+            "name": "default"
           }
         ]
       }
@@ -56,10 +66,12 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "gguf/moondream2-text-model-f16_ct-vicuna",
-        "fallbacks": []
+        "primary": "test-model-1",
+        "fallbacks": [
+          "default"
+        ]
       },
-      "utilityModel": "",
+      "utilityModel": "default",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -89,7 +101,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": ""
+          "primary": "zero-gateway/default"
         }
       }
     }

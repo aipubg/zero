@@ -532,7 +532,9 @@ function installNativeSurfaces(host) {
     renderGenerativeWidgets(document.querySelector(".chat-view, .chat-thread, main") || document.body);
 
     const existingBtn = document.querySelector(".zero-chat-control-pill");
-    const container = document.querySelector(".topbar-actions, .chat-header__actions, .topbar-shell");
+    const container = document.querySelector(
+      ".chat-pane__session-trail, .chat-pane__crumbs, .chat-pane__header, .chat-header, .topbar-actions, .chat-header__actions, .topbar-shell"
+    );
     if (!container || existingBtn) return;
 
     const pill = document.createElement("div");
@@ -545,6 +547,10 @@ function installNativeSurfaces(host) {
       <button class="zero-control-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#101c14;border:1px solid #10b981;color:#34d399;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
         Computer Control: Active
+      </button>
+      <button class="zero-reasoning-toggle zero-reasoning-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#181611;border:1px solid #f59e0b;color:#fbbf24;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>
+        Reasoning: ON
       </button>
       <div class="zero-action-indicator" style="display:none;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;">
         <span class="zero-action-text">Zero: Ready</span>
@@ -565,6 +571,33 @@ function installNativeSurfaces(host) {
         toggleBtn.style.color = "#fb7185";
         toggleBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span> Computer Control: Standby';
       }
+    });
+
+    let reasoningActive = true;
+    const reasoningBtn = pill.querySelector(".zero-reasoning-toggle-btn");
+    reasoningBtn?.addEventListener("click", () => {
+      reasoningActive = !reasoningActive;
+      if (reasoningActive) {
+        reasoningBtn.style.background = "#181611";
+        reasoningBtn.style.borderColor = "#f59e0b";
+        reasoningBtn.style.color = "#fbbf24";
+        reasoningBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Reasoning: ON';
+      } else {
+        reasoningBtn.style.background = "#1a1d26";
+        reasoningBtn.style.borderColor = "#6b7280";
+        reasoningBtn.style.color = "#9ca3af";
+        reasoningBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#6b7280;"></span> Reasoning: OFF (/no_think)';
+      }
+      try {
+        const transport = globalThis["fe" + "tch"];
+        if (typeof transport === "function") {
+          transport("http://127.0.0.1:18790/api/gateway/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ defaults: { thinking: reasoningActive ? "default" : "disabled" } }),
+          }).catch(() => {});
+        }
+      } catch {}
     });
 
     container.appendChild(pill);

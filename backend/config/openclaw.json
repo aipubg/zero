@@ -30,20 +30,20 @@
         "api": "openai-completions",
         "models": [
           {
-            "id": "default",
-            "name": "default (Primary)"
+            "id": "test-model-1",
+            "name": "test-model-1 (Primary)"
           },
           {
             "id": "@fast",
-            "name": "default (@fast)"
+            "name": "test-model-1 (@fast)"
           },
           {
             "id": "@coder",
-            "name": "default (@coder)"
+            "name": "test-model-1 (@coder)"
           },
           {
             "id": "@reasoning",
-            "name": "default (@reasoning)"
+            "name": "test-model-1 (@reasoning)"
           }
         ]
       }
@@ -56,7 +56,7 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "default",
+        "primary": "test-model-1",
         "fallbacks": [
           "default"
         ]
@@ -91,7 +91,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "default",
+          "primary": "test-model-1",
           "allowUnverifiedOverride": true
         }
       }

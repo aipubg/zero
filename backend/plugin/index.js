@@ -613,6 +613,13 @@ const zeroPolicyPlugin = definePluginEntry({
       api.registerGatewayMethod(cfg.controlMethodName, createControlHandler(state, api.logger), {
         scope: "operator.write",
       });
+
+      // Forward zero.providers.* and zero.gateway.* to 18790
+      try {
+        import("../../app/zero-control-ui/runtime-core.mjs").then((mod) => {
+          mod.registerZeroUiRuntime(api, { policyState: state, initializeObservation: false });
+        }).catch(() => {});
+      } catch {}
     }
 
     const redirects = registerLegacyChatRedirects(api);

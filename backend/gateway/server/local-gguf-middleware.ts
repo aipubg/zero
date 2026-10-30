@@ -117,9 +117,6 @@ export function createGatewayConfigMiddleware() {
                 if (agentBindings.zero.model) {
                   cfg.agents.entries.zero.model.primary = agentBindings.zero.model;
                 }
-                if (agentBindings.zero.allowOverride !== undefined) {
-                  cfg.agents.entries.zero.model.allowUnverifiedOverride = Boolean(agentBindings.zero.allowOverride);
-                }
               }
 
               // Update semantic aliases in models.providers['zero-gateway'].models
@@ -245,7 +242,7 @@ export function createLocalGgufMiddleware() {
       }
 
       // 4. 5-Stage Auto-Setup Pipeline (Supports Real-Time SSE Streaming Logs & JSON)
-      if (pathname === 'setup-pipeline' && req.method === 'POST') {
+      if ((pathname === 'setup-pipeline' || pathname === 'setup') && req.method === 'POST') {
         const body = await readJsonBody();
         const wantsSse =
           body.stream === true ||

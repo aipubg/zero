@@ -264,6 +264,7 @@ async function handleChatCompletions(req, res) {
             stop: body.stop,
             tools: body.tools,
             toolChoice: body.tool_choice,
+            reasoningEnabled: body.reasoningEnabled !== undefined ? body.reasoningEnabled : body.reasoning,
             signal: abortController.signal,
           },
           res

@@ -845,6 +845,24 @@ class LocalGgufEngineService {
         }
       } catch {}
     }
+
+    // Auto-clean local-gguf-engine card from gateway-providers.json if 0 offline models remain
+    try {
+      const remaining = await this.scanModels();
+      if (remaining.length === 0) {
+        const provFile = path.resolve(this.modelsDir, 'gateway-providers.json');
+        if (fs.existsSync(provFile)) {
+          const provRaw = await fs.promises.readFile(provFile, 'utf-8');
+          const provs = JSON.parse(provRaw);
+          if (Array.isArray(provs)) {
+            const filtered = provs.filter((p: any) => p.id !== 'local-gguf-engine' && p.id !== 'gguf');
+            if (filtered.length !== provs.length) {
+              await fs.promises.writeFile(provFile, JSON.stringify(filtered, null, 2), 'utf-8');
+            }
+          }
+        }
+      }
+    } catch {}
   }
 
   /**
@@ -1493,6 +1511,24 @@ class LocalGgufEngineService {
         }
       } catch {}
     }
+
+    // Auto-clean local-gguf-engine card from gateway-providers.json if 0 offline models remain
+    try {
+      const remaining = await this.scanModels();
+      if (remaining.length === 0) {
+        const provFile = path.resolve(this.modelsDir, 'gateway-providers.json');
+        if (fs.existsSync(provFile)) {
+          const provRaw = await fs.promises.readFile(provFile, 'utf-8');
+          const provs = JSON.parse(provRaw);
+          if (Array.isArray(provs)) {
+            const filtered = provs.filter((p: any) => p.id !== 'local-gguf-engine' && p.id !== 'gguf');
+            if (filtered.length !== provs.length) {
+              await fs.promises.writeFile(provFile, JSON.stringify(filtered, null, 2), 'utf-8');
+            }
+          }
+        }
+      }
+    } catch {}
   }
 
   /**
@@ -1526,6 +1562,19 @@ class LocalGgufEngineService {
         }
       }
     }
+
+    // Prune local-gguf-engine from gateway-providers.json
+    try {
+      const provFile = path.resolve(this.modelsDir, 'gateway-providers.json');
+      if (fs.existsSync(provFile)) {
+        const provRaw = await fs.promises.readFile(provFile, 'utf-8');
+        const provs = JSON.parse(provRaw);
+        if (Array.isArray(provs)) {
+          const filtered = provs.filter((p: any) => p.id !== 'local-gguf-engine' && p.id !== 'gguf');
+          await fs.promises.writeFile(provFile, JSON.stringify(filtered, null, 2), 'utf-8');
+        }
+      }
+    } catch {}
   }
 
   /**
