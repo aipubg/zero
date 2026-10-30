@@ -1,4 +1,5 @@
 import { sanitizeObservedText } from "./perception.mjs";
+import * as Driver from "../src/computer/windows-driver.js";
 
 export const OBSERVATION_TOOL_NAME = "zero_screen_context";
 
@@ -29,6 +30,16 @@ export const OBSERVATION_TOOL_PARAMETERS = Object.freeze({
       default: false,
       description: "Include opt-in workflow suggestion candidates, never actions.",
     },
+    includeLiveScreen: {
+      type: "boolean",
+      default: false,
+      description: "Include live screen resolution, active window bounds, and live DPI scale factor.",
+    },
+    includeElements: {
+      type: "boolean",
+      default: false,
+      description: "Include clickable and interactive UI Automation elements with exact center coordinates.",
+    },
   },
 });
 
@@ -55,11 +66,25 @@ function readParams(params) {
   ) {
     throw new Error("zero_screen_context.includeSuggestions must be a boolean.");
   }
+  if (
+    value.includeLiveScreen !== undefined &&
+    typeof value.includeLiveScreen !== "boolean"
+  ) {
+    throw new Error("zero_screen_context.includeLiveScreen must be a boolean.");
+  }
+  if (
+    value.includeElements !== undefined &&
+    typeof value.includeElements !== "boolean"
+  ) {
+    throw new Error("zero_screen_context.includeElements must be a boolean.");
+  }
   return {
     query: query.trim(),
     limit,
     sinceMinutes,
     includeSuggestions: value.includeSuggestions === true,
+    includeLiveScreen: value.includeLiveScreen === true,
+    includeElements: value.includeElements === true,
   };
 }
 
@@ -179,7 +204,26 @@ export function createObservationTool({
         .map(mapObservationRecord)
         .filter(Boolean)
         .slice(0, 20);
-      if (records.length === 0) {
+
+      let liveScreenInfo = null;
+      if (input.includeLiveScreen || input.includeElements) {
+        try {
+          const [screenSize, winState, cursor, uiaData] = await Promise.all([
+            Driver.getScreenSize(signal).catch(() => ({ width: 1920, height: 1080, scaleFactor: 1.0 })),
+            Driver.getWindowState(signal).catch(() => ({ title: "", process: "", pid: 0 })),
+            Driver.getCursorPosition(signal).catch(() => ({ x: 0, y: 0 })),
+            input.includeElements ? Driver.getElements(signal).catch(() => ({ elements: [] })) : Promise.resolve({ elements: [] }),
+          ]);
+          liveScreenInfo = {
+            screenSize,
+            winState,
+            cursor,
+            elements: uiaData?.elements || [],
+          };
+        } catch {}
+      }
+
+      if (records.length === 0 && !liveScreenInfo) {
         return textResult(
           "Screen observation is enabled, but no local summaries matched. No action was taken.",
           { ok: true, count: 0, records: [] },
@@ -195,6 +239,17 @@ export function createObservationTool({
           `${index + 1}. ${record.capturedAt} | app=${JSON.stringify(record.app)} | window=${JSON.stringify(record.window)} | source=${record.source} | confidence=${record.confidence.toFixed(2)}`,
         );
         lines.push(`   ${JSON.stringify(record.summary)}`);
+      }
+      if (liveScreenInfo) {
+        lines.push("--- LIVE SCREEN & INTERACTIVE ELEMENTS (UIA) ---");
+        lines.push(`Screen: ${liveScreenInfo.screenSize.width}x${liveScreenInfo.screenSize.height} (Scale factor: ${liveScreenInfo.screenSize.scaleFactor}) | Cursor: (${liveScreenInfo.cursor.x}, ${liveScreenInfo.cursor.y})`);
+        lines.push(`Active Window: "${liveScreenInfo.winState.title || "Desktop"}" (App: ${liveScreenInfo.winState.process || "System"}, PID: ${liveScreenInfo.winState.pid})`);
+        if (liveScreenInfo.elements.length > 0) {
+          lines.push(`Clickable Elements (${liveScreenInfo.elements.length}):`);
+          for (const el of liveScreenInfo.elements.slice(0, 20)) {
+            lines.push(`- [${el.type}] "${el.name}" at center (${el.centerX}, ${el.centerY}) | bounds: (${el.x}, ${el.y}, ${el.width}x${el.height})`);
+          }
+        }
       }
       lines.push("</untrusted_screen_data>");
       const suggestions = [];
@@ -231,6 +286,7 @@ export function createObservationTool({
         state: status.state,
         privateMode: false,
         records,
+        liveScreen: liveScreenInfo,
         suggestions: suggestions.map((suggestion) => ({
           app: suggestion.app,
           window: suggestion.window,

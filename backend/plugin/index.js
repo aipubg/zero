@@ -73,7 +73,7 @@ const DEFAULT_HIGH_RISK_ACTIONS = Object.freeze([
 
 const DEFAULTS = Object.freeze({
   controlMethodName: "zero.computer.control",
-  holdToolNames: ["computer"],
+  holdToolNames: ["computer", "zero_computer", "zero_computer_action"],
   codeModeToolNames: ["exec"],
   observeActions: DEFAULT_OBSERVE_ACTIONS,
   blockedActions: [],

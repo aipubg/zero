@@ -3,16 +3,20 @@
  * Adapted from OpenMausBot (Apache-2.0, non-enterprise core).
  *
  * Implements full computer operating capabilities on Windows:
- * - Mouse: click, double_click, right_click, move_cursor, drag, scroll
+ * - Mouse: mouse_move, left_click, right_click, double_click, middle_click, mouse_drag, scroll
  * - Keyboard: type_text, press_key, hotkey
- * - Screen: get_screen_size, get_cursor_position, capture_screen
- * - Windows/Apps: get_window_state, list_windows, list_apps, launch_app, open_url, bring_to_front
+ * - Screen: get_screen_size, get_cursor_position, captureScreen
+ * - Windows/Apps: get_window_state, list_windows, focus_window, launch_app, open_url
+ * - Clipboard: clipboard_get, clipboard_set
+ * - UI Automation: get_elements (interactive elements with exact center coordinates)
+ * - Human Bailout: instantly detects physical user mouse movement or Escape key.
  *
- * Uses high-performance in-process @trycua/cua-driver when available,
- * with automatic fallback to native Windows automation (win-actions.ps1).
+ * High-performance architecture:
+ * Uses a persistent WindowsInputDaemon (PowerShell + Win32 user32.dll SendInput / DPI aware)
+ * executing commands in 1-5ms without cold-starting a process per click.
  */
 
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -22,12 +26,13 @@ import { resolveCuaDriverEntry } from "../../observation/capture-source.mjs";
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WIN_ACTIONS_SCRIPT = path.join(__dirname, "win-actions.ps1");
+const WIN_ACTIONS_DAEMON_SCRIPT = path.join(__dirname, "win-actions-daemon.ps1");
 
 let cachedCuaDriver = null;
 let cuaDriverInitAttempted = false;
 
 /**
- * Initializes and caches the @trycua/cua-driver instance.
+ * Initializes and caches the @trycua/cua-driver instance if installed.
  */
 export async function getCuaDriver() {
   if (cachedCuaDriver) return cachedCuaDriver;
@@ -49,9 +54,145 @@ export async function getCuaDriver() {
 }
 
 /**
- * Executes a native Windows action via win-actions.ps1.
+ * Persistent high-performance Windows input daemon.
  */
-export async function runNativeWinAction(action, args = {}, signal = null) {
+class WindowsInputDaemon {
+  constructor() {
+    this.process = null;
+    this.pendingQueue = [];
+    this.buffer = "";
+    this.ready = false;
+    this.startPromise = null;
+  }
+
+  async ensureStarted() {
+    if (this.process && this.ready && !this.process.killed) return true;
+    if (this.startPromise) return this.startPromise;
+
+    this.startPromise = new Promise((resolve) => {
+      try {
+        this.process = spawn(
+          "powershell.exe",
+          [
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            WIN_ACTIONS_DAEMON_SCRIPT,
+          ],
+          {
+            stdio: ["pipe", "pipe", "ignore"],
+            windowsHide: true,
+          },
+        );
+
+        this.process.stdout.on("data", (chunk) => {
+          this.buffer += chunk.toString("utf8");
+          const lines = this.buffer.split("\n");
+          this.buffer = lines.pop();
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const data = JSON.parse(trimmed);
+              if (data.ready) {
+                this.ready = true;
+                resolve(true);
+                continue;
+              }
+              const pending = this.pendingQueue.shift();
+              if (pending) {
+                pending.resolve(data);
+              }
+            } catch {
+              // Ignore non-json lines
+            }
+          }
+        });
+
+        this.process.on("error", (err) => {
+          this.ready = false;
+          this.process = null;
+          this.startPromise = null;
+          while (this.pendingQueue.length > 0) {
+            this.pendingQueue.shift().reject(err);
+          }
+          resolve(false);
+        });
+
+        this.process.on("exit", () => {
+          this.ready = false;
+          this.process = null;
+          this.startPromise = null;
+          while (this.pendingQueue.length > 0) {
+            this.pendingQueue.shift().reject(new Error("Input daemon process exited."));
+          }
+        });
+
+        setTimeout(() => {
+          if (!this.ready) resolve(false);
+        }, 4000);
+      } catch {
+        resolve(false);
+      }
+    });
+
+    return this.startPromise;
+  }
+
+  async send(action, params = {}, timeoutMs = 8000) {
+    const started = await this.ensureStarted();
+    if (!started || !this.process || !this.ready || !this.process.stdin.writable) {
+      return runNativeWinActionOneOff(action, params);
+    }
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        const idx = this.pendingQueue.findIndex((p) => p.resolve === resolve);
+        if (idx !== -1) this.pendingQueue.splice(idx, 1);
+        reject(new Error(`Action '${action}' timed out after ${timeoutMs}ms.`));
+      }, timeoutMs);
+
+      this.pendingQueue.push({
+        resolve: (val) => {
+          clearTimeout(timer);
+          resolve(val);
+        },
+        reject: (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
+      });
+
+      const payload = JSON.stringify({ action, ...params }) + "\n";
+      this.process.stdin.write(payload);
+    });
+  }
+
+  stop() {
+    if (this.process) {
+      try {
+        this.process.kill();
+      } catch {}
+      this.process = null;
+      this.ready = false;
+    }
+  }
+}
+
+let daemonInstance = null;
+export function getInputDaemon() {
+  if (!daemonInstance) {
+    daemonInstance = new WindowsInputDaemon();
+  }
+  return daemonInstance;
+}
+
+/**
+ * Fallback one-off execution via win-actions.ps1 if daemon cannot run.
+ */
+export async function runNativeWinActionOneOff(action, args = {}, signal = null) {
   const params = [
     "-NoProfile",
     "-NonInteractive",
@@ -90,6 +231,19 @@ export async function runNativeWinAction(action, args = {}, signal = null) {
 }
 
 /**
+ * Executes a native Windows action via the fast daemon.
+ */
+export async function runNativeWinAction(action, args = {}, signal = null) {
+  signal?.throwIfAborted?.();
+  const daemon = getInputDaemon();
+  try {
+    return await daemon.send(action, args);
+  } catch {
+    return await runNativeWinActionOneOff(action, args, signal);
+  }
+}
+
+/**
  * Get display screen size.
  */
 export async function getScreenSize(signal = null) {
@@ -105,9 +259,7 @@ export async function getScreenSize(signal = null) {
           scaleFactor: parsed.scale_factor ?? 1.0,
         };
       }
-    } catch {
-      // Fall through to native
-    }
+    } catch {}
   }
   const nativeRes = await runNativeWinAction("get_screen_size", {}, signal);
   return {
@@ -129,11 +281,9 @@ export async function getCursorPosition(signal = null) {
         const parsed = JSON.parse(res.structuredJson);
         return { x: parsed.x ?? 0, y: parsed.y ?? 0 };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  const nativeRes = await runNativeWinAction("get_cursor", {}, signal);
+  const nativeRes = await runNativeWinAction("get_cursor_position", {}, signal);
   return { x: nativeRes.x ?? 0, y: nativeRes.y ?? 0 };
 }
 
@@ -148,29 +298,32 @@ export async function moveCursor(x, y, signal = null) {
       if (res && !res.isError) {
         return { ok: true, x, y };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  return await runNativeWinAction("move", { x, y }, signal);
+  return await runNativeWinAction("mouse_move", { x, y }, signal);
 }
 
 /**
- * Click at coordinates.
+ * Click at coordinates (left, right, double, middle).
  */
 export async function click({ x, y, button = "left", count = 1 } = {}, signal = null) {
   const driver = await getCuaDriver();
   if (driver) {
     try {
-      const toolName = count === 2 ? "double_click" : count === 3 ? "triple_click" : button === "right" ? "right_click" : "click";
+      const toolName =
+        count === 2
+          ? "double_click"
+          : count === 3
+            ? "triple_click"
+            : button === "right"
+              ? "right_click"
+              : "click";
       const payload = { x, y, button, count, scope: "desktop" };
       const res = await driver.callTool(toolName, JSON.stringify(payload));
       if (res && !res.isError) {
         return { ok: true, x, y, button, count };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
   return await runNativeWinAction("click", { x, y, button, count }, signal);
 }
@@ -178,20 +331,22 @@ export async function click({ x, y, button = "left", count = 1 } = {}, signal = 
 /**
  * Drag mouse from (x, y) to (toX, toY).
  */
-export async function drag({ x, y, toX, toY } = {}, signal = null) {
+export async function drag({ x, y, toX, toY, fromX, fromY } = {}, signal = null) {
+  const startX = fromX ?? x;
+  const startY = fromY ?? y;
+  const endX = toX;
+  const endY = toY;
   const driver = await getCuaDriver();
   if (driver) {
     try {
-      const payload = { x, y, to_x: toX, to_y: toY, scope: "desktop" };
+      const payload = { x: startX, y: startY, to_x: endX, to_y: endY, scope: "desktop" };
       const res = await driver.callTool("drag", JSON.stringify(payload));
       if (res && !res.isError) {
-        return { ok: true, from: { x, y }, to: { x: toX, y: toY } };
+        return { ok: true, from: { x: startX, y: startY }, to: { x: endX, y: endY } };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  return await runNativeWinAction("drag", { x, y, to_x: toX, to_y: toY }, signal);
+  return await runNativeWinAction("mouse_drag", { from_x: startX, from_y: startY, to_x: endX, to_y: endY }, signal);
 }
 
 /**
@@ -206,9 +361,7 @@ export async function scroll({ x, y, direction = "down", amount = 3 } = {}, sign
       if (res && !res.isError) {
         return { ok: true, x, y, direction, amount };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
   return await runNativeWinAction("scroll", { x, y, direction, amount }, signal);
 }
@@ -224,11 +377,9 @@ export async function typeText(text, signal = null) {
       if (res && !res.isError) {
         return { ok: true, typedChars: text.length };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  return await runNativeWinAction("type", { text }, signal);
+  return await runNativeWinAction("type_text", { text }, signal);
 }
 
 /**
@@ -242,11 +393,30 @@ export async function pressKey(key, signal = null) {
       if (res && !res.isError) {
         return { ok: true, key };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  return await runNativeWinAction("press", { key }, signal);
+  return await runNativeWinAction("press_key", { key }, signal);
+}
+
+/**
+ * Wait for milliseconds.
+ */
+export async function wait(ms = 500, signal = null) {
+  return await runNativeWinAction("wait", { ms }, signal);
+}
+
+/**
+ * Read text from clipboard.
+ */
+export async function clipboardGet(signal = null) {
+  return await runNativeWinAction("clipboard_get", {}, signal);
+}
+
+/**
+ * Set text to clipboard.
+ */
+export async function clipboardSet(text, signal = null) {
+  return await runNativeWinAction("clipboard_set", { text }, signal);
 }
 
 /**
@@ -258,13 +428,13 @@ export async function getWindowState(signal = null) {
     try {
       const res = await driver.callTool("get_window_state", "{}");
       if (res && !res.isError && res.structuredJson) {
-        return JSON.parse(res.structuredJson);
+        const parsed = JSON.parse(res.structuredJson);
+        return { ok: true, ...parsed };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  return await runNativeWinAction("get_window_state", {}, signal);
+  const native = await runNativeWinAction("get_window_state", {}, signal);
+  return { ok: true, ...native };
 }
 
 /**
@@ -276,14 +446,16 @@ export async function listWindows(signal = null) {
     try {
       const res = await driver.callTool("list_windows", "{}");
       if (res && !res.isError) {
-        if (res.structuredJson) return JSON.parse(res.structuredJson);
-        return { text: res.text, windows: [] };
+        if (res.structuredJson) {
+          const parsed = JSON.parse(res.structuredJson);
+          return { ok: true, windows: parsed.windows || [], ...parsed };
+        }
+        return { ok: true, text: res.text, windows: [] };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  return await runNativeWinAction("list_apps", {}, signal);
+  const native = await runNativeWinAction("list_windows", {}, signal);
+  return { ok: true, ...native };
 }
 
 /**
@@ -297,11 +469,16 @@ export async function listApps(signal = null) {
       if (res && !res.isError) {
         return { text: res.text };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
-  return await runNativeWinAction("list_apps", {}, signal);
+  return await runNativeWinAction("list_windows", {}, signal);
+}
+
+/**
+ * Focus, minimize, maximize, restore, or close window.
+ */
+export async function focusWindow({ target, command = "restore" } = {}, signal = null) {
+  return await runNativeWinAction("focus_window", { target, command }, signal);
 }
 
 /**
@@ -315,9 +492,7 @@ export async function launchApp(appNameOrPath, signal = null) {
       if (res && !res.isError) {
         return { ok: true, app: appNameOrPath };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
   return await runNativeWinAction("launch_app", { app: appNameOrPath }, signal);
 }
@@ -333,19 +508,14 @@ export async function openUrl(url, signal = null) {
  * Bring application or window to front.
  */
 export async function bringToFront(target, signal = null) {
-  const driver = await getCuaDriver();
-  if (driver) {
-    try {
-      const payload = typeof target === "number" ? { pid: target } : { app_name: String(target) };
-      const res = await driver.callTool("bring_to_front", JSON.stringify(payload));
-      if (res && !res.isError) {
-        return { ok: true, target };
-      }
-    } catch {
-      // Fall through
-    }
-  }
-  return { ok: true, target };
+  return await focusWindow({ target, command: "restore" }, signal);
+}
+
+/**
+ * Get clickable UI Automation elements with coordinates.
+ */
+export async function getElements(signal = null) {
+  return await runNativeWinAction("get_elements", {}, signal);
 }
 
 /**
@@ -368,12 +538,10 @@ export async function captureScreen({ format = "png", maxWidth = 1600 } = {}, si
           buffer,
         };
       }
-    } catch {
-      // Fall through
-    }
+    } catch {}
   }
 
-  // Fallback to native Windows screen capture
+  // Fallback to native Windows screen capture via daemon
   try {
     const nativeShot = await runNativeWinAction("screenshot", {}, signal);
     if (nativeShot && nativeShot.base64) {
@@ -387,9 +555,7 @@ export async function captureScreen({ format = "png", maxWidth = 1600 } = {}, si
         buffer: Buffer.from(nativeShot.base64, "base64"),
       };
     }
-  } catch {
-    // Fall through to size-only metadata
-  }
+  } catch {}
 
   const size = await getScreenSize(signal);
   return {

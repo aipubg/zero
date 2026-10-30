@@ -67,6 +67,7 @@ export const CLI_ADAPTERS = Object.freeze([
 
 export const METHODS = Object.freeze({
   cliStatus: "zero.integrations.cli.status",
+  cliExecute: "zero.integrations.cli.execute",
   connectorStatus: "zero.integrations.connectors.status",
   observationStatus: OBSERVATION_METHODS.status,
   observationControl: OBSERVATION_METHODS.control,
@@ -242,6 +243,34 @@ export function createZeroUiRuntimeHandlers({
       ok: true,
       adapters: await cliStatus({ nativeEligibility: nativeCliEligibility }),
     };
+  });
+
+  const cliExecuteHandler = methodHandler(METHODS.cliExecute, async (params) => {
+    const adapterId = String(params.adapter || "claude").toLowerCase();
+    const adapter = CLI_ADAPTERS.find((a) => a.id === adapterId);
+    const bin = adapter ? adapter.command : adapterId;
+    const commandArgs = Array.isArray(params.args)
+      ? params.args
+      : params.command
+        ? String(params.command).split(/\s+/).filter(Boolean)
+        : [];
+    const cwd = typeof params.cwd === "string" ? params.cwd : process.cwd();
+    try {
+      const { stdout, stderr } = await execFileAsync(bin, commandArgs, {
+        cwd,
+        timeout: 30000,
+        maxBuffer: 1024 * 1024,
+        windowsHide: true,
+      });
+      return { ok: true, stdout: String(stdout || ""), stderr: String(stderr || "") };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+        stdout: error?.stdout ? String(error.stdout) : "",
+        stderr: error?.stderr ? String(error.stderr) : "",
+      };
+    }
   });
 
   const requireObservationEngine = () => {
@@ -912,6 +941,7 @@ export function createZeroUiRuntimeHandlers({
 
   return {
     [METHODS.cliStatus]: cliStatusHandler,
+    [METHODS.cliExecute]: cliExecuteHandler,
     [METHODS.connectorStatus]: connectorStatusHandler,
     [OBSERVATION_METHODS.status]: observationStatusHandler,
     [OBSERVATION_METHODS.control]: observationControlHandler,

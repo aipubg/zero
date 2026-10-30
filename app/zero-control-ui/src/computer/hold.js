@@ -124,14 +124,16 @@ function holdView(state = {}) {
       ? "Released. Zero must capture a fresh desktop before its next action."
       : "No human hold is active. Zero may act when it has a fresh capture.";
   } else if (status === "held-this-client") {
-    detail =
-      "Agent input is refused while you hold control; observation remains available. Release to hand control back, or leave this screen to hand it back automatically.";
+    detail = snapshot?.reason
+      ? `Agent input is refused while you hold control (${snapshot.reason}); observation remains available. Release to hand control back, or leave this screen to hand it back automatically.`
+      : "Agent input is refused while you hold control; observation remains available. Release to hand control back, or leave this screen to hand it back automatically.";
   } else if (snapshot?.owned === true) {
     detail =
       "The Gateway reports a hold for this connection but returned no usable release lease. Re-read status before acting.";
   } else {
-    detail =
-      "Another client holds control. This hold is global and affects all sessions; wait for that client to release.";
+    detail = snapshot?.reason
+      ? `Another client holds control (${snapshot.reason}). This hold is global and affects all sessions; wait for that client to release.`
+      : "Another client holds control. This hold is global and affects all sessions; wait for that client to release.";
   }
 
   return {

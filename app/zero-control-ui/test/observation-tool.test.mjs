@@ -210,7 +210,7 @@ test("plugin registration exposes the observation tool through the supported reg
     logger: { info() {}, warn() {} },
   };
   const runtime = registerZeroUiRuntime(api, { observationEngine: engine });
-  assert.equal(runtime.registered.length, 13);
+  assert.equal(runtime.registered.length, 14);
   assert.ok(runtime.tools.includes(OBSERVATION_TOOL_NAME));
   const obsTool = tools.find((t) => t.name === OBSERVATION_TOOL_NAME);
   assert.ok(obsTool);

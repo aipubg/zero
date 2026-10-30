@@ -14,6 +14,7 @@ import {
 import {
   createComputerTool,
   ZERO_COMPUTER_TOOL_NAME,
+  ZERO_COMPUTER_ACTION_TOOL_NAME,
   ZERO_COMPUTER_TOOL_PARAMETERS,
   createAllComputerTools,
 } from "../src/computer/tools.js";
@@ -152,6 +153,7 @@ test("Computer Tool: parameter validation and execution", async () => {
 test("Computer Tool: createAllComputerTools factory", () => {
   const tools = createAllComputerTools();
   assert.ok(Array.isArray(tools));
-  assert.equal(tools.length, 1);
-  assert.equal(tools[0].name, ZERO_COMPUTER_TOOL_NAME);
+  assert.ok(tools.length >= 1);
+  assert.ok(tools.some((t) => t.name === ZERO_COMPUTER_TOOL_NAME));
+  assert.ok(tools.some((t) => t.name === ZERO_COMPUTER_ACTION_TOOL_NAME));
 });

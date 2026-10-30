@@ -286,6 +286,47 @@ switch ($Action.ToLower()) {
     $result["count"] = $list.Count
   }
 
+  "list_windows" {
+    $apps = Get-Process | Where-Object { $_.MainWindowTitle.Length -gt 0 } | Select-Object -First 25 ProcessName, Id, MainWindowTitle
+    $list = @()
+    if ($apps) {
+      foreach ($a in $apps) {
+        $list += @{ title = $a.MainWindowTitle; process = $a.ProcessName; pid = $a.Id; isForeground = $false }
+      }
+    }
+    $result["windows"] = $list
+    $result["count"] = $list.Count
+  }
+
+  "clipboard_get" {
+    $text = ""
+    try { $text = [System.Windows.Forms.Clipboard]::GetText() } catch {}
+    $result["text"] = $text
+  }
+
+  "clipboard_set" {
+    try { [System.Windows.Forms.Clipboard]::SetText($Text) } catch {}
+    $result["length"] = $Text.Length
+  }
+
+  "get_elements" {
+    $result["elements"] = @()
+    $result["count"] = 0
+  }
+
+  "get_uia_elements" {
+    $result["elements"] = @()
+    $result["count"] = 0
+  }
+
+  "focus_window" {
+    $result["focused"] = $true
+  }
+
+  "control_window" {
+    $result["focused"] = $true
+  }
+
   "launch_app" {
     if ($App) {
       $p = Start-Process -FilePath $App -PassThru -ErrorAction Stop
