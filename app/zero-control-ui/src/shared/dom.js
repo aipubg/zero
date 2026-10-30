@@ -15,5 +15,13 @@ function setAttribute(node, name, value) {
   if (typeof node?.setAttribute === "function") node.setAttribute(name, value);
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
-export { element, setAttribute };
+export { element, setAttribute, escapeHtml };

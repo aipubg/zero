@@ -91,8 +91,6 @@ public static class WinApiCore {
     public const int SW_MINIMIZE = 6;
     public const int SW_HIDE = 0;
 
-    public const int VK_ESCAPE = 0x1B;
-
     public static void Click(int x, int y, string button, int count) {
         SetCursorPos(x, y);
         uint down = MOUSEEVENTF_LEFTDOWN;
@@ -133,8 +131,11 @@ public static class WinApiCore {
         mouse_event(flag, 0, 0, (uint)amount, 0);
     }
 
+    public const int VK_ESCAPE = 0x1B;
+    public const int VK_F8 = 0x77;
+
     public static bool CheckEscapePressed() {
-        return (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
+        return ((GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0) || ((GetAsyncKeyState(VK_F8) & 0x8000) != 0);
     }
 }
 '@
@@ -155,7 +156,7 @@ $script:lastBotY = -1
 
 function Check-HumanBailout() {
     if ([WinApiCore]::CheckEscapePressed()) {
-        return "Escape key was pressed by user."
+        return "Escape or F8 emergency bailout hotkey was pressed by user."
     }
     if ($script:lastBotX -ge 0 -and $script:lastBotY -ge 0) {
         $pt = New-Object WinApiCore+POINT

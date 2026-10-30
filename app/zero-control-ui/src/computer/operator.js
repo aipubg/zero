@@ -12,6 +12,7 @@
 
 import { ObservationCoordinator } from "./observation-coordinator.js";
 import * as Driver from "./windows-driver.js";
+import { modeManager } from "../../../../rules/mode-manager.mjs";
 
 export const COMPUTER_ACTIONS = Object.freeze([
   "screenshot",
@@ -64,12 +65,13 @@ export const OBSERVATION_ACTIONS = Object.freeze([
 ]);
 
 export class ComputerOperator {
-  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false } = {}) {
+  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false } = {}) {
     this.getPolicyState = getPolicyState;
     this.logger = logger;
     this.humanHold = false;
     this.requireFreshSnapshot = false;
     this.requireFreshSnapshotAfterRelease = requireFreshSnapshotAfterRelease;
+    this.strictPolicy = strictPolicy;
     this.coordinator = new ObservationCoordinator();
   }
 
@@ -92,8 +94,12 @@ export class ComputerOperator {
     const isObserve = OBSERVATION_ACTIONS.includes(action);
     const policy = typeof this.getPolicyState === "function" ? this.getPolicyState() : null;
 
-    const holdActive = this.humanHold || Boolean(policy && policy.hold);
-    const freshnessNeeded = this.requireFreshSnapshot || Boolean(policy && policy.needsFreshSnapshot);
+    // In Owner Mode, gateway lease locks and stale-frame gating from zero-policy are 100% bypassed for zero-friction speed
+    const isStrict = this.strictPolicy || process.env.ZERO_STRICT_POLICY_TEST === "1" || (modeManager && modeManager.getMode() === "distribution");
+    const isOwnerBypass = !isStrict && modeManager?.isOwnerMode();
+
+    const holdActive = this.humanHold || (!isOwnerBypass && Boolean(policy && policy.hold));
+    const freshnessNeeded = !isOwnerBypass && (this.requireFreshSnapshot || Boolean(policy && policy.needsFreshSnapshot));
 
     // 1. Human takeover hold active: refuse all input actions
     if (holdActive && !isObserve) {

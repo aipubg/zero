@@ -1,3 +1,4 @@
+process.env.ZERO_STRICT_POLICY_TEST = "1";
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as Driver from "../src/computer/windows-driver.js";

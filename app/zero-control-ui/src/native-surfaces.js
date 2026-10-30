@@ -2,6 +2,7 @@ import { mountAboutPage } from "./pages/about.js";
 import { mountModelsPage } from "./pages/models.js";
 import { mountComputerHold } from "./computer/hold.js";
 import { agentRole } from "./shared/sessions.js";
+import { renderGenerativeWidgets } from "./spaces/generative-widgets.js";
 import {
   SPECIALIST_AGENT_IDS,
   isAboutRoute,
@@ -514,9 +515,59 @@ function installNativeSurfaces(host) {
       removeSwitcherControls();
       rebrandAboutEntry();
       rebrandChrome();
+      syncChatControls();
     } catch {
       // Product chrome cleanup is best-effort; it must never break the host.
     }
+  };
+
+  const syncChatControls = () => {
+    if (disposed) return;
+    const isChat = routePath(currentLocation()).startsWith("/chat");
+    if (!isChat) {
+      document.querySelector(".zero-chat-control-pill")?.remove();
+      return;
+    }
+
+    renderGenerativeWidgets(document.querySelector(".chat-view, .chat-thread, main") || document.body);
+
+    const existingBtn = document.querySelector(".zero-chat-control-pill");
+    const container = document.querySelector(".topbar-actions, .chat-header__actions, .topbar-shell");
+    if (!container || existingBtn) return;
+
+    const pill = document.createElement("div");
+    pill.className = "zero-chat-control-pill";
+    pill.style.cssText = "display:inline-flex;align-items:center;gap:8px;margin-left:12px;font-size:11px;font-weight:600;user-select:none;";
+
+    let controlActive = true;
+
+    pill.innerHTML = `
+      <button class="zero-control-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#101c14;border:1px solid #10b981;color:#34d399;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+        Computer Control: Active
+      </button>
+      <div class="zero-action-indicator" style="display:none;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;">
+        <span class="zero-action-text">Zero: Ready</span>
+      </div>
+    `;
+
+    const toggleBtn = pill.querySelector(".zero-control-toggle-btn");
+    toggleBtn?.addEventListener("click", () => {
+      controlActive = !controlActive;
+      if (controlActive) {
+        toggleBtn.style.background = "#101c14";
+        toggleBtn.style.borderColor = "#10b981";
+        toggleBtn.style.color = "#34d399";
+        toggleBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Computer Control: Active';
+      } else {
+        toggleBtn.style.background = "#271216";
+        toggleBtn.style.borderColor = "#f43f5e";
+        toggleBtn.style.color = "#fb7185";
+        toggleBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span> Computer Control: Standby';
+      }
+    });
+
+    container.appendChild(pill);
   };
 
   const scheduleChrome = () => {

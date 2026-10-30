@@ -54,6 +54,9 @@ import {
 import { OBSERVATION_PREFERENCE_NAMESPACE } from "./observation/preference.mjs";
 import { createSuggestionPolicy } from "./observation/suggestions.mjs";
 import { createObservationTool, OBSERVATION_TOOL_NAME } from "./observation/tool.mjs";
+import { createWatchWorkflowTool, ZERO_WATCH_WORKFLOW_TOOL_NAME } from "./observation/watch-workflow-tool.mjs";
+import { createSkillLearnTool, ZERO_SKILL_LEARN_TOOL_NAME } from "../../skills/self-learning-creator.mjs";
+import { DynamicPluginLoader } from "./src/plugins/dynamic-loader.mjs";
 import { createAllComputerTools, ZERO_COMPUTER_TOOL_NAME } from "./src/computer/tools.js";
 
 export { CONNECTOR_ADAPTERS, createConnectorStatus };
@@ -1065,6 +1068,30 @@ export function registerZeroUiRuntime(api, options = {}) {
           }`,
         );
       }
+
+      try {
+        const watchTool = createWatchWorkflowTool({ getObservationEngine, logger });
+        api.registerTool(watchTool);
+        registeredTools.push(watchTool.name);
+      } catch {}
+
+      try {
+        const skillLearnTool = createSkillLearnTool();
+        api.registerTool(skillLearnTool);
+        registeredTools.push(skillLearnTool.name);
+      } catch {}
+
+      try {
+        const loader = new DynamicPluginLoader({ logger });
+        loader.loadAll({ api, logger }).then(() => {
+          for (const tool of loader.getTools()) {
+            try {
+              api.registerTool(tool);
+              registeredTools.push(tool.name);
+            } catch {}
+          }
+        }).catch(() => {});
+      } catch {}
     }
   }
 

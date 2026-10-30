@@ -519,6 +519,32 @@ export async function getElements(signal = null) {
 }
 
 /**
+ * Inspect the exact target element and window under current cursor (Point & Ask).
+ */
+export async function getCursorTarget(signal = null) {
+  const cursor = await getCursorPosition(signal);
+  const elementsRes = await getElements(signal).catch(() => ({ elements: [] }));
+  const windowState = await getWindowState(signal).catch(() => ({}));
+
+  let targetElement = null;
+  if (elementsRes && Array.isArray(elementsRes.elements)) {
+    for (const el of elementsRes.elements) {
+      const b = el.bounds;
+      if (b && cursor.x >= b.left && cursor.x <= b.right && cursor.y >= b.top && cursor.y <= b.bottom) {
+        targetElement = el;
+        break;
+      }
+    }
+  }
+
+  return {
+    cursor,
+    targetElement,
+    window: windowState?.title || windowState?.app || "Desktop",
+  };
+}
+
+/**
  * Capture full desktop screen.
  */
 export async function captureScreen({ format = "png", maxWidth = 1600 } = {}, signal = null) {

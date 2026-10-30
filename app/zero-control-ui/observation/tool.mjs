@@ -40,6 +40,11 @@ export const OBSERVATION_TOOL_PARAMETERS = Object.freeze({
       default: false,
       description: "Include clickable and interactive UI Automation elements with exact center coordinates.",
     },
+    includeCursorTarget: {
+      type: "boolean",
+      default: false,
+      description: "Include live cursor position and inspect the exact element/window directly under the cursor (Point & Ask).",
+    },
   },
 });
 
@@ -78,6 +83,12 @@ function readParams(params) {
   ) {
     throw new Error("zero_screen_context.includeElements must be a boolean.");
   }
+  if (
+    value.includeCursorTarget !== undefined &&
+    typeof value.includeCursorTarget !== "boolean"
+  ) {
+    throw new Error("zero_screen_context.includeCursorTarget must be a boolean.");
+  }
   return {
     query: query.trim(),
     limit,
@@ -85,6 +96,7 @@ function readParams(params) {
     includeSuggestions: value.includeSuggestions === true,
     includeLiveScreen: value.includeLiveScreen === true,
     includeElements: value.includeElements === true,
+    includeCursorTarget: value.includeCursorTarget === true,
   };
 }
 
@@ -206,6 +218,7 @@ export function createObservationTool({
         .slice(0, 20);
 
       let liveScreenInfo = null;
+      let cursorTargetInfo = null;
       if (input.includeLiveScreen || input.includeElements) {
         try {
           const [screenSize, winState, cursor, uiaData] = await Promise.all([
@@ -220,6 +233,11 @@ export function createObservationTool({
             cursor,
             elements: uiaData?.elements || [],
           };
+        } catch {}
+      }
+      if (input.includeCursorTarget) {
+        try {
+          cursorTargetInfo = await Driver.getCursorTarget(signal);
         } catch {}
       }
 
@@ -249,6 +267,16 @@ export function createObservationTool({
           for (const el of liveScreenInfo.elements.slice(0, 20)) {
             lines.push(`- [${el.type}] "${el.name}" at center (${el.centerX}, ${el.centerY}) | bounds: (${el.x}, ${el.y}, ${el.width}x${el.height})`);
           }
+        }
+      }
+      if (cursorTargetInfo) {
+        lines.push("--- POINT & ASK (CURSOR TARGET) ---");
+        lines.push(`Cursor Position: (${cursorTargetInfo.cursor.x}, ${cursorTargetInfo.cursor.y}) | Window: "${cursorTargetInfo.window}"`);
+        if (cursorTargetInfo.targetElement) {
+          const el = cursorTargetInfo.targetElement;
+          lines.push(`Element directly under cursor: [${el.type || "Element"}] "${el.name || ""}" at center (${el.centerX}, ${el.centerY})`);
+        } else {
+          lines.push("No interactive element directly under cursor.");
         }
       }
       lines.push("</untrusted_screen_data>");
@@ -287,6 +315,7 @@ export function createObservationTool({
         privateMode: false,
         records,
         liveScreen: liveScreenInfo,
+        cursorTarget: cursorTargetInfo,
         suggestions: suggestions.map((suggestion) => ({
           app: suggestion.app,
           window: suggestion.window,

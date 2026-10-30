@@ -83,6 +83,52 @@ ${examplesMd}
   };
 }
 
+export const ZERO_SKILL_LEARN_TOOL_NAME = "zero_skill_learn";
+
+export function createSkillLearnTool() {
+  return {
+    name: ZERO_SKILL_LEARN_TOOL_NAME,
+    description: "Save a newly learned multi-step workflow or task instructions into the persistent skills library for future autonomous reuse.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Name of the skill in kebab-case" },
+        description: { type: "string", description: "Clear explanation of what the skill does" },
+        triggers: {
+          type: "array",
+          items: { type: "string" },
+          description: "Phrases that should activate this skill",
+        },
+        capabilities: {
+          type: "array",
+          items: { type: "string" },
+          description: "Key capabilities provided by the skill",
+        },
+        workflowSteps: {
+          type: "array",
+          items: { type: "string" },
+          description: "Step-by-step instructions for executing the workflow",
+        },
+      },
+      required: ["name", "description"],
+      additionalProperties: false,
+    },
+    async execute(callId, params = {}) {
+      const res = createSkill(params);
+      return {
+        content: [
+          {
+            type: "text",
+            text: res.ok
+              ? `Skill '${res.name}' successfully learned and saved to ${res.path} (${res.bytes} bytes).`
+              : `Failed to save skill: ${res.reason || "unknown error"}.`,
+          },
+        ],
+      };
+    },
+  };
+}
+
 // CLI usage if run directly
 if (process.argv[1] && process.argv[1].endsWith("self-learning-creator.mjs") && process.argv[2]) {
   const name = process.argv[2];

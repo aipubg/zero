@@ -203,7 +203,7 @@ export function createSourcesWidget({ query = "Research Topic", sources = [] } =
       (s) => `
     <div style="background: #1e293b; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <a href="${escapeHtml(s.url || "#")}" target="_blank" rel="noreferrer" style="font-weight: 600; color: #60a5fa; text-decoration: none; font-size: 12px;">${escapeHtml(s.title || s.url || "Source")}</a>
+        <a href="${escapeHtml(s.url || "#")}" rel="noreferrer" style="font-weight: 600; color: #60a5fa; text-decoration: none; font-size: 12px;">${escapeHtml(s.title || s.url || "Source")}</a>
         <span style="font-size: 10px; background: rgba(34,197,94,0.15); color: #4ade80; padding: 1px 4px; border-radius: 3px;">Verified</span>
       </div>
       ${s.snippet ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 4px; line-height: 1.3;">${escapeHtml(s.snippet)}</div>` : ""}

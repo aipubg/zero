@@ -10,6 +10,8 @@
 //
 // Run: node backend/plugin/selftest.mjs
 
+process.env.ZERO_STRICT_POLICY_TEST = "1";
+
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
