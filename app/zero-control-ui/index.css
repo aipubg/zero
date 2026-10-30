@@ -862,30 +862,66 @@
 .zero-modal-overlay {
   position: fixed !important;
   inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   background: rgba(0, 0, 0, 0.75) !important;
   backdrop-filter: blur(8px) !important;
-  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   z-index: 99999 !important;
   padding: 20px !important;
   box-sizing: border-box !important;
   overflow-y: auto !important;
+  display: none;
+}
+
+.zero-modal-overlay.active,
+.zero-modal-overlay[style*="display: flex"],
+.zero-modal-overlay[style*="display:flex"],
+.zero-modal-overlay[style*="display: block"],
+.zero-modal-overlay[style*="display:block"] {
+  display: flex !important;
+}
+
+.zero-modal-overlay[style*="display: none"],
+.zero-modal-overlay[style*="display:none"] {
+  display: none !important;
 }
 
 .zero-modal {
-  width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
+  width: 100% !important;
+  max-width: 680px !important;
+  max-height: 90vh !important;
   margin: auto !important;
-  background: var(--oc-bg-surface, var(--bg-surface, #171922));
-  color: var(--oc-text-primary, var(--text-primary, #edf0f7));
-  border: 1px solid var(--oc-border-subtle, var(--border, #343946));
-  border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  background: var(--bg-surface, var(--bg-elevated, var(--card, #171922))) !important;
+  color: var(--text, var(--text-strong, #edf0f7)) !important;
+  border: 1px solid var(--border, var(--border-subtle, #343946)) !important;
+  border-radius: var(--radius-lg, 16px) !important;
+  box-shadow: var(--overlay-shadow, 0 24px 48px rgba(0, 0, 0, 0.6)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Scrub all OpenClaw external / documentation links */
+a[href*="docs.openclaw.ai"],
+a[href*="openclaw.ai"],
+a[href*="github.com/openclaw"],
+.learn-more,
+[data-learn-more] {
+  display: none !important;
+}
+
+.zero-native-surface,
+.zero-providers-list,
+.zero-modal__body {
+  scroll-behavior: smooth !important;
 }
 
 .zero-modal__header {

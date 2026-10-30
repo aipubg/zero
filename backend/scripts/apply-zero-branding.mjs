@@ -210,10 +210,31 @@ export function patchOpenclawRuntime() {
           let code = fs.readFileSync(fPath, 'utf8');
           const qhTarget = 'function qH(e){';
           if (code.includes(qhTarget) && !code.includes('__zero_clean_qh__')) {
-            const qhRep = `function qH(e){/* __zero_clean_qh__ */try{e.modelOptions=(e.modelOptions||[]).filter(i=>{const p=String(i.provider||"").toLowerCase(),id=String(i.id||i.commitValue||"").toLowerCase(),n=String(i.name||i.label||"").toLowerCase();if(p.includes("zero-gateway")||p.includes("test-provider")||p.includes("test_provider"))return!1;if(id.includes("test-model")||id==="default"||id.includes("zero-gateway")||id.includes("test-provider"))return!1;if(n.includes("test-model")||n.includes("zero gateway")||n.includes("test provider"))return!1;return!0});if(e.selectedModelValue&&(e.selectedModelValue.includes("test-model")||e.selectedModelValue.includes("zero-gateway")||e.selectedModelValue==="default")){const f=e.modelOptions[0];if(f)e.selectedModelValue=f.commitValue||f.id}if(e.triggerModelValue&&(e.triggerModelValue.includes("test-model")||e.triggerModelValue.includes("zero-gateway")||e.triggerModelValue==="default")){const f=e.modelOptions[0];if(f)e.triggerModelValue=f.commitValue||f.id}}catch(e){}`;
+            const qhRep = `function qH(e){/* __zero_clean_qh__ */try{e.modelOptions=(e.modelOptions||[]).filter(i=>{const p=String(i.provider||"").toLowerCase(),id=String(i.id||i.commitValue||"").toLowerCase(),n=String(i.name||i.label||"").toLowerCase();if(p.includes("zero-gateway")||p.includes("test-provider")||p.includes("test_provider"))return!1;if(id.includes("test-model")||id==="default"||id.includes("zero-gateway")||id.includes("test-provider")||id.includes("glm-5.3"))return!1;if(n.includes("test-model")||n.includes("zero gateway")||n.includes("test provider")||n.includes("glm-5.3"))return!1;return!0});if(e.selectedModelValue&&(e.selectedModelValue.includes("test-model")||e.selectedModelValue.includes("zero-gateway")||e.selectedModelValue.includes("glm-5.3")||e.selectedModelValue==="default")){const f=e.modelOptions[0];if(f)e.selectedModelValue=f.commitValue||f.id}if(e.triggerModelValue&&(e.triggerModelValue.includes("test-model")||e.triggerModelValue.includes("zero-gateway")||e.triggerModelValue.includes("glm-5.3")||e.triggerModelValue==="default")){const f=e.modelOptions[0];if(f)e.triggerModelValue=f.commitValue||f.id}}catch(e){}`;
             code = code.replace(qhTarget, qhRep);
             fs.writeFileSync(fPath, code, 'utf8');
           }
+        }
+      }
+    }
+
+    // 4. Patch overview and system-agent modules to remove caretaker branding & alerts
+    for (const f of fs.readdirSync(root)) {
+      if (f.startsWith('overview-') && f.endsWith('.mjs')) {
+        const oPath = path.join(root, f);
+        let code = fs.readFileSync(oPath, 'utf8');
+        if (code.includes("Hi, I'm OpenClaw")) {
+          code = code.replaceAll("Hi, I'm OpenClaw — caretaker of this gateway, config, channels, and agents.", "Hi, I'm Zero — your private AI assistant.");
+          fs.writeFileSync(oPath, code, 'utf8');
+        }
+      }
+      if (f.startsWith('system-agent-') && f.endsWith('.mjs')) {
+        const sPath = path.join(root, f);
+        let code = fs.readFileSync(sPath, 'utf8');
+        if (code.includes('the config was edited outside')) {
+          code = code.replaceAll('Heads up: the config was edited outside OpenClaw while I was away — open History to review it.', '');
+          code = code.replaceAll('recentExternalEdit', 'false');
+          fs.writeFileSync(sPath, code, 'utf8');
         }
       }
     }
@@ -224,6 +245,8 @@ export function purgeStaleDatabaseSessions() {
   const dbs = [
     path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'openclaw.sqlite'),
     path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'operator', 'agent', 'openclaw-agent.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'researcher', 'agent', 'openclaw-agent.sqlite'),
     path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state', 'state', 'openclaw.sqlite'),
     path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
   ];
@@ -239,7 +262,10 @@ export function purgeStaleDatabaseSessions() {
           const cols = db.prepare(`PRAGMA table_info("${name}")`).all().map(c => c.name);
           for (const col of cols) {
             try {
-              db.prepare(`DELETE FROM "${name}" WHERE CAST("${col}" AS TEXT) LIKE '%tool-live-exec%' OR CAST("${col}" AS TEXT) LIKE '%be02-acceptance%'`).run();
+              db.prepare(`DELETE FROM "${name}" WHERE CAST("${col}" AS TEXT) LIKE '%tool-live-exec%' OR CAST("${col}" AS TEXT) LIKE '%be02-acceptance%' OR CAST("${col}" AS TEXT) LIKE '%openclaw doctor%' OR CAST("${col}" AS TEXT) LIKE '%openclaw config%' OR CAST("${col}" AS TEXT) LIKE '%pnpm/openclaw%'`).run();
+            } catch(e) {}
+            try {
+              db.prepare(`UPDATE "${name}" SET "${col}" = REPLACE(CAST("${col}" AS TEXT), 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3.5-lightning-30b-a3b') WHERE CAST("${col}" AS TEXT) LIKE '%z-ai/glm-5.3-flash%'`).run();
             } catch(e) {}
           }
         } catch(e) {}
@@ -338,6 +364,22 @@ export function applyZeroBranding() {
             }
             if (file.startsWith('sidebar-update-') && code.includes('this.updateAvailable')) {
               code = code.replaceAll('this.updateAvailable', 'null');
+              changed = true;
+            }
+            if (file.startsWith('settings-sidebar-') && code.includes('e.onNavigate(n)')) {
+              code = code.replaceAll('e.onNavigate(n)', 'n==="custodian"?(window.location.replace("/chat/zero")):e.onNavigate(n)');
+              changed = true;
+            }
+            if (file.startsWith('custodian-') && !code.includes('__zero_custodian_redirect__')) {
+              code = '/* __zero_custodian_redirect__ */ if(typeof window!=="undefined"&&window.location.pathname.includes("custodian")){window.location.replace("/chat/zero");}\n' + code;
+              changed = true;
+            }
+            if (code.includes('Learn more')) {
+              code = code.replaceAll('Learn more', '');
+              changed = true;
+            }
+            if (code.includes("Hi, I'm OpenClaw")) {
+              code = code.replaceAll("Hi, I'm OpenClaw", "Hi, I'm Zero");
               changed = true;
             }
             if (file.startsWith('about-page-') && code.includes('J=[{href:')) {

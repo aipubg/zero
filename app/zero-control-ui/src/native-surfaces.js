@@ -558,8 +558,12 @@ function installNativeSurfaces(host) {
   const redirectCustodianRoute = () => {
     const cur = routePath(currentLocation());
     if (cur === "/custodian" || cur.startsWith("/custodian")) {
-      window.history.replaceState(null, "", "/chat/zero");
-      window.dispatchEvent(new PopStateEvent("popstate"));
+      if (typeof window.location?.replace === "function") {
+        window.location.replace("/chat/zero");
+      } else {
+        window.history.replaceState(null, "", "/chat/zero");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }
     }
   };
 
@@ -730,9 +734,11 @@ function installNativeSurfaces(host) {
         if (
           val.includes("zero-gateway") ||
           val.includes("test-model") ||
+          val.includes("glm-5.3") ||
           val === "default" ||
           label.includes("zero-gateway") ||
           label.includes("test-model") ||
+          label.includes("glm-5.3") ||
           label.trim() === "default"
         ) {
           opt.remove();
@@ -742,12 +748,12 @@ function installNativeSurfaces(host) {
       // 3. Clean up any remaining container buttons with test-model or zero-gateway
       for (const btn of document.querySelectorAll(".chat-controls__model-menu button, wa-popup button, details[data-chat-model-select] button")) {
         const txt = (btn.textContent || "").trim();
-        if (txt.includes("test-model") || txt.includes("zero-gateway/default")) {
+        if (txt.includes("test-model") || txt.includes("zero-gateway/default") || txt.includes("glm-5.3")) {
           btn.remove();
         }
       }
 
-      // 4. Clean up the trigger button text if stuck on dummy model
+      // 4. Clean up the trigger button text if stuck on dummy or deleted model
       const triggerBtn = document.querySelector(
         ".chat-controls__session button, .chat-controls__model button, [data-chat-model-trigger], summary[data-chat-model-select], .chat-controls__model-trigger"
       );
@@ -756,14 +762,15 @@ function installNativeSurfaces(host) {
         if (
           currentText.includes("zero-gateway") ||
           currentText.includes("test-model") ||
+          currentText.includes("glm-5.3") ||
           currentText === "default"
         ) {
           const firstRealOption = document.querySelector(
-            ".chat-controls__model-option:not([data-chat-model-option*='zero-gateway']):not([data-chat-model-option*='test-model'])"
+            ".chat-controls__model-option:not([data-chat-model-option*='zero-gateway']):not([data-chat-model-option*='test-model']):not([data-chat-model-option*='glm-5.3'])"
           );
           const realName = firstRealOption
             ? (firstRealOption.getAttribute("aria-label") || firstRealOption.textContent.trim())
-            : "3-super-120b-a12b";
+            : "3.5-lightning-30b-a3b";
           for (const node of triggerBtn.childNodes) {
             if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
               node.textContent = realName;
@@ -924,15 +931,19 @@ function installNativeSurfaces(host) {
     }
 
     // Intercept Ask Zero / caretaker chat clicks and redirect to /chat/zero
-    const askZeroLink = target.closest("a[href*='/custodian'], a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab, .settings-sidebar__item:has-text('Ask Zero')");
-    if (askZeroLink || (target.textContent && target.textContent.trim() === "Ask Zero")) {
+    const askZeroLink = target.closest("a[href*='/custodian'], a[href*='custodian'], a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab, [data-sidebar-entry*='custodian'], .settings-sidebar__item:has-text('Ask Zero')");
+    if (askZeroLink || (target.textContent && target.textContent.trim().toLowerCase().includes("ask zero"))) {
       const txt = (target.textContent || "").trim();
       const href = (askZeroLink?.getAttribute?.("href")) || "";
-      if (txt.includes("Ask Zero") || href.includes("/custodian") || href.includes("/chat/main") || href.includes("/chat/caretaker")) {
+      if (txt.toLowerCase().includes("ask zero") || href.includes("custodian") || href.includes("/chat/main") || href.includes("/chat/caretaker")) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        window.history.pushState(null, "", "/chat/zero");
-        window.dispatchEvent(new PopStateEvent("popstate"));
+        if (typeof window.location?.replace === "function") {
+          window.location.replace("/chat/zero");
+        } else {
+          window.history.replaceState(null, "", "/chat/zero");
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
         return;
       }
     }

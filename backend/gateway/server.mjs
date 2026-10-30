@@ -237,7 +237,14 @@ async function handleChatCompletions(req, res) {
       }
     }
 
-    const modelId = body.model || body.modelId || 'nv/z-ai/glm-5.3-flash';
+    let defaultPrimaryModel = 'nv/nvidia/nemotron-3.5-lightning-30b-a3b';
+    try {
+      if (fs.existsSync(DEFAULTS_FILE)) {
+        const d = JSON.parse(fs.readFileSync(DEFAULTS_FILE, 'utf-8'));
+        if (d?.defaults?.primary) defaultPrimaryModel = d.defaults.primary;
+      }
+    } catch {}
+    const modelId = body.model || body.modelId || defaultPrimaryModel;
     const messages = body.messages || [];
     const stream = body.stream === true;
 

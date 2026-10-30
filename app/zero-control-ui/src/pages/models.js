@@ -502,6 +502,7 @@ export function mountModelsPage(container, context = {}) {
     for (const m of offlineModels) {
       allModelOptions.push({
         id: m.id,
+        rawId: m.id,
         name: `${getCleanDisplayName(m.name, m.id)} (Offline Native)`,
       });
     }
@@ -512,30 +513,49 @@ export function mountModelsPage(container, context = {}) {
         for (const pm of p.models) {
           const mid = typeof pm === "string" ? pm : pm.id;
           const mname = typeof pm === "string" ? pm : (pm.name || pm.id);
+          const fullKey = mid.startsWith(`${p.id}/`) ? mid : `${p.id}/${mid}`;
           allModelOptions.push({
-            id: mid,
+            id: fullKey,
+            rawId: mid,
             name: `${getCleanDisplayName(mname, mid)} (${p.name || p.id})`,
           });
         }
       }
     }
 
-    const validModelIdSet = new Set(allModelOptions.map(m => m.id));
-    const safeFallbackId = allModelOptions[0]?.id || "nv/nvidia/nemotron-3-super-120b-a12b";
+    const validModelIdSet = new Set();
+    for (const m of allModelOptions) {
+      validModelIdSet.add(m.id);
+      if (m.rawId) validModelIdSet.add(m.rawId);
+    }
+
+    const isModelValid = (mId) => {
+      if (!mId || typeof mId !== "string") return false;
+      const lower = mId.toLowerCase();
+      if (lower.includes("glm-5.3") || lower.includes("test-model") || lower.includes("zero-gateway") || lower === "default") return false;
+      return validModelIdSet.has(mId);
+    };
+
+    const safeFallbackId = allModelOptions[0]?.id || "nv/nvidia/nemotron-3.5-lightning-30b-a3b";
 
     let effectivePrimary = systemDefaults.primary;
-    if (!effectivePrimary || !validModelIdSet.has(effectivePrimary)) {
+    if (!isModelValid(effectivePrimary)) {
       effectivePrimary = safeFallbackId;
       systemDefaults.primary = safeFallbackId;
     }
-    if (!systemDefaults.utility || !validModelIdSet.has(systemDefaults.utility)) {
+    if (!isModelValid(systemDefaults.utility)) {
       systemDefaults.utility = safeFallbackId;
     }
+    if (systemDefaults.fallback && !isModelValid(systemDefaults.fallback)) {
+      systemDefaults.fallback = "";
+    }
 
-    let effectiveZeroModel = agentBindings?.zero?.model || effectivePrimary;
-    if (!effectiveZeroModel || !validModelIdSet.has(effectiveZeroModel)) {
+    let effectiveZeroModel = agentBindings?.zero?.model;
+    if (!isModelValid(effectiveZeroModel)) {
       effectiveZeroModel = effectivePrimary;
-      if (agentBindings?.zero) agentBindings.zero.model = effectivePrimary;
+      if (!agentBindings) agentBindings = {};
+      if (!agentBindings.zero) agentBindings.zero = { allowOverride: true };
+      agentBindings.zero.model = effectivePrimary;
     }
 
     function fillSelect(selEl, emptyLabel, currentVal) {
@@ -996,7 +1016,8 @@ export function mountModelsPage(container, context = {}) {
 
   function openProviderModal(existingProvider) {
     modalOverlay.replaceChildren();
-    modalOverlay.style.cssText = "position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(8px); background: rgba(0,0,0,0.7); padding: 20px; box-sizing: border-box; overflow-y: auto;";
+    modalOverlay.classList.add("active");
+    modalOverlay.style.display = "flex";
 
     const isEdit = Boolean(existingProvider);
     const modal = element("div", "zero-modal-content zero-modal");
@@ -1005,7 +1026,11 @@ export function mountModelsPage(container, context = {}) {
     const head = element("div", "zero-modal__header");
     const titleEl = element("h2", "zero-modal__title", isEdit ? `Edit Provider: ${existingProvider.name || existingProvider.id}` : "+ Add Model Provider");
     const closeBtn = element("button", "zero-modal__close", "×");
-    closeBtn.onclick = () => { modalOverlay.style.display = "none"; };
+    closeBtn.onclick = () => {
+      modalOverlay.classList.remove("active");
+      modalOverlay.style.display = "none";
+      modalOverlay.replaceChildren();
+    };
     head.append(titleEl, closeBtn);
     modal.append(head);
 
@@ -1444,7 +1469,11 @@ export function mountModelsPage(container, context = {}) {
     const footer = element("div", "zero-modal__footer");
     footer.style.cssText = "display:flex;justify-content:flex-end;gap:10px;margin-top:16px;";
     const cancelModalBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Cancel");
-    cancelModalBtn.onclick = () => { modalOverlay.style.display = "none"; };
+    cancelModalBtn.onclick = () => {
+      modalOverlay.classList.remove("active");
+      modalOverlay.style.display = "none";
+      modalOverlay.replaceChildren();
+    };
 
     const saveProviderBtn = element("button", "zero-models-btn zero-btn-save-defaults", isEdit ? "Save Changes" : "Save Provider");
     saveProviderBtn.onclick = async () => {
@@ -1479,7 +1508,9 @@ export function mountModelsPage(container, context = {}) {
         saveProviderBtn.textContent = "Saving...";
         await callGateway(host, "zero.providers.save", payload);
         showNotice(`Provider "${pName}" saved successfully!`);
+        modalOverlay.classList.remove("active");
         modalOverlay.style.display = "none";
+        modalOverlay.replaceChildren();
         await loadAllData();
       } catch (err) {
         showNotice(`Failed to save provider: ${err.message}`, true);
@@ -1497,7 +1528,8 @@ export function mountModelsPage(container, context = {}) {
   // --- 5. IMPORT GGUF MODAL ---
   function openImportGgufModal() {
     modalOverlay.replaceChildren();
-    modalOverlay.style.cssText = "position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(8px); background: rgba(0,0,0,0.7); padding: 20px; box-sizing: border-box; overflow-y: auto;";
+    modalOverlay.classList.add("active");
+    modalOverlay.style.display = "flex";
 
     const modal = element("div", "zero-modal-content zero-modal");
     modal.style.maxWidth = "860px";
@@ -1505,7 +1537,11 @@ export function mountModelsPage(container, context = {}) {
     const head = element("div", "zero-modal__header");
     const titleEl = element("h2", "zero-modal__title", "Offline GGUF Model Manager");
     const closeBtn = element("button", "zero-modal__close", "×");
-    closeBtn.onclick = () => { modalOverlay.style.display = "none"; };
+    closeBtn.onclick = () => {
+      modalOverlay.classList.remove("active");
+      modalOverlay.style.display = "none";
+      modalOverlay.replaceChildren();
+    };
     head.append(titleEl, closeBtn);
     modal.append(head);
 
