@@ -458,7 +458,11 @@ export function mountModelsPage(container, context = {}) {
   // --- Modals Overlay ---
   const modalOverlay = element("div", "zero-modal-overlay");
   modalOverlay.style.display = "none";
-  document.body.append(modalOverlay);
+  if (typeof document !== "undefined" && document.body) {
+    document.body.append(modalOverlay);
+  } else {
+    root.append(modalOverlay);
+  }
 
   // --- Helpers & Data Loading ---
   async function loadAllData() {
@@ -516,6 +520,24 @@ export function mountModelsPage(container, context = {}) {
       }
     }
 
+    const validModelIdSet = new Set(allModelOptions.map(m => m.id));
+    const safeFallbackId = allModelOptions[0]?.id || "nv/nvidia/nemotron-3-super-120b-a12b";
+
+    let effectivePrimary = systemDefaults.primary;
+    if (!effectivePrimary || !validModelIdSet.has(effectivePrimary)) {
+      effectivePrimary = safeFallbackId;
+      systemDefaults.primary = safeFallbackId;
+    }
+    if (!systemDefaults.utility || !validModelIdSet.has(systemDefaults.utility)) {
+      systemDefaults.utility = safeFallbackId;
+    }
+
+    let effectiveZeroModel = agentBindings?.zero?.model || effectivePrimary;
+    if (!effectiveZeroModel || !validModelIdSet.has(effectiveZeroModel)) {
+      effectiveZeroModel = effectivePrimary;
+      if (agentBindings?.zero) agentBindings.zero.model = effectivePrimary;
+    }
+
     function fillSelect(selEl, emptyLabel, currentVal) {
       const firstOpt = element("option", null, emptyLabel);
       firstOpt.value = "";
@@ -529,16 +551,15 @@ export function mountModelsPage(container, context = {}) {
       }
     }
 
-    fillSelect(primarySel.select, "(Select Primary Model)", systemDefaults.primary);
+    fillSelect(primarySel.select, "(Select Primary Model)", effectivePrimary);
     fillSelect(utilitySel.select, "(Select Utility Model)", systemDefaults.utility);
     fillSelect(fallbackSel.select, "(Select Fallback Model)", systemDefaults.fallback);
     fillSelect(thinkingSel.select, "(Select Thinking Model / Default)", systemDefaults.thinking);
     fillSelect(fastSel.select, "(Select Fast Mode Model / Disabled)", systemDefaults.fastMode);
 
-    const currentZeroModel = agentBindings?.zero?.model || systemDefaults.primary;
-    fillSelect(agentModelSelect, "(Select Model for Zero Agent)", currentZeroModel);
+    fillSelect(agentModelSelect, "(Select Model for Zero Agent)", effectiveZeroModel);
 
-    activeModelVal.textContent = currentZeroModel || "default";
+    activeModelVal.textContent = effectiveZeroModel || "default";
     fallbacksVal.textContent = systemDefaults.fallback || "None";
   }
 
@@ -975,7 +996,7 @@ export function mountModelsPage(container, context = {}) {
 
   function openProviderModal(existingProvider) {
     modalOverlay.replaceChildren();
-    modalOverlay.style.display = "flex";
+    modalOverlay.style.cssText = "position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(8px); background: rgba(0,0,0,0.7); padding: 20px; box-sizing: border-box; overflow-y: auto;";
 
     const isEdit = Boolean(existingProvider);
     const modal = element("div", "zero-modal-content zero-modal");
@@ -1476,7 +1497,7 @@ export function mountModelsPage(container, context = {}) {
   // --- 5. IMPORT GGUF MODAL ---
   function openImportGgufModal() {
     modalOverlay.replaceChildren();
-    modalOverlay.style.display = "flex";
+    modalOverlay.style.cssText = "position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(8px); background: rgba(0,0,0,0.7); padding: 20px; box-sizing: border-box; overflow-y: auto;";
 
     const modal = element("div", "zero-modal-content zero-modal");
     modal.style.maxWidth = "860px";

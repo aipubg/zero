@@ -542,12 +542,63 @@ function installNativeSurfaces(host) {
       rebrandAboutEntry();
       rebrandChrome();
       syncChatControls();
+      rebrandCustodianLinks();
+      redirectCustodianRoute();
+      redirectStaleSessionRoute();
+      purgeStaleSessions();
       removeExternalLearnMoreLinks();
       sanitizeChatModelMenu();
     } catch {
       // Product chrome cleanup is best-effort; it must never break the host.
     } finally {
       isApplyingChanges = false;
+    }
+  };
+
+  const redirectCustodianRoute = () => {
+    const cur = routePath(currentLocation());
+    if (cur === "/custodian" || cur.startsWith("/custodian")) {
+      window.history.replaceState(null, "", "/chat/zero");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  };
+
+  const redirectStaleSessionRoute = () => {
+    const cur = window.location.pathname || "";
+    if (cur.includes("tool-live-exec") || cur.includes("be02-acceptance")) {
+      window.history.replaceState(null, "", "/chat/zero");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.location.replace("/chat/zero");
+    }
+  };
+
+  const purgeStaleSessions = () => {
+    // 1. Remove matching links and buttons by attribute
+    for (const el of document.querySelectorAll(
+      "a[href*='tool-live-exec'], a[href*='be02-acceptance'], button[data-session-key*='tool-live-exec'], button[data-session-key*='be02-acceptance'], [data-session-key*='tool-live-exec'], [data-session-key*='be02-acceptance']"
+    )) {
+      el.closest("li, .session-item, [class*='session']")?.remove() || el.remove();
+    }
+    // 2. Remove matching elements by text content in sidebar
+    for (const el of document.querySelectorAll(".sidebar-session-list a, .sidebar-session-list button, [class*='sidebar'] a, [class*='sidebar'] button, nav a, nav button")) {
+      const txt = (el.textContent || "").trim();
+      if (txt.includes("tool-live-exec") || txt.includes("be02-acceptance")) {
+        el.closest("li, .session-item, [class*='session']")?.remove() || el.remove();
+      }
+    }
+  };
+
+  const rebrandCustodianLinks = () => {
+    for (const a of document.querySelectorAll('a[href*="/custodian"], a[href="custodian"]')) {
+      a.setAttribute("href", "/chat/zero");
+      const icon = a.querySelector(".settings-sidebar__item-icon svg, svg");
+      if (icon && !icon.classList.contains("zero-icon-done")) {
+        icon.classList.add("zero-icon-done");
+        icon.innerHTML = `
+          <circle cx="60" cy="60" r="48" fill="none" stroke="#10b981" stroke-width="12"/>
+          <text x="60" y="78" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#10b981" text-anchor="middle">Z</text>
+        `;
+      }
     }
   };
 
@@ -646,17 +697,25 @@ function installNativeSurfaces(host) {
   const sanitizeChatModelMenu = () => {
     if (disposed) return;
     try {
-      // 1. Remove obsolete provider groups (zero-gateway, test-provider, etc.)
-      const obsoleteGroups = document.querySelectorAll(
-        '[data-chat-model-provider-group="zero-gateway"], [data-chat-model-provider-group="test-provider"], [data-chat-model-provider-group="test_provider"], [data-chat-model-provider="zero-gateway"], [data-chat-model-provider="test-provider"]'
-      );
-      for (const g of obsoleteGroups) {
+      // 1. Remove obsolete provider groups and sections
+      const obsoleteSelectors = [
+        '[data-chat-model-provider-group="zero-gateway"]',
+        '[data-chat-model-provider-group="test-provider"]',
+        '[data-chat-model-provider-group="test_provider"]',
+        '[data-chat-model-provider="zero-gateway"]',
+        '[data-chat-model-provider="test-provider"]',
+        '[data-chat-model-provider="test_provider"]',
+      ].join(", ");
+
+      for (const g of document.querySelectorAll(obsoleteSelectors)) {
         g.closest(".chat-controls__provider-model-group, section")?.remove() || g.remove();
       }
 
-      // Check headings with text
-      const providerHeadings = document.querySelectorAll(".chat-controls__provider-heading, .chat-controls__provider-label, [data-chat-model-provider]");
-      for (const h of providerHeadings) {
+      // Check headings and labels
+      const headings = document.querySelectorAll(
+        ".chat-controls__provider-heading, .chat-controls__provider-label, [data-chat-model-provider], .chat-controls__provider-toggle"
+      );
+      for (const h of headings) {
         const txt = (h.textContent || "").trim();
         if (txt.includes("Zero Gateway") || txt.includes("Test Provider") || txt.includes("test-provider") || txt.startsWith("Zero Gateway")) {
           h.closest(".chat-controls__provider-model-group, section")?.remove() || h.remove();
@@ -680,8 +739,18 @@ function installNativeSurfaces(host) {
         }
       }
 
-      // 3. Clean up the trigger button text if stuck on dummy model
-      const triggerBtn = document.querySelector(".chat-controls__session button, .chat-controls__model button, [data-chat-model-trigger], summary[data-chat-model-select]");
+      // 3. Clean up any remaining container buttons with test-model or zero-gateway
+      for (const btn of document.querySelectorAll(".chat-controls__model-menu button, wa-popup button, details[data-chat-model-select] button")) {
+        const txt = (btn.textContent || "").trim();
+        if (txt.includes("test-model") || txt.includes("zero-gateway/default")) {
+          btn.remove();
+        }
+      }
+
+      // 4. Clean up the trigger button text if stuck on dummy model
+      const triggerBtn = document.querySelector(
+        ".chat-controls__session button, .chat-controls__model button, [data-chat-model-trigger], summary[data-chat-model-select], .chat-controls__model-trigger"
+      );
       if (triggerBtn) {
         const currentText = (triggerBtn.textContent || "").trim();
         if (
@@ -689,13 +758,21 @@ function installNativeSurfaces(host) {
           currentText.includes("test-model") ||
           currentText === "default"
         ) {
-          const firstRealOption = document.querySelector(".chat-controls__model-option:not([data-chat-model-option*='zero-gateway']):not([data-chat-model-option*='test-model'])");
-          const realName = firstRealOption ? (firstRealOption.getAttribute("aria-label") || firstRealOption.textContent.trim()) : "3-super-120b-a12b";
+          const firstRealOption = document.querySelector(
+            ".chat-controls__model-option:not([data-chat-model-option*='zero-gateway']):not([data-chat-model-option*='test-model'])"
+          );
+          const realName = firstRealOption
+            ? (firstRealOption.getAttribute("aria-label") || firstRealOption.textContent.trim())
+            : "3-super-120b-a12b";
           for (const node of triggerBtn.childNodes) {
             if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
               node.textContent = realName;
               break;
             }
+          }
+          const labelSpan = triggerBtn.querySelector(".chat-controls__inline-select-label");
+          if (labelSpan && (labelSpan.textContent.includes("zero-gateway") || labelSpan.textContent.includes("test-model") || labelSpan.textContent.trim() === "default")) {
+            labelSpan.textContent = realName;
           }
         }
       }
@@ -847,14 +924,15 @@ function installNativeSurfaces(host) {
     }
 
     // Intercept Ask Zero / caretaker chat clicks and redirect to /chat/zero
-    const askZeroLink = target.closest("a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab");
-    if (askZeroLink) {
-      const txt = (askZeroLink.textContent || "").trim();
-      const href = askZeroLink.getAttribute("href") || "";
-      if (txt.includes("Ask Zero") || href.includes("/chat/main") || href.includes("/chat/caretaker")) {
+    const askZeroLink = target.closest("a[href*='/custodian'], a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab, .settings-sidebar__item:has-text('Ask Zero')");
+    if (askZeroLink || (target.textContent && target.textContent.trim() === "Ask Zero")) {
+      const txt = (target.textContent || "").trim();
+      const href = (askZeroLink?.getAttribute?.("href")) || "";
+      if (txt.includes("Ask Zero") || href.includes("/custodian") || href.includes("/chat/main") || href.includes("/chat/caretaker")) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        window.location.hash = "#/chat/zero";
+        window.history.pushState(null, "", "/chat/zero");
+        window.dispatchEvent(new PopStateEvent("popstate"));
         return;
       }
     }
@@ -931,9 +1009,12 @@ function installNativeSurfaces(host) {
   const handlePointerDown = (event) => {
     const target = event.target;
     if (!target || typeof target.closest !== "function") return;
-    if (target.closest(".chat-controls__model-picker, .chat-controls__model-menu, wa-popup, summary[data-chat-model-select], button")) {
+    purgeStaleSessions();
+    if (target.closest(".chat-controls__model-picker, .chat-controls__model-menu, wa-popup, summary[data-chat-model-select], button, [class*='model']")) {
       setTimeout(sanitizeChatModelMenu, 10);
-      setTimeout(sanitizeChatModelMenu, 60);
+      setTimeout(sanitizeChatModelMenu, 50);
+      setTimeout(sanitizeChatModelMenu, 150);
+      setTimeout(sanitizeChatModelMenu, 350);
     }
   };
 

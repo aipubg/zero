@@ -1780,7 +1780,21 @@
 }
 .zero-about__header { margin-bottom: 24px; }
 .zero-about__brand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-.zero-about__mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: #fff; background: linear-gradient(135deg, var(--accent, #ff5c5c), #b91c1c); box-shadow: 0 8px 24px rgba(255, 92, 92, 0.25); font-size: 22px; font-weight: 800; line-height: 1; }
+.zero-native-surface--models {
+  --bg-page: var(--bg, #090d12);
+  --bg-surface: var(--card, var(--panel, #171922));
+  --bg-elevated: var(--bg-hover, #1f232f);
+  --text-primary: var(--text-strong, var(--text, #edf0f7));
+  --text-secondary: var(--text, #9ca3af);
+  --text-muted: var(--muted, #6b7280);
+  --border-subtle: var(--border, #343946);
+  --border-strong: var(--border-strong, #4b5563);
+  --accent-primary: var(--accent, #10b981);
+  --accent-hover: var(--accent-hover, #059669);
+  scroll-behavior: smooth;
+}
+
+.zero-about__mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: #fff; background: linear-gradient(135deg, var(--accent, #10b981), #059669); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25); font-size: 22px; font-weight: 800; line-height: 1; }
 .zero-about__brand-copy { display: flex; flex-direction: column; gap: 2px; }
 .zero-about__brand-name { font-size: 16px; font-weight: 700; letter-spacing: .01em; }
 .zero-about__brand-tag { color: var(--text-tertiary, #858b99); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }

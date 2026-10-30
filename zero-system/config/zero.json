@@ -57,10 +57,12 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "nv/nvidia/nemotron-3-super-120b-a12b",
-        "fallbacks": []
+        "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+        "fallbacks": [
+          "nv/nvidia/nemotron-3-ultra-550b-a55b"
+        ]
       },
-      "utilityModel": "nv/nvidia/nemotron-3-super-120b-a12b",
+      "utilityModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -90,8 +92,10 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "nv/nvidia/nemotron-3-super-120b-a12b",
-          "fallbacks": []
+          "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+          "fallbacks": [
+            "nv/nvidia/nemotron-3-ultra-550b-a55b"
+          ]
         }
       }
     }
@@ -171,5 +175,15 @@
   },
   "telemetry": {
     "enabled": false
+  },
+  "tools": {
+    "profile": "full"
+  },
+  "meta": {
+    "migrations": {
+      "modelPolicyAllowlist": true,
+      "utilityModelSeparation": true
+    },
+    "lastTouchedVersion": "2026.10.6"
   }
 }

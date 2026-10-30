@@ -18,6 +18,9 @@ import { installNativeSurfaces } from "./src/native-surfaces.js";
 export default {
   id: PLUGIN_ID,
   activate(host) {
+    if (typeof window !== "undefined") {
+      window.__zero_surfaces_installed = true;
+    }
     const disposeRoutes = installLegacyRouteInterceptor(host);
     const disposeSurfaces = installNativeSurfaces(host);
     return () => {
@@ -26,3 +29,19 @@ export default {
     };
   },
 };
+
+if (typeof window !== "undefined") {
+  const bootZero = () => {
+    try {
+      if (!window.__zero_surfaces_installed) {
+        window.__zero_surfaces_installed = true;
+        installNativeSurfaces(window.__openclaw_host || window);
+      }
+    } catch {}
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootZero);
+  } else {
+    bootZero();
+  }
+}
