@@ -1,7 +1,15 @@
 {
   "defaults": {
-    "primary": "gguf/moondream2-text-model-f16_ct-vicuna",
+    "primary": "default",
+    "utility": "default",
+    "fallback": "default",
     "thinking": "default",
     "fastMode": "disabled"
+  },
+  "agentBindings": {
+    "zero": {
+      "model": "default",
+      "allowOverride": true
+    }
   }
 }

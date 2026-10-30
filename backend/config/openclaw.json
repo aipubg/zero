@@ -30,20 +30,20 @@
         "api": "openai-completions",
         "models": [
           {
-            "id": "gguf/moondream2-text-model-f16_ct-vicuna",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (Primary)"
+            "id": "default",
+            "name": "default (Primary)"
           },
           {
             "id": "@fast",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@fast)"
+            "name": "default (@fast)"
           },
           {
             "id": "@coder",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@coder)"
+            "name": "default (@coder)"
           },
           {
             "id": "@reasoning",
-            "name": "gguf/moondream2-text-model-f16_ct-vicuna (@reasoning)"
+            "name": "default (@reasoning)"
           }
         ]
       }
@@ -56,10 +56,12 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "gguf/moondream2-text-model-f16_ct-vicuna",
-        "fallbacks": []
+        "primary": "default",
+        "fallbacks": [
+          "default"
+        ]
       },
-      "utilityModel": "",
+      "utilityModel": "default",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -89,7 +91,8 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": ""
+          "primary": "default",
+          "allowUnverifiedOverride": true
         }
       }
     }

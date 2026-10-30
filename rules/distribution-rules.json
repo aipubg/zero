@@ -1,0 +1,15 @@
+{
+  "mode": "distribution",
+  "version": "1.0.0",
+  "description": "Standard distribution rules with mandatory confirmation gates for all sensitive operations.",
+  "requireConfirmation": {
+    "fileWrite": true,
+    "fileDelete": true,
+    "shellExecution": true,
+    "computerAction": true,
+    "cloudNetworkCall": true
+  },
+  "maxAutonomousSteps": 5,
+  "allowHighRiskActions": false,
+  "bypassConfirmation": false
+}

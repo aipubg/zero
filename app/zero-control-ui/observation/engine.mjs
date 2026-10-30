@@ -61,6 +61,7 @@ export function createObservationEngine({
   let activeController = null;
   let lastSignature = null;
   let unchangedCount = 0;
+  let motionStreak = 0;
   let lastCaptureAtMs = null;
   let lastChangeAtMs = null;
   let lastError = null;
@@ -252,6 +253,7 @@ export function createObservationEngine({
     ring.clear();
     lastSignature = null;
     unchangedCount = 0;
+    motionStreak = 0;
     workflowCounts.clear();
     counters.privateClears += reason === "private-mode" ? 1 : 0;
   };
@@ -326,12 +328,26 @@ export function createObservationEngine({
       if (!result.changed) {
         counters.deduped += 1;
         unchangedCount += 1;
+        motionStreak = 0;
         lastSignature = detector.remember(frame, result);
         return status();
       }
       unchangedCount = 0;
+      motionStreak += 1;
       lastChangeAtMs = clock();
       lastSignature = detector.remember(frame, result);
+      if (motionStreak >= 4 && motionStreak % 4 === 0) {
+        try {
+          store.insertVideoLog?.({
+            capturedAtMs: frame.capturedAtMs,
+            app: frame.app || "Media Player",
+            window: frame.window || "Video Playback",
+            sceneSummary: `High-frequency motion detected (${motionStreak} continuous changed frames)`,
+            frameCount: motionStreak,
+            durationSeconds: Math.round((motionStreak * captureIntervalMs) / 1000),
+          });
+        } catch {}
+      }
       const added = ring.add(frame);
       if (!added.accepted) {
         if (added.reason === "rate" || added.reason === "too-large") counters.droppedRate += 1;
@@ -432,6 +448,7 @@ export function createObservationEngine({
   };
 
   const recent = (params = {}) => (storeClosed ? [] : store.recent(params));
+  const recentVideoLogs = (params = {}) => (storeClosed ? [] : store.recentVideoLogs(params));
   const workflowCandidates = (params = {}) =>
     storeClosed ? [] : store.listWorkflowCandidates(params);
 
@@ -475,6 +492,7 @@ export function createObservationEngine({
     pruneOnce,
     status,
     recent,
+    recentVideoLogs,
     workflowCandidates,
     dispose,
     processFrame,

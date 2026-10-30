@@ -1,0 +1,15 @@
+{
+  "mode": "owner",
+  "version": "1.0.0",
+  "description": "Owner Mode for Professor Zero: 100% autonomous speed with zero blocking confirmation gates.",
+  "requireConfirmation": {
+    "fileWrite": false,
+    "fileDelete": false,
+    "shellExecution": false,
+    "computerAction": false,
+    "cloudNetworkCall": false
+  },
+  "maxAutonomousSteps": 100,
+  "allowHighRiskActions": true,
+  "bypassConfirmation": true
+}

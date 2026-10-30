@@ -8,6 +8,7 @@ import {
   createLocalGgufMiddleware,
 } from './server/local-gguf-middleware.ts';
 import { localGgufService } from './server/local-gguf-service.ts';
+import { modeManager } from '../../rules/mode-manager.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -542,6 +543,154 @@ async function handleListModels(req, res) {
 }
 
 /**
+ * Spaces State Management
+ */
+const spacesState = {
+  activeSpace: 'coder',
+  spaces: {
+    coder: {
+      id: 'coder',
+      name: 'Coder Space',
+      icon: '💻',
+      description: 'Code generation, git diff inspection & terminal execution',
+      files: [],
+      openDiffs: [],
+      terminalHistory: [],
+      status: 'ready',
+    },
+    media: {
+      id: 'media',
+      name: 'Media Space',
+      icon: '🎬',
+      description: 'Screen & video observation, YouTube analysis, audio transcription',
+      recentMediaLogs: [],
+      status: 'ready',
+    },
+    research: {
+      id: 'research',
+      name: 'Research Space',
+      icon: '🔍',
+      description: 'Deep web research, synthesis, and verified sources carousel',
+      sources: [],
+      status: 'ready',
+    },
+  },
+};
+
+function handleSpacesApi(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  const url = req.url || '';
+  const pathname = url.split('?')[0];
+
+  if (req.method === 'GET') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify(spacesState));
+    return;
+  }
+
+  if (req.method === 'POST') {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      try {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+        if (pathname === '/api/gateway/spaces/active') {
+          if (body.spaceId && spacesState.spaces[body.spaceId]) {
+            spacesState.activeSpace = body.spaceId;
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: true, activeSpace: spacesState.activeSpace }));
+            return;
+          }
+          res.statusCode = 400;
+          res.end(JSON.stringify({ ok: false, error: 'Invalid spaceId' }));
+          return;
+        }
+
+        if (pathname === '/api/gateway/spaces/update') {
+          const { spaceId, updates } = body;
+          if (spaceId && spacesState.spaces[spaceId]) {
+            spacesState.spaces[spaceId] = { ...spacesState.spaces[spaceId], ...updates };
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: true, space: spacesState.spaces[spaceId] }));
+            return;
+          }
+          res.statusCode = 400;
+          res.end(JSON.stringify({ ok: false, error: 'Invalid spaceId' }));
+          return;
+        }
+
+        res.statusCode = 404;
+        res.end(JSON.stringify({ error: 'Endpoint not found' }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  res.statusCode = 405;
+  res.end();
+}
+
+function handleModeApi(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  if (req.method === 'GET') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ mode: modeManager.getMode(), policy: modeManager.getPolicy() }));
+    return;
+  }
+
+  if (req.method === 'POST') {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      try {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+        if (body.mode) {
+          const result = modeManager.setMode(body.mode);
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(result));
+          return;
+        }
+        res.statusCode = 400;
+        res.end(JSON.stringify({ ok: false, error: 'mode is required' }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  res.statusCode = 405;
+  res.end();
+}
+
+/**
  * Main HTTP Server Request Router
  */
 const server = http.createServer((req, res) => {
@@ -618,6 +767,18 @@ const server = http.createServer((req, res) => {
   // 6. Local GGUF Engine /api/gateway/local-gguf/*
   if (pathname.startsWith('/api/gateway/local-gguf')) {
     localGgufMiddleware(req, res);
+    return;
+  }
+
+  // 7. Spaces API /api/gateway/spaces
+  if (pathname.startsWith('/api/gateway/spaces')) {
+    handleSpacesApi(req, res);
+    return;
+  }
+
+  // 8. Policy Mode API /api/gateway/mode
+  if (pathname.startsWith('/api/gateway/mode')) {
+    handleModeApi(req, res);
     return;
   }
 

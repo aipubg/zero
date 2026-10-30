@@ -117,9 +117,68 @@ export function createWindowsOcrAdapter({
   };
 }
 
+export function createMoondreamVisionAdapter({
+  run = null,
+  timeoutMs = 8_000,
+  maxChars = OBSERVATION_LIMITS.maxObservedTextChars,
+} = {}) {
+  return {
+    kind: "vision",
+    async read({ buffer, mimeType = "image/png", prompt = "Analyze screen and describe UI elements", signal } = {}) {
+      signal?.throwIfAborted?.();
+      if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+        return { ok: false, reason: "no-image", text: "" };
+      }
+      if (typeof run !== "function") {
+        return { ok: false, reason: "vision-not-configured", text: "" };
+      }
+      try {
+        const text = await run({ buffer, mimeType, prompt, timeoutMs, signal });
+        return {
+          ok: true,
+          text: sanitizeObservedText(text, maxChars),
+          confidence: 0.9,
+          tier: 2,
+        };
+      } catch (err) {
+        return { ok: false, reason: err?.message ?? "vision-failed", text: "" };
+      }
+    },
+  };
+}
+
+export function createAudioObservationAdapter({
+  transcribe = null,
+  maxChars = OBSERVATION_LIMITS.maxObservedTextChars,
+} = {}) {
+  return {
+    kind: "audio",
+    async read({ audioBuffer, sampleRate = 16000, signal } = {}) {
+      signal?.throwIfAborted?.();
+      if (!audioBuffer) return { ok: false, reason: "no-audio", text: "" };
+      if (typeof transcribe !== "function") {
+        return { ok: false, reason: "audio-not-configured", text: "" };
+      }
+      try {
+        const text = await transcribe({ audioBuffer, sampleRate, signal });
+        return {
+          ok: true,
+          text: sanitizeObservedText(text, maxChars),
+          confidence: 0.85,
+          tier: 3,
+        };
+      } catch (err) {
+        return { ok: false, reason: err?.message ?? "audio-failed", text: "" };
+      }
+    },
+  };
+}
+
 export function createPerceptionPipeline({
   uia = null,
   ocr = null,
+  vision = null,
+  audio = null,
   maxChars = OBSERVATION_LIMITS.maxObservedTextChars,
   clock = Date.now,
 } = {}) {
@@ -141,9 +200,20 @@ export function createPerceptionPipeline({
     if (!result && ocr) {
       try {
         const value = await ocr.read({ buffer: frame.buffer, mimeType: frame.mimeType, signal });
-        if (value?.ok) {
+        if (value?.ok && value.text) {
           result = value;
           source = "ocr";
+        }
+      } catch (error) {
+        if (signal?.aborted) throw error;
+      }
+    }
+    if ((!result || !result.text) && vision) {
+      try {
+        const value = await vision.read({ buffer: frame.buffer, mimeType: frame.mimeType, signal });
+        if (value?.ok && value.text) {
+          result = value;
+          source = "vision";
         }
       } catch (error) {
         if (signal?.aborted) throw error;
@@ -165,5 +235,5 @@ export function createPerceptionPipeline({
       textLength: text.length,
     };
   };
-  return { processFrame };
+  return { processFrame, uia, ocr, vision, audio };
 }
