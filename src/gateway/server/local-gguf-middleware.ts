@@ -88,6 +88,16 @@ export function createGatewayConfigMiddleware() {
           await fs.promises.writeFile(defaultsFile, JSON.stringify(merged, null, 2), 'utf-8');
         }
 
+        // Read all active providers from request or disk
+        let activeProvidersList: any[] = [];
+        if (Array.isArray(providers)) {
+          activeProvidersList = providers;
+        } else if (fs.existsSync(configFile)) {
+          try {
+            activeProvidersList = JSON.parse(await fs.promises.readFile(configFile, 'utf-8'));
+          } catch {}
+        }
+
         // Sync with openclaw.json configs
         const openclawConfigs = [
           path.resolve(process.cwd(), 'backend', 'config', 'openclaw.json'),
@@ -119,26 +129,65 @@ export function createGatewayConfigMiddleware() {
                 }
               }
 
-              // Update semantic aliases in models.providers['zero-gateway'].models
-              const activePrimary = defaults?.primary || agentBindings?.zero?.model;
-              if (activePrimary) {
-                const primary = activePrimary;
-                const fast = defaults?.fastMode && defaults.fastMode !== 'disabled' ? defaults.fastMode : primary;
-                const reasoning = defaults?.thinking && defaults.thinking !== 'default' ? defaults.thinking : primary;
-                cfg.models = cfg.models || { mode: 'replace', providers: {} };
-                cfg.models.providers = cfg.models.providers || {};
-                cfg.models.providers['zero-gateway'] = cfg.models.providers['zero-gateway'] || {
-                  baseUrl: 'http://127.0.0.1:18790/v1',
-                  api: 'openai-completions',
-                  models: [],
+              cfg.models = cfg.models || { mode: 'replace', providers: {} };
+              cfg.models.mode = 'replace';
+              cfg.models.providers = cfg.models.providers || {};
+
+              // 1. Synchronize all active user-configured providers
+              const allowedProviderKeys = new Set(['zero-gateway']);
+              for (const p of activeProvidersList) {
+                if (!p || !p.id || p.id === 'zero-gateway') continue;
+                allowedProviderKeys.add(p.id);
+                cfg.models.providers[p.id] = {
+                  baseUrl: p.baseUrl || '',
+                  api: p.api || 'openai-completions',
+                  models: (Array.isArray(p.models) ? p.models : []).map((m: any) => ({
+                    id: typeof m === 'string' ? m : m.id,
+                    name: typeof m === 'string' ? m : (m.name || m.id),
+                  })),
                 };
-                cfg.models.providers['zero-gateway'].models = [
-                  { id: primary, name: `${primary} (Primary)` },
-                  { id: '@fast', name: `${fast} (@fast)` },
-                  { id: '@coder', name: `${primary} (@coder)` },
-                  { id: '@reasoning', name: `${reasoning} (@reasoning)` },
-                ];
+                if (p.apiKey) {
+                  cfg.models.providers[p.id].apiKey = p.apiKey;
+                }
               }
+
+              // 2. Remove obsolete / old provider records not in active providers
+              for (const pKey of Object.keys(cfg.models.providers)) {
+                if (!allowedProviderKeys.has(pKey)) {
+                  delete cfg.models.providers[pKey];
+                }
+              }
+
+              // 3. Update zero-gateway with offline GGUF models or clean active primary (no fake aliases)
+              let offlineModelsList: any[] = [];
+              try {
+                offlineModelsList = localGgufService.listModels();
+              } catch {}
+
+              const zgModels: Array<{ id: string; name: string }> = [];
+              for (const om of offlineModelsList) {
+                if (om && om.id) {
+                  zgModels.push({
+                    id: om.id,
+                    name: om.name || om.id,
+                  });
+                }
+              }
+
+              const activePrimary = defaults?.primary || agentBindings?.zero?.model || 'default';
+              if (zgModels.length === 0) {
+                const cleanId = activePrimary.includes('/') ? activePrimary.split('/')[1] : activePrimary;
+                zgModels.push({
+                  id: cleanId || 'default',
+                  name: activePrimary || 'default',
+                });
+              }
+
+              cfg.models.providers['zero-gateway'] = {
+                baseUrl: 'http://127.0.0.1:18790/v1',
+                api: 'openai-completions',
+                models: zgModels,
+              };
 
               await fs.promises.writeFile(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8');
             } catch (cfgErr: any) {

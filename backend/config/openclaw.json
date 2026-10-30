@@ -30,22 +30,73 @@
         "api": "openai-completions",
         "models": [
           {
-            "id": "test-model-1",
-            "name": "test-model-1 (Primary)"
-          },
-          {
-            "id": "@fast",
-            "name": "test-model-1 (@fast)"
-          },
-          {
-            "id": "@coder",
-            "name": "test-model-1 (@coder)"
-          },
-          {
-            "id": "@reasoning",
-            "name": "test-model-1 (@reasoning)"
+            "id": "default",
+            "name": "default"
           }
         ]
+      },
+      "nv": {
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "default",
+            "name": "default"
+          },
+          {
+            "id": "minimaxai/minimax-m3.1-flash",
+            "name": "minimaxai/minimax-m3.1-flash"
+          },
+          {
+            "id": "nvidia/nemotron-3-super-120b-a12b",
+            "name": "nvidia/nemotron-3-super-120b-a12b"
+          },
+          {
+            "id": "nvidia/nemotron-3-ultra-550b-a55b",
+            "name": "nvidia/nemotron-3-ultra-550b-a55b"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-bolt-e4b",
+            "name": "nvidia/nemotron-3.5-bolt-e4b"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-content-safety",
+            "name": "nvidia/nemotron-3.5-content-safety"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-embed-1b",
+            "name": "nvidia/nemotron-3.5-embed-1b"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-embed-8b",
+            "name": "nvidia/nemotron-3.5-embed-8b"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+            "name": "nvidia/nemotron-3.5-lightning-30b-a3b"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+            "name": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+          },
+          {
+            "id": "nvidia/nemotron-4-340b-instruct",
+            "name": "nvidia/nemotron-4-340b-instruct"
+          },
+          {
+            "id": "nvidia/nemotron-4-340b-reward",
+            "name": "nvidia/nemotron-4-340b-reward"
+          },
+          {
+            "id": "nvidia/nemotron-nano-3-30b-a3b",
+            "name": "nvidia/nemotron-nano-3-30b-a3b"
+          },
+          {
+            "id": "z-ai/glm-5.3-flash",
+            "name": "z-ai/glm-5.3-flash"
+          }
+        ],
+        "apiKey": "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"
       }
     }
   },
@@ -56,7 +107,7 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "test-model-1",
+        "primary": "zero-gateway/default",
         "fallbacks": [
           "default"
         ]
@@ -91,8 +142,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "test-model-1",
-          "allowUnverifiedOverride": true
+          "primary": "zero-gateway/default"
         }
       }
     }

@@ -343,7 +343,23 @@ async function runEndToEndVerification() {
   if (remainingCards > 0) {
     throw new Error("FAILED: Test provider was not deleted!");
   }
-  console.log("   PASSED: Test provider cleaned up successfully!");
+
+  // Reset agent Zero binding back to clean default
+  await page.evaluate(() => {
+    const select = document.querySelector(".zero-agent-assign-select");
+    if (select) {
+      const opt = Array.from(select.options).find(o => o.value.includes("default") || o.value.includes("zero-gateway"));
+      if (opt) {
+        select.value = opt.value;
+        select.dispatchEvent(new Event("change"));
+        const assignBtn = document.querySelector(".zero-btn-assign-agent");
+        if (assignBtn) assignBtn.click();
+      }
+    }
+  });
+  await page.waitForTimeout(1000);
+
+  console.log("   PASSED: Test provider cleaned up successfully and agent binding restored!");
 
   console.log("\n=== ALL ZERO MODELS CLEAN UI CHECKS PASSED 100%! ===");
   await browser.close();
