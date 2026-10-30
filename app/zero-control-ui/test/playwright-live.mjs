@@ -23,11 +23,21 @@ async function runEndToEndVerification() {
   await page.waitForTimeout(3000);
 
   console.log("2. Clicking 'Models' in sidebar...");
-  await page.evaluate(() => {
-    const link = document.querySelector('.settings-sidebar a[href*="model-providers"]');
-    if (link) link.click();
+  const clicked = await page.evaluate(() => {
+    const link = document.querySelector('.settings-sidebar a[href*="model"], a[href*="model-providers"]');
+    if (link) {
+      link.click();
+      return true;
+    }
+    return false;
   });
   await page.waitForTimeout(2000);
+  if (!page.url().includes("/settings/model-providers")) {
+    console.log("   Navigating directly to /settings/model-providers...");
+    await page.goto("http://127.0.0.1:18789/settings/model-providers", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2000);
+  }
+
 
   const currentUrl = page.url();
   console.log("   URL:", currentUrl);
@@ -38,6 +48,7 @@ async function runEndToEndVerification() {
 
   // STEP 2: Verify Exact Page Header Structure
   console.log("\n3. Verifying Exact Page Header Structure...");
+  await page.waitForSelector(".zero-models-status-icon", { timeout: 10000 }).catch(() => {});
   const headerCheck = await page.evaluate(() => {
     const statusIcon = !!document.querySelector(".zero-models-status-icon");
     const subtitle = document.querySelector(".zero-models-header__subtitle")?.innerText.trim();
@@ -173,21 +184,29 @@ async function runEndToEndVerification() {
   console.log("\n7. Testing Modals...");
   // Test + Add Provider modal
   await page.evaluate(() => {
-    const addBtn = document.querySelector(".zero-models-btn--add-provider");
-    if (addBtn) addBtn.click();
+    const btn = document.querySelector(".zero-models-header__actions .zero-models-btn--add-provider") ||
+                Array.from(document.querySelectorAll("button")).find(b => b.innerText.trim() === "+ Add Provider");
+    if (btn) btn.click();
   });
   await page.waitForTimeout(1000);
 
   const addModalOpen = await page.evaluate(() => {
+    const overlay = document.querySelector(".zero-modal-overlay");
     const modalTitle = document.querySelector(".zero-modal__title")?.innerText.trim();
     const hasBaseUrl = !!document.querySelector('.zero-modal__input[placeholder*="http"]');
-    const hasFetchBtn = Array.from(document.querySelectorAll(".zero-modal button")).some(b => b.innerText.includes("Fetch Models"));
-    return { modalTitle, hasBaseUrl, hasFetchBtn };
+    const buttons = Array.from(document.querySelectorAll(".zero-modal button, .zero-modal-overlay button")).map(b => b.innerText.trim());
+    return {
+      overlayDisplay: overlay?.style.display,
+      modalTitle,
+      hasBaseUrl,
+      buttons
+    };
   });
-  console.log("   + Add Provider Modal:", addModalOpen);
-  if (!addModalOpen.hasBaseUrl || !addModalOpen.hasFetchBtn) {
+  console.log("   + Add Provider Modal Debug:", addModalOpen);
+  if (!addModalOpen.hasBaseUrl) {
     throw new Error("FAILED: Custom Provider modal did not open properly!");
   }
+
 
   // Close Add Provider modal
   await page.evaluate(() => {

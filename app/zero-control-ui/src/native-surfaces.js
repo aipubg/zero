@@ -358,8 +358,40 @@ function installNativeSurfaces(host) {
     }
   };
 
+  const handleLoginAndDisconnectState = () => {
+    // If login or connect form is rendered
+    const loginPanels = document.querySelectorAll(
+      ".login-panel, .login-dialog, .auth-dialog, form[class*='login'], .mount-fallback__panel, [class*='login-form']"
+    );
+    for (const panel of loginPanels) {
+      rebrandText(panel);
+      // Hide external docs links
+      for (const a of panel.querySelectorAll("a[href*='openclaw.ai']")) {
+        a.style.display = "none";
+      }
+      // If secret / token input exists, hide the secret field row
+      for (const secretField of panel.querySelectorAll("[class*='secret'], [id*='secret'], input[type='password']")) {
+        const row = secretField.closest(".form-field, .field-row, .login-field") || secretField;
+        if (row && row.style.display !== "none") {
+          row.style.display = "none";
+        }
+      }
+      // Auto-click retry / connect if present
+      const connectBtn = panel.querySelector("button[type='submit'], #openclaw-mount-retry, .login-submit-btn");
+      if (connectBtn && !connectBtn.disabled && !connectBtn.__zero_auto_clicked) {
+        connectBtn.__zero_auto_clicked = true;
+        setTimeout(() => {
+          try {
+            connectBtn.click();
+          } catch {}
+        }, 800);
+      }
+    }
+  };
+
   const rebrandChrome = () => {
     rebrandTitle();
+    handleLoginAndDisconnectState();
     const brand = document.querySelector(".topbar-brand");
     if (brand) {
       if (brand.getAttribute("aria-label") !== "Zero") brand.setAttribute("aria-label", "Zero");

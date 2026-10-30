@@ -1067,7 +1067,7 @@ export function mountModelsPage(container, context = {}) {
     const modelActionsRow = element("div", null);
     modelActionsRow.style.cssText = "display:flex;gap:8px;";
 
-    const fetchModelsBtn = element("button", "zero-models-btn zero-models-btn--add-provider", "Fetch Models");
+    const fetchModelsBtn = element("button", "zero-models-btn zero-models-btn--fetch-models", "Fetch Models");
     fetchModelsBtn.type = "button";
 
     const toggleAllReasoningBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Toggle reasoning for all");
@@ -1202,6 +1202,16 @@ export function mountModelsPage(container, context = {}) {
 
     // Fetch Models Handler
     let discoveredModels = [];
+    const selectedModelIds = new Set();
+    let currentFilteredModels = [];
+
+    function updateAddButtonCount() {
+      const count = selectedModelIds.size;
+      addSelectedBtn.textContent = `Add ${count} selected model(s)`;
+      addSelectedBtn.disabled = count === 0;
+    }
+    updateAddButtonCount();
+
     fetchModelsBtn.onclick = async () => {
       const bUrl = urlInput.value.trim();
       const bKey = keyInputs[0]?.value.trim() || "";
@@ -1222,6 +1232,9 @@ export function mountModelsPage(container, context = {}) {
         discCount.textContent = `${discoveredModels.length} models found`;
         discoveryBox.style.display = "block";
 
+        selectedModelIds.clear();
+        updateAddButtonCount();
+        discSearch.value = "";
         renderDiscoveryList(discoveredModels);
       } catch (err) {
         showNotice(`Failed to fetch models: ${err.message}`, true);
@@ -1232,15 +1245,43 @@ export function mountModelsPage(container, context = {}) {
     };
 
     function renderDiscoveryList(items) {
+      currentFilteredModels = items;
       discList.replaceChildren();
       for (const m of items) {
         const itemRow = element("label", "zero-disc-item");
-        itemRow.style.cssText = "display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:2px 4px;border-radius:4px;";
+        itemRow.style.cssText = "display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:4px 6px;border-radius:4px;user-select:none;";
 
         const cb = document.createElement("input");
         cb.type = "checkbox";
         cb.value = m.id;
-        cb.checked = true;
+        cb.checked = selectedModelIds.has(m.id);
+
+        cb.onclick = (e) => {
+          e.stopPropagation();
+        };
+
+        cb.onchange = (e) => {
+          e.stopPropagation();
+          if (cb.checked) {
+            selectedModelIds.add(m.id);
+          } else {
+            selectedModelIds.delete(m.id);
+          }
+          updateAddButtonCount();
+        };
+
+        itemRow.onclick = (e) => {
+          if (e.target === cb) return;
+          e.preventDefault();
+          e.stopPropagation();
+          cb.checked = !cb.checked;
+          if (cb.checked) {
+            selectedModelIds.add(m.id);
+          } else {
+            selectedModelIds.delete(m.id);
+          }
+          updateAddButtonCount();
+        };
 
         const nameSpan = element("span", null, m.name || m.id);
         nameSpan.style.flex = "1";
@@ -1262,22 +1303,37 @@ export function mountModelsPage(container, context = {}) {
 
     discSearch.oninput = () => {
       const q = discSearch.value.trim().toLowerCase();
-      const filtered = discoveredModels.filter(m => m.id.toLowerCase().includes(q) || (m.name && m.name.toLowerCase().includes(q)));
+      const filtered = q
+        ? discoveredModels.filter(m => m.id.toLowerCase().includes(q) || (m.name && m.name.toLowerCase().includes(q)))
+        : discoveredModels;
       renderDiscoveryList(filtered);
     };
 
-    selectAllBtn.onclick = () => {
-      discList.querySelectorAll("input[type='checkbox']").forEach(cb => { cb.checked = true; });
+    discSearch.onkeydown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+      }
     };
+
+    selectAllBtn.onclick = () => {
+      for (const m of currentFilteredModels) {
+        selectedModelIds.add(m.id);
+      }
+      discList.querySelectorAll("input[type='checkbox']").forEach(cb => { cb.checked = true; });
+      updateAddButtonCount();
+    };
+
     deselectAllBtn.onclick = () => {
+      for (const m of currentFilteredModels) {
+        selectedModelIds.delete(m.id);
+      }
       discList.querySelectorAll("input[type='checkbox']").forEach(cb => { cb.checked = false; });
+      updateAddButtonCount();
     };
 
     addSelectedBtn.onclick = () => {
-      const selectedIds = new Set();
-      discList.querySelectorAll("input[type='checkbox']:checked").forEach(cb => selectedIds.add(cb.value));
-
-      for (const id of selectedIds) {
+      if (selectedModelIds.size === 0) return;
+      for (const id of selectedModelIds) {
         if (!configuredModels.some(m => m.id === id)) {
           const disc = discoveredModels.find(m => m.id === id);
           configuredModels.push({
@@ -1290,7 +1346,7 @@ export function mountModelsPage(container, context = {}) {
       }
       discoveryBox.style.display = "none";
       renderConfiguredModelsRows();
-      showNotice(`Added ${selectedIds.size} model(s).`);
+      showNotice(`Added ${selectedModelIds.size} model(s).`);
     };
 
     body.append(modelsSection);
