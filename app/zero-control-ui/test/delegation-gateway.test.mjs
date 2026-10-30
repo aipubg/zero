@@ -19,7 +19,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(root, "..", "..");
-const configPath = path.join(repoRoot, "backend", "config", "openclaw.template.json");
+const configPath = path.join(repoRoot, "zero-system", "config", "zero.json");
 const policyPath = path.join(repoRoot, "backend", "agents", "zero", "delegation-policy.md");
 const distDir = path.join(repoRoot, "backend", "node_modules", "openclaw", "dist");
 

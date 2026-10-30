@@ -99,7 +99,7 @@ export class ComputerOperator {
     const isOwnerBypass = !isStrict && modeManager?.isOwnerMode();
 
     const holdActive = this.humanHold || (!isOwnerBypass && Boolean(policy && policy.hold));
-    const freshnessNeeded = !isOwnerBypass && (this.requireFreshSnapshot || Boolean(policy && policy.needsFreshSnapshot));
+    const freshnessNeeded = (this.requireFreshSnapshotAfterRelease && this.requireFreshSnapshot) || (!isOwnerBypass && (this.requireFreshSnapshot || Boolean(policy && policy.needsFreshSnapshot)));
 
     // 1. Human takeover hold active: refuse all input actions
     if (holdActive && !isObserve) {
@@ -213,7 +213,7 @@ export class ComputerOperator {
             this.handleHumanBailout(res.message);
             return res;
           }
-          return { ok: true, action: "mouse_move", x, y, details: res };
+          return { ok: true, action: normalizedAction, x, y, details: res };
         }
 
         case "click":
@@ -251,7 +251,7 @@ export class ComputerOperator {
             this.handleHumanBailout(res.message);
             return res;
           }
-          return { ok: true, action: "mouse_drag", from: { x: fromX, y: fromY }, to: { x: toX, y: toY }, details: res };
+          return { ok: true, action: normalizedAction, from: { x: fromX, y: fromY }, to: { x: toX, y: toY }, details: res };
         }
 
         case "scroll": {

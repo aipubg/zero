@@ -150,13 +150,6 @@ export function createGatewayConfigMiddleware() {
         const openclawConfigs = [
           path.resolve(process.cwd(), 'zero-system', 'config', 'zero.json'),
           path.resolve(process.cwd(), 'zero-system', 'config', 'zero.template.json'),
-          path.resolve(process.cwd(), 'backend', 'config', 'zero.json'),
-          path.resolve(process.cwd(), 'backend', 'config', 'zero.template.json'),
-          path.resolve(process.cwd(), 'backend', 'config', 'openclaw.json'),
-          path.resolve(process.cwd(), 'backend', 'config', 'openclaw.template.json'),
-          path.resolve(process.cwd(), 'backend', 'config', 'openclaw.json.last-good'),
-          path.resolve(process.cwd(), '.zero-data', 'fresh-workspace', 'openclaw.json'),
-          path.resolve(process.cwd(), '.zero-data', 'fresh-workspace', 'openclaw.json.last-good'),
         ];
 
         for (const cfgPath of openclawConfigs) {
@@ -210,7 +203,7 @@ export function createGatewayConfigMiddleware() {
                 if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
                 allowedProviderKeys.add(p.id);
                 cfg.models.providers[p.id] = {
-                  baseUrl: p.baseUrl || '',
+                  baseUrl: 'http://127.0.0.1:18790/v1',
                   api: p.api || 'openai-completions',
                   models: (Array.isArray(p.models) ? p.models : [])
                     .filter((m: any) => {
@@ -266,6 +259,62 @@ export function createGatewayConfigMiddleware() {
             }
           }
         }
+
+        // Clean deleted models and sync auth profiles in SQLite databases
+        try {
+          const { DatabaseSync } = await import('node:sqlite');
+          const agentDbs = [
+            path.resolve(process.cwd(), 'zero-system', 'state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
+            path.resolve(process.cwd(), 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
+          ];
+          for (const adbPath of agentDbs) {
+            if (!fs.existsSync(adbPath)) continue;
+            try {
+              const db = new DatabaseSync(adbPath);
+              // Update session_windows
+              const winRows = db.prepare("SELECT rowid, model FROM session_windows").all() as any[];
+              for (const w of winRows) {
+                if (w.model && (!validModelIds.has(w.model) || w.model.includes('glm-5.3') || w.model.includes('test-model') || w.model === 'default')) {
+                  db.prepare("UPDATE session_windows SET model = ? WHERE rowid = ?").run(safeFallbackModel, w.rowid);
+                }
+              }
+              // Update session_nodes
+              const nodeRows = db.prepare("SELECT rowid, entry_json FROM session_nodes").all() as any[];
+              for (const n of nodeRows) {
+                if (n.entry_json) {
+                  try {
+                    const parsed = JSON.parse(n.entry_json);
+                    let nodeChanged = false;
+                    if (parsed.model && (!validModelIds.has(parsed.model) || parsed.model.includes('glm-5.3') || parsed.model.includes('test-model') || parsed.model === 'default')) {
+                      parsed.model = safeFallbackModel;
+                      nodeChanged = true;
+                    }
+                    if (parsed.contextBudgetStatus?.model && (!validModelIds.has(parsed.contextBudgetStatus.model) || parsed.contextBudgetStatus.model.includes('glm-5.3'))) {
+                      parsed.contextBudgetStatus.model = safeFallbackModel;
+                      nodeChanged = true;
+                    }
+                    if (nodeChanged) {
+                      db.prepare("UPDATE session_nodes SET entry_json = ? WHERE rowid = ?").run(JSON.stringify(parsed), n.rowid);
+                    }
+                  } catch {}
+                }
+              }
+              // Sync auth_profile_store
+              try {
+                const profilesObj: Record<string, any> = {};
+                for (const p of activeProvidersList) {
+                  const key = p.apiKey || (Array.isArray(p.apiKeys) ? p.apiKeys[0] : '');
+                  if (key) {
+                    profilesObj[p.id] = { provider: p.id, type: 'api_key', key };
+                  }
+                }
+                const authJson = JSON.stringify({ version: 1, profiles: profilesObj });
+                db.prepare("INSERT OR REPLACE INTO auth_profile_store (store_key, store_json, updated_at) VALUES ('primary', ?, ?)").run(authJson, Date.now());
+              } catch {}
+              db.close();
+            } catch {}
+          }
+        } catch {}
 
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');

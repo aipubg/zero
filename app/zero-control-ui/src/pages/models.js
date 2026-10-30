@@ -634,7 +634,7 @@ export function mountModelsPage(container, context = {}) {
       const testBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Test Connection");
       const testResult = element("span", "zero-test-latency");
       testResult.style.fontSize = "11px";
-      testResult.style.color = "#34d399";
+      testResult.style.color = "var(--color-success, var(--color-success, #34d399))";
       testResult.style.display = "none";
 
       testBtn.onclick = async () => {
@@ -681,7 +681,7 @@ export function mountModelsPage(container, context = {}) {
       for (const m of offlineModels) {
         const isCurrentActive = systemDefaults.primary === m.id || agentBindings?.zero?.model === m.id;
         const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
-        chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"};border:1px solid ${isCurrentActive ? "#10b981" : "rgba(255,255,255,0.1)"};cursor:pointer;`;
+        chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"};border:1px solid ${isCurrentActive ? "var(--accent, #10b981)" : "rgba(255,255,255,0.1)"};cursor:pointer;`;
 
         const nameSpan = element("span", "zero-model-chip__name", getCleanDisplayName(m.name, m.id));
         nameSpan.style.fontWeight = isCurrentActive ? "700" : "500";
@@ -690,18 +690,18 @@ export function mountModelsPage(container, context = {}) {
         if (m.capabilities?.reasoning !== false) {
           const rBadge = element("span", "zero-chip-badge", "R");
           rBadge.title = "Reasoning Supported";
-          rBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,0.3);color:#fbbf24;";
+          rBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,0.3);color:var(--color-warning, #fbbf24);";
           chip.append(rBadge);
         }
         if (m.capabilities?.image || m.companionProjector) {
           const vBadge = element("span", "zero-chip-badge", "Vision");
           vBadge.title = "Multimodal Vision";
-          vBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(56,189,248,0.25);color:#38bdf8;";
+          vBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(56,189,248,0.25);color:var(--color-info, #38bdf8);";
           chip.append(vBadge);
         }
 
         const setActSpan = element("span", "zero-chip-action", isCurrentActive ? "✓ Active" : "Set Active");
-        setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "#34d399" : "#a5aab8"};`;
+        setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--color-success, #34d399)" : "var(--text-muted, #a5aab8)"};`;
         chip.append(setActSpan);
 
         chip.onclick = async (e) => {
@@ -717,7 +717,7 @@ export function mountModelsPage(container, context = {}) {
 
         const delChipBtn = element("span", "zero-chip-delete", "×");
         delChipBtn.title = "Remove this model";
-        delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:#9ca3af;cursor:pointer;line-height:1;";
+        delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:var(--text-subtle, #9ca3af);cursor:pointer;line-height:1;";
         delChipBtn.onclick = async (e) => {
           e.stopPropagation();
           if (!confirm(`Remove offline model "${m.name || m.id}"?`)) return;
@@ -764,7 +764,7 @@ export function mountModelsPage(container, context = {}) {
       const actions = element("div", "zero-provider-card__actions");
       const latencySpan = element("span", "zero-test-latency");
       latencySpan.style.fontSize = "11px";
-      latencySpan.style.color = "#34d399";
+      latencySpan.style.color = "var(--color-success, var(--color-success, #34d399))";
       latencySpan.style.display = "none";
 
       const testBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Test Connection");
@@ -830,7 +830,7 @@ export function mountModelsPage(container, context = {}) {
 
           const isCurrentActive = systemDefaults.primary === mid || agentBindings?.zero?.model === mid;
           const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
-          chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"};border:1px solid ${isCurrentActive ? "#10b981" : "rgba(255,255,255,0.1)"};cursor:pointer;`;
+          chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"};border:1px solid ${isCurrentActive ? "var(--accent, #10b981)" : "rgba(255,255,255,0.1)"};cursor:pointer;`;
 
           const nameSpan = element("span", "zero-model-chip__name", getCleanDisplayName(mname, mid));
           nameSpan.style.fontWeight = isCurrentActive ? "700" : "500";
@@ -839,18 +839,18 @@ export function mountModelsPage(container, context = {}) {
           if (isReasoning) {
             const rBadge = element("span", "zero-chip-badge", "R");
             rBadge.title = "Reasoning Supported";
-            rBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,0.3);color:#fbbf24;";
+            rBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,0.3);color:var(--color-warning, #fbbf24);";
             chip.append(rBadge);
           }
           if (isImage) {
             const vBadge = element("span", "zero-chip-badge", "Vision");
             vBadge.title = "Multimodal Vision";
-            vBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(56,189,248,0.25);color:#38bdf8;";
+            vBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(56,189,248,0.25);color:var(--color-info, #38bdf8);";
             chip.append(vBadge);
           }
 
           const setActSpan = element("span", "zero-chip-action", isCurrentActive ? "✓ Active" : "Set Active");
-          setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "#34d399" : "#a5aab8"};`;
+          setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--color-success, #34d399)" : "var(--text-muted, #a5aab8)"};`;
           chip.append(setActSpan);
 
           chip.onclick = async (e) => {
@@ -866,7 +866,7 @@ export function mountModelsPage(container, context = {}) {
 
           const delChipBtn = element("span", "zero-chip-delete", "×");
           delChipBtn.title = "Remove this model";
-          delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:#9ca3af;cursor:pointer;line-height:1;";
+          delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:var(--text-subtle, #9ca3af);cursor:pointer;line-height:1;";
           delChipBtn.onclick = async (e) => {
             e.stopPropagation();
             if (!confirm(`Remove model "${mname}" from ${p.name || p.id}?`)) return;
@@ -1178,7 +1178,7 @@ export function mountModelsPage(container, context = {}) {
     discHead.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
     const discCount = element("span", null, "0 models found");
     discCount.style.fontWeight = "600";
-    discCount.style.color = "#34d399";
+    discCount.style.color = "var(--color-success, var(--color-success, #34d399))";
 
     const discSelectActions = element("div", "zero-disc-actions");
     discSelectActions.style.display = "flex";
@@ -1222,7 +1222,7 @@ export function mountModelsPage(container, context = {}) {
 
       // Header row
       const tHead = element("div", "zero-models-table__head");
-      tHead.style.cssText = "display:grid;grid-template-columns:1fr 1fr 70px 70px 40px;gap:8px;font-size:11px;color:#a5aab8;font-weight:600;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);";
+      tHead.style.cssText = "display:grid;grid-template-columns:1fr 1fr 70px 70px 40px;gap:8px;font-size:11px;color:var(--text-muted, #a5aab8);font-weight:600;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);";
       tHead.append(
         element("span", null, "MODEL ID"),
         element("span", null, "DISPLAY NAME"),
@@ -1379,12 +1379,12 @@ export function mountModelsPage(container, context = {}) {
         itemRow.append(cb, nameSpan);
         if (m.reasoning) {
           const rB = element("span", "zero-chip-badge", "R");
-          rB.style.cssText = "font-size:9px;padding:1px 3px;border-radius:2px;background:rgba(217,119,6,0.3);color:#fbbf24;";
+          rB.style.cssText = "font-size:9px;padding:1px 3px;border-radius:2px;background:rgba(217,119,6,0.3);color:var(--color-warning, #fbbf24);";
           itemRow.append(rB);
         }
         if (m.image) {
           const vB = element("span", "zero-chip-badge", "Vision");
-          vB.style.cssText = "font-size:9px;padding:1px 3px;border-radius:2px;background:rgba(56,189,248,0.25);color:#38bdf8;";
+          vB.style.cssText = "font-size:9px;padding:1px 3px;border-radius:2px;background:rgba(56,189,248,0.25);color:var(--color-info, #38bdf8);";
           itemRow.append(vB);
         }
         discList.append(itemRow);
@@ -1604,13 +1604,13 @@ export function mountModelsPage(container, context = {}) {
         const titleSpan = element("span", "zero-provider-card__title", m.name || m.id);
         const ramBadge = element("span", "zero-providers-badge", isLoadedInPs ? "Loaded in RAM" : "Standby");
         ramBadge.style.cssText = isLoadedInPs
-          ? "background:rgba(34,197,94,0.15);color:#34d399;border:1px solid #10b981;"
-          : "background:rgba(255,255,255,0.05);color:#9ca3af;border:1px solid rgba(255,255,255,0.1);";
+          ? "background:rgba(34,197,94,0.15);color:var(--color-success, #34d399);border:1px solid var(--accent, #10b981);"
+          : "background:rgba(255,255,255,0.05);color:var(--text-subtle, #9ca3af);border:1px solid rgba(255,255,255,0.1);";
         tRow.append(titleSpan, ramBadge);
 
         if (m.companionProjector) {
           const vB = element("span", "zero-agent-binding-badge", `Vision Projector: ${m.companionProjector}`);
-          vB.style.cssText = "margin-left:6px;font-size:10px;color:#38bdf8;border:1px solid #38bdf8;";
+          vB.style.cssText = "margin-left:6px;font-size:10px;color:var(--color-info, #38bdf8);border:1px solid var(--color-info, #38bdf8);";
           tRow.append(vB);
         }
 
@@ -1808,7 +1808,7 @@ export function mountModelsPage(container, context = {}) {
 
           const addStep = (text, status = "active") => {
             const row = element("div", null);
-            row.style.cssText = `color:${status === "done" ? "#34d399" : status === "active" ? "#60a5fa" : "#ef4444"};`;
+            row.style.cssText = `color:${status === "done" ? "var(--color-success, #34d399)" : status === "active" ? "var(--accent, #60a5fa)" : "var(--color-danger, #ef4444)"};`;
             row.textContent = `${status === "done" ? "✓" : status === "active" ? "⏳" : "✗"} ${text}`;
             stepsList.append(row);
           };

@@ -2,6 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { ComputerOperator } from "../src/computer/operator.js";
 import { createComputerTool, ZERO_COMPUTER_TOOL_NAME } from "../src/computer/tools.js";
+import { stopDaemon } from "../src/computer/windows-driver.js";
+
+test.after(() => {
+  stopDaemon();
+});
 
 test("ComputerOperator: initial state and driver setup", () => {
   const op = new ComputerOperator();

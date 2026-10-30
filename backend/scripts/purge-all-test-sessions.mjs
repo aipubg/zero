@@ -4,9 +4,9 @@ import fs from 'node:fs';
 const dbs = [
   'E:/zero/zero-system/state/state/openclaw.sqlite',
   'E:/zero/zero-system/state/agents/zero/agent/openclaw-agent.sqlite',
-  'E:/zero/.zero-data/fresh-workspace/gateway-state/state/openclaw.sqlite',
-  'E:/zero/.zero-data/fresh-workspace/gateway-state/agents/zero/agent/openclaw-agent.sqlite',
-  'E:/zero/.zero-data/fresh-workspace/runtime-state/state/openclaw.sqlite',
+  "",
+  "",
+  "",
   'E:/zero/backend/.openclaw/state/openclaw.sqlite'
 ];
 

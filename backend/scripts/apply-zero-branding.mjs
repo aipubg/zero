@@ -31,7 +31,6 @@ function findControlUiDirs() {
   const searchRoots = [
     path.join(REPO_ROOT, 'backend', 'node_modules'),
     path.join(REPO_ROOT, 'zero-system', 'state'),
-    path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state'),
   ];
 
   function walk(current, depth = 0) {
@@ -238,23 +237,90 @@ export function patchOpenclawRuntime() {
         }
       }
     }
+
+    // 5. Patch Cache-Control headers to ensure browser never caches stale bundles
+    for (const f of fs.readdirSync(root)) {
+      if (f.startsWith('server-control-ui-root-') && f.endsWith('.mjs')) {
+        const sPath = path.join(root, f);
+        let code = fs.readFileSync(sPath, 'utf8');
+        if (code.includes('CONTROL_UI_IMMUTABLE_CACHE_CONTROL : "no-cache"') && !code.includes('__zero_cache_control__')) {
+          code = `/* __zero_cache_control__ */\n` + code.replaceAll('options?.immutable ? CONTROL_UI_IMMUTABLE_CACHE_CONTROL : "no-cache"', '"no-store, no-cache, must-revalidate"').replaceAll('options.immutable ? CONTROL_UI_IMMUTABLE_CACHE_CONTROL : "no-cache"', '"no-store, no-cache, must-revalidate"');
+          fs.writeFileSync(sPath, code, 'utf8');
+        }
+      }
+      if (f.startsWith('control-ui-') && f.endsWith('.mjs')) {
+        const cPath = path.join(root, f);
+        let code = fs.readFileSync(cPath, 'utf8');
+        if (code.includes('sessionEntryPath ? "no-store" : "no-cache"') && !code.includes('__zero_cache_control__')) {
+          code = `/* __zero_cache_control__ */\n` + code.replaceAll('sessionEntryPath ? "no-store" : "no-cache"', '"no-store, no-cache, must-revalidate"');
+          fs.writeFileSync(cPath, code, 'utf8');
+        }
+      }
+    }
+
+    // 6. Patch custodian-page assets to redirect to /chat/zero
+    if (fs.existsSync(assetsDir)) {
+      for (const f of fs.readdirSync(assetsDir)) {
+        if (f.startsWith('custodian-page-') && f.endsWith('.js')) {
+          const cPath = path.join(assetsDir, f);
+          let code = fs.readFileSync(cPath, 'utf8');
+          if (!code.includes('__zero_custodian_redirect_strict__')) {
+            code = `/* __zero_custodian_redirect_strict__ */\nif (typeof window !== "undefined") { window.location.replace("/chat/zero"); }\n` + code;
+            code = code.replace(/function P\(e\)\{return m`[^`]*<openclaw-custodian-page[^`]*<\/openclaw-custodian-page>[^`]*`\}/g, 'function P(e){if(typeof window!=="undefined"){window.location.replace("/chat/zero");}return m``}');
+            fs.writeFileSync(cPath, code, 'utf8');
+          }
+        }
+      }
+    }
   }
 }
 
 export function purgeStaleDatabaseSessions() {
   const dbs = [
     path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'openclaw.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'zero.sqlite'),
     path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
     path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'operator', 'agent', 'openclaw-agent.sqlite'),
     path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'researcher', 'agent', 'openclaw-agent.sqlite'),
-    path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state', 'state', 'openclaw.sqlite'),
-    path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
   ];
 
   for (const dbPath of dbs) {
     if (!fs.existsSync(dbPath)) continue;
     try {
       const db = new DatabaseSync(dbPath);
+      // Clean operator_approvals
+      try {
+        db.prepare('DELETE FROM operator_approvals').run();
+      } catch(e) {}
+      // Clean diagnostic_events
+      try {
+        db.prepare("DELETE FROM diagnostic_events WHERE payload_json LIKE '%tool-live-exec%' OR payload_json LIKE '%openclaw%'").run();
+      } catch(e) {}
+      // Clean config_machine_state stale keys
+      try {
+        db.prepare("DELETE FROM config_machine_state WHERE state_key LIKE '%webhookListeners%openclaw.json%' OR state_key LIKE '%.zero-data%'").run();
+      } catch(e) {}
+      // Clean session_windows
+      try {
+        db.prepare("UPDATE session_windows SET model = 'nvidia/nemotron-3.5-lightning-30b-a3b' WHERE model LIKE '%glm%' OR model LIKE '%test-model%' OR model LIKE '%zero-gateway%' OR model = 'default'").run();
+      } catch(e) {}
+      // Sync auth_profile_store
+      try {
+        const authKey = 'primary';
+        const authJson = JSON.stringify({
+          version: 1,
+          profiles: {
+            nv: {
+              provider: 'nv',
+              type: 'api_key',
+              key: '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',
+            },
+          },
+        });
+        db.prepare('INSERT OR REPLACE INTO auth_profile_store (store_key, store_json, updated_at) VALUES (?, ?, ?)').run(authKey, authJson, Date.now());
+      } catch(e) {}
+
       const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       for (const t of tables) {
         const name = t.name;

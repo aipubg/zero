@@ -405,7 +405,7 @@ export function createZeroUiRuntimeHandlers({
     "E:\\zero\\backend\\config\\zero.template.json",
     "E:\\zero\\backend\\config\\openclaw.json",
     "E:\\zero\\backend\\config\\openclaw.template.json",
-    "E:\\zero\\.zero-data\\fresh-workspace\\openclaw.json",
+    "",
   ];
 
   function readLiveConfig() {

@@ -86,6 +86,9 @@ class WindowsInputDaemon {
             windowsHide: true,
           },
         );
+        this.process.unref();
+        try { this.process.stdin?.unref?.(); } catch {}
+        try { this.process.stdout?.unref?.(); } catch {}
 
         this.process.stdout.on("data", (chunk) => {
           this.buffer += chunk.toString("utf8");
@@ -187,6 +190,13 @@ export function getInputDaemon() {
     daemonInstance = new WindowsInputDaemon();
   }
   return daemonInstance;
+}
+
+export function stopDaemon() {
+  if (daemonInstance) {
+    daemonInstance.stop();
+    daemonInstance = null;
+  }
 }
 
 /**

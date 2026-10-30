@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { chromium } = require("E:/zero/.zero-data/fresh-workspace/gateway-state/node-runtime/releases/2026.10.7-10ad68f0f0f519bc2ee40ec9e23435359e7ba939749fd7b4a290df3512ba49af/node_modules/openclaw/node_modules/playwright-core");
+const { chromium } = require("playwright-core");
 
 async function verifyAll() {
   console.log("=== STARTING FULL PLAYWRIGHT VERIFICATION OF ALL 6 FIXES ===");

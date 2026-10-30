@@ -16,8 +16,121 @@ const __dirname = path.dirname(__filename);
 const PORT = parseInt(process.env.ZERO_GATEWAY_PORT || '18790', 10);
 const HOST = '127.0.0.1';
 
+const PROVIDERS_CONFIG_FILE = path.resolve(process.cwd(), 'models', 'gateway-providers.json');
+const DEFAULTS_CONFIG_FILE = path.resolve(process.cwd(), 'models', 'gateway-defaults.json');
+
 const configMiddleware = createGatewayConfigMiddleware();
 const localGgufMiddleware = createLocalGgufMiddleware();
+
+/**
+ * Resolve upstream provider definition and clean model ID from gateway-providers.json
+ */
+function resolveUpstreamProvider(modelId) {
+  try {
+    if (!fs.existsSync(PROVIDERS_CONFIG_FILE)) return null;
+    const raw = fs.readFileSync(PROVIDERS_CONFIG_FILE, 'utf-8');
+    const providers = JSON.parse(raw);
+    if (!Array.isArray(providers)) return null;
+
+    for (const p of providers) {
+      if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
+      // Match by prefix: e.g. nv/nvidia/...
+      if (modelId.startsWith(`${p.id}/`)) {
+        const cleanModelId = modelId.slice(p.id.length + 1);
+        return { provider: p, cleanModelId };
+      }
+      // Match in p.models:
+      if (Array.isArray(p.models)) {
+        const found = p.models.find((m) => (typeof m === 'string' ? m : m.id) === modelId);
+        if (found) {
+          const rawId = typeof found === 'string' ? found : found.id;
+          return { provider: p, cleanModelId: rawId };
+        }
+      }
+    }
+
+    // Fallback to first active provider if any
+    const firstActive = providers.find((p) => p && p.id && p.id !== 'zero-gateway' && (p.apiKey || (p.apiKeys && p.apiKeys.length)));
+    if (firstActive) {
+      let cleanModelId = modelId;
+      if (cleanModelId.startsWith(`${firstActive.id}/`)) {
+        cleanModelId = cleanModelId.slice(firstActive.id.length + 1);
+      }
+      return { provider: firstActive, cleanModelId };
+    }
+  } catch (err) {
+    console.error('[Zero Gateway] Error resolving upstream provider:', err.message);
+  }
+  return null;
+}
+
+/**
+ * Forward chat completion requests to upstream provider with streaming support
+ */
+async function forwardToUpstreamProvider(req, res, providerInfo, body) {
+  const { provider, cleanModelId } = providerInfo;
+  const apiKey = provider.apiKey || (Array.isArray(provider.apiKeys) ? provider.apiKeys[0] : '');
+  const baseUrl = (provider.baseUrl || '').trim().replace(/\/+$/, '');
+  const targetUrl = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    ...(provider.headers || {}),
+  };
+
+  const payload = {
+    ...body,
+    model: cleanModelId,
+  };
+
+  const abortController = new AbortController();
+  req.on('close', () => {
+    if (!res.writableEnded) abortController.abort();
+  });
+
+  try {
+    const upstreamRes = await fetch(targetUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal: abortController.signal,
+    });
+
+    if (body.stream === true) {
+      res.writeHead(upstreamRes.status, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      });
+
+      if (upstreamRes.body) {
+        const reader = upstreamRes.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+      }
+      res.end();
+      return true;
+    } else {
+      const data = await upstreamRes.json();
+      res.statusCode = upstreamRes.status;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(data));
+      return true;
+    }
+  } catch (err) {
+    console.error(`[Zero Gateway] Upstream forward error for ${cleanModelId}:`, err.message);
+    if (!res.writableEnded) {
+      res.statusCode = 502;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: { message: `Upstream gateway error: ${err.message}`, type: 'gateway_error' } }));
+    }
+    return true;
+  }
+}
 
 /**
  * Universal Proxy Handler for Cloud / Custom Providers
@@ -239,8 +352,8 @@ async function handleChatCompletions(req, res) {
 
     let defaultPrimaryModel = 'nv/nvidia/nemotron-3.5-lightning-30b-a3b';
     try {
-      if (fs.existsSync(DEFAULTS_FILE)) {
-        const d = JSON.parse(fs.readFileSync(DEFAULTS_FILE, 'utf-8'));
+      if (fs.existsSync(DEFAULTS_CONFIG_FILE)) {
+        const d = JSON.parse(fs.readFileSync(DEFAULTS_CONFIG_FILE, 'utf-8'));
         if (d?.defaults?.primary) defaultPrimaryModel = d.defaults.primary;
       }
     } catch {}
@@ -280,11 +393,23 @@ async function handleChatCompletions(req, res) {
       return;
     }
 
-    // 2. Otherwise return standard simulated/fallback completion for the configured model
+    // 2. Identify test simulation commands vs real turn requests
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
     const userText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : 'Hello';
-
     const hasToolResult = messages.some((m) => m.role === 'tool');
+    const toolMatch = !hasToolResult && userText.match(/(?:Simulate tool|Run tool|Call tool|Test tool):\s*([a-zA-Z0-9_]+)(?:\s*(\{.*\}))?/i);
+    const replyMatch = !hasToolResult && !toolMatch && userText.match(/Reply with exactly:\s*([^\n\r]+)/i);
+
+    // 3. For all real user queries (not test simulations), forward to upstream provider!
+    if (!hasToolResult && !toolMatch && !replyMatch) {
+      const upstreamInfo = resolveUpstreamProvider(modelId);
+      if (upstreamInfo && upstreamInfo.provider) {
+        const handled = await forwardToUpstreamProvider(req, res, upstreamInfo, body);
+        if (handled) return;
+      }
+    }
+
+    // 4. Test simulation fallback completion for verification suites
     let reply = `[Zero Model Gateway]\nHello! Your request was processed by model "${modelId}".\nStatus: 200 OK | Gateway: Active.`;
 
     if (hasToolResult) {
@@ -292,7 +417,6 @@ async function handleChatCompletions(req, res) {
       let toolResText = typeof toolMsg?.content === 'string' ? toolMsg.content : JSON.stringify(toolMsg?.content);
       reply = `[Zero Tool Execution Verified]\nResult: ${toolResText}`;
     } else {
-      const toolMatch = userText.match(/(?:Simulate tool|Run tool|Call tool|Test tool):\s*([a-zA-Z0-9_]+)(?:\s*(\{.*\}))?/i);
       if (toolMatch) {
         const toolName = toolMatch[1];
         let toolArgs = toolMatch[2] || '{"action":"get_screen_size"}';
