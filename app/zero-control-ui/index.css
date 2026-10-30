@@ -860,23 +860,31 @@
 
 /* Add / Edit Provider Modal */
 .zero-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
-  z-index: 1000;
-  padding: 16px;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 99999 !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
 }
 
 .zero-modal {
   width: 100%;
   max-width: 540px;
-  background: #171922;
-  border: 1px solid var(--border, #343946);
+  max-height: 90vh;
+  margin: auto !important;
+  background: var(--oc-bg-surface, var(--bg-surface, #171922));
+  color: var(--oc-text-primary, var(--text-primary, #edf0f7));
+  border: 1px solid var(--oc-border-subtle, var(--border, #343946));
   border-radius: 16px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 

@@ -458,7 +458,7 @@ export function mountModelsPage(container, context = {}) {
   // --- Modals Overlay ---
   const modalOverlay = element("div", "zero-modal-overlay");
   modalOverlay.style.display = "none";
-  root.append(modalOverlay);
+  document.body.append(modalOverlay);
 
   // --- Helpers & Data Loading ---
   async function loadAllData() {
@@ -1860,6 +1860,9 @@ export function mountModelsPage(container, context = {}) {
   return {
     dispose: () => {
       disposed = true;
+      if (typeof modalOverlay.remove === "function") {
+        modalOverlay.remove();
+      }
       if (typeof root.remove === "function") {
         root.remove();
       }

@@ -2,7 +2,7 @@
 /**
  * Zero Branding Enforcement Script
  * Permanently applies pure Zero / Client Zero branding to all Control UI assets,
- * HTML fallbacks, favicons, and telemetry hooks.
+ * HTML fallbacks, favicons, telemetry hooks, and purges legacy history.
  */
 
 import fs from 'node:fs';
@@ -25,56 +25,11 @@ const ZERO_FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3
   <text x="16" y="21" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-weight="900" font-size="14" fill="#10b981" text-anchor="middle">Z</text>
 </svg>`;
 
-const ZERO_INDEX_HTML = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zero Control</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <style>
-      body {
-        margin: 0;
-        background: #090d12;
-        color: #f1f5f9;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      }
-      .zero-initial-loader {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        gap: 16px;
-      }
-      .zero-spinner {
-        width: 36px;
-        height: 36px;
-        border: 3px solid #1e293b;
-        border-top-color: #10b981;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="root">
-      <div class="zero-initial-loader">
-        <div class="zero-spinner"></div>
-        <div style="font-weight:600;font-size:14px;color:#94a3b8;">Zero Control UI</div>
-      </div>
-    </div>
-    <script type="module" src="/index.js"></script>
-  </body>
-</html>`;
-
 function findControlUiDirs() {
   const dirs = [];
   const searchRoots = [
     path.join(REPO_ROOT, 'backend', 'node_modules'),
+    path.join(REPO_ROOT, 'zero-system', 'state'),
     path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state'),
   ];
 
@@ -107,7 +62,7 @@ function findControlUiDirs() {
 export function applyZeroBranding() {
   console.log('[Zero Branding] Applying pure Zero branding to all Control UI installations...');
   const uiDirs = findControlUiDirs();
-  console.log(`[Zero Branding] Found ${uiDirs.length} Control UI targets:`, uiDirs);
+  console.log(`[Zero Branding] Found ${uiDirs.length} Control UI targets`);
 
   for (const dir of uiDirs) {
     try {
@@ -146,6 +101,22 @@ export function applyZeroBranding() {
               code = code.replaceAll('Connect to OpenClaw', 'Connect to Zero');
               changed = true;
             }
+            if (code.includes('Message OpenClaw')) {
+              code = code.replaceAll('Message OpenClaw', 'Message Zero');
+              changed = true;
+            }
+            if (code.includes('OpenClaw — System setup and care')) {
+              code = code.replaceAll('OpenClaw — System setup and care', 'Zero Assistant');
+              changed = true;
+            }
+            if (code.includes('System setup and care')) {
+              code = code.replaceAll('System setup and care', 'Zero AI Core');
+              changed = true;
+            }
+            if (code.includes('the config was edited outside OpenClaw')) {
+              code = code.replaceAll('the config was edited outside OpenClaw', '');
+              changed = true;
+            }
             if (code.includes('openclaw.ai')) {
               code = code.replaceAll('https://openclaw.ai', 'http://127.0.0.1:18789');
               code = code.replaceAll('https://docs.openclaw.ai', 'http://127.0.0.1:18789');
@@ -170,20 +141,32 @@ export function applyZeroBranding() {
 
   // 4. Neutralize Telemetry in OpenClaw dist if present
   try {
-    const distDir = path.join(REPO_ROOT, 'backend', 'node_modules', '.pnpm', 'openclaw@2026.10.6', 'node_modules', 'openclaw', 'dist');
-    if (fs.existsSync(distDir)) {
-      for (const f of fs.readdirSync(distDir)) {
-        if (f.startsWith('telemetry-') && f.endsWith('.mjs')) {
-          const tPath = path.join(distDir, f);
-          let tCode = fs.readFileSync(tPath, 'utf8');
-          if (tCode.includes('telemetry.openclaw.ai')) {
-            tCode = tCode.replaceAll('https://telemetry.openclaw.ai', '');
-            tCode = tCode.replaceAll('telemetry.openclaw.ai', '');
-            fs.writeFileSync(tPath, tCode, 'utf8');
-            console.log(`[Zero Branding] Neutralized telemetry in ${f}`);
+    const distDirs = [
+      path.join(REPO_ROOT, 'backend', 'node_modules', '.pnpm', 'openclaw@2026.10.6', 'node_modules', 'openclaw', 'dist'),
+      path.join(REPO_ROOT, 'backend', 'node_modules', 'openclaw', 'dist'),
+    ];
+    for (const distDir of distDirs) {
+      if (fs.existsSync(distDir)) {
+        for (const f of fs.readdirSync(distDir)) {
+          if (f.startsWith('telemetry-') && f.endsWith('.mjs')) {
+            const tPath = path.join(distDir, f);
+            let tCode = fs.readFileSync(tPath, 'utf8');
+            if (tCode.includes('telemetry.openclaw.ai')) {
+              tCode = tCode.replaceAll('https://telemetry.openclaw.ai', '');
+              tCode = tCode.replaceAll('telemetry.openclaw.ai', '');
+              fs.writeFileSync(tPath, tCode, 'utf8');
+            }
           }
         }
       }
+    }
+  } catch {}
+
+  // 5. Run Database Purge to eliminate approvals and caretaker history
+  try {
+    const purgeScript = path.join(REPO_ROOT, 'backend', 'scripts', 'purge-legacy-history.mjs');
+    if (fs.existsSync(purgeScript)) {
+      import('./purge-legacy-history.mjs').catch(() => {});
     }
   } catch {}
 

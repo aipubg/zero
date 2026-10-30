@@ -1,0 +1,175 @@
+{
+  "gateway": {
+    "mode": "local",
+    "port": 18789,
+    "bind": "loopback",
+    "auth": {
+      "mode": "none"
+    },
+    "reload": {
+      "mode": "hybrid"
+    },
+    "controlUi": {
+      "experimental": {
+        "customPlugins": true
+      }
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": false
+        }
+      }
+    }
+  },
+  "models": {
+    "mode": "replace",
+    "providers": {
+      "nv": {
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "nvidia/nemotron-3-super-120b-a12b",
+            "name": "3-super-120b-a12b"
+          },
+          {
+            "id": "nvidia/nemotron-3-ultra-550b-a55b",
+            "name": "3-ultra-550b-a55b"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+            "name": "3.5-lightning-30b-a3b"
+          },
+          {
+            "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+            "name": "3.5-super-vl-120b-a12b"
+          }
+        ],
+        "apiKey": "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"
+      }
+    }
+  },
+  "agents": {
+    "ownership": "explicit",
+    "defaults": {
+      "systemAgent": {
+        "agentId": "zero"
+      },
+      "model": {
+        "primary": "nv/nvidia/nemotron-3-super-120b-a12b",
+        "fallbacks": []
+      },
+      "utilityModel": "nv/nvidia/nemotron-3-super-120b-a12b",
+      "skills": [],
+      "sandbox": {
+        "mode": "off"
+      }
+    },
+    "entries": {
+      "zero": {
+        "name": "Zero",
+        "workspace": "E:\\\\zero\\\\zero-system\\\\state\\\\agents\\\\zero",
+        "identity": {
+          "name": "Zero"
+        },
+        "tools": {
+          "profile": "full",
+          "alsoAllow": [
+            "computer",
+            "zero_computer",
+            "zero_computer_action",
+            "zero_screen_context"
+          ],
+          "exec": {
+            "mode": "ask"
+          }
+        },
+        "subagents": {
+          "allowAgents": [],
+          "requireAgentId": true
+        },
+        "model": {
+          "primary": "nv/nvidia/nemotron-3-super-120b-a12b",
+          "fallbacks": []
+        }
+      }
+    }
+  },
+  "session": {
+    "scope": "per-sender",
+    "dmScope": "main",
+    "maintenance": {
+      "mode": "enforce",
+      "pruneAfter": "30d",
+      "maxEntries": 5000,
+      "maxDiskBytes": "2gb"
+    }
+  },
+  "memory": {
+    "search": {
+      "provider": "none"
+    }
+  },
+  "plugins": {
+    "load": {
+      "paths": [
+        "E:\\zero\\app\\zero-control-ui"
+      ]
+    },
+    "entries": {
+      "cua-computer": {
+        "enabled": true
+      },
+      "zero-control-ui": {
+        "enabled": true,
+        "config": {
+          "controlMethodName": "zero.computer.control",
+          "holdToolNames": [
+            "computer",
+            "zero_computer"
+          ],
+          "codeModeToolNames": [
+            "exec"
+          ],
+          "observeActions": [
+            "screenshot",
+            "wait",
+            "list_apps",
+            "list_windows",
+            "get_accessibility_tree",
+            "get_cursor_position",
+            "get_window_state",
+            "zoom",
+            "get_browser_state",
+            "get_recording_state"
+          ],
+          "blockedActions": [
+            "escalate_scope"
+          ],
+          "highRiskActions": [
+            "kill_app",
+            "browser_navigate",
+            "browser_download",
+            "browser_set_input_files",
+            "start_recording",
+            "replay_trajectory",
+            "escalate_scope"
+          ],
+          "maxActionsPerRun": 400,
+          "maxInputActionsPerRun": 200,
+          "requireFreshSnapshotAfterRelease": true
+        }
+      }
+    }
+  },
+  "update": {
+    "channel": "stable",
+    "auto": {
+      "enabled": false
+    }
+  },
+  "telemetry": {
+    "enabled": false
+  }
+}

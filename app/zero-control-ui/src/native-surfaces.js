@@ -542,11 +542,24 @@ function installNativeSurfaces(host) {
       rebrandAboutEntry();
       rebrandChrome();
       syncChatControls();
+      removeExternalLearnMoreLinks();
       sanitizeChatModelMenu();
     } catch {
       // Product chrome cleanup is best-effort; it must never break the host.
     } finally {
       isApplyingChanges = false;
+    }
+  };
+
+  const removeExternalLearnMoreLinks = () => {
+    for (const a of document.querySelectorAll("a[href*='openclaw.ai'], a[href*='docs.openclaw'], a.callout__link, a.help-link")) {
+      a.remove();
+    }
+    for (const a of document.querySelectorAll("a")) {
+      const txt = (a.textContent || "").trim();
+      if (/^Learn more$/i.test(txt) || /^OpenClaw Docs$/i.test(txt)) {
+        a.remove();
+      }
     }
   };
 
@@ -635,16 +648,18 @@ function installNativeSurfaces(host) {
     try {
       // 1. Remove obsolete provider groups (zero-gateway, test-provider, etc.)
       const obsoleteGroups = document.querySelectorAll(
-        '[data-chat-model-provider-group="zero-gateway"], [data-chat-model-provider-group="test-provider"], [data-chat-model-provider-group="test_provider"]'
+        '[data-chat-model-provider-group="zero-gateway"], [data-chat-model-provider-group="test-provider"], [data-chat-model-provider-group="test_provider"], [data-chat-model-provider="zero-gateway"], [data-chat-model-provider="test-provider"]'
       );
-      for (const g of obsoleteGroups) g.remove();
+      for (const g of obsoleteGroups) {
+        g.closest(".chat-controls__provider-model-group, section")?.remove() || g.remove();
+      }
 
       // Check headings with text
-      const providerHeadings = document.querySelectorAll(".chat-controls__provider-heading, .chat-controls__provider-label");
+      const providerHeadings = document.querySelectorAll(".chat-controls__provider-heading, .chat-controls__provider-label, [data-chat-model-provider]");
       for (const h of providerHeadings) {
         const txt = (h.textContent || "").trim();
-        if (txt.includes("Zero Gateway") || txt.includes("Test Provider")) {
-          h.closest(".chat-controls__provider-model-group, section")?.remove();
+        if (txt.includes("Zero Gateway") || txt.includes("Test Provider") || txt.includes("test-provider") || txt.startsWith("Zero Gateway")) {
+          h.closest(".chat-controls__provider-model-group, section")?.remove() || h.remove();
         }
       }
 
@@ -666,7 +681,7 @@ function installNativeSurfaces(host) {
       }
 
       // 3. Clean up the trigger button text if stuck on dummy model
-      const triggerBtn = document.querySelector(".chat-controls__session button, .chat-controls__model button");
+      const triggerBtn = document.querySelector(".chat-controls__session button, .chat-controls__model button, [data-chat-model-trigger], summary[data-chat-model-select]");
       if (triggerBtn) {
         const currentText = (triggerBtn.textContent || "").trim();
         if (
@@ -674,9 +689,11 @@ function installNativeSurfaces(host) {
           currentText.includes("test-model") ||
           currentText === "default"
         ) {
+          const firstRealOption = document.querySelector(".chat-controls__model-option:not([data-chat-model-option*='zero-gateway']):not([data-chat-model-option*='test-model'])");
+          const realName = firstRealOption ? (firstRealOption.getAttribute("aria-label") || firstRealOption.textContent.trim()) : "3-super-120b-a12b";
           for (const node of triggerBtn.childNodes) {
             if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-              node.textContent = "z-ai/glm-5.3-flash";
+              node.textContent = realName;
               break;
             }
           }
@@ -823,6 +840,25 @@ function installNativeSurfaces(host) {
       return;
     }
 
+    // Sanitize chat model menu on click or model trigger interaction
+    if (target.closest(".chat-controls__model-picker, .chat-controls__model-menu, wa-popup, summary[data-chat-model-select], button")) {
+      setTimeout(sanitizeChatModelMenu, 10);
+      setTimeout(sanitizeChatModelMenu, 60);
+    }
+
+    // Intercept Ask Zero / caretaker chat clicks and redirect to /chat/zero
+    const askZeroLink = target.closest("a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab");
+    if (askZeroLink) {
+      const txt = (askZeroLink.textContent || "").trim();
+      const href = askZeroLink.getAttribute("href") || "";
+      if (txt.includes("Ask Zero") || href.includes("/chat/main") || href.includes("/chat/caretaker")) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.location.hash = "#/chat/zero";
+        return;
+      }
+    }
+
     const modelTarget = target.closest(
       'a[href*="model-providers"], a[href*="model-setup"], a[href*="/models"], a[href*="/providers"], [data-sidebar-entry*="models"], [data-sidebar-entry*="model-providers"], .chat-controls__provider-settings'
     );
@@ -892,8 +928,18 @@ function installNativeSurfaces(host) {
     });
   }
 
+  const handlePointerDown = (event) => {
+    const target = event.target;
+    if (!target || typeof target.closest !== "function") return;
+    if (target.closest(".chat-controls__model-picker, .chat-controls__model-menu, wa-popup, summary[data-chat-model-select], button")) {
+      setTimeout(sanitizeChatModelMenu, 10);
+      setTimeout(sanitizeChatModelMenu, 60);
+    }
+  };
+
   document.addEventListener("click", handleClick, true);
   document.addEventListener("auxclick", handleClick, true);
+  document.addEventListener("pointerdown", handlePointerDown, true);
   window.addEventListener("popstate", scheduleSync);
   window.addEventListener("hashchange", scheduleSync);
 
@@ -909,6 +955,7 @@ function installNativeSurfaces(host) {
     unmountComputer(true);
     document.removeEventListener("click", handleClick, true);
     document.removeEventListener("auxclick", handleClick, true);
+    document.removeEventListener("pointerdown", handlePointerDown, true);
     window.removeEventListener("popstate", scheduleSync);
     window.removeEventListener("hashchange", scheduleSync);
     if (chromeTimer) {

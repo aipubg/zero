@@ -398,8 +398,14 @@ export function createZeroUiRuntimeHandlers({
   );
 
   const CONFIG_PATHS = [
-    "E:\\zero\\.zero-data\\fresh-workspace\\openclaw.json",
+    process.env.OPENCLAW_CONFIG_PATH || "E:\\zero\\zero-system\\config\\zero.json",
+    "E:\\zero\\zero-system\\config\\zero.json",
+    "E:\\zero\\zero-system\\config\\zero.template.json",
+    "E:\\zero\\backend\\config\\zero.json",
+    "E:\\zero\\backend\\config\\zero.template.json",
     "E:\\zero\\backend\\config\\openclaw.json",
+    "E:\\zero\\backend\\config\\openclaw.template.json",
+    "E:\\zero\\.zero-data\\fresh-workspace\\openclaw.json",
   ];
 
   function readLiveConfig() {
@@ -429,10 +435,10 @@ export function createZeroUiRuntimeHandlers({
   const gatewayStatusHandler = methodHandler(METHODS.gatewayStatus, async () => {
     let running = false;
     let version = "1.0.0";
-    let activeModel = "nv/z-ai/glm-5.3-flash";
+    let activeModel = "nv/nvidia/nemotron-3-super-120b-a12b";
     try {
       const live = readLiveConfig();
-      activeModel = live.data?.agents?.defaults?.model?.primary || "nv/z-ai/glm-5.3-flash";
+      activeModel = live.data?.agents?.defaults?.model?.primary || "nv/nvidia/nemotron-3-super-120b-a12b";
       const res = await fetch("http://127.0.0.1:18790/health", { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
@@ -485,13 +491,27 @@ export function createZeroUiRuntimeHandlers({
       }
     } catch {}
 
+    // Compute safe fallback from available providers
+    let safeFallback = "";
+    if (confProviders.length > 0) {
+      for (const p of confProviders) {
+        if (p?.models?.length > 0) {
+          const m = p.models[0];
+          const mId = typeof m === "string" ? m : m.id;
+          safeFallback = `${p.id}/${mId}`;
+          break;
+        }
+      }
+    }
+    if (!safeFallback) safeFallback = "nv/nvidia/nemotron-3-super-120b-a12b";
+
     const live = readLiveConfig();
     const config = live.data;
-    const activeModel = confDefaults?.primary || config?.agents?.defaults?.model?.primary || "nv/z-ai/glm-5.3-flash";
+    const activeModel = confDefaults?.primary || config?.agents?.defaults?.model?.primary || safeFallback;
 
     const defaults = {
-      primary: confDefaults?.primary || config?.agents?.defaults?.model?.primary || "nv/z-ai/glm-5.3-flash",
-      utility: confDefaults?.utility || config?.agents?.defaults?.model?.utility || "",
+      primary: confDefaults?.primary || config?.agents?.defaults?.model?.primary || safeFallback,
+      utility: confDefaults?.utility || config?.agents?.defaults?.model?.utility || safeFallback,
       fallback: confDefaults?.fallback || config?.agents?.defaults?.model?.fallback || "",
       thinking: confDefaults?.thinking || config?.agents?.defaults?.model?.thinking || "",
       fast: confDefaults?.fastMode || config?.agents?.defaults?.model?.fast || "",
@@ -681,9 +701,9 @@ export function createZeroUiRuntimeHandlers({
       }
       const currentPrimary = json.agents?.defaults?.model?.primary || "";
       if (currentPrimary.startsWith(`${id}/`)) {
-        json.agents.defaults.model.primary = "nv/z-ai/glm-5.3-flash";
+        json.agents.defaults.model.primary = "nv/nvidia/nemotron-3-super-120b-a12b";
         if (json.agents.entries?.zero?.model) {
-          json.agents.entries.zero.model.primary = "nv/z-ai/glm-5.3-flash";
+          json.agents.entries.zero.model.primary = "nv/nvidia/nemotron-3-super-120b-a12b";
         }
       }
     });

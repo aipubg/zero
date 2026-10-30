@@ -30,56 +30,20 @@
         "api": "openai-completions",
         "models": [
           {
-            "id": "z-ai/glm-5.3-flash",
-            "name": "z-ai/glm-5.3-flash"
-          },
-          {
-            "id": "minimaxai/minimax-m3.1-flash",
-            "name": "minimaxai/minimax-m3.1-flash"
-          },
-          {
             "id": "nvidia/nemotron-3-super-120b-a12b",
-            "name": "nvidia/nemotron-3-super-120b-a12b"
+            "name": "3-super-120b-a12b"
           },
           {
             "id": "nvidia/nemotron-3-ultra-550b-a55b",
-            "name": "nvidia/nemotron-3-ultra-550b-a55b"
-          },
-          {
-            "id": "nvidia/nemotron-3.5-bolt-e4b",
-            "name": "nvidia/nemotron-3.5-bolt-e4b"
-          },
-          {
-            "id": "nvidia/nemotron-3.5-content-safety",
-            "name": "nvidia/nemotron-3.5-content-safety"
-          },
-          {
-            "id": "nvidia/nemotron-3.5-embed-1b",
-            "name": "nvidia/nemotron-3.5-embed-1b"
-          },
-          {
-            "id": "nvidia/nemotron-3.5-embed-8b",
-            "name": "nvidia/nemotron-3.5-embed-8b"
+            "name": "3-ultra-550b-a55b"
           },
           {
             "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-            "name": "nvidia/nemotron-3.5-lightning-30b-a3b"
+            "name": "3.5-lightning-30b-a3b"
           },
           {
             "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-            "name": "nvidia/nemotron-3.5-super-vl-120b-a12b"
-          },
-          {
-            "id": "nvidia/nemotron-4-340b-instruct",
-            "name": "nvidia/nemotron-4-340b-instruct"
-          },
-          {
-            "id": "nvidia/nemotron-4-340b-reward",
-            "name": "nvidia/nemotron-4-340b-reward"
-          },
-          {
-            "id": "nvidia/nemotron-nano-3-30b-a3b",
-            "name": "nvidia/nemotron-nano-3-30b-a3b"
+            "name": "3.5-super-vl-120b-a12b"
           }
         ],
         "apiKey": "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"
@@ -93,10 +57,10 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "nv/z-ai/glm-5.3-flash",
+        "primary": "nv/nvidia/nemotron-3-super-120b-a12b",
         "fallbacks": []
       },
-      "utilityModel": "nv/z-ai/glm-5.3-flash",
+      "utilityModel": "nv/nvidia/nemotron-3-super-120b-a12b",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -105,12 +69,12 @@
     "entries": {
       "zero": {
         "name": "Zero",
-        "workspace": "E:\\zero\\backend\\.openclaw\\agents\\zero",
+        "workspace": "E:\\\\zero\\\\zero-system\\\\state\\\\agents\\\\zero",
         "identity": {
           "name": "Zero"
         },
         "tools": {
-          "profile": "coding",
+          "profile": "full",
           "alsoAllow": [
             "computer",
             "zero_computer",
@@ -126,7 +90,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "nv/z-ai/glm-5.3-flash",
+          "primary": "nv/nvidia/nemotron-3-super-120b-a12b",
           "fallbacks": []
         }
       }
@@ -154,12 +118,16 @@
       ]
     },
     "entries": {
+      "cua-computer": {
+        "enabled": true
+      },
       "zero-control-ui": {
         "enabled": true,
         "config": {
           "controlMethodName": "zero.computer.control",
           "holdToolNames": [
-            "computer"
+            "computer",
+            "zero_computer"
           ],
           "codeModeToolNames": [
             "exec"
@@ -194,5 +162,14 @@
         }
       }
     }
+  },
+  "update": {
+    "channel": "stable",
+    "auto": {
+      "enabled": false
+    }
+  },
+  "telemetry": {
+    "enabled": false
   }
 }

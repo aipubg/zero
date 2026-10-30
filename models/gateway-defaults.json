@@ -1,10 +1,12 @@
 {
   "defaults": {
+    "primary": "nv/nvidia/nemotron-3-super-120b-a12b",
+    "utility": "nv/nvidia/nemotron-3-super-120b-a12b",
     "thinking": "default"
   },
   "agentBindings": {
     "zero": {
-      "model": "nv/z-ai/glm-5.3-flash",
+      "model": "nv/nvidia/nemotron-3-super-120b-a12b",
       "allowOverride": true
     }
   }

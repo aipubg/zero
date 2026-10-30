@@ -98,8 +98,60 @@ export function createGatewayConfigMiddleware() {
           } catch {}
         }
 
-        // Sync with openclaw.json configs
+        // Compute all valid model IDs across active providers
+        const validModelIds = new Set<string>();
+        for (const p of activeProvidersList) {
+          if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
+          for (const m of (Array.isArray(p.models) ? p.models : [])) {
+            const mId = typeof m === 'string' ? m : m.id;
+            if (mId && mId !== 'default' && !mId.includes('test-model')) {
+              validModelIds.add(mId);
+              validModelIds.add(`${p.id}/${mId}`);
+            }
+          }
+        }
+
+        // Pick the first available real model as safe fallback
+        let safeFallbackModel = '';
+        for (const val of validModelIds) {
+          if (val.includes('/')) {
+            safeFallbackModel = val;
+            break;
+          }
+        }
+        if (!safeFallbackModel && validModelIds.size > 0) {
+          safeFallbackModel = validModelIds.values().next().value || '';
+        }
+        if (!safeFallbackModel) {
+          safeFallbackModel = 'nv/nvidia/nemotron-3-super-120b-a12b';
+        }
+
+        // Check if gateway-defaults.json primary model is valid
+        if (fs.existsSync(defaultsFile)) {
+          try {
+            const curDefaults = JSON.parse(await fs.promises.readFile(defaultsFile, 'utf-8'));
+            let updatedDef = false;
+            if (curDefaults.defaults?.primary && !validModelIds.has(curDefaults.defaults.primary)) {
+              curDefaults.defaults.primary = safeFallbackModel;
+              curDefaults.defaults.utility = safeFallbackModel;
+              updatedDef = true;
+            }
+            if (curDefaults.agentBindings?.zero?.model && !validModelIds.has(curDefaults.agentBindings.zero.model)) {
+              curDefaults.agentBindings.zero.model = safeFallbackModel;
+              updatedDef = true;
+            }
+            if (updatedDef) {
+              await fs.promises.writeFile(defaultsFile, JSON.stringify(curDefaults, null, 2), 'utf-8');
+            }
+          } catch {}
+        }
+
+        // Sync with openclaw.json & zero.json configs
         const openclawConfigs = [
+          path.resolve(process.cwd(), 'zero-system', 'config', 'zero.json'),
+          path.resolve(process.cwd(), 'zero-system', 'config', 'zero.template.json'),
+          path.resolve(process.cwd(), 'backend', 'config', 'zero.json'),
+          path.resolve(process.cwd(), 'backend', 'config', 'zero.template.json'),
           path.resolve(process.cwd(), 'backend', 'config', 'openclaw.json'),
           path.resolve(process.cwd(), 'backend', 'config', 'openclaw.template.json'),
           path.resolve(process.cwd(), 'backend', 'config', 'openclaw.json.last-good'),
@@ -120,28 +172,32 @@ export function createGatewayConfigMiddleware() {
               cfg.agents.entries.zero.model = cfg.agents.entries.zero.model || {};
 
               if (defaults) {
-                if (defaults.primary) cfg.agents.defaults.model.primary = defaults.primary;
-                if (defaults.utility) cfg.agents.defaults.utilityModel = defaults.utility;
+                if (defaults.primary) {
+                  cfg.agents.defaults.model.primary = validModelIds.has(defaults.primary) ? defaults.primary : safeFallbackModel;
+                }
+                if (defaults.utility) {
+                  cfg.agents.defaults.utilityModel = validModelIds.has(defaults.utility) ? defaults.utility : safeFallbackModel;
+                }
                 if (defaults.fallback) cfg.agents.defaults.model.fallbacks = [defaults.fallback];
               }
 
               if (agentBindings?.zero) {
                 if (agentBindings.zero.model) {
-                  cfg.agents.entries.zero.model.primary = agentBindings.zero.model;
+                  cfg.agents.entries.zero.model.primary = validModelIds.has(agentBindings.zero.model) ? agentBindings.zero.model : safeFallbackModel;
                 }
               }
 
-              // Guard against dummy / corrupt defaults
+              // Guard against dummy / removed models in primary, utility, and agent bindings
               const currentDefPrimary = cfg.agents.defaults.model.primary || '';
-              if (!currentDefPrimary || currentDefPrimary === 'default' || currentDefPrimary.includes('test-model') || currentDefPrimary.startsWith('zero-gateway/')) {
-                cfg.agents.defaults.model.primary = 'nv/z-ai/glm-5.3-flash';
+              if (!currentDefPrimary || !validModelIds.has(currentDefPrimary)) {
+                cfg.agents.defaults.model.primary = safeFallbackModel;
               }
               const currentZeroPrimary = cfg.agents.entries.zero.model.primary || '';
-              if (!currentZeroPrimary || currentZeroPrimary === 'default' || currentZeroPrimary.includes('test-model') || currentZeroPrimary.startsWith('zero-gateway/')) {
-                cfg.agents.entries.zero.model.primary = 'nv/z-ai/glm-5.3-flash';
+              if (!currentZeroPrimary || !validModelIds.has(currentZeroPrimary)) {
+                cfg.agents.entries.zero.model.primary = safeFallbackModel;
               }
-              if (!cfg.agents.defaults.utilityModel || cfg.agents.defaults.utilityModel.includes('test-model') || cfg.agents.defaults.utilityModel.startsWith('zero-gateway/')) {
-                cfg.agents.defaults.utilityModel = 'nv/z-ai/glm-5.3-flash';
+              if (!cfg.agents.defaults.utilityModel || !validModelIds.has(cfg.agents.defaults.utilityModel)) {
+                cfg.agents.defaults.utilityModel = safeFallbackModel;
               }
 
               cfg.models = cfg.models || { mode: 'replace', providers: {} };

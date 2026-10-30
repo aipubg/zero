@@ -18,6 +18,7 @@ __pycache__/
 .zero-data/
 zero-data/
 .openclaw/
+zero-system/state/
 *.sqlite
 *.sqlite*
 *.db
