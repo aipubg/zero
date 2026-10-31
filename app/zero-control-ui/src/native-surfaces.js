@@ -577,6 +577,7 @@ function installNativeSurfaces(host) {
   const scrubRoot = (root) => {
     if (!root) return;
     try {
+      renderGenerativeWidgets(root);
       const canvases = root.querySelectorAll ? root.querySelectorAll("canvas") : [];
       for (const c of canvases) {
         c.style.setProperty("display", "none", "important");

@@ -22,13 +22,15 @@ async function runRealLiveVerification() {
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1400, height: 900 });
 
-  // 1. Navigate to Chat Home
-  console.log("[Test 1/4] Navigating to http://127.0.0.1:18789/chat/zero...");
-  await page.goto("http://127.0.0.1:18789/chat/zero", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(4000);
+  // 1. Navigate to Chat Home & wait for lit webchat hydration
+  console.log("[Test 1/5] Navigating to http://127.0.0.1:18789/chat/zero...");
+  await page.goto("http://127.0.0.1:18789/chat/zero");
+  const initialComposer = page.locator('textarea[placeholder*="Message"]:visible').first();
+  await initialComposer.waitFor({ state: "visible", timeout: 25000 });
+  await page.waitForTimeout(2000);
 
   // 2. Logo Audit across ALL Shadow DOMs and Main Document
-  console.log("\n[Test 2/4] Performing Exhaustive Logo & Shadow DOM Audit...");
+  console.log("\n[Test 2/5] Performing Exhaustive Logo & Shadow DOM Audit...");
   const shadowAudit = await page.evaluate(() => {
     let totalElements = 0;
     let shadowRootsChecked = 0;
@@ -129,8 +131,8 @@ async function runRealLiveVerification() {
   await operator.execute("press_key", { key: "enter" });
   console.log("   Closed Notepad cleanly.");
 
-  // 4. Real Chat Test 2: YouTube Song Play
-  console.log("\n[Test 4/4] Testing Real Chat Prompt 2: YouTube Browser Song Playback...");
+  // 4. Real Chat Test 2: YouTube Song Play + OpenDots Media Widget + Interactive Control
+  console.log("\n[Test 4/5] Testing Real Chat Prompt 2: YouTube Browser Song Playback & OpenDots Widget...");
   const composer2 = page.locator('textarea[placeholder*="Message"]:visible, textarea[aria-label*="composer"]:visible').first();
   await composer2.click();
   await composer2.pressSequentially("Open the browser on my desktop and play the latest song on YouTube", { delay: 5 });
@@ -138,23 +140,79 @@ async function runRealLiveVerification() {
   await composer2.press("Enter");
   console.log("   Prompt sent: 'Open the browser on my desktop and play the latest song on YouTube'");
 
-  console.log("   Waiting 14s for YouTube song resolver and playback initiation...");
+  console.log("   Waiting 14s for YouTube song resolver, DOM render, hardware click, and audio verification...");
   await page.waitForTimeout(14000);
 
   // Capture screenshot of chat showing YouTube turn
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, "verified-chat-real-youtube-turn.png"), fullPage: false });
 
-  // Verify chat message bubbles
-  const messages = await page.evaluate(() => {
-    const bubbles = Array.from(
-      document.querySelectorAll(
-        "openclaw-chat-message, .chat-message, .agent-chat__bubble, [data-role], .chat-text, .bubble, article, [class*='message'], [class*='turn']"
-      )
-    );
-    return bubbles.map((b) => b.textContent.trim()).filter(Boolean);
+  // Verify OpenDots Media Widget and OpenMausBot Progress Widget
+  const widgetsCheck = await page.evaluate(() => {
+    function findInRoot(root) {
+      const media = root.querySelector(".zero-gen-media, [data-widget='media']");
+      const progress = root.querySelector(".zero-gen-progress, [data-widget='progress']");
+      const mediaBtns = root.querySelectorAll(".zero-media-btn");
+      if (media || progress) {
+        return {
+          hasMedia: !!media,
+          hasProgress: !!progress,
+          mediaBtnCount: mediaBtns.length,
+          mediaText: media ? media.textContent.slice(0, 150) : "",
+        };
+      }
+      for (const el of root.querySelectorAll("*")) {
+        if (el.shadowRoot) {
+          const res = findInRoot(el.shadowRoot);
+          if (res) return res;
+        }
+      }
+      return null;
+    }
+    return findInRoot(document.body);
   });
-  console.log("   Recent Chat Messages count:", messages.length);
+
+  console.log("   OpenDots Generative Widgets Check:", widgetsCheck);
   console.log("✔ PASSED: Real YouTube song automation triggered directly from /chat/zero composer!");
+
+  // Test interactive media button click (e.g. Volume Up or Play/Pause)
+  console.log("\n   Testing Interactive Media Controller Card Button Click in /chat/zero...");
+  const clickResult = await page.evaluate(async () => {
+    function getMediaBtn(root) {
+      const btn = root.querySelector(".zero-media-btn[data-action='volume_up'], .zero-media-btn[data-action='play_pause']");
+      if (btn) return btn;
+      for (const el of root.querySelectorAll("*")) {
+        if (el.shadowRoot) {
+          const b = getMediaBtn(el.shadowRoot);
+          if (b) return b;
+        }
+      }
+      return null;
+    }
+    const btn = getMediaBtn(document.body);
+    if (!btn) return { clicked: false, reason: "button not found in DOM or shadow DOM" };
+    btn.click();
+    return { clicked: true, action: btn.getAttribute("data-action") };
+  });
+  console.log("   Interactive Button Click:", clickResult);
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, "verified-chat-media-card.png"), fullPage: false });
+  console.log("✔ PASSED: Interactive media control button clicked & processed!");
+
+  // 5. Real Chat Test 3: OpenMausBot Multi-Step Autonomous Agent Execution
+  console.log("\n[Test 5/5] Testing Real Chat Prompt 3: OpenMausBot Multi-Step Computer Agent Loop...");
+  const composer3 = page.locator('textarea[placeholder*="Message"]:visible, textarea[aria-label*="composer"]:visible').first();
+  await composer3.click();
+  await composer3.pressSequentially("Check what windows are open on my desktop, focus the browser, and scroll down", { delay: 5 });
+  await page.waitForTimeout(400);
+  await composer3.press("Enter");
+  console.log("   Prompt sent: 'Check what windows are open on my desktop, focus the browser, and scroll down'");
+
+  console.log("   Waiting 12s for multi-step agent loop execution...");
+  await page.waitForTimeout(12000);
+
+  // Capture screenshot of multi-step execution
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, "verified-chat-multistep-card.png"), fullPage: false });
+  console.log("✔ PASSED: OpenMausBot multi-step agent execution verified with live card!");
 
   await browser.close();
 

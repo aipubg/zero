@@ -50,6 +50,19 @@ public static class WinApiCore {
     [DllImport("user32.dll")]
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
+    public const byte VK_VOLUME_MUTE = 0xAD;
+    public const byte VK_VOLUME_DOWN = 0xAE;
+    public const byte VK_VOLUME_UP = 0xAF;
+    public const byte VK_MEDIA_NEXT_TRACK = 0xB0;
+    public const byte VK_MEDIA_PREV_TRACK = 0xB1;
+    public const byte VK_MEDIA_STOP = 0xB2;
+    public const byte VK_MEDIA_PLAY_PAUSE = 0xB3;
+
+    public static void PressMediaKey(byte vk) {
+        keybd_event(vk, 0, 0, 0);
+        keybd_event(vk, 0, 2, 0);
+    }
+
     public static bool ForceForeground(IntPtr hWnd) {
         if (hWnd == IntPtr.Zero) return false;
         try {
@@ -337,24 +350,42 @@ function Dispatch-Action($req) {
         { $_ -in "press", "press_key", "hotkey" } {
             $key = if ($null -ne $req.key) { [string]$req.key } else { "" }
             if ($key.Length -gt 0) {
-                $keyMap = @{
-                    "enter" = "{ENTER}"; "return" = "{ENTER}"; "tab" = "{TAB}";
-                    "esc" = "{ESC}"; "escape" = "{ESC}"; "backspace" = "{BACKSPACE}";
-                    "delete" = "{DELETE}"; "del" = "{DELETE}"; "space" = " ";
-                    "up" = "{UP}"; "down" = "{DOWN}"; "left" = "{LEFT}"; "right" = "{RIGHT}";
-                    "home" = "{HOME}"; "end" = "{END}"; "pageup" = "{PGUP}"; "pagedown" = "{PGDN}";
-                    "ctrl+c" = "^c"; "ctrl+v" = "^v"; "ctrl+x" = "^x"; "ctrl+z" = "^z"; "ctrl+a" = "^a";
-                    "alt+f4" = "%{F4}"; "alt+tab" = "%{TAB}"; "win+r" = "^{ESC}r"; "k" = "k"
-                }
                 $lowered = $key.ToLower().Trim()
-                $sendKey = if ($keyMap.ContainsKey($lowered)) { $keyMap[$lowered] } else { $key }
-                try {
-                    $wshell = New-Object -ComObject WScript.Shell
-                    $wshell.SendKeys($sendKey)
-                } catch {
-                    [System.Windows.Forms.SendKeys]::SendWait($sendKey)
+                if ($lowered -in @("volume_up", "volumedown", "volumeup")) {
+                    [WinApiCore]::PressMediaKey([WinApiCore]::VK_VOLUME_UP)
+                    $result["key"] = "volume_up"
+                } elseif ($lowered -in @("volume_down", "volumedown")) {
+                    [WinApiCore]::PressMediaKey([WinApiCore]::VK_VOLUME_DOWN)
+                    $result["key"] = "volume_down"
+                } elseif ($lowered -in @("volume_mute", "mute")) {
+                    [WinApiCore]::PressMediaKey([WinApiCore]::VK_VOLUME_MUTE)
+                    $result["key"] = "volume_mute"
+                } elseif ($lowered -in @("play_pause", "media_play_pause", "media_toggle")) {
+                    [WinApiCore]::PressMediaKey([WinApiCore]::VK_MEDIA_PLAY_PAUSE)
+                    $result["key"] = "play_pause"
+                } elseif ($lowered -in @("next_track", "media_next", "skip")) {
+                    [WinApiCore]::PressMediaKey([WinApiCore]::VK_MEDIA_NEXT_TRACK)
+                    $result["key"] = "next_track"
+                } else {
+                    $keyMap = @{
+                        "enter" = "{ENTER}"; "return" = "{ENTER}"; "tab" = "{TAB}";
+                        "esc" = "{ESC}"; "escape" = "{ESC}"; "backspace" = "{BACKSPACE}";
+                        "delete" = "{DELETE}"; "del" = "{DELETE}"; "space" = " ";
+                        "up" = "{UP}"; "down" = "{DOWN}"; "left" = "{LEFT}"; "right" = "{RIGHT}";
+                        "home" = "{HOME}"; "end" = "{END}"; "pageup" = "{PGUP}"; "pagedown" = "{PGDN}";
+                        "ctrl+c" = "^c"; "ctrl+v" = "^v"; "ctrl+x" = "^x"; "ctrl+z" = "^z"; "ctrl+a" = "^a";
+                        "alt+f4" = "%{F4}"; "alt+tab" = "%{TAB}"; "win+r" = "^{ESC}r"; "k" = "k";
+                        "shift+n" = "+N"; "m" = "m"; "f" = "f"; "j" = "j"; "l" = "l"
+                    }
+                    $sendKey = if ($keyMap.ContainsKey($lowered)) { $keyMap[$lowered] } else { $key }
+                    try {
+                        $wshell = New-Object -ComObject WScript.Shell
+                        $wshell.SendKeys($sendKey)
+                    } catch {
+                        [System.Windows.Forms.SendKeys]::SendWait($sendKey)
+                    }
+                    $result["key"] = $key
                 }
-                $result["key"] = $key
             }
         }
 
