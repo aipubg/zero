@@ -543,7 +543,6 @@ function installNativeSurfaces(host) {
       rebrandChrome();
       syncChatControls();
       rebrandCustodianLinks();
-      cleanSettingsSidebar();
       redirectCustodianRoute();
       redirectStaleSessionRoute();
       purgeStaleSessions();
@@ -607,35 +606,7 @@ function installNativeSurfaces(host) {
     }
   };
 
-  const cleanSettingsSidebar = () => {
-    // Hide/remove Ask Zero (custodian duplicate), Cloud workers, Channels, Communications
-    const itemsToRemove = [
-      "a[href*='custodian']",
-      "a[href*='cloud-workers']",
-      "a[href*='channels']",
-      "a[href*='communications']",
-      "[data-sidebar-entry*='custodian']",
-      "[data-sidebar-entry*='cloud-workers']",
-      "[data-sidebar-entry*='channels']",
-      "[data-sidebar-entry*='communications']"
-    ];
-    for (const sel of itemsToRemove) {
-      for (const el of document.querySelectorAll(sel)) {
-        el.closest("li, .settings-sidebar__item, [class*='item']")?.remove() || el.remove();
-      }
-    }
-    for (const el of document.querySelectorAll(".settings-sidebar a, .settings-sidebar button, nav a")) {
-      const txt = (el.textContent || "").trim().toLowerCase();
-      if (
-        txt === "ask zero" ||
-        txt.includes("cloud worker") ||
-        txt === "channels" ||
-        txt === "communications"
-      ) {
-        el.closest("li, .settings-sidebar__item, [class*='item']")?.remove() || el.remove();
-      }
-    }
-  };
+
 
   const removeExternalLearnMoreLinks = () => {
     for (const a of document.querySelectorAll("a[href*='openclaw.ai'], a[href*='docs.openclaw'], a.callout__link, a.help-link")) {

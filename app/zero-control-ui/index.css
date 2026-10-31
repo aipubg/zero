@@ -1975,23 +1975,4 @@ select option {
 .zero-about__action:hover { border-color: var(--accent, #ff5c5c); }
 .zero-about__action:focus-visible { outline: 2px solid var(--accent, #ff5c5c); outline-offset: 2px; }
 
-/* Hide unused settings sidebar items */
-.settings-sidebar a[href*="custodian"],
-.settings-sidebar a[href*="cloud-workers"],
-.settings-sidebar a[href*="channels"],
-.settings-sidebar a[href*="communications"],
-[data-sidebar-entry*="custodian"],
-[data-sidebar-entry*="cloud-workers"],
-[data-sidebar-entry*="channels"],
-[data-sidebar-entry*="communications"] {
-  display: none !important;
-}
 
-/* Hide tweakcn theme import and external browse links */
-[data-custom-theme-import-input],
-.settings-theme-card--custom,
-a[href*="tweakcn.com"],
-.custom-theme-import,
-[class*="custom-theme-import"] {
-  display: none !important;
-}

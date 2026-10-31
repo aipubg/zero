@@ -258,20 +258,7 @@ export function patchOpenclawRuntime() {
       }
     }
 
-    // 6. Patch custodian-page assets to redirect to /chat/zero
-    if (fs.existsSync(assetsDir)) {
-      for (const f of fs.readdirSync(assetsDir)) {
-        if (f.startsWith('custodian-page-') && f.endsWith('.js')) {
-          const cPath = path.join(assetsDir, f);
-          let code = fs.readFileSync(cPath, 'utf8');
-          if (!code.includes('__zero_custodian_redirect_strict__')) {
-            code = `/* __zero_custodian_redirect_strict__ */\nif (typeof window !== "undefined") { window.location.replace("/chat/zero"); }\n` + code;
-            code = code.replace(/function P\(e\)\{return m`[^`]*<openclaw-custodian-page[^`]*<\/openclaw-custodian-page>[^`]*`\}/g, 'function P(e){if(typeof window!=="undefined"){window.location.replace("/chat/zero");}return m``}');
-            fs.writeFileSync(cPath, code, 'utf8');
-          }
-        }
-      }
-    }
+
   }
 }
 
@@ -478,14 +465,7 @@ export function applyZeroBranding() {
               code = code.replaceAll('Using Claw until', 'Using Zero until');
               changed = true;
             }
-            if (code.includes('Browse tweakcn themes')) {
-              code = code.replaceAll('Browse tweakcn themes', '');
-              changed = true;
-            }
-            if (code.includes('tweakcn.com')) {
-              code = code.replaceAll('https://tweakcn.com', '');
-              changed = true;
-            }
+
             if (code.includes('openclaw.ai')) {
               code = code.replaceAll('https://openclaw.ai', 'http://127.0.0.1:18789');
               code = code.replaceAll('https://docs.openclaw.ai', 'http://127.0.0.1:18789');
@@ -496,14 +476,7 @@ export function applyZeroBranding() {
               code = code.replaceAll('this.updateAvailable', 'null');
               changed = true;
             }
-            if (file.startsWith('settings-sidebar-') && code.includes('e.onNavigate(n)')) {
-              code = code.replaceAll('e.onNavigate(n)', 'n==="custodian"?(window.location.replace("/chat/zero")):e.onNavigate(n)');
-              changed = true;
-            }
-            if (file.startsWith('custodian-') && !code.includes('__zero_custodian_redirect__')) {
-              code = '/* __zero_custodian_redirect__ */ if(typeof window!=="undefined"&&window.location.pathname.includes("custodian")){window.location.replace("/chat/zero");}\n' + code;
-              changed = true;
-            }
+
             if (code.includes('Learn more')) {
               code = code.replaceAll('Learn more', '');
               changed = true;
