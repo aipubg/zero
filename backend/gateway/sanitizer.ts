@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatMessagePart } from './types';
+import type { ChatMessage, ChatMessagePart } from './types.ts';
 
 /**
  * Automatic Message & Payload Healer

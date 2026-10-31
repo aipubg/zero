@@ -34,7 +34,7 @@ function findControlUiDirs() {
   ];
 
   function walk(current, depth = 0) {
-    if (depth > 8) return;
+    if (depth > 16) return;
     try {
       if (!fs.existsSync(current)) return;
       for (const item of fs.readdirSync(current)) {
@@ -258,6 +258,92 @@ export function patchOpenclawRuntime() {
       }
     }
 
+    // 6. Single Port Gateway Bridge in server-start-*.mjs
+    for (const f of fs.readdirSync(root)) {
+      if (f.startsWith('server-start-') && f.endsWith('.mjs')) {
+        const sPath = path.join(root, f);
+        let code = fs.readFileSync(sPath, 'utf8');
+        const target = 'async function handleRequest(req, res, expectation) {';
+        if (code.includes(target) && !code.includes('__zero_gateway_single_port__')) {
+          const rep = `async function handleRequest(req, res, expectation) {
+		/* __zero_gateway_single_port__ */
+		try {
+			const gMod = globalThis.__zeroGatewayMod || await import('file:///E:/zero/backend/gateway/server.mjs');
+			globalThis.__zeroGatewayMod = gMod;
+			if (gMod?.handleZeroGatewayRequest) {
+				const handled = await gMod.handleZeroGatewayRequest(req, res);
+				if (handled) return;
+			}
+		} catch (e) {
+			console.error('[Zero Gateway Bridge Error]', e);
+		}`;
+          code = code.replace(target, rep);
+          fs.writeFileSync(sPath, code, 'utf8');
+        }
+      }
+    }
+
+    // 7. Claw Spinner & External Links Purge in Assets
+    if (fs.existsSync(assetsDir)) {
+      for (const f of fs.readdirSync(assetsDir)) {
+        if (f.endsWith('.js')) {
+          const fPath = path.join(assetsDir, f);
+          let code = fs.readFileSync(fPath, 'utf8');
+          let changed = false;
+          if (code.includes('${c?V`<span></span><span></span><span></span>`:s===`brand`?Gu():z.claw}')) {
+            code = code.replaceAll('${c?V`<span></span><span></span><span></span>`:s===`brand`?Gu():z.claw}', '${V`<span></span><span></span><span></span>`}');
+            changed = true;
+          }
+          if (code.includes('>${Gu(z.claw)}</span>')) {
+            code = code.replaceAll('>${Gu(z.claw)}</span>', '>${V`<span></span><span></span><span></span>`}</span>');
+            changed = true;
+          }
+          if (code.includes('s=t.workingIndicator??(t.mascot===void 0?Dr().workingIndicator:t.mascot===`none`?`dots`:`claw`),c=s===`dots`')) {
+            code = code.replaceAll('s=t.workingIndicator??(t.mascot===void 0?Dr().workingIndicator:t.mascot===`none`?`dots`:`claw`),c=s===`dots`', 's=`dots`,c=!0');
+            changed = true;
+          }
+          if (code.includes('https://docs.openclaw.ai/gateway/permission-modes')) {
+            code = code.replaceAll('https://docs.openclaw.ai/gateway/permission-modes', '#/settings');
+            changed = true;
+          }
+          if (code.includes('https://docs.openclaw.ai')) {
+            code = code.replaceAll('https://docs.openclaw.ai', '#/settings');
+            changed = true;
+          }
+          if (code.includes('https://openclaw.ai')) {
+            code = code.replaceAll('https://openclaw.ai', '#/settings');
+            changed = true;
+          }
+          if (code.includes('openclaw.ai')) {
+            code = code.replaceAll('openclaw.ai', 'zero.local');
+            changed = true;
+          }
+          if (code.includes('tweakcn.com')) {
+            code = code.replaceAll('tweakcn.com', 'zero.local');
+            changed = true;
+          }
+          if (changed) {
+            fs.writeFileSync(fPath, code, 'utf8');
+          }
+        }
+      }
+    }
+
+    // 8. Purge all occurrences of `openclaw configure`
+    for (const f of fs.readdirSync(root)) {
+      if (f.endsWith('.mjs') || f.endsWith('.js')) {
+        const fPath = path.join(root, f);
+        try {
+          let code = fs.readFileSync(fPath, 'utf8');
+          if (code.includes('`openclaw configure`') || code.includes('openclaw configure')) {
+            code = code.replaceAll('`openclaw configure`', 'in Zero Models settings');
+            code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+            fs.writeFileSync(fPath, code, 'utf8');
+          }
+        } catch {}
+      }
+    }
+
 
   }
 }
@@ -276,9 +362,10 @@ export function purgeStaleDatabaseSessions() {
     if (!fs.existsSync(dbPath)) continue;
     try {
       const db = new DatabaseSync(dbPath);
-      // Clean user_preferences tab icon and clawhub snapshots
+      // Clean user_preferences tab icon and workingIndicator
       try {
         db.prepare("UPDATE user_preferences SET value_json = '\"zero\"' WHERE pref_key = 'ui.tabIcon'").run();
+        db.prepare("INSERT OR REPLACE INTO user_preferences (pref_key, value_json, updated_at) VALUES ('ui.workingIndicator', '\"dots\"', ?)").run(Date.now());
       } catch(e) {}
       try {
         db.prepare("DELETE FROM official_external_plugin_catalog_snapshots").run();

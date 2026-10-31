@@ -9,10 +9,10 @@ import type {
   ModelCapability,
   ModelType,
   ProviderConfig,
-} from './types';
-import { telemetry } from './telemetry';
-import { responseCache } from './cache';
-import { sanitizeMessages } from './sanitizer';
+} from './types.ts';
+import { telemetry } from './telemetry.ts';
+import { responseCache } from './cache.ts';
+import { sanitizeMessages } from './sanitizer.ts';
 
 /**
  * Normalizes URL and ensures no trailing slashes.

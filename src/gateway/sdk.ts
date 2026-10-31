@@ -6,7 +6,7 @@ import type {
   ProviderConfig,
   ProviderTelemetry,
   RunningModelProcess,
-} from './types';
+} from './types.ts';
 import {
   getAllAvailableModels,
   getProviderById,
@@ -15,10 +15,10 @@ import {
   type ModelWithProvider,
   upsertProvider,
   deleteProvider,
-} from './registry';
-import { sendChatRequest, sendEmbeddingRequest, pingProvider } from './client';
-import { telemetry } from './telemetry';
-import { responseCache } from './cache';
+} from './registry.ts';
+import { sendChatRequest, sendEmbeddingRequest, pingProvider } from './client.ts';
+import { telemetry } from './telemetry.ts';
+import { responseCache } from './cache.ts';
 
 /**
  * Enterprise AI Gateway SDK
@@ -146,37 +146,55 @@ export class ModularGatewayClient {
     // 1. Strip <think>...</think> reasoning blocks
     let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
-    // 2. Strip markdown fences ```json ... ``` or ``` ... ```
+    // 2. Strip markdown fences ```json ... ``` or unclosed ```json ...
     const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (fenceMatch) {
       cleaned = fenceMatch[1].trim();
+    } else if (cleaned.includes('```')) {
+      cleaned = cleaned.replace(/^\s*```[a-zA-Z0-9_-]*\r?\n?/, '').replace(/\r?\n?```\s*$/, '').trim();
     }
 
     // 3. Locate boundaries of outer { ... } or [ ... ]
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
     let startIdx = -1;
-    let endIdx = -1;
 
     if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
       startIdx = firstBrace;
-      endIdx = cleaned.lastIndexOf('}');
     } else if (firstBracket !== -1) {
       startIdx = firstBracket;
-      endIdx = cleaned.lastIndexOf(']');
     }
 
-    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-      cleaned = cleaned.substring(startIdx, endIdx + 1);
+    if (startIdx !== -1) {
+      cleaned = cleaned.substring(startIdx);
     }
 
     // 4. Fix trailing commas before } or ]
     cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
 
+    // 5. Try parsing as is
     try {
       return JSON.parse(cleaned);
-    } catch (parseErr: any) {
-      throw new Error(`Failed to parse extracted JSON: ${parseErr.message}\nRaw text: "${cleaned.slice(0, 100)}..."`);
+    } catch (_) {
+      // 6. Auto-repair truncated JSON (e.g. max_tokens cutoff)
+      let repaired = cleaned.replace(/,\s*$/, '');
+      const openBraces = (repaired.match(/\{/g) || []).length;
+      const closeBraces = (repaired.match(/\}/g) || []).length;
+      const openBrackets = (repaired.match(/\[/g) || []).length;
+      const closeBrackets = (repaired.match(/\]/g) || []).length;
+
+      if (openBrackets > closeBrackets) {
+        repaired += ']'.repeat(openBrackets - closeBrackets);
+      }
+      if (openBraces > closeBraces) {
+        repaired += '}'.repeat(openBraces - closeBraces);
+      }
+
+      try {
+        return JSON.parse(repaired);
+      } catch (parseErr: any) {
+        throw new Error(`Failed to parse extracted JSON: ${parseErr.message}\nRaw text: "${cleaned.slice(0, 100)}..."`);
+      }
     }
   }
 

@@ -1,3 +1,46 @@
+import fs from 'node:fs';
+
+export interface GgufValidationResult {
+  valid: boolean;
+  error?: string;
+  version?: number;
+  tensorCount?: number;
+  metadataCount?: number;
+}
+
+export function validateGgufBinary(filePath: string): GgufValidationResult {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { valid: false, error: 'File does not exist' };
+    }
+    const stat = fs.statSync(filePath);
+    if (stat.size < 1024 * 1024) {
+      return { valid: false, error: 'File is too small (< 1MB) to be a valid GGUF model' };
+    }
+    const fd = fs.openSync(filePath, 'r');
+    const header = Buffer.alloc(24);
+    fs.readSync(fd, header, 0, 24, 0);
+    fs.closeSync(fd);
+
+    const magic = header.toString('utf-8', 0, 4);
+    if (magic !== 'GGUF') {
+      return { valid: false, error: `Invalid GGUF magic bytes: expected 'GGUF', got '${magic}'` };
+    }
+    const version = header.readUInt32LE(4);
+    const tensorCount = Number(header.readBigUInt64LE(8));
+    const metadataCount = Number(header.readBigUInt64LE(16));
+
+    return {
+      valid: true,
+      version,
+      tensorCount,
+      metadataCount,
+    };
+  } catch (err: any) {
+    return { valid: false, error: err.message || 'Failed to read GGUF header' };
+  }
+}
+
 export interface ParsedGuideConfig {
   fromPath?: string;
   systemPrompt?: string;

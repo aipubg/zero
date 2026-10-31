@@ -1,4 +1,4 @@
-import type { GatewayModel, GatewayVaultConfig, ProviderConfig } from './types';
+import type { GatewayModel, GatewayVaultConfig, ProviderConfig } from './types.ts';
 
 const STORAGE_KEY = 'modular_ai_gateway_providers_v1';
 const ROLE_MAPPINGS_KEY = 'modular_ai_gateway_roles_v1';

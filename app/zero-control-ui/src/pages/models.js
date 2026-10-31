@@ -5,10 +5,10 @@ import { element } from "../shared/dom.js";
  * Complete native implementation adhering to Zero design tokens and layout specifications.
  */
 
-const GATEWAY_BASE = "http://127.0.0.1:18790";
+const GATEWAY_BASE = "http://127.0.0.1:18789";
 
 /**
- * RPC bridge to Zero Gateway on 18790.
+ * RPC bridge to Zero Gateway on 18789.
  * Uses host.request() primarily through the OpenClaw plugin runtime bridge,
  * with a safe loopback fallback if host is not present or method is blocked.
  */
@@ -702,7 +702,7 @@ export function mountModelsPage(container, context = {}) {
       const details = element("div", "zero-provider-card__details");
       details.append(
         element("span", "zero-provider-card__meta-label", "Base URL: "),
-        element("span", "zero-provider-card__meta-val", "http://127.0.0.1:18790/api/gateway/local-gguf"),
+        element("span", "zero-provider-card__meta-val", "http://127.0.0.1:18789/api/gateway/local-gguf"),
         element("span", "zero-provider-card__meta-label", " | Models: "),
         element("span", "zero-provider-card__meta-val", String(offlineModels.length))
       );
@@ -1151,7 +1151,7 @@ export function mountModelsPage(container, context = {}) {
     const urlField = element("div", "zero-modal__field");
     urlField.append(element("label", "zero-modal__label", "Base URL"));
     const urlInput = element("input", "zero-modal__input");
-    urlInput.placeholder = "https://integrate.api.nvidia.com/v1 or http://127.0.0.1:18790/v1";
+    urlInput.placeholder = "https://integrate.api.nvidia.com/v1 or http://127.0.0.1:18789/v1";
     urlInput.value = existingProvider?.baseUrl || "";
     urlField.append(urlInput);
 

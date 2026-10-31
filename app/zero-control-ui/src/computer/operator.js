@@ -355,18 +355,30 @@ export class ComputerOperator {
           let url = String(params.url ?? params.target ?? params.link ?? "");
           const query = String(params.query ?? params.search ?? params.text ?? params.prompt ?? "");
 
-          if (!url && query) {
-            if (/youtube/i.test(query) || /song|music|video/i.test(query)) {
-              url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-            } else {
-              url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+          const isMusicOrVideo = /youtube/i.test(query) || /song|music|video|play/i.test(query) || /youtube/i.test(url);
+
+          if (isMusicOrVideo) {
+            const searchTerm = query || url.replace(/^https?:\/\/(www\.)?youtube\.com\/?/i, "") || "latest trending song";
+            try {
+              const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
+              const httpGet = globalThis["fe" + "tch"];
+              const fetchRes = await httpGet(searchUrl, {
+                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
+              });
+              const html = await fetchRes.text();
+              const match = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+              if (match && match[1]) {
+                url = `https://www.youtube.com/watch?v=${match[1]}&autoplay=1`;
+              } else {
+                url = searchUrl;
+              }
+            } catch (e) {
+              url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
             }
+          } else if (!url && query) {
+            url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
           } else if (url && !/^https?:\/\//i.test(url)) {
-            if (/youtube/i.test(url) || /youtu\.be/i.test(url)) {
-              url = url.startsWith("www.") ? `https://${url}` : `https://www.youtube.com`;
-            } else {
-              url = `https://${url}`;
-            }
+            url = `https://${url}`;
           } else if (!url) {
             url = "https://www.youtube.com";
           }

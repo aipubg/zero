@@ -6,7 +6,7 @@ import type {
   GatewayModel,
   ProviderConfig,
   ProviderTelemetry,
-} from './types';
+} from './types.ts';
 import {
   deleteProvider,
   getAllAvailableModels,
@@ -16,10 +16,10 @@ import {
   syncLocalGgufModels,
   upsertProvider,
   type ModelWithProvider,
-} from './registry';
-import { fetchModelsFromBaseUrl, pingProvider, sendChatRequest } from './client';
-import { telemetry } from './telemetry';
-import { gateway } from './sdk';
+} from './registry.ts';
+import { fetchModelsFromBaseUrl, pingProvider, sendChatRequest } from './client.ts';
+import { telemetry } from './telemetry.ts';
+import { gateway } from './sdk.ts';
 
 export function useGateway() {
   const [providers, setProviders] = useState<ProviderConfig[]>(() => getSavedProviders());

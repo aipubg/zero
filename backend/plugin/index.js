@@ -74,7 +74,7 @@ const DEFAULT_HIGH_RISK_ACTIONS = Object.freeze([
 
 const DEFAULTS = Object.freeze({
   controlMethodName: "zero.computer.control",
-  holdToolNames: ["computer", "zero_computer", "zero_computer_action", "browser", "open_browser", "open_url", "web_search"],
+  holdToolNames: ["computer", "zero_computer", "zero_computer_action"],
   codeModeToolNames: ["exec"],
   observeActions: DEFAULT_OBSERVE_ACTIONS,
   blockedActions: [],
@@ -287,13 +287,21 @@ function evaluateToolCall(state, event, ctx) {
   }
 
   // C6: malformed call (no closed-enum `action`) fails closed.
-  const action = readAction(event?.params);
+  let action = readAction(event?.params);
   if (action === null) {
-    state.stats.refusedByUnknownAction += 1;
-    return decide(
-      { allow: false, reason: ERROR_CODES.unknownAction },
-      { action: null, reason: ERROR_CODES.unknownAction },
-    );
+    const isBrowserOrSearch =
+      toolName.includes("browser") ||
+      toolName.includes("url") ||
+      toolName.includes("search");
+    if (isBrowserOrSearch) {
+      action = "open_url";
+    } else {
+      state.stats.refusedByUnknownAction += 1;
+      return decide(
+        { allow: false, reason: ERROR_CODES.unknownAction },
+        { action: null, reason: ERROR_CODES.unknownAction },
+      );
+    }
   }
 
   const observation = state.cfg.observeActions.includes(action);
@@ -614,7 +622,7 @@ const zeroPolicyPlugin = definePluginEntry({
         scope: "operator.write",
       });
 
-      // Forward zero.providers.* and zero.gateway.* to 18790
+      // Forward zero.providers.* and zero.gateway.* to 18789 (Single Port Gateway)
       try {
         import("../../app/zero-control-ui/runtime-core.mjs").then((mod) => {
           mod.registerZeroUiRuntime(api, { policyState: state, initializeObservation: false });

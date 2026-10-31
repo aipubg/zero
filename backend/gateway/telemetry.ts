@@ -1,4 +1,4 @@
-import type { ProviderStatus, ProviderTelemetry } from './types';
+import type { ProviderStatus, ProviderTelemetry } from './types.ts';
 
 const STORAGE_KEY = 'modular_gateway_telemetry_v1';
 

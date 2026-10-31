@@ -439,7 +439,7 @@ export function createZeroUiRuntimeHandlers({
     try {
       const live = readLiveConfig();
       activeModel = live.data?.agents?.defaults?.model?.primary || "nv/nvidia/nemotron-3-super-120b-a12b";
-      const res = await fetch("http://127.0.0.1:18790/health", { signal: AbortSignal.timeout(2000) });
+      const res = await fetch("http://127.0.0.1:18789/health", { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
         running = data.status === "ok";
@@ -451,7 +451,7 @@ export function createZeroUiRuntimeHandlers({
     return {
       ok: true,
       running,
-      port: 18790,
+      port: 18789,
       gateway: "zero-gateway",
       version,
       activeModel,
@@ -464,7 +464,7 @@ export function createZeroUiRuntimeHandlers({
     let confAgentBindings = null;
 
     try {
-      const res = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(3000) });
+      const res = await fetch("http://127.0.0.1:18789/api/gateway/config", { signal: AbortSignal.timeout(3000) });
       if (res.ok) {
         const data = await res.json();
         confProviders = Array.isArray(data.providers) ? data.providers : [];
@@ -475,7 +475,7 @@ export function createZeroUiRuntimeHandlers({
 
     let offlineModels = [];
     try {
-      const res = await fetch("http://127.0.0.1:18790/api/gateway/local-gguf/models", { signal: AbortSignal.timeout(3000) });
+      const res = await fetch("http://127.0.0.1:18789/api/gateway/local-gguf/models", { signal: AbortSignal.timeout(3000) });
       if (res.ok) {
         const data = await res.json();
         offlineModels = Array.isArray(data.models) ? data.models : [];
@@ -484,7 +484,7 @@ export function createZeroUiRuntimeHandlers({
 
     let gatewayModels = [];
     try {
-      const res = await fetch("http://127.0.0.1:18790/v1/models", { signal: AbortSignal.timeout(2000) });
+      const res = await fetch("http://127.0.0.1:18789/v1/models", { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
         gatewayModels = data.data || [];
@@ -555,16 +555,16 @@ export function createZeroUiRuntimeHandlers({
       },
     };
 
-    // 1. Sync to 18790
+    // 1. Sync to 18789
     try {
-      await fetch("http://127.0.0.1:18790/api/gateway/config", {
+      await fetch("http://127.0.0.1:18789/api/gateway/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ defaults, agentBindings }),
         signal: AbortSignal.timeout(5000),
       });
     } catch (e) {
-      logger?.warn?.(`[zero-providers] Error syncing defaults to 18790: ${e?.message}`);
+      logger?.warn?.(`[zero-providers] Error syncing defaults to 18789: ${e?.message}`);
     }
 
     // 2. Also write live config
@@ -623,9 +623,9 @@ export function createZeroUiRuntimeHandlers({
     if (fallbackModel) newProvider.fallbackModel = fallbackModel;
     if (headers) newProvider.headers = headers;
 
-    // 1. Sync with 18790
+    // 1. Sync with 18789
     try {
-      const getRes = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(3000) });
+      const getRes = await fetch("http://127.0.0.1:18789/api/gateway/config", { signal: AbortSignal.timeout(3000) });
       let currentProviders = [];
       if (getRes.ok) {
         const data = await getRes.json();
@@ -637,14 +637,14 @@ export function createZeroUiRuntimeHandlers({
       } else {
         currentProviders.push(newProvider);
       }
-      await fetch("http://127.0.0.1:18790/api/gateway/config", {
+      await fetch("http://127.0.0.1:18789/api/gateway/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ providers: currentProviders }),
         signal: AbortSignal.timeout(5000),
       });
     } catch (e) {
-      logger?.warn?.(`[zero-providers] Error syncing save to 18790: ${e?.message}`);
+      logger?.warn?.(`[zero-providers] Error syncing save to 18789: ${e?.message}`);
     }
 
     // 2. Also write strictly sanitized live config for OpenClaw
@@ -676,14 +676,14 @@ export function createZeroUiRuntimeHandlers({
     const id = params?.id;
     if (!id) throw new BadRequestError("Missing provider id");
 
-    // 1. Delete on 18790
+    // 1. Delete on 18789
     try {
-      const getRes = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(3000) });
+      const getRes = await fetch("http://127.0.0.1:18789/api/gateway/config", { signal: AbortSignal.timeout(3000) });
       if (getRes.ok) {
         const data = await getRes.json();
         const currentProviders = Array.isArray(data.providers) ? data.providers : [];
         const filtered = currentProviders.filter(p => p.id !== id);
-        await fetch("http://127.0.0.1:18790/api/gateway/config", {
+        await fetch("http://127.0.0.1:18789/api/gateway/config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ providers: filtered }),
@@ -691,7 +691,7 @@ export function createZeroUiRuntimeHandlers({
         });
       }
     } catch (e) {
-      logger?.warn?.(`[zero-providers] Error syncing delete to 18790: ${e?.message}`);
+      logger?.warn?.(`[zero-providers] Error syncing delete to 18789: ${e?.message}`);
     }
 
     // 2. Also remove from openclaw.json
@@ -712,7 +712,7 @@ export function createZeroUiRuntimeHandlers({
 
   const gatewayProxyHandler = methodHandler(METHODS.gatewayProxy, async (params) => {
     try {
-      const res = await fetch("http://127.0.0.1:18790/api/gateway/proxy", {
+      const res = await fetch("http://127.0.0.1:18789/api/gateway/proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params || {}),
@@ -729,7 +729,7 @@ export function createZeroUiRuntimeHandlers({
     try {
       const isPost = params?.method === "POST" || params?.providers !== undefined || params?.defaults !== undefined || params?.agentBindings !== undefined;
       if (isPost) {
-        const res = await fetch("http://127.0.0.1:18790/api/gateway/config", {
+        const res = await fetch("http://127.0.0.1:18789/api/gateway/config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(params),
@@ -738,7 +738,7 @@ export function createZeroUiRuntimeHandlers({
         const data = await res.json();
         return { ok: res.ok, ...data };
       }
-      const res = await fetch("http://127.0.0.1:18790/api/gateway/config", { signal: AbortSignal.timeout(5000) });
+      const res = await fetch("http://127.0.0.1:18789/api/gateway/config", { signal: AbortSignal.timeout(5000) });
       const data = await res.json();
       return { ok: res.ok, ...data };
     } catch (err) {
@@ -859,7 +859,7 @@ export function createZeroUiRuntimeHandlers({
 
   const ggufScanHandler = methodHandler(METHODS.ggufScan, async (params) => {
     const action = params?.action;
-    const gatewayBase = "http://127.0.0.1:18790/api/gateway/local-gguf";
+    const gatewayBase = "http://127.0.0.1:18789/api/gateway/local-gguf";
 
     // 1. RAM Engine Status
     if (action === "status") {

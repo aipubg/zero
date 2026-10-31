@@ -609,10 +609,12 @@ function installNativeSurfaces(host) {
 
 
   const removeExternalLearnMoreLinks = () => {
-    for (const a of document.querySelectorAll("a[href*='openclaw.ai'], a[href*='docs.openclaw'], a.callout__link, a.help-link")) {
-      a.remove();
+    for (const el of document.querySelectorAll(
+      "[href*='openclaw.ai'], [href*='docs.openclaw'], [href*='tweakcn.com'], [href*='permission-modes'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
+    )) {
+      el.remove();
     }
-    for (const a of document.querySelectorAll("a")) {
+    for (const a of document.querySelectorAll("a, wa-dropdown-item")) {
       const txt = (a.textContent || "").trim();
       if (/^Learn more$/i.test(txt) || /^OpenClaw Docs$/i.test(txt)) {
         a.remove();
@@ -630,26 +632,25 @@ function installNativeSurfaces(host) {
       cur === "/" ||
       !!document.querySelector(".chat-pane, .chat-shell, .chat-header, .chat-controls, [data-chat], textarea");
 
+    let permContainer = document.getElementById("zero-permanent-top-actions");
+    if (!permContainer) {
+      permContainer = document.createElement("div");
+      permContainer.id = "zero-permanent-top-actions";
+      permContainer.style.cssText = "position:fixed;top:10px;right:75px;z-index:9999;display:inline-flex;align-items:center;gap:8px;pointer-events:auto;user-select:none;font-family:inherit;";
+      document.body.appendChild(permContainer);
+    }
+
     if (!isChat) {
-      document.querySelector(".zero-chat-control-pill")?.remove();
+      permContainer.style.display = "none";
       return;
     }
+    permContainer.style.display = "inline-flex";
 
-    const container = document.querySelector(
-      ".chat-pane__session-trail, .chat-pane__crumbs, .chat-pane__header, .chat-header, .topbar-actions, .chat-header__actions, .topbar-shell"
-    );
-    if (!container) return;
+    if (permContainer.querySelector(".zero-chat-control-pill")) return;
 
-    let pill = document.querySelector(".zero-chat-control-pill");
-    if (pill) {
-      if (container.contains(pill)) return;
-      container.appendChild(pill);
-      return;
-    }
-
-    pill = document.createElement("div");
+    const pill = document.createElement("div");
     pill.className = "zero-chat-control-pill";
-    pill.style.cssText = "display:inline-flex;align-items:center;gap:8px;margin-left:12px;font-size:11px;font-weight:600;user-select:none;";
+    pill.style.cssText = "display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;user-select:none;";
 
     let controlActive = true;
 
@@ -701,7 +702,7 @@ function installNativeSurfaces(host) {
       try {
         const transport = globalThis["fe" + "tch"];
         if (typeof transport === "function") {
-          transport("http://127.0.0.1:18790/api/gateway/config", {
+          transport("http://127.0.0.1:18789/api/gateway/config", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ defaults: { thinking: reasoningActive ? "default" : "disabled" } }),
@@ -710,7 +711,7 @@ function installNativeSurfaces(host) {
       } catch {}
     });
 
-    container.appendChild(pill);
+    permContainer.appendChild(pill);
   };
 
   const sanitizeChatModelMenu = () => {

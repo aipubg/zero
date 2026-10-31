@@ -20,11 +20,11 @@
  *   await gateway.unloadLocalModel('Qwen3.5-4B-Uncensored-Q3_k_m');
  */
 
-export * from './types';
-export * from './client';
-export * from './registry';
-export * from './hooks';
-export * from './telemetry';
-export * from './cache';
-export * from './sanitizer';
-export { ModularGatewayClient, gateway } from './sdk';
+export * from './types.ts';
+export * from './client.ts';
+export * from './registry.ts';
+export * from './hooks.ts';
+export * from './telemetry.ts';
+export * from './cache.ts';
+export * from './sanitizer.ts';
+export { ModularGatewayClient, gateway } from './sdk.ts';

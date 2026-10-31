@@ -13,11 +13,27 @@ import { modeManager } from '../../rules/mode-manager.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = parseInt(process.env.ZERO_GATEWAY_PORT || '18790', 10);
+const PORT = parseInt(process.env.ZERO_GATEWAY_PORT || '18789', 10);
 const HOST = '127.0.0.1';
 
-const PROVIDERS_CONFIG_FILE = path.resolve(process.cwd(), 'models', 'gateway-providers.json');
-const DEFAULTS_CONFIG_FILE = path.resolve(process.cwd(), 'models', 'gateway-defaults.json');
+function getRepoRoot() {
+  const candidates = [
+    process.cwd(),
+    path.resolve(process.cwd(), '..'),
+    path.resolve(__dirname, '..', '..'),
+    'E:\\zero',
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(path.resolve(c, 'models', 'gateway-providers.json')) || fs.existsSync(path.resolve(c, 'zero-system'))) {
+      return c;
+    }
+  }
+  return process.cwd();
+}
+
+const REPO_ROOT = getRepoRoot();
+const PROVIDERS_CONFIG_FILE = path.resolve(REPO_ROOT, 'models', 'gateway-providers.json');
+const DEFAULTS_CONFIG_FILE = path.resolve(REPO_ROOT, 'models', 'gateway-defaults.json');
 
 const configMiddleware = createGatewayConfigMiddleware();
 const localGgufMiddleware = createLocalGgufMiddleware();
@@ -32,16 +48,28 @@ function resolveUpstreamProvider(modelId) {
     const providers = JSON.parse(raw);
     if (!Array.isArray(providers)) return null;
 
+    const norm = String(modelId || '').trim();
+
     for (const p of providers) {
       if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
-      // Match by prefix: e.g. nv/nvidia/...
-      if (modelId.startsWith(`${p.id}/`)) {
-        const cleanModelId = modelId.slice(p.id.length + 1);
+      // 1. Match by prefix: e.g. nv/nvidia/...
+      if (norm.startsWith(`${p.id}/`)) {
+        const cleanModelId = norm.slice(p.id.length + 1);
         return { provider: p, cleanModelId };
       }
-      // Match in p.models:
+      // 2. Match in p.models:
       if (Array.isArray(p.models)) {
-        const found = p.models.find((m) => (typeof m === 'string' ? m : m.id) === modelId);
+        const found = p.models.find((m) => {
+          const rawId = typeof m === 'string' ? m : (m.id || m.name);
+          return (
+            rawId === norm ||
+            rawId === `nvidia/${norm}` ||
+            `nvidia/${rawId}` === norm ||
+            norm.endsWith('/' + rawId) ||
+            rawId.endsWith('/' + norm) ||
+            (rawId && norm && (rawId.includes(norm) || norm.includes(rawId)))
+          );
+        });
         if (found) {
           const rawId = typeof found === 'string' ? found : found.id;
           return { provider: p, cleanModelId: rawId };
@@ -49,10 +77,10 @@ function resolveUpstreamProvider(modelId) {
       }
     }
 
-    // Fallback to first active provider if any
+    // 3. Fallback to first active provider if any
     const firstActive = providers.find((p) => p && p.id && p.id !== 'zero-gateway' && (p.apiKey || (p.apiKeys && p.apiKeys.length)));
     if (firstActive) {
-      let cleanModelId = modelId;
+      let cleanModelId = norm;
       if (cleanModelId.startsWith(`${firstActive.id}/`)) {
         cleanModelId = cleanModelId.slice(firstActive.id.length + 1);
       }
@@ -664,7 +692,7 @@ async function handleListModels(req, res) {
 
   // Also include configured cloud providers' models if present from models/gateway-providers.json
   try {
-    const configPath = path.resolve(process.cwd(), 'models', 'gateway-providers.json');
+    const configPath = PROVIDERS_CONFIG_FILE;
     if (fs.existsSync(configPath)) {
       const providers = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       if (Array.isArray(providers)) {
@@ -846,9 +874,9 @@ function handleModeApi(req, res) {
 }
 
 /**
- * Main HTTP Server Request Router
+ * Handle Zero Gateway requests directly when embedded in port 18789 (Single Port Architecture)
  */
-const server = http.createServer((req, res) => {
+export async function handleZeroGatewayRequest(req, res) {
   const url = req.url || '/';
   const pathname = url.split('?')[0];
 
@@ -858,10 +886,65 @@ const server = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.end(JSON.stringify({ status: 'ok', gateway: 'zero-gateway', version: '1.0.0', port: PORT }));
-    return;
+    return true;
   }
 
-  // 2. Static UI Bundle from dist
+  // 2. OpenAI-compatible /v1/chat/completions
+  if (pathname === '/v1/chat/completions') {
+    await handleChatCompletions(req, res);
+    return true;
+  }
+
+  // 3. OpenAI-compatible /v1/models
+  if (pathname === '/v1/models' || pathname.startsWith('/v1/models/')) {
+    await handleListModels(req, res);
+    return true;
+  }
+
+  // 4. Provider Proxy /api/gateway/proxy
+  if (pathname === '/api/gateway/proxy') {
+    await handleProxy(req, res);
+    return true;
+  }
+
+  // 5. Provider Config Vault /api/gateway/config
+  if (pathname === '/api/gateway/config') {
+    await configMiddleware(req, res);
+    return true;
+  }
+
+  // 6. Local GGUF Engine /api/gateway/local-gguf/*
+  if (pathname.startsWith('/api/gateway/local-gguf')) {
+    await localGgufMiddleware(req, res);
+    return true;
+  }
+
+  // 7. Spaces API /api/gateway/spaces
+  if (pathname.startsWith('/api/gateway/spaces')) {
+    await handleSpacesApi(req, res);
+    return true;
+  }
+
+  // 8. Policy Mode API /api/gateway/mode
+  if (pathname.startsWith('/api/gateway/mode')) {
+    await handleModeApi(req, res);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Main HTTP Server Request Router (Standalone fallback)
+ */
+const server = http.createServer(async (req, res) => {
+  const handled = await handleZeroGatewayRequest(req, res);
+  if (handled) return;
+
+  const url = req.url || '/';
+  const pathname = url.split('?')[0];
+
+  // Static UI Bundle from dist
   if (pathname === '/' || pathname === '/index.html') {
     const indexPath = path.join(__dirname, 'dist', 'index.html');
     if (fs.existsSync(indexPath)) {
@@ -895,57 +978,20 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  // 2. OpenAI-compatible /v1/chat/completions
-  if (pathname === '/v1/chat/completions') {
-    handleChatCompletions(req, res);
-    return;
-  }
-
-  // 3. OpenAI-compatible /v1/models
-  if (pathname === '/v1/models') {
-    handleListModels(req, res);
-    return;
-  }
-
-  // 4. Provider Proxy /api/gateway/proxy
-  if (pathname === '/api/gateway/proxy') {
-    handleProxy(req, res);
-    return;
-  }
-
-  // 5. Provider Config Vault /api/gateway/config
-  if (pathname === '/api/gateway/config') {
-    configMiddleware(req, res);
-    return;
-  }
-
-  // 6. Local GGUF Engine /api/gateway/local-gguf/*
-  if (pathname.startsWith('/api/gateway/local-gguf')) {
-    localGgufMiddleware(req, res);
-    return;
-  }
-
-  // 7. Spaces API /api/gateway/spaces
-  if (pathname.startsWith('/api/gateway/spaces')) {
-    handleSpacesApi(req, res);
-    return;
-  }
-
-  // 8. Policy Mode API /api/gateway/mode
-  if (pathname.startsWith('/api/gateway/mode')) {
-    handleModeApi(req, res);
-    return;
-  }
-
   // 404 Fallback
   res.statusCode = 404;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify({ error: `Not Found: ${pathname}` }));
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`[Zero Gateway] Enterprise AI Gateway listening on http://${HOST}:${PORT}`);
-  console.log(`[Zero Gateway] OpenAI API: http://${HOST}:${PORT}/v1/chat/completions`);
-  console.log(`[Zero Gateway] Models: http://${HOST}:${PORT}/v1/models`);
-  console.log(`[Zero Gateway] Health: http://${HOST}:${PORT}/health`);
-});
+const isStandalone = process.env.ZERO_GATEWAY_STANDALONE === '1' || (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]));
+if (isStandalone && !process.env.ZERO_EMBEDDED_GATEWAY) {
+  server.listen(PORT, HOST, () => {
+    console.log(`[Zero Gateway] Enterprise AI Gateway listening on http://${HOST}:${PORT}`);
+    console.log(`[Zero Gateway] OpenAI API: http://${HOST}:${PORT}/v1/chat/completions`);
+    console.log(`[Zero Gateway] Models: http://${HOST}:${PORT}/v1/models`);
+    console.log(`[Zero Gateway] Health: http://${HOST}:${PORT}/health`);
+  });
+}
+
+export { server };

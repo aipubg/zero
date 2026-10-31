@@ -143,7 +143,19 @@ class LocalGgufEngineService {
 
   constructor() {
     // Standard models directory in project root
-    this.modelsDir = path.resolve(process.cwd(), 'models');
+    const rootCandidates = [
+      process.cwd(),
+      path.resolve(process.cwd(), '..'),
+      'E:\\zero',
+    ];
+    let resolvedRoot = process.cwd();
+    for (const c of rootCandidates) {
+      if (fs.existsSync(path.resolve(c, 'models', 'gateway-providers.json')) || fs.existsSync(path.resolve(c, 'zero-system'))) {
+        resolvedRoot = c;
+        break;
+      }
+    }
+    this.modelsDir = path.resolve(resolvedRoot, 'models');
     if (!fs.existsSync(this.modelsDir)) {
       try {
         fs.mkdirSync(this.modelsDir, { recursive: true });

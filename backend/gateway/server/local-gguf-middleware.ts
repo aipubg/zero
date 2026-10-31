@@ -3,13 +3,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { localGgufService, type PipelineProgressEvent } from './local-gguf-service.ts';
 
+function getRepoRoot(): string {
+  const candidates = [
+    process.cwd(),
+    path.resolve(process.cwd(), '..'),
+    'E:\\zero',
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(path.resolve(c, 'models', 'gateway-providers.json')) || fs.existsSync(path.resolve(c, 'zero-system'))) {
+      return c;
+    }
+  }
+  return process.cwd();
+}
+
 /**
  * Creates connect/express/vite compatible middleware for the Backend Persistent Config Vault
  * Route: /api/gateway/config
  */
 export function createGatewayConfigMiddleware() {
-  const configFile = path.resolve(process.cwd(), 'models', 'gateway-providers.json');
-  const defaultsFile = path.resolve(process.cwd(), 'models', 'gateway-defaults.json');
+  const root = getRepoRoot();
+  const configFile = path.resolve(root, 'models', 'gateway-providers.json');
+  const defaultsFile = path.resolve(root, 'models', 'gateway-defaults.json');
   return async (req: IncomingMessage, res: ServerResponse) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -148,8 +163,8 @@ export function createGatewayConfigMiddleware() {
 
         // Sync with openclaw.json & zero.json configs
         const openclawConfigs = [
-          path.resolve(process.cwd(), 'zero-system', 'config', 'zero.json'),
-          path.resolve(process.cwd(), 'zero-system', 'config', 'zero.template.json'),
+          path.resolve(root, 'zero-system', 'config', 'zero.json'),
+          path.resolve(root, 'zero-system', 'config', 'zero.template.json'),
         ];
 
         for (const cfgPath of openclawConfigs) {
@@ -202,8 +217,8 @@ export function createGatewayConfigMiddleware() {
               for (const p of activeProvidersList) {
                 if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
                 allowedProviderKeys.add(p.id);
-                cfg.models.providers[p.id] = {
-                  baseUrl: 'http://127.0.0.1:18790/v1',
+                const provConfig = {
+                  baseUrl: 'http://127.0.0.1:18789/v1',
                   api: p.api || 'openai-completions',
                   models: (Array.isArray(p.models) ? p.models : [])
                     .filter((m: any) => {
@@ -214,9 +229,18 @@ export function createGatewayConfigMiddleware() {
                       id: typeof m === 'string' ? m : m.id,
                       name: typeof m === 'string' ? m : (m.name || m.id),
                     })),
+                  ...(p.apiKey ? { apiKey: p.apiKey } : {}),
                 };
-                if (p.apiKey) {
-                  cfg.models.providers[p.id].apiKey = p.apiKey;
+                cfg.models.providers[p.id] = provConfig;
+                if (p.id === 'nv') {
+                  allowedProviderKeys.add('nvidia');
+                  cfg.models.providers['nvidia'] = {
+                    ...provConfig,
+                    models: provConfig.models.map((m: any) => ({
+                      ...m,
+                      id: m.id.replace(/^nvidia\//, ''),
+                    })),
+                  };
                 }
               }
 
@@ -245,7 +269,7 @@ export function createGatewayConfigMiddleware() {
 
               if (zgModels.length > 0) {
                 cfg.models.providers['zero-gateway'] = {
-                  baseUrl: 'http://127.0.0.1:18790/v1',
+                  baseUrl: 'http://127.0.0.1:18789/v1',
                   api: 'openai-completions',
                   models: zgModels,
                 };
@@ -264,8 +288,8 @@ export function createGatewayConfigMiddleware() {
         try {
           const { DatabaseSync } = await import('node:sqlite');
           const agentDbs = [
-            path.resolve(process.cwd(), 'zero-system', 'state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
-            path.resolve(process.cwd(), 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
+            path.resolve(root, 'zero-system', 'state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
+            path.resolve(root, 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
           ];
           for (const adbPath of agentDbs) {
             if (!fs.existsSync(adbPath)) continue;
@@ -764,7 +788,7 @@ export function createLocalGgufMiddleware() {
 
       // 14. Provider Config Vault Persistence (/api/gateway/local-gguf/config)
       if (pathname === 'config') {
-        const configFile = path.resolve(process.cwd(), 'models', 'gateway-providers.json');
+        const configFile = path.resolve(getRepoRoot(), 'models', 'gateway-providers.json');
         if (req.method === 'GET') {
           if (fs.existsSync(configFile)) {
             const raw = await fs.promises.readFile(configFile, 'utf-8');

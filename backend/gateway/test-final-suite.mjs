@@ -159,11 +159,11 @@ const importRes = await importGatewayConfig(exported);
 assert.equal(importRes.success, true);
 console.log(`✔ System 9 Passed: Gateway Config exported and imported (${importRes.count} providers)`);
 
-// 7. Verify Live Servers (Zero Host 18789 and Zero Gateway 18790)
-console.log('Verifying Live Server Ports...');
-const gwHealth = await fetch('http://127.0.0.1:18790/health').then(r => r.json()).catch(e => ({ error: e.message }));
-console.log('Zero Gateway (18790) status:', gwHealth);
-assert.equal(gwHealth.status, 'ok', 'Zero Gateway on port 18790 must be healthy');
+// 7. Verify Unified Server (Zero Host & Gateway on Single Port 18789)
+console.log('Verifying Unified Server Port 18789...');
+const gwHealth = await fetch('http://127.0.0.1:18789/health').then(r => r.json()).catch(e => ({ error: e.message }));
+console.log('Zero Unified Gateway (18789/health) status:', gwHealth);
+assert.equal(gwHealth.status, 'ok', 'Zero Gateway on port 18789 must be healthy');
 
 const hostHealth = await fetch('http://127.0.0.1:18789/').then(r => r.status).catch(e => e.message);
 console.log('Zero Host (18789) HTTP status:', hostHealth);
