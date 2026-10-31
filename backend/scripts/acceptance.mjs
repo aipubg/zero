@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 const BACKEND = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CLI = join(BACKEND, "node_modules", "openclaw", "dist", "index.js");
 const STATE_DIR = join(BACKEND, ".openclaw");
-const CONFIG_PATH = join(BACKEND, "config", "openclaw.json");
+const CONFIG_PATH = join(BACKEND, "config", "zero.json");
 const DEFAULT_URL = "http://127.0.0.1:18789";
 const EXPECTED_AGENTS = ["zero"];
 const MARKER = "ZERO_WS_ACCEPTANCE_OK";

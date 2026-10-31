@@ -22,8 +22,8 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BACKEND = resolve(HERE, "..");
-const TEMPLATE = join(BACKEND, "config", "openclaw.template.json");
-const OUTPUT = join(BACKEND, "config", "openclaw.json");
+const TEMPLATE = join(BACKEND, "config", "zero.template.json");
+const OUTPUT = join(BACKEND, "config", "zero.json");
 const ENV_EXAMPLE = join(BACKEND, "config", "env.example");
 
 // No placeholders remain in the template. Kept as a guard: if one is ever re-added,
@@ -106,7 +106,7 @@ function main() {
     process.exit(2);
   }
   if (existsSync(OUTPUT) && !write && !force) {
-    console.log("\n  note: an existing openclaw.json is present and was NOT overwritten (dry run).");
+    console.log("\n  note: an existing zero.json is present and was NOT overwritten (dry run).");
   }
 
   if (!write) {

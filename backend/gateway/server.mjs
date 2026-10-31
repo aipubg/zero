@@ -20,11 +20,13 @@ const PORT = parseInt(process.env.ZERO_GATEWAY_PORT || '18789', 10);
 const HOST = '127.0.0.1';
 
 function getRepoRoot() {
+  if (process.env.ZERO_ROOT && fs.existsSync(process.env.ZERO_ROOT)) {
+    return path.resolve(process.env.ZERO_ROOT);
+  }
   const candidates = [
+    path.resolve(__dirname, '..', '..'),
     process.cwd(),
     path.resolve(process.cwd(), '..'),
-    path.resolve(__dirname, '..', '..'),
-    'E:\\zero',
   ];
   for (const c of candidates) {
     if (fs.existsSync(path.resolve(c, 'models', 'gateway-providers.json')) || fs.existsSync(path.resolve(c, 'zero-system'))) {
@@ -42,7 +44,7 @@ const configMiddleware = createGatewayConfigMiddleware();
 const localGgufMiddleware = createLocalGgufMiddleware();
 
 /**
- * Resolve upstream provider definition and clean model ID from gateway-providers.json
+ * Resolve upstream provider definition and clean model ID deterministically from gateway-providers.json
  */
 function resolveUpstreamProvider(modelId) {
   try {
@@ -52,25 +54,28 @@ function resolveUpstreamProvider(modelId) {
     if (!Array.isArray(providers)) return null;
 
     const norm = String(modelId || '').trim();
+    if (!norm) return null;
 
     for (const p of providers) {
       if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
-      // 1. Match by prefix: e.g. nv/nvidia/...
+
+      // 1. Match by prefix: e.g. "nv/nvidia/nemotron-..." or "nv/nemotron-..."
       if (norm.startsWith(`${p.id}/`)) {
         const cleanModelId = norm.slice(p.id.length + 1);
         return { provider: p, cleanModelId };
       }
-      // 2. Match in p.models:
+
+      // 2. Deterministic match in p.models:
       if (Array.isArray(p.models)) {
         const found = p.models.find((m) => {
           const rawId = typeof m === 'string' ? m : (m.id || m.name);
+          if (!rawId) return false;
           return (
             rawId === norm ||
             rawId === `nvidia/${norm}` ||
             `nvidia/${rawId}` === norm ||
-            norm.endsWith('/' + rawId) ||
-            rawId.endsWith('/' + norm) ||
-            (rawId && norm && (rawId.includes(norm) || norm.includes(rawId)))
+            (rawId.startsWith('nvidia/') && norm === rawId.replace(/^nvidia\//, '')) ||
+            (norm.startsWith('nvidia/') && rawId === norm.replace(/^nvidia\//, ''))
           );
         });
         if (found) {
@@ -78,16 +83,6 @@ function resolveUpstreamProvider(modelId) {
           return { provider: p, cleanModelId: rawId };
         }
       }
-    }
-
-    // 3. Fallback to first active provider if any
-    const firstActive = providers.find((p) => p && p.id && p.id !== 'zero-gateway' && (p.apiKey || (p.apiKeys && p.apiKeys.length)));
-    if (firstActive) {
-      let cleanModelId = norm;
-      if (cleanModelId.startsWith(`${firstActive.id}/`)) {
-        cleanModelId = cleanModelId.slice(firstActive.id.length + 1);
-      }
-      return { provider: firstActive, cleanModelId };
     }
   } catch (err) {
     console.error('[Zero Gateway] Error resolving upstream provider:', err.message);
@@ -100,7 +95,13 @@ function resolveUpstreamProvider(modelId) {
  */
 async function forwardToUpstreamProvider(req, res, providerInfo, body) {
   const { provider, cleanModelId } = providerInfo;
-  const apiKey = provider.apiKey || (Array.isArray(provider.apiKeys) ? provider.apiKeys[0] : '');
+  let apiKey = provider.apiKey || (Array.isArray(provider.apiKeys) ? provider.apiKeys[0] : '');
+
+  // Resolve secure environment variable credentials if not in JSON or using env: prefix
+  if (!apiKey || apiKey.startsWith('env:')) {
+    const envKey = apiKey.startsWith('env:') ? apiKey.slice(4) : (provider.id.toUpperCase() + '_API_KEY');
+    apiKey = process.env[envKey] || process.env.NVIDIA_API_KEY || process.env.ZERO_GATEWAY_KEY || process.env.OPENAI_API_KEY || apiKey;
+  }
   const baseUrl = (provider.baseUrl || '').trim().replace(/\/+$/, '');
   const targetUrl = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
 
@@ -224,6 +225,40 @@ async function handleProxy(req, res) {
         res.statusCode = 400;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ error: 'Missing baseUrl or targetUrl in proxy payload' }));
+        return;
+      }
+
+      // Security validation: Validate proxy destination URL
+      let parsedDest;
+      try {
+        parsedDest = new URL(fullDestinationUrl);
+      } catch (e) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: `Invalid proxy destination URL: ${e.message}` }));
+        return;
+      }
+
+      if (parsedDest.protocol !== 'http:' && parsedDest.protocol !== 'https:') {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'Proxy protocol must be http: or https:' }));
+        return;
+      }
+
+      // SSRF Protection: Block dangerous cloud metadata and internal broadcast targets
+      const destHost = parsedDest.hostname.toLowerCase();
+      if (
+        destHost === '169.254.169.254' ||
+        destHost === 'metadata.google.internal' ||
+        destHost === 'metadata.internal' ||
+        destHost.endsWith('.internal') ||
+        destHost === '100.100.100.200' ||
+        destHost === '0.0.0.0'
+      ) {
+        res.statusCode = 403;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'Forbidden: Proxying to internal metadata endpoints is prohibited.' }));
         return;
       }
 

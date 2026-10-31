@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BACKEND = resolve(HERE, "..");
 const REPO = resolve(BACKEND, "..");
-const TEMPLATE = join(BACKEND, "config", "openclaw.template.json");
+const TEMPLATE = join(BACKEND, "config", "zero.template.json");
 const PLUGIN_DIR = join(BACKEND, "plugin");
 const GATEWAY_PORT = 18789;
 
