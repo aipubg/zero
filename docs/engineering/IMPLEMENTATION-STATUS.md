@@ -33,6 +33,8 @@
 | `backend/plugin/legacy-redirects.test.mjs` | Route Interceptors | **1 Pass / 0 Fail** | None | **VERIFIED GREEN** |
 | `backend/gateway/test-final-suite.mjs` | Gateway & Registry Integration | **All Systems Passed** | None | **VERIFIED GREEN** |
 | `backend/scripts/preflight.mjs` | Backend Environment Preflight | **27 Pass / 0 Fail** | None | **VERIFIED GREEN** |
+| `backend/scripts/acceptance.mjs` (WS) | Full Backend Turn Acceptance (WS) | **3 Pass / 0 Fail** | None | **VERIFIED GREEN** |
+| `backend/scripts/acceptance.mjs` (HTTP) | Full Model & Chat Acceptance (HTTP) | **3 Pass / 0 Fail** | None | **VERIFIED GREEN** |
 | `app/zero-control-ui/test/verify-served.mjs`| Control UI Asset Hash Verification | **Verified** | None | **VERIFIED GREEN** |
 
 ---

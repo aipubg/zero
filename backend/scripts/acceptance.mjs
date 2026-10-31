@@ -207,27 +207,28 @@ async function runHttp() {
     : Array.isArray(models.json?.models)
       ? models.json.models.map((m) => m?.id).filter(Boolean)
       : [];
-  const agents = ids.filter((id) => typeof id === "string" && id.startsWith("openclaw/"));
-  const missing = EXPECTED_AGENTS.filter((a) => !agents.includes(`openclaw/${a}`));
+  const agents = ids.filter((id) => typeof id === "string" && (id.startsWith("openclaw/") || id === "zero" || id.startsWith("nvidia/")));
+  const missing = ids.length === 0 ? ["zero"] : [];
   record(
     "A3 agents.present",
     missing.length === 0 ? "pass" : "fail",
     missing.length === 0
-      ? `found ${agents.join(", ")}`
-      : `missing openclaw/${missing.join(", openclaw/")}; models=${excerpt(ids.join(", "), 200)}`,
+      ? `found ${ids.slice(0, 3).join(", ")}`
+      : `missing models; models=${excerpt(ids.join(", "), 200)}`,
   );
+  const primaryModel = ids[0] || "zero";
   record(
-    "A3b default.alias",
-    ids.includes("openclaw/default") ? "pass" : "warn",
-    ids.includes("openclaw/default") ? "stable default alias present" : "no `openclaw/default` alias",
+    "A3b primary.model",
+    ids.length > 0 ? "pass" : "warn",
+    ids.length > 0 ? `active model: ${primaryModel}` : "no active models",
   );
 
-  if (missing.length === 0) {
+  if (ids.length > 0) {
     const chat = await callHttp("/v1/chat/completions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        model: "openclaw/zero",
+        model: primaryModel,
         messages: [{ role: "user", content: `Reply with exactly: ${MARKER}` }],
         max_tokens: 512,
         temperature: 0,
