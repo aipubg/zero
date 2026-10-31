@@ -53,6 +53,9 @@ function notifyListeners(providers: ProviderConfig[]) {
  */
 export function getSavedProviders(): ProviderConfig[] {
   try {
+    if (typeof localStorage === 'undefined') {
+      return DEFAULT_PROVIDERS;
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PROVIDERS));
@@ -64,7 +67,6 @@ export function getSavedProviders(): ProviderConfig[] {
     }
     return DEFAULT_PROVIDERS;
   } catch (e) {
-    console.error('Failed to parse saved providers, using defaults', e);
     return DEFAULT_PROVIDERS;
   }
 }
@@ -82,7 +84,7 @@ export function saveProviders(providers: ProviderConfig[]): void {
   }
 
   // Mirror to persistent backend config vault (/models/gateway-providers.json)
-  if (typeof fetch === 'function') {
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
     fetch('/api/gateway/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -98,7 +100,7 @@ export function saveProviders(providers: ProviderConfig[]): void {
  */
 export async function syncProvidersFromBackendVault(): Promise<ProviderConfig[]> {
   try {
-    if (typeof fetch === 'function') {
+    if (typeof window !== 'undefined' && typeof fetch === 'function') {
       const res = await fetch('/api/gateway/config');
       if (res.ok) {
         const data = await res.json();
@@ -423,6 +425,9 @@ export function subscribeToRegistry(listener: RegistryListener): () => void {
  */
 export async function syncLocalGgufModels(): Promise<GatewayModel[]> {
   try {
+    if (typeof window === 'undefined') {
+      return [];
+    }
     const res = await fetch('/api/gateway/local-gguf/models');
     if (!res.ok) return [];
     const data = await res.json();

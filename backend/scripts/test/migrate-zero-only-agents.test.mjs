@@ -11,7 +11,7 @@ import {
 } from "../migrate-zero-only-agents.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const templatePath = join(here, "..", "..", "config", "openclaw.template.json");
+const templatePath = join(here, "..", "..", "config", "zero.template.json");
 
 function sampleConfig() {
   return {
