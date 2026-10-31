@@ -111,7 +111,7 @@
             "web_search"
           ],
           "exec": {
-            "mode": "ask"
+            "mode": "full"
           }
         },
         "subagents": {

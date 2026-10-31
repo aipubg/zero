@@ -351,13 +351,128 @@ export function mountModelsPage(container, context = {}) {
 
   const defaultsGrid = element("div", "zero-defaults-grid");
 
+  function createCustomDropdown({ id, className, placeholder = "(Select Model)" } = {}) {
+    const container = document.createElement("div");
+    container.className = `zero-custom-dropdown ${className || ""}`.trim();
+    if (id) container.id = id;
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "zero-custom-dropdown__trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+
+    const triggerText = document.createElement("span");
+    triggerText.className = "zero-custom-dropdown__text";
+    triggerText.textContent = placeholder;
+
+    const triggerArrow = document.createElement("span");
+    triggerArrow.className = "zero-custom-dropdown__arrow";
+    triggerArrow.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
+    trigger.append(triggerText, triggerArrow);
+
+    const menu = document.createElement("div");
+    menu.className = "zero-custom-dropdown__menu";
+    menu.setAttribute("role", "listbox");
+    menu.style.display = "none";
+
+    container.append(trigger, menu);
+
+    let currentValue = "";
+    let currentOptions = [];
+
+    function closeMenu() {
+      menu.style.display = "none";
+      trigger.setAttribute("aria-expanded", "false");
+      container.classList.remove("is-open");
+    }
+
+    function openMenu() {
+      document.querySelectorAll(".zero-custom-dropdown.is-open").forEach(dd => {
+        if (dd !== container) {
+          dd.querySelector(".zero-custom-dropdown__menu")?.style.setProperty("display", "none");
+          dd.classList.remove("is-open");
+          dd.querySelector(".zero-custom-dropdown__trigger")?.setAttribute("aria-expanded", "false");
+        }
+      });
+      menu.style.display = "block";
+      trigger.setAttribute("aria-expanded", "true");
+      container.classList.add("is-open");
+    }
+
+    trigger.onclick = (e) => {
+      e.stopPropagation();
+      if (menu.style.display === "block") {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    };
+
+    document.addEventListener("click", (e) => {
+      if (!container.contains(e.target)) {
+        closeMenu();
+      }
+    });
+
+    function renderOptions() {
+      menu.innerHTML = "";
+      for (const opt of currentOptions) {
+        const item = document.createElement("div");
+        item.className = "zero-custom-dropdown__item";
+        item.setAttribute("role", "option");
+        item.setAttribute("data-value", opt.value);
+        item.textContent = opt.label;
+        if (opt.value === currentValue) {
+          item.classList.add("is-selected");
+          item.setAttribute("aria-selected", "true");
+        }
+        item.onclick = (e) => {
+          e.stopPropagation();
+          currentValue = opt.value;
+          triggerText.textContent = opt.label || placeholder;
+          closeMenu();
+          renderOptions();
+          container.dispatchEvent(new Event("change", { bubbles: true }));
+        };
+        menu.append(item);
+      }
+    }
+
+    return {
+      element: container,
+      get value() {
+        return currentValue;
+      },
+      set value(val) {
+        currentValue = String(val || "");
+        const found = currentOptions.find(o => o.value === currentValue);
+        triggerText.textContent = found ? found.label : (placeholder || currentValue);
+        renderOptions();
+      },
+      setOptions(options, selectedVal) {
+        currentOptions = options;
+        if (selectedVal !== undefined) {
+          currentValue = String(selectedVal || "");
+        }
+        const found = currentOptions.find(o => o.value === currentValue);
+        triggerText.textContent = found ? found.label : (options[0]?.label || placeholder);
+        renderOptions();
+      }
+    };
+  }
+
   function createSelectorField(label, id) {
     const field = element("div", "zero-selector-field");
     const lbl = element("label", "zero-selector-field__label", label);
     lbl.setAttribute("for", id);
-    const select = element("select", "zero-selector-field__select");
-    select.id = id;
-    field.append(lbl, select);
+    const select = createCustomDropdown({ id, className: "zero-selector-field__select" });
+    field.append(lbl, select.element);
     return { field, select, label: lbl };
   }
 
@@ -420,9 +535,9 @@ export function mountModelsPage(container, context = {}) {
   agentBindingBox.append(agentDescBox);
 
   const agentAssignRow = element("div", "zero-agent-assign-row");
-  const agentModelSelect = element("select", "zero-agent-assign-select");
+  const agentModelSelect = createCustomDropdown({ id: "zero-agent-assign-select", className: "zero-agent-assign-select", placeholder: "(Select Model for Zero Agent)" });
   const assignBtn = element("button", "zero-btn-assign-agent", "Assign to Zero");
-  agentAssignRow.append(agentModelSelect, assignBtn);
+  agentAssignRow.append(agentModelSelect.element, assignBtn);
   agentBindingBox.append(agentAssignRow);
 
   const agentOverrideRow = element("div", "zero-agent-override-row");
@@ -559,15 +674,22 @@ export function mountModelsPage(container, context = {}) {
     }
 
     function fillSelect(selEl, emptyLabel, currentVal) {
-      const firstOpt = element("option", null, emptyLabel);
-      firstOpt.value = "";
-      selEl.replaceChildren(firstOpt);
-
+      const options = [{ value: "", label: emptyLabel }];
       for (const m of allModelOptions) {
-        const opt = element("option", null, m.name);
-        opt.value = m.id;
-        if (m.id === currentVal) opt.selected = true;
-        selEl.append(opt);
+        options.push({ value: m.id, label: m.name });
+      }
+      if (typeof selEl?.setOptions === "function") {
+        selEl.setOptions(options, currentVal);
+      } else if (selEl && typeof selEl.replaceChildren === "function") {
+        const firstOpt = element("option", null, emptyLabel);
+        firstOpt.value = "";
+        selEl.replaceChildren(firstOpt);
+        for (const m of allModelOptions) {
+          const opt = element("option", null, m.name);
+          opt.value = m.id;
+          if (m.id === currentVal) opt.selected = true;
+          selEl.append(opt);
+        }
       }
     }
 

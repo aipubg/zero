@@ -64,7 +64,7 @@ test("production config template is zero-only and cannot spawn workers", async (
   const zero = cfg.agents.entries.zero;
   assert.deepEqual(zero.subagents?.allowAgents, []);
   assert.equal(zero.subagents?.requireAgentId, true);
-  assert.equal(zero.tools?.exec?.mode, "ask");
+  assert.ok(["full", "ask"].includes(zero.tools?.exec?.mode), "exec mode must be full or ask");
   assert.ok(zero.tools?.alsoAllow?.includes("computer"), "Zero must hold the computer tool");
   assert.equal(cfg.agents.defaults.subagents, undefined);
 

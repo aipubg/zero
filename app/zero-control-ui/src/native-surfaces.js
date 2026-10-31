@@ -394,6 +394,24 @@ function installNativeSurfaces(host) {
     rebrandText(document.querySelector(".topnav-shell"));
     rebrandText(document.querySelector(".assistant-panel"));
     rebrandText(document.querySelector(".settings-sidebar"));
+    // Rebrand custodian / Ask Zero surface dynamically
+    const custodian = document.querySelector(".custodian, openclaw-custodian-page, openclaw-custodian-surface");
+    if (custodian) {
+      rebrandText(custodian);
+      for (const input of custodian.querySelectorAll("input, textarea")) {
+        if (input.placeholder && input.placeholder.includes("OpenClaw")) {
+          input.placeholder = input.placeholder.replaceAll("OpenClaw", "Zero");
+        }
+        if (input.getAttribute("aria-label")?.includes("OpenClaw")) {
+          input.setAttribute("aria-label", input.getAttribute("aria-label").replaceAll("OpenClaw", "Zero"));
+        }
+      }
+      for (const h1 of custodian.querySelectorAll("h1")) {
+        if (h1.textContent && h1.textContent.includes("OpenClaw")) {
+          h1.textContent = h1.textContent.replaceAll("OpenClaw", "Zero");
+        }
+      }
+    }
     if (!routePath(window.location.pathname).startsWith("/chat/")) {
       rebrandText(document.querySelector("main"));
     }
@@ -543,7 +561,6 @@ function installNativeSurfaces(host) {
       rebrandChrome();
       syncChatControls();
       rebrandCustodianLinks();
-      redirectCustodianRoute();
       redirectStaleSessionRoute();
       purgeStaleSessions();
       removeExternalLearnMoreLinks();
@@ -552,18 +569,6 @@ function installNativeSurfaces(host) {
       // Product chrome cleanup is best-effort; it must never break the host.
     } finally {
       isApplyingChanges = false;
-    }
-  };
-
-  const redirectCustodianRoute = () => {
-    const cur = routePath(currentLocation());
-    if (cur === "/custodian" || cur.startsWith("/custodian")) {
-      if (typeof window.location?.replace === "function") {
-        window.location.replace("/chat/zero");
-      } else {
-        window.history.replaceState(null, "", "/chat/zero");
-        window.dispatchEvent(new PopStateEvent("popstate"));
-      }
     }
   };
 
@@ -593,8 +598,11 @@ function installNativeSurfaces(host) {
   };
 
   const rebrandCustodianLinks = () => {
-    for (const a of document.querySelectorAll('a[href*="/custodian"], a[href="custodian"]')) {
-      a.setAttribute("href", "/chat/zero");
+    for (const a of document.querySelectorAll('a[href*="/custodian"], a[href="custodian"], a[href*="/settings/custodian"]')) {
+      const text = a.querySelector(".settings-sidebar__item-text, span");
+      if (text && /Ask OpenClaw|Ask Custodian/i.test(text.textContent)) {
+        text.textContent = "Ask Zero";
+      }
       const icon = a.querySelector(".settings-sidebar__item-icon svg, svg");
       if (icon && !icon.classList.contains("zero-icon-done")) {
         icon.classList.add("zero-icon-done");
@@ -610,13 +618,13 @@ function installNativeSurfaces(host) {
 
   const removeExternalLearnMoreLinks = () => {
     for (const el of document.querySelectorAll(
-      "[href*='openclaw.ai'], [href*='docs.openclaw'], [href*='tweakcn.com'], [href*='permission-modes'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
+      "[href*='openclaw.ai'], [href*='docs.openclaw'], [href*='permission-modes'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
     )) {
       el.remove();
     }
     for (const a of document.querySelectorAll("a, wa-dropdown-item")) {
       const txt = (a.textContent || "").trim();
-      if (/^Learn more$/i.test(txt) || /^OpenClaw Docs$/i.test(txt)) {
+      if (/^OpenClaw Docs$/i.test(txt)) {
         a.remove();
       }
     }

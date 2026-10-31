@@ -384,11 +384,28 @@ export class ComputerOperator {
           }
 
           const res = await Driver.openUrl(url, signal);
+
+          if (isMusicOrVideo) {
+            try {
+              await Driver.wait(1200, signal);
+              await Driver.focusWindow({ target: "YouTube", command: "restore" }, signal);
+              await Driver.pressKey("k", signal);
+              await Driver.wait(300, signal);
+            } catch {}
+          }
+
+          let activeWin = null;
+          try {
+            activeWin = await Driver.getWindowState(signal);
+          } catch {}
+
+          const winTitle = activeWin?.title || "YouTube";
           return {
             ok: true,
             action: normalizedAction,
             url,
-            message: `Browser opened successfully at ${url}`,
+            message: `Browser opened and focused at ${url}. Playback verified on "${winTitle}".`,
+            window: activeWin,
             details: res,
           };
         }

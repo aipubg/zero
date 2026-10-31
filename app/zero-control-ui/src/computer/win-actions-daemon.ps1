@@ -48,6 +48,21 @@ public static class WinApiCore {
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
+    public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+    public static bool ForceForeground(IntPtr hWnd) {
+        if (hWnd == IntPtr.Zero) return false;
+        try {
+            keybd_event(0x12, 0, 0, 0);
+            keybd_event(0x12, 0, 2, 0);
+            ShowWindow(hWnd, SW_RESTORE);
+            return SetForegroundWindow(hWnd);
+        } catch {
+            return false;
+        }
+    }
+
+    [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
@@ -480,12 +495,11 @@ function Dispatch-Action($req) {
                     [WinApiCore]::ShowWindow($foundHwnd, [WinApiCore]::SW_MINIMIZE) | Out-Null
                 } elseif ($cmd -eq "maximize") {
                     [WinApiCore]::ShowWindow($foundHwnd, [WinApiCore]::SW_MAXIMIZE) | Out-Null
-                    [WinApiCore]::SetForegroundWindow($foundHwnd) | Out-Null
+                    [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
                 } elseif ($cmd -eq "close") {
                     [WinApiCore]::CloseWindow($foundHwnd) | Out-Null
                 } else {
-                    [WinApiCore]::ShowWindow($foundHwnd, [WinApiCore]::SW_RESTORE) | Out-Null
-                    [WinApiCore]::SetForegroundWindow($foundHwnd) | Out-Null
+                    [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
                 }
                 $result["focused"] = $true
                 $result["hwnd"] = [int64]$foundHwnd
@@ -499,8 +513,18 @@ function Dispatch-Action($req) {
             $app = Coalesce-Val $req.app $req.name (Coalesce-Val $req.command "" "")
             if ($app) {
                 $p = Start-Process -FilePath $app -PassThru -ErrorAction Stop
+                $waited = 0
+                while ($waited -lt 10 -and ($p.MainWindowHandle -eq [IntPtr]::Zero)) {
+                    Start-Sleep -Milliseconds 150
+                    $p.Refresh()
+                    $waited++
+                }
+                if ($p.MainWindowHandle -ne [IntPtr]::Zero) {
+                    [WinApiCore]::ForceForeground($p.MainWindowHandle) | Out-Null
+                }
                 $result["launched"] = $app
                 $result["pid"] = $p.Id
+                $result["focused"] = ($p.MainWindowHandle -ne [IntPtr]::Zero)
             } else {
                 throw "Missing app parameter"
             }
@@ -510,6 +534,38 @@ function Dispatch-Action($req) {
             $url = if ($null -ne $req.url) { [string]$req.url } else { "" }
             if ($url) {
                 Start-Process $url
+                # Wait for browser window to appear and bring it to foreground
+                $waited = 0
+                $foundHwnd = [IntPtr]::Zero
+                while ($waited -lt 12 -and $foundHwnd -eq [IntPtr]::Zero) {
+                    Start-Sleep -Milliseconds 250
+                    $waited++
+                    $callback = [WinApiCore+EnumWindowsProc]{
+                        param($hwnd, $lparam)
+                        if ([WinApiCore]::IsWindowVisible($hwnd)) {
+                            $targetPid = 0
+                            [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
+                            if ($targetPid -gt 0) {
+                                try {
+                                    $pName = (Get-Process -Id $targetPid -ErrorAction SilentlyContinue).ProcessName.ToLower()
+                                    if ($pName -in @("chrome", "msedge", "firefox", "brave", "opera", "browser")) {
+                                        $script:matchedHwnd = $hwnd
+                                        return $false
+                                    }
+                                } catch {}
+                            }
+                        }
+                        return $true
+                    }
+                    $script:matchedHwnd = [IntPtr]::Zero
+                    [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                    $foundHwnd = $script:matchedHwnd
+                }
+                if ($foundHwnd -ne [IntPtr]::Zero) {
+                    [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
+                    $result["foreground"] = $true
+                    $result["hwnd"] = [int64]$foundHwnd
+                }
                 $result["url"] = $url
             } else {
                 throw "Missing url parameter"

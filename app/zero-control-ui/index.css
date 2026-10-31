@@ -1979,33 +1979,7 @@ select option {
    Zero Polish: Unfinished Settings Sections & Pure Zero Spinner
    ========================================================================== */
 
-/* 1. Hide unfinished settings sidebar sections and tweakcn import */
-.settings-sidebar a[href*="cloud-workers"],
-.settings-sidebar a[href*="channels"],
-.settings-sidebar a[href*="communications"],
-.settings-sidebar a[href*="talk"],
-.settings-sidebar a[href*="devices"],
-.settings-sidebar a[href*="approvals"],
-.settings-nav a[href*="cloud-workers"],
-.settings-nav a[href*="channels"],
-.settings-nav a[href*="communications"],
-.settings-nav a[href*="talk"],
-.settings-nav a[href*="devices"],
-.settings-nav a[href*="approvals"],
-[data-nav-id="cloud-workers"],
-[data-nav-id="channels"],
-[data-nav-id="communications"],
-[data-nav-id="talk"],
-[data-nav-id="devices"],
-[data-nav-id="approvals"],
-.appearance-tweakcn,
-[data-section="tweakcn"],
-.tweakcn-presets,
-.import-from-tweakcn {
-  display: none !important;
-}
-
-/* 2. Pure Zero Animated Dots Loading Indicator (No Lobster Claw Spinner) */
+/* 1. Pure Zero Animated Dots Loading Indicator (No Lobster Claw Spinner) */
 .chat-reading-indicator svg,
 .chat-reading-indicator .lobster-icon,
 .chat-reading-indicator__icon {
@@ -2046,14 +2020,126 @@ select option {
   }
 }
 
-/* 3. Hide any residual external links or Learn More permission-modes items */
+/* 2. Hide any residual external OpenClaw docs links */
 a[href*="openclaw.ai"],
 a[href*="docs.openclaw.ai"],
-a[href*="tweakcn.com"],
 wa-dropdown-item[href*="openclaw.ai"],
 wa-dropdown-item[href*="docs.openclaw.ai"],
 wa-dropdown-item[href*="permission-modes"] {
   display: none !important;
 }
+
+/* 3. Theme-Matched Custom Dropdown Component (No Native Windows Blue Popup) */
+.zero-custom-dropdown {
+  position: relative;
+  width: 100%;
+  user-select: none;
+}
+
+.zero-custom-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 14px;
+  background: var(--bg-elevated, var(--card, #1c1917));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  color: var(--text, #f5f5f4);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.zero-custom-dropdown__trigger:hover,
+.zero-custom-dropdown.is-open .zero-custom-dropdown__trigger {
+  border-color: var(--accent, #e11d48);
+  box-shadow: 0 0 0 1px var(--accent, #e11d48);
+}
+
+.zero-custom-dropdown__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.zero-custom-dropdown__arrow {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.zero-custom-dropdown.is-open .zero-custom-dropdown__arrow {
+  transform: rotate(180deg);
+}
+
+.zero-custom-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--bg-elevated, var(--card, #1c1917));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.zero-custom-dropdown__item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text, #f5f5f4);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  margin-bottom: 2px;
+}
+
+.zero-custom-dropdown__item:hover {
+  background: color-mix(in srgb, var(--accent, #e11d48) 22%, transparent);
+  color: var(--accent, #fb7185);
+}
+
+.zero-custom-dropdown__item.is-selected {
+  background: color-mix(in srgb, var(--accent, #e11d48) 28%, transparent);
+  color: var(--accent, #fb7185);
+  font-weight: 600;
+}
+
+/* 4. Custodian / Ask Zero Pure Zero Branding & Clean Mascot Avatar */
+openclaw-mascot canvas {
+  display: none !important;
+}
+
+openclaw-mascot {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2310b981'/%3E%3Ctext x='50' y='68' font-family='-apple-system,BlinkMacSystemFont,sans-serif' font-weight='900' font-size='52' fill='%23ffffff' text-anchor='middle'%3EZ%3C/text%3E%3C/svg%3E") !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  display: inline-block !important;
+}
+
+.custodian__mark,
+.custodian__mascot-avatar,
+.agent-chat__welcome-clawd {
+  background: transparent !important;
+}
+
 
 

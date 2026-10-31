@@ -43,11 +43,14 @@ function findControlUiDirs() {
         let st;
         try { st = fs.statSync(full); } catch { continue; }
         if (st.isDirectory()) {
-          if (item === 'control-ui' && fs.existsSync(path.join(full, 'assets'))) {
+          if (
+            !full.includes('playwright-core') &&
+            fs.existsSync(path.join(full, 'assets')) &&
+            (fs.existsSync(path.join(full, 'index.html')) || item === 'control-ui' || full.includes('control-ui-assets'))
+          ) {
             dirs.push(full);
-          } else {
-            walk(full, depth + 1);
           }
+          walk(full, depth + 1);
         }
       }
     } catch {}
@@ -101,6 +104,14 @@ export function patchOpenclawRuntime() {
     path.join(REPO_ROOT, 'zero-system', 'state', 'node-runtime', 'current', 'node_modules', 'openclaw', 'dist'),
     path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state', 'node-runtime', 'releases', '2026.10.7-10ad68f0f0f519bc2ee40ec9e23435359e7ba939749fd7b4a290df3512ba49af', 'node_modules', 'openclaw', 'dist'),
   ];
+
+  const releasesDir = path.join(REPO_ROOT, 'zero-system', 'state', 'node-runtime', 'releases');
+  if (fs.existsSync(releasesDir)) {
+    for (const r of fs.readdirSync(releasesDir)) {
+      const dist = path.join(releasesDir, r, 'node_modules', 'openclaw', 'dist');
+      if (fs.existsSync(dist)) roots.push(dist);
+    }
+  }
 
   for (const root of roots) {
     if (!fs.existsSync(root)) continue;
@@ -318,8 +329,48 @@ export function patchOpenclawRuntime() {
             code = code.replaceAll('openclaw.ai', 'zero.local');
             changed = true;
           }
-          if (code.includes('tweakcn.com')) {
-            code = code.replaceAll('tweakcn.com', 'zero.local');
+          if (code.includes('Message OpenClaw…')) {
+            code = code.replaceAll('Message OpenClaw…', 'Message Zero…');
+            changed = true;
+          }
+          if (code.includes('Message OpenClaw...')) {
+            code = code.replaceAll('Message OpenClaw...', 'Message Zero...');
+            changed = true;
+          }
+          if (code.includes('Message OpenClaw')) {
+            code = code.replaceAll('Message OpenClaw', 'Message Zero');
+            changed = true;
+          }
+          if (code.includes('title:`OpenClaw`')) {
+            code = code.replaceAll('title:`OpenClaw`', 'title:`Zero`');
+            changed = true;
+          }
+          if (code.includes('title:"OpenClaw"')) {
+            code = code.replaceAll('title:"OpenClaw"', 'title:"Zero"');
+            changed = true;
+          }
+          if (code.includes('title:`OpenClaw`,subtitleCaretaker:`System setup and care.`')) {
+            code = code.replaceAll('title:`OpenClaw`,subtitleCaretaker:`System setup and care.`', 'title:`Zero`,subtitleCaretaker:`System setup and care.`');
+            changed = true;
+          }
+          if (code.includes('thinking:`OpenClaw is thinking`')) {
+            code = code.replaceAll('thinking:`OpenClaw is thinking`', 'thinking:`Zero is thinking`');
+            changed = true;
+          }
+          if (code.includes('requestFailed:`OpenClaw could not reply.')) {
+            code = code.replaceAll('requestFailed:`OpenClaw could not reply.', 'requestFailed:`Zero could not reply.');
+            changed = true;
+          }
+          if (code.includes('askOpenClaw:`Ask OpenClaw`')) {
+            code = code.replaceAll('askOpenClaw:`Ask OpenClaw`', 'askOpenClaw:`Ask Zero`');
+            changed = true;
+          }
+          if (code.includes('askOpenClaw:"Ask OpenClaw"')) {
+            code = code.replaceAll('askOpenClaw:"Ask OpenClaw"', 'askOpenClaw:"Ask Zero"');
+            changed = true;
+          }
+          if (code.includes('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`')) {
+            code = code.replaceAll('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`', 'render(){return L`<span class="openclaw-mascot--neutral" style="display:inline-grid;place-items:center;width:100%;height:100%;"><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg></span>`');
             changed = true;
           }
           if (changed) {
@@ -344,7 +395,64 @@ export function patchOpenclawRuntime() {
       }
     }
 
+  }
 
+  // 9. Patch All Discovered Control UI Asset Bundles
+  for (const uiDir of findControlUiDirs()) {
+    const assetsDir = path.join(uiDir, 'assets');
+    if (!fs.existsSync(assetsDir)) continue;
+    for (const f of fs.readdirSync(assetsDir)) {
+      if (f.endsWith('.js')) {
+        const fPath = path.join(assetsDir, f);
+        try {
+          let code = fs.readFileSync(fPath, 'utf8');
+          let changed = false;
+          if (code.includes('Message OpenClaw…')) {
+            code = code.replaceAll('Message OpenClaw…', 'Message Zero…');
+            changed = true;
+          }
+          if (code.includes('Message OpenClaw...')) {
+            code = code.replaceAll('Message OpenClaw...', 'Message Zero...');
+            changed = true;
+          }
+          if (code.includes('Message OpenClaw')) {
+            code = code.replaceAll('Message OpenClaw', 'Message Zero');
+            changed = true;
+          }
+          if (code.includes('title:`OpenClaw`')) {
+            code = code.replaceAll('title:`OpenClaw`', 'title:`Zero`');
+            changed = true;
+          }
+          if (code.includes('title:"OpenClaw"')) {
+            code = code.replaceAll('title:"OpenClaw"', 'title:"Zero"');
+            changed = true;
+          }
+          if (code.includes('thinking:`OpenClaw is thinking`')) {
+            code = code.replaceAll('thinking:`OpenClaw is thinking`', 'thinking:`Zero is thinking`');
+            changed = true;
+          }
+          if (code.includes('requestFailed:`OpenClaw could not reply.')) {
+            code = code.replaceAll('requestFailed:`OpenClaw could not reply.', 'requestFailed:`Zero could not reply.');
+            changed = true;
+          }
+          if (code.includes('askOpenClaw:`Ask OpenClaw`')) {
+            code = code.replaceAll('askOpenClaw:`Ask OpenClaw`', 'askOpenClaw:`Ask Zero`');
+            changed = true;
+          }
+          if (code.includes('askOpenClaw:"Ask OpenClaw"')) {
+            code = code.replaceAll('askOpenClaw:"Ask OpenClaw"', 'askOpenClaw:"Ask Zero"');
+            changed = true;
+          }
+          if (code.includes('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`')) {
+            code = code.replaceAll('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`', 'render(){return L`<span class="openclaw-mascot--neutral" style="display:inline-grid;place-items:center;width:100%;height:100%;"><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg></span>`');
+            changed = true;
+          }
+          if (changed) {
+            fs.writeFileSync(fPath, code, 'utf8');
+          }
+        } catch {}
+      }
+    }
   }
 }
 
