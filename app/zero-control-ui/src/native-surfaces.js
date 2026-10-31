@@ -565,10 +565,73 @@ function installNativeSurfaces(host) {
       purgeStaleSessions();
       removeExternalLearnMoreLinks();
       sanitizeChatModelMenu();
+      scrubRoot(document);
+      walkAndScrubShadowDoms(document.body);
     } catch {
       // Product chrome cleanup is best-effort; it must never break the host.
     } finally {
       isApplyingChanges = false;
+    }
+  };
+
+  const scrubRoot = (root) => {
+    if (!root) return;
+    try {
+      const canvases = root.querySelectorAll ? root.querySelectorAll("canvas") : [];
+      for (const c of canvases) {
+        c.style.setProperty("display", "none", "important");
+      }
+      const mascots = root.querySelectorAll ? root.querySelectorAll("openclaw-mascot, .openclaw-mascot") : [];
+      for (const m of mascots) {
+        if (!m.querySelector(".zero-mascot-badge")) {
+          const badge = document.createElement("div");
+          badge.className = "zero-mascot-badge";
+          badge.style.cssText = "display:inline-grid;place-items:center;width:100%;height:100%;line-height:0;";
+          badge.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg>`;
+          m.appendChild(badge);
+        }
+      }
+      const svgs = root.querySelectorAll ? root.querySelectorAll("svg.lobster-pet__svg, svg[class*='lobster'], svg[class*='claw']") : [];
+      for (const svg of svgs) {
+        if (!svg.classList.contains("zero-scrubbed")) {
+          svg.classList.add("zero-scrubbed");
+          svg.setAttribute("viewBox", "0 0 100 100");
+          svg.innerHTML = `<circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text>`;
+        }
+      }
+      const openclawItems = root.querySelectorAll ? root.querySelectorAll('wa-dropdown-item[value*="openclaw"], [aria-label*="openclaw" i], .session-menu__text') : [];
+      for (const item of openclawItems) {
+        if (item.getAttribute("value")?.toLowerCase().includes("openclaw") || item.textContent?.trim().toLowerCase() === "openclaw") {
+          item.closest("wa-dropdown-item")?.remove() || item.remove();
+        } else if (item.getAttribute("aria-label")?.toLowerCase().includes("openclaw")) {
+          item.setAttribute("aria-label", (item.getAttribute("aria-label") || "").replace(/openclaw/gi, "zero"));
+        }
+      }
+      if (typeof document.createTreeWalker === "function") {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.nodeValue && /\bopenclaw\b/i.test(node.nodeValue)) {
+            node.nodeValue = node.nodeValue.replace(/\bopenclaw\b/gi, (m) => {
+              if (m === "openclaw") return "zero";
+              if (m === "OPENCLAW") return "ZERO";
+              return "Zero";
+            });
+          }
+        }
+      }
+    } catch {}
+  };
+
+  const walkAndScrubShadowDoms = (node = document.body) => {
+    if (!node) return;
+    if (node.shadowRoot) {
+      scrubRoot(node.shadowRoot);
+      walkAndScrubShadowDoms(node.shadowRoot);
+    }
+    const children = node.children || [];
+    for (let i = 0; i < children.length; i++) {
+      walkAndScrubShadowDoms(children[i]);
     }
   };
 

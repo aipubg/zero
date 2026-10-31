@@ -86,9 +86,9 @@
     "onStartup": true
   },
   "controlUi": {
-    "entry": "dist/control-ui/c85d7a2137ccd8edc1d28cd1a99b56c65ca723f07a10bb5b4872389a51f72a92/index.js",
+    "entry": "dist/control-ui/d068fdb9c6ae7013ab5b22b1947701d2461cd042681810d5f84d3bcfe5bacff3/index.js",
     "styles": [
-      "dist/control-ui/c85d7a2137ccd8edc1d28cd1a99b56c65ca723f07a10bb5b4872389a51f72a92/index.css"
+      "dist/control-ui/d068fdb9c6ae7013ab5b22b1947701d2461cd042681810d5f84d3bcfe5bacff3/index.css"
     ]
   },
   "contracts": {
@@ -100,7 +100,10 @@
       "browser",
       "open_browser",
       "open_url",
-      "web_search"
+      "open_app",
+      "web_search",
+      "zero_watch_workflow",
+      "zero_skill_learn"
     ],
     "trustedToolPolicies": [
       "zero-policy.computer-hold"
@@ -126,6 +129,15 @@
       "sideEffecting": true
     },
     "open_url": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": false,
+      "sideEffecting": true
+    },
+    "open_app": {
       "profiles": [
         "coding",
         "full"

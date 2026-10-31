@@ -314,15 +314,21 @@ function Dispatch-Action($req) {
         { $_ -in "type", "type_text" } {
             $text = if ($null -ne $req.text) { [string]$req.text } else { "" }
             if ($text.Length -gt 0) {
+                $typed = $false
                 try {
-                    [System.Windows.Forms.Clipboard]::SetText($text)
-                    [System.Windows.Forms.SendKeys]::SendWait("^v")
-                    $result["typedChars"] = $text.Length
-                } catch {
-                    $escaped = $text.Replace("{", "{{}").Replace("}", "{}}").Replace("+", "{+}").Replace("^", "{^}").Replace("%", "{%}")
-                    [System.Windows.Forms.SendKeys]::SendWait($escaped)
-                    $result["typedChars"] = $text.Length
+                    $wshell = New-Object -ComObject WScript.Shell
+                    $escaped = $text.Replace("{", "{{}").Replace("}", "{}}").Replace("+", "{+}").Replace("^", "{^}").Replace("%", "{%}").Replace("~", "{~}").Replace("(", "{(}").Replace(")", "{)}")
+                    $wshell.SendKeys($escaped)
+                    $typed = $true
+                } catch {}
+
+                if (-not $typed) {
+                    try {
+                        [System.Windows.Forms.SendKeys]::SendWait($escaped)
+                        $typed = $true
+                    } catch {}
                 }
+                $result["typedChars"] = $text.Length
             } else {
                 $result["typedChars"] = 0
             }
@@ -338,11 +344,16 @@ function Dispatch-Action($req) {
                     "up" = "{UP}"; "down" = "{DOWN}"; "left" = "{LEFT}"; "right" = "{RIGHT}";
                     "home" = "{HOME}"; "end" = "{END}"; "pageup" = "{PGUP}"; "pagedown" = "{PGDN}";
                     "ctrl+c" = "^c"; "ctrl+v" = "^v"; "ctrl+x" = "^x"; "ctrl+z" = "^z"; "ctrl+a" = "^a";
-                    "alt+f4" = "%{F4}"; "alt+tab" = "%{TAB}"; "win+r" = "^{ESC}r"
+                    "alt+f4" = "%{F4}"; "alt+tab" = "%{TAB}"; "win+r" = "^{ESC}r"; "k" = "k"
                 }
                 $lowered = $key.ToLower().Trim()
                 $sendKey = if ($keyMap.ContainsKey($lowered)) { $keyMap[$lowered] } else { $key }
-                [System.Windows.Forms.SendKeys]::SendWait($sendKey)
+                try {
+                    $wshell = New-Object -ComObject WScript.Shell
+                    $wshell.SendKeys($sendKey)
+                } catch {
+                    [System.Windows.Forms.SendKeys]::SendWait($sendKey)
+                }
                 $result["key"] = $key
             }
         }

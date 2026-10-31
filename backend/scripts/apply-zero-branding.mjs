@@ -486,10 +486,29 @@ export function purgeStaleDatabaseSessions() {
         db.prepare("DELETE FROM session_state_events WHERE agent_id != 'zero'").run();
       } catch(e) {}
       try {
-        db.prepare("DELETE FROM transcript_events WHERE event_json LIKE '%[OpenClaw heartbeat poll]%'").run();
-        db.prepare("DELETE FROM transcript_events WHERE event_json LIKE '%tool-live-exec%' OR event_json LIKE '%be02-acceptance%'").run();
+        // Update branding in transcript_events without deleting rows (deleting rows breaks sequence continuity)
         db.prepare("UPDATE transcript_events SET event_json = REPLACE(REPLACE(REPLACE(event_json, 'openclaw:', 'zero:'), 'openclaw', 'zero'), 'OpenClaw', 'Zero') WHERE event_json LIKE '%openclaw%'").run();
         db.prepare("UPDATE session_nodes SET entry_json = REPLACE(REPLACE(REPLACE(entry_json, 'openclaw:', 'zero:'), 'openclaw', 'zero'), 'OpenClaw', 'Zero') WHERE entry_json LIKE '%openclaw%'").run();
+      } catch(e) {}
+      // Repair any sequence gaps in transcript_events to prevent 'session history window changed'
+      try {
+        const sessionIds = db.prepare("SELECT DISTINCT session_id FROM transcript_events").all();
+        for (const s of sessionIds) {
+          const rows = db.prepare("SELECT rowid, seq FROM transcript_events WHERE session_id = ? ORDER BY seq, rowid").all(s.session_id);
+          let expectedSeq = 0;
+          let hasGap = false;
+          for (const r of rows) {
+            if (r.seq !== expectedSeq) { hasGap = true; break; }
+            expectedSeq++;
+          }
+          if (hasGap) {
+            let cur = 0;
+            for (const r of rows) {
+              db.prepare("UPDATE transcript_events SET seq = ? WHERE rowid = ?").run(cur, r.rowid);
+              cur++;
+            }
+          }
+        }
       } catch(e) {}
       // Clean diagnostic_events
       try {
@@ -536,6 +555,7 @@ export function purgeStaleDatabaseSessions() {
       const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       for (const t of tables) {
         const name = t.name;
+        if (name === 'transcript_events') continue;
         try {
           const cols = db.prepare(`PRAGMA table_info("${name}")`).all().map(c => c.name);
           for (const col of cols) {
@@ -716,6 +736,22 @@ export function applyZeroBranding() {
               code = code.replaceAll("Hi, I'm OpenClaw", "Hi, I'm Zero");
               changed = true;
             }
+            if (code.includes('M60 10C30 10 15 35 15 55c0 20 15 40 30 45v10h10v-10h10v10h10v-10c15-5 30-25 30-45 0-20-15-45-45-45Z')) {
+              code = code.replaceAll('M60 10C30 10 15 35 15 55c0 20 15 40 30 45v10h10v-10h10v10h10v-10c15-5 30-25 30-45 0-20-15-45-45-45Z', 'M60 20 A40 40 0 1 0 60 100 A40 40 0 1 0 60 20 Z');
+              changed = true;
+            }
+            if (code.includes('lobster-pet__svg')) {
+              code = code.replace(/<svg\s+class="lobster-pet__svg"[\s\S]*?<\/svg>/g, '<svg class="zero-badge-pet" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg>');
+              changed = true;
+            }
+            if (code.includes('data-theme-mascot="claw"')) {
+              code = code.replaceAll('data-theme-mascot="claw"', 'data-theme-mascot="zero"');
+              changed = true;
+            }
+            if (code.includes('drawCurrentFrame(')) {
+              code = code.replaceAll('drawCurrentFrame(e/1e3)', '/* zero */');
+              changed = true;
+            }
             if (file.startsWith('about-page-') && code.includes('J=[{href:')) {
               code = code.replace(/J=\[\{href:[^\]]+\]/, 'J=[]');
               changed = true;
@@ -734,6 +770,28 @@ export function applyZeroBranding() {
 
   // 4. Inject Zero Control UI scripts & CSS into all index.html targets
   injectZeroControlUiAssets();
+
+  // 4b. Overwrite all favicon and icon files with pure Zero SVG badge
+  const ZERO_SVG_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="zero-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#090d12"/>
+  <circle cx="16" cy="16" r="10" fill="none" stroke="url(#zero-grad)" stroke-width="3" stroke-linecap="round"/>
+  <text x="16" y="21" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-weight="900" font-size="14" fill="#10b981" text-anchor="middle">Z</text>
+</svg>`;
+
+  for (const dir of findControlUiDirs()) {
+    try {
+      const favSvg = path.join(dir, 'favicon.svg');
+      fs.writeFileSync(favSvg, ZERO_SVG_ICON, 'utf8');
+      const p1 = path.join(dir, '..', 'favicon.svg');
+      if (fs.existsSync(p1)) fs.writeFileSync(p1, ZERO_SVG_ICON, 'utf8');
+    } catch {}
+  }
 
   // 5. Runtime & Client Patches
   patchOpenclawRuntime();

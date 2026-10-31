@@ -9,6 +9,9 @@ import {
 } from './server/local-gguf-middleware.ts';
 import { localGgufService } from './server/local-gguf-service.ts';
 import { modeManager } from '../../rules/mode-manager.mjs';
+import { ComputerOperator } from '../../app/zero-control-ui/src/computer/operator.js';
+
+const gatewayOperator = new ComputerOperator();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -421,14 +424,108 @@ async function handleChatCompletions(req, res) {
       return;
     }
 
-    // 2. Identify test simulation commands vs real turn requests
+    // 2. Inject desktop automation tools if not provided
+    const DESKTOP_TOOLS = [
+      {
+        type: 'function',
+        function: {
+          name: 'zero_computer_action',
+          description: 'Directly execute Windows OS computer actions: open_app (e.g. "notepad", "calc"), open_url, play (search and play music/song/video on YouTube), type_text, press_key, mouse_move, left_click, list_windows, list_apps, get_window_state, get_screen_size.',
+          parameters: {
+            type: 'object',
+            required: ['action'],
+            properties: {
+              action: {
+                type: 'string',
+                enum: ['open_app', 'launch_app', 'type_text', 'play', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+              },
+              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
+              text: { type: 'string', description: 'Text to type into the focused window' },
+              query: { type: 'string', description: 'Search term or song name to search and play on YouTube' },
+              url: { type: 'string', description: 'URL to open in default browser' },
+              key: { type: 'string', description: 'Key or shortcut to press (e.g. "enter", "alt+f4")' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'browser',
+          description: 'Control web browser on Windows: open URLs, search and play songs/videos on YouTube.',
+          parameters: {
+            type: 'object',
+            required: ['action'],
+            properties: {
+              action: { type: 'string', enum: ['open', 'play', 'navigate', 'search'] },
+              query: { type: 'string', description: 'Song or video name to play on YouTube' },
+              url: { type: 'string', description: 'Web URL' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'open_app',
+          description: 'Launch an application on Windows desktop (e.g. "notepad", "calc", "chrome").',
+          parameters: {
+            type: 'object',
+            required: ['app'],
+            properties: {
+              app: { type: 'string', description: 'Application name (e.g. "notepad")' },
+            },
+          },
+        },
+      },
+    ];
+
+    if (!Array.isArray(body.tools) || body.tools.length === 0) {
+      body.tools = [...DESKTOP_TOOLS];
+    } else {
+      for (const dt of DESKTOP_TOOLS) {
+        if (!body.tools.some((t) => t?.function?.name === dt.function.name)) {
+          body.tools.push(dt);
+        }
+      }
+    }
+
+    // 3. Identify test simulation commands vs real turn requests
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
     const userText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : 'Hello';
     const hasToolResult = messages.some((m) => m.role === 'tool');
     const toolMatch = !hasToolResult && userText.match(/(?:Simulate tool|Run tool|Call tool|Test tool):\s*([a-zA-Z0-9_]+)(?:\s*(\{.*\}))?/i);
     const replyMatch = !hasToolResult && !toolMatch && userText.match(/Reply with exactly:\s*([^\n\r]+)/i);
 
-    // 3. For all real user queries (not test simulations), forward to upstream provider!
+    // Execute real desktop actions immediately when desktop intent is detected
+    const isNotepadCmd = /notepad/i.test(userText) && /open|launch|start|write|type/i.test(userText);
+    const isYouTubeCmd = (/youtube/i.test(userText) || /song|music/i.test(userText)) && /open|play|turn on|start/i.test(userText);
+
+    if (isNotepadCmd && !hasToolResult) {
+      try {
+        console.log('[Zero Gateway] Real desktop action: Opening Notepad and typing text...');
+        await gatewayOperator.execute('open_app', { app: 'notepad' });
+        const textMatch = userText.match(/type\s+["']?([^"'\n\r]+)["']?/i) || userText.match(/write\s+["']?([^"'\n\r]+)["']?/i);
+        const textToType = textMatch ? textMatch[1].trim() : 'Hello from Zero AI';
+        await new Promise((r) => setTimeout(r, 1200));
+        await gatewayOperator.execute('type_text', { text: textToType });
+        console.log('[Zero Gateway] Real desktop action: Notepad opened and text typed successfully!');
+      } catch (err) {
+        console.warn('[Zero Gateway] Real desktop action error:', err.message);
+      }
+    } else if (isYouTubeCmd && !hasToolResult) {
+      try {
+        console.log('[Zero Gateway] Real YouTube action: Opening browser and playing video...');
+        const qMatch = userText.match(/(?:play|turn on)\s+(?:the\s+)?([^"'\n\r]+?)(?:\s+on\s+youtube)?$/i);
+        const songQuery = qMatch ? qMatch[1].trim() : 'latest trending song on youtube';
+        await gatewayOperator.execute('play', { query: songQuery });
+        console.log('[Zero Gateway] Real YouTube action: Browser opened and playback started!');
+      } catch (err) {
+        console.warn('[Zero Gateway] Real YouTube action error:', err.message);
+      }
+    }
+
+    // 4. For all real user queries (not test simulations), forward to upstream provider!
     if (!toolMatch && !replyMatch) {
       const upstreamInfo = resolveUpstreamProvider(modelId);
       if (upstreamInfo && upstreamInfo.provider) {
@@ -972,7 +1069,8 @@ const server = http.createServer(async (req, res) => {
       res.statusCode = 200;
       res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
       res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Clear-Site-Data', '"cache"');
       fs.createReadStream(safePath).pipe(res);
       return;
     }

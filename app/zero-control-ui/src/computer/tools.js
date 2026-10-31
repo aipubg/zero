@@ -258,6 +258,37 @@ export function createBrowserTool({ toolName = "browser", operator } = {}) {
   };
 }
 
+export function createAppTool({ toolName = "open_app", operator } = {}) {
+  const op = operator || new ComputerOperator();
+  return {
+    name: toolName,
+    label: "Open Windows Application",
+    description: "Launch an application on Windows desktop (e.g. 'notepad', 'calc', 'chrome').",
+    parameters: {
+      type: "object",
+      properties: {
+        app: {
+          type: "string",
+          description: "Name or executable of the application (e.g. 'notepad').",
+        },
+      },
+    },
+    async execute(_toolCallId, params, signal) {
+      signal?.throwIfAborted?.();
+      const actualParams =
+        params && typeof params === "object" && params.args && typeof params.args === "object"
+          ? { ...params.args, ...params }
+          : params || {};
+      const app = String(actualParams.app || actualParams.name || "notepad");
+      const res = await op.execute("open_app", { app }, signal);
+      if (!res.ok) {
+        return toolResult(`Failed to launch application '${app}': ${res.message || res.error}`, res);
+      }
+      return toolResult(res.message || `Application '${app}' launched and brought to foreground successfully.`, res);
+    },
+  };
+}
+
 /**
  * Create all computer tools for registration.
  */
@@ -271,5 +302,6 @@ export function createAllComputerTools({ getPolicyState = null, logger = console
     createBrowserTool({ toolName: "open_browser", operator }),
     createBrowserTool({ toolName: "open_url", operator }),
     createBrowserTool({ toolName: "web_search", operator }),
+    createAppTool({ toolName: "open_app", operator }),
   ];
 }

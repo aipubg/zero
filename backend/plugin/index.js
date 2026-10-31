@@ -40,6 +40,7 @@
 import { readFileSync } from "node:fs";
 import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { modeManager } from "../../rules/mode-manager.mjs";
+import { createAllComputerTools } from "../../app/zero-control-ui/src/computer/tools.js";
 
 const PLUGIN_ID = "zero-policy";
 // The exact id passed to registerTrustedToolPolicy. The manifest must declare THIS string.
@@ -628,6 +629,25 @@ const zeroPolicyPlugin = definePluginEntry({
           mod.registerZeroUiRuntime(api, { policyState: state, initializeObservation: false });
         }).catch(() => {});
       } catch {}
+    }
+
+    // Register Desktop & Browser Automation Tools directly with OpenClaw
+    if (typeof api?.registerTool === "function") {
+      try {
+        const computerTools = createAllComputerTools({
+          getPolicyState: () => state,
+          logger: api?.logger,
+        });
+        for (const tool of computerTools) {
+          try {
+            api.registerTool(tool);
+          } catch (e) {
+            api?.logger?.warn?.(`[zero-policy] tool ${tool.name} registration error: ${e?.message}`);
+          }
+        }
+      } catch (err) {
+        api?.logger?.warn?.(`[zero-policy] createAllComputerTools failed: ${err?.message}`);
+      }
     }
 
     const redirects = registerLegacyChatRedirects(api);

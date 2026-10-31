@@ -6,6 +6,19 @@
   "contracts": {
     "trustedToolPolicies": [
       "zero-policy.computer-hold"
+    ],
+    "tools": [
+      "zero_computer_action",
+      "zero_screen_context",
+      "zero_computer",
+      "computer",
+      "browser",
+      "open_browser",
+      "open_url",
+      "open_app",
+      "web_search",
+      "zero_watch_workflow",
+      "zero_skill_learn"
     ]
   },
   "configSchema": {
