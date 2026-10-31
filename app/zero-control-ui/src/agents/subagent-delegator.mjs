@@ -137,7 +137,7 @@ export function resolveModelForAlias(alias, preferences = {}) {
  * Subagent Delegator for dispatching work to background team members
  */
 export class SubagentDelegator {
-  constructor({ gatewayUrl = "http://127.0.0.1:18790", preferences = {} } = {}) {
+  constructor({ gatewayUrl = "http://127.0.0.1:18789", preferences = {} } = {}) {
     this.gatewayUrl = gatewayUrl;
     this.preferences = preferences;
   }

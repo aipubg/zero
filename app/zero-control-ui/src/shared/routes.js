@@ -62,6 +62,8 @@ const UPSTREAM_EXTERNAL_PATHS = [
   "x.com/openclaw",
   "reddit.com/r/openclaw",
   "www.reddit.com/r/openclaw",
+  "tweakcn.com",
+  "www.tweakcn.com",
 ];
 
 /** Specialist agent ids that must never own a user-facing chat entry. */

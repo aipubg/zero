@@ -43,6 +43,11 @@ const UPSTREAM_CHROME_SELECTORS = [
   "openclaw-about-page",
   ".about-hero",
   ".settings-sidebar",
+  ".settings",
+  ".appearance-page",
+  "header",
+  "footer",
+  "nav",
 ];
 
 function inUpstreamChrome(anchor) {

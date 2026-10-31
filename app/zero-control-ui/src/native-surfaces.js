@@ -560,6 +560,7 @@ function installNativeSurfaces(host) {
       rebrandAboutEntry();
       rebrandChrome();
       syncChatControls();
+      cleanSkeletonOrStaleHistory();
       rebrandCustodianLinks();
       redirectStaleSessionRoute();
       purgeStaleSessions();
@@ -571,6 +572,21 @@ function installNativeSurfaces(host) {
       // Product chrome cleanup is best-effort; it must never break the host.
     } finally {
       isApplyingChanges = false;
+    }
+  };
+
+  const cleanSkeletonOrStaleHistory = () => {
+    for (const el of document.querySelectorAll(".chat-history-error, .chat-error, [data-chat-error]")) {
+      if (/timed out|failed to load history/i.test(el.textContent || "")) {
+        const retryBtn = el.querySelector("button");
+        if (retryBtn) retryBtn.click();
+      }
+    }
+    for (const sk of document.querySelectorAll(".chat-skeleton, .chat-loading-skeleton, .message-skeleton")) {
+      const parent = sk.closest(".chat-pane, .chat-messages");
+      if (parent && parent.querySelector(".chat-bubble, .message-bubble, openclaw-chat-message")) {
+        sk.remove();
+      }
     }
   };
 
@@ -612,12 +628,20 @@ function installNativeSurfaces(host) {
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         let node;
         while ((node = walker.nextNode())) {
-          if (node.nodeValue && /\bopenclaw\b/i.test(node.nodeValue)) {
-            node.nodeValue = node.nodeValue.replace(/\bopenclaw\b/gi, (m) => {
-              if (m === "openclaw") return "zero";
-              if (m === "OPENCLAW") return "ZERO";
-              return "Zero";
-            });
+          if (node.nodeValue) {
+            if (/System setup and care/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/System setup and care/gi, "System Settings & Diagnostics");
+            }
+            if (/openclaw configure/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/`?openclaw configure`?/gi, "in Zero Models settings");
+            }
+            if (/\bopenclaw\b/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/\bopenclaw\b/gi, (m) => {
+                if (m === "openclaw") return "zero";
+                if (m === "OPENCLAW") return "ZERO";
+                return "Zero";
+              });
+            }
           }
         }
       }
@@ -682,13 +706,19 @@ function installNativeSurfaces(host) {
 
   const removeExternalLearnMoreLinks = () => {
     for (const el of document.querySelectorAll(
-      "[href*='openclaw.ai'], [href*='docs.openclaw'], [href*='permission-modes'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
+      "[href*='openclaw.ai'], [href*='docs.openclaw'], [href*='permission-modes'], [href*='tweakcn.com'], a[href*='tweakcn'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
     )) {
+      if (el.tagName.toLowerCase() === "a") {
+        el.setAttribute("href", "javascript:void(0)");
+        el.removeAttribute("target");
+        el.style.pointerEvents = "none";
+      }
       el.remove();
     }
     for (const a of document.querySelectorAll("a, wa-dropdown-item")) {
       const txt = (a.textContent || "").trim();
-      if (/^OpenClaw Docs$/i.test(txt)) {
+      const href = a.getAttribute("href") || "";
+      if (/^OpenClaw Docs$/i.test(txt) || href.includes("tweakcn.com") || href.includes("openclaw.ai")) {
         a.remove();
       }
     }
@@ -697,22 +727,18 @@ function installNativeSurfaces(host) {
   const syncChatControls = () => {
     if (disposed) return;
     const cur = routePath(currentLocation()) || "";
-    const isChat =
-      cur.startsWith("/chat") ||
-      cur.startsWith("/session") ||
-      cur.startsWith("/conversations") ||
-      cur === "/" ||
-      !!document.querySelector(".chat-pane, .chat-shell, .chat-header, .chat-controls, [data-chat], textarea");
+    const isSettings = cur.startsWith("/settings") || cur === "/settings";
 
     let permContainer = document.getElementById("zero-permanent-top-actions");
-    if (!permContainer) {
+    if (!permContainer || !permContainer.isConnected) {
+      if (permContainer) permContainer.remove();
       permContainer = document.createElement("div");
       permContainer.id = "zero-permanent-top-actions";
-      permContainer.style.cssText = "position:fixed;top:10px;right:75px;z-index:9999;display:inline-flex;align-items:center;gap:8px;pointer-events:auto;user-select:none;font-family:inherit;";
+      permContainer.style.cssText = "position:fixed;top:10px;right:75px;z-index:99999;display:inline-flex;align-items:center;gap:8px;pointer-events:auto;user-select:none;font-family:inherit;";
       document.body.appendChild(permContainer);
     }
 
-    if (!isChat) {
+    if (isSettings) {
       permContainer.style.display = "none";
       return;
     }

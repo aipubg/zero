@@ -329,6 +329,14 @@ export function patchOpenclawRuntime() {
             code = code.replaceAll('openclaw.ai', 'zero.local');
             changed = true;
           }
+          if (code.includes('System setup and care')) {
+            code = code.replaceAll('System setup and care', 'System Settings & Diagnostics');
+            changed = true;
+          }
+          if (code.includes('openclaw configure')) {
+            code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+            changed = true;
+          }
           if (code.includes('Message OpenClaw…')) {
             code = code.replaceAll('Message OpenClaw…', 'Message Zero…');
             changed = true;
@@ -407,6 +415,14 @@ export function patchOpenclawRuntime() {
         try {
           let code = fs.readFileSync(fPath, 'utf8');
           let changed = false;
+          if (code.includes('System setup and care')) {
+            code = code.replaceAll('System setup and care', 'System Settings & Diagnostics');
+            changed = true;
+          }
+          if (code.includes('openclaw configure')) {
+            code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+            changed = true;
+          }
           if (code.includes('Message OpenClaw…')) {
             code = code.replaceAll('Message OpenClaw…', 'Message Zero…');
             changed = true;

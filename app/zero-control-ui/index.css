@@ -1038,8 +1038,47 @@ a[href*="github.com/openclaw"],
   margin-top: 2px;
 }
 
-.zero-modal__select {
-  cursor: pointer;
+.zero-modal__select,
+select.zero-modal__select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  background-color: var(--bg-elevated, #1c1917) !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15)) !important;
+  border-radius: 8px !important;
+  color: var(--text, #f5f5f4) !important;
+  padding: 8px 36px 8px 12px !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  color-scheme: dark !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='rgba(255,255,255,0.6)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.zero-modal__select:hover,
+.zero-modal__select:focus {
+  border-color: var(--accent, #e11d48) !important;
+  box-shadow: 0 0 0 1px var(--accent, #e11d48) !important;
+}
+
+.zero-modal__select option {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+  padding: 8px 12px !important;
+}
+
+.zero-modal__select option:checked,
+.zero-modal__select option:hover {
+  background-color: var(--accent, #e11d48) !important;
+  color: #ffffff !important;
 }
 
 .zero-modal__label-row {
