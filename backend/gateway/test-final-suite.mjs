@@ -12,7 +12,7 @@ assert.ok(fs.existsSync(gatewayDir), 'Backend gateway directory must exist');
 
 // 2. Test Sanitizer (System 1: Automatic Message & Payload Healer)
 console.log('Testing System 1: Message & Payload Healer...');
-const { sanitizeMessages } = await import(pathToFileURL('E:/zero/backend/gateway/sanitizer.ts').href);
+const { sanitizeMessages } = await import(pathToFileURL(path.resolve('backend/gateway/sanitizer.ts')).href);
 
 const messyMessages = [
   { role: 'user', content: '   ' }, // empty whitespace -> should be stripped
@@ -48,7 +48,7 @@ console.log('✔ System 1 Passed: Payload Healer guarantees zero 400 Bad Request
 
 // 3. Test GGUF Binary Validator (System 2: Binary-Level Corruption Guard)
 console.log('Testing System 2: Binary-Level GGUF Validator...');
-const { validateGgufBinary } = await import(pathToFileURL('E:/zero/backend/gateway/server/local-gguf-parser.ts').href);
+const { validateGgufBinary } = await import(pathToFileURL(path.resolve('backend/gateway/server/local-gguf-parser.ts')).href);
 
 // Create temporary bad files
 const tmpDir = path.join(os.tmpdir(), 'gguf-tests-' + Date.now());
@@ -91,7 +91,7 @@ try {
 
 // 4. Test JSON Grammar & Auto-Repair Output (System 6)
 console.log('Testing System 6: JSON Grammar & Auto-Repair...');
-const { ModularGatewayClient } = await import(pathToFileURL('E:/zero/backend/gateway/sdk.ts').href);
+const { ModularGatewayClient } = await import(pathToFileURL(path.resolve('backend/gateway/sdk.ts')).href);
 const client = new ModularGatewayClient();
 
 // Test case A: Markdown fence + think tags + trailing comma
@@ -128,7 +128,7 @@ console.log('✔ System 6 Passed: JSON auto-repair rescues fenced and truncated 
 
 // 5. Test Role Alias Resolution (System 7)
 console.log('Testing System 7: Role Alias Resolution...');
-const { resolveModelAlias } = await import(pathToFileURL('E:/zero/backend/gateway/registry.ts').href);
+const { resolveModelAlias } = await import(pathToFileURL(path.resolve('backend/gateway/registry.ts')).href);
 
 // Standard aliases should resolve or return defined string without crashing
 const resolvedCoder = resolveModelAlias('@coder');
@@ -146,7 +146,7 @@ console.log(`✔ System 7 Passed: Role Aliases resolved (@coder: ${resolvedCoder
 
 // 6. Test Config Export / Import (System 9)
 console.log('Testing System 9: Config Export / Import...');
-const { exportGatewayConfig, importGatewayConfig } = await import(pathToFileURL('E:/zero/backend/gateway/registry.ts').href);
+const { exportGatewayConfig, importGatewayConfig } = await import(pathToFileURL(path.resolve('backend/gateway/registry.ts')).href);
 const exported = exportGatewayConfig();
 assert.ok(typeof exported === 'string');
 const parsed = JSON.parse(exported);

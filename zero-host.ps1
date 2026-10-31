@@ -20,12 +20,6 @@ if (Test-Path $ConfigPath) {
   }
 }
 
-# Apply Zero branding if script exists
-$BrandingScript = Join-Path $ZeroRoot 'backend\scripts\apply-zero-branding.mjs'
-if (Test-Path $BrandingScript) {
-  node $BrandingScript
-}
-
 $env:OPENCLAW_STATE_DIR = Join-Path $ZeroRoot 'zero-system\state'
 $env:OPENCLAW_CONFIG_PATH = $ConfigPath
 $env:OPENCLAW_NO_AUTO_UPDATE = '1'
@@ -34,6 +28,6 @@ Remove-Item Env:\ZERO_GATEWAY_KEY -ErrorAction SilentlyContinue
 Remove-Item Env:\OPENCLAW_GATEWAY_TOKEN -ErrorAction SilentlyContinue
 
 Set-Location (Join-Path $ZeroRoot 'backend')
-Write-Host "[Zero Host] Launching Zero Host on port 18789 from $ZeroRoot..." -ForegroundColor Green
-$OpenClawCmd = Join-Path $ZeroRoot 'backend\node_modules\.bin\openclaw.cmd'
-& $OpenClawCmd gateway --port 18789
+Write-Host "[Zero Host] Launching Native Zero Host on port 18789 from $ZeroRoot..." -ForegroundColor Green
+$ZeroHostRunner = Join-Path $ZeroRoot 'backend\server\zero-host.mjs'
+node $ZeroHostRunner

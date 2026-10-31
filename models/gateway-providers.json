@@ -6,18 +6,6 @@
     "api": "openai-completions",
     "models": [
       {
-        "id": "nvidia/nemotron-3-super-120b-a12b",
-        "name": "nvidia/nemotron-3-super-120b-a12b",
-        "reasoning": false,
-        "image": false
-      },
-      {
-        "id": "nvidia/nemotron-3-ultra-550b-a55b",
-        "name": "nvidia/nemotron-3-ultra-550b-a55b",
-        "reasoning": false,
-        "image": false
-      },
-      {
         "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "name": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "reasoning": false,
@@ -26,6 +14,12 @@
       {
         "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
         "name": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+        "reasoning": false,
+        "image": true
+      },
+      {
+        "id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "name": "nvidia/nemotron-3-ultra-550b-a55b",
         "reasoning": false,
         "image": false
       }

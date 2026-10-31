@@ -1,6 +1,7 @@
 import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { OBSERVATION_CONFIG_SCHEMA } from "./observation/config.mjs";
 import { registerZeroUiRuntime } from "./runtime-core.mjs";
+import { handleZeroGatewayRequest } from "../../backend/gateway/server.mjs";
 import {
   POLICY_ID,
   CONFIG_JSON_SCHEMA as POLICY_JSON_SCHEMA,
@@ -63,6 +64,32 @@ export default definePluginEntry({
 
     // 2. Register Control UI & Observation Runtime
     const uiRuntime = registerZeroUiRuntime(api, { policyState });
+
+    // 3. Register Native Zero Gateway HTTP Endpoints via Plugin API
+    if (typeof api?.registerHttpRoute === "function") {
+      const routes = [
+        { path: "/health", match: "exact" },
+        { path: "/v1/chat/completions", match: "prefix" },
+        { path: "/v1/models", match: "prefix" },
+        { path: "/api/gateway", match: "prefix" },
+        { path: "/api/zero", match: "prefix" },
+      ];
+      for (const r of routes) {
+        try {
+          api.registerHttpRoute({
+            path: r.path,
+            match: r.match,
+            auth: "plugin",
+            handler: async (req, res) => {
+              const handled = await handleZeroGatewayRequest(req, res);
+              return Boolean(handled);
+            },
+          });
+        } catch (err) {
+          api?.logger?.warn?.(`[zero-unified-plugin] registerHttpRoute error for ${r.path}:`, err.message);
+        }
+      }
+    }
 
     api?.logger?.info?.(
       `[zero-unified-plugin] registered: policy=${POLICY_ID} method=${policyConfig.controlMethodName} ` +

@@ -91,9 +91,9 @@ function resolveUpstreamProvider(modelId) {
 }
 
 /**
- * Forward chat completion requests to upstream provider with streaming support
+ * Forward chat completion requests to upstream provider with streaming support and autonomous tool execution
  */
-async function forwardToUpstreamProvider(req, res, providerInfo, body) {
+async function forwardToUpstreamProvider(req, res, providerInfo, body, callerProvidedTools = false) {
   const { provider, cleanModelId } = providerInfo;
   let apiKey = provider.apiKey || (Array.isArray(provider.apiKeys) ? provider.apiKeys[0] : '');
 
@@ -111,48 +111,167 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body) {
     ...(provider.headers || {}),
   };
 
-  const payload = {
-    ...body,
-    model: cleanModelId,
-  };
-
   const abortController = new AbortController();
   req.on('close', () => {
     if (!res.writableEnded) abortController.abort();
   });
 
-  try {
-    const upstreamRes = await fetch(targetUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-      signal: abortController.signal,
-    });
-
-    if (body.stream === true) {
-      res.writeHead(upstreamRes.status, {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
-
-      if (upstreamRes.body) {
-        const reader = upstreamRes.body.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(value);
+  const fetchWithRetry = async (payloadObj, maxRetries = 2) => {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const r = await fetch(targetUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payloadObj),
+          signal: abortController.signal,
+        });
+        if ((r.status === 429 || r.status === 503) && attempt < maxRetries) {
+          const delay = 600 * Math.pow(2, attempt);
+          console.warn(`[Zero Model Fabric] Upstream status ${r.status}, retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
         }
+        return r;
+      } catch (err) {
+        if (attempt >= maxRetries) throw err;
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
-      res.end();
-      return true;
-    } else {
-      const data = await upstreamRes.json();
-      res.statusCode = upstreamRes.status;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(data));
-      return true;
     }
+  };
+
+  try {
+    // If the caller provided their own tools (e.g. OpenClaw agent runner),
+    // delegate tool lifecycle directly to the caller.
+    if (callerProvidedTools) {
+      const payload = {
+        ...body,
+        model: cleanModelId,
+      };
+
+      const upstreamRes = await fetchWithRetry(payload);
+
+      if (body.stream === true) {
+        res.writeHead(upstreamRes.status, {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        });
+
+        if (upstreamRes.body) {
+          const reader = upstreamRes.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value);
+          }
+        }
+        res.end();
+        return true;
+      } else {
+        const data = await upstreamRes.json();
+        res.statusCode = upstreamRes.status;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(data));
+        return true;
+      }
+    }
+
+    // Caller did NOT provide tools: Gateway acts as autonomous agent runtime!
+    // Execute model-driven tool calls in a loop until the model outputs final response.
+    let currentMessages = [...(body.messages || [])];
+    let turns = 0;
+    const maxTurns = 5;
+    let finalContent = '';
+    let mediaResult = null;
+    const executedActions = [];
+
+    while (turns < maxTurns) {
+      turns++;
+      const payload = {
+        ...body,
+        model: cleanModelId,
+        messages: currentMessages,
+        stream: false, // Turn-by-turn tool inspection is handled synchronously
+      };
+
+      const upstreamRes = await fetchWithRetry(payload);
+      if (!upstreamRes.ok) {
+        const errData = await upstreamRes.json().catch(() => ({}));
+        res.statusCode = upstreamRes.status;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(errData));
+        return true;
+      }
+
+      const data = await upstreamRes.json();
+      const choice = data.choices?.[0];
+      const toolCalls = choice?.message?.tool_calls;
+
+      if (!toolCalls || toolCalls.length === 0) {
+        finalContent = choice?.message?.content || '';
+        break;
+      }
+
+      // Record assistant message with tool_calls in message history
+      currentMessages.push(choice.message);
+
+      for (const call of toolCalls) {
+        const fnName = call.function?.name || '';
+        let args = {};
+        try {
+          args = typeof call.function?.arguments === 'string' ? JSON.parse(call.function.arguments) : (call.function?.arguments || {});
+        } catch {}
+
+        let action = args.action || fnName;
+        if (fnName === 'open_app' || fnName === 'launch_app') action = 'open_app';
+        if (fnName === 'browser' || fnName === 'open_browser') {
+          action = args.action || (args.query ? 'play' : 'open_url');
+        }
+
+        console.log(`[Zero Model Fabric] Model called tool '${fnName}' -> executing action '${action}' with args:`, args);
+        const execRes = await gatewayOperator.execute(action, args);
+        executedActions.push({ action, args, execRes });
+
+        if (action === 'play' && execRes.ok) {
+          mediaResult = execRes;
+        }
+
+        currentMessages.push({
+          role: 'tool',
+          tool_call_id: call.id,
+          content: JSON.stringify(execRes),
+        });
+      }
+    }
+
+    // If a media action was executed and media card is not in output, append zero-ui:media card
+    if (mediaResult && !finalContent.includes('zero-ui:media')) {
+      const mediaPayload = {
+        title: mediaResult.videoTitle || 'YouTube Music',
+        videoId: mediaResult.videoId || '',
+        url: mediaResult.url || (mediaResult.videoId ? `https://www.youtube.com/watch?v=${mediaResult.videoId}` : 'https://www.youtube.com'),
+        thumbnail: mediaResult.thumbnail || (mediaResult.videoId ? `https://i.ytimg.com/vi/${mediaResult.videoId}/hqdefault.jpg` : ''),
+        status: 'playing',
+        artist: 'YouTube Music',
+        details: `Active Window: ${mediaResult.window?.title || 'YouTube'}`,
+      };
+      finalContent = (finalContent ? `${finalContent}\n\n` : '') + `\`\`\`\`zero-ui:media\n${JSON.stringify(mediaPayload, null, 2)}\n\`\`\`\``;
+    }
+
+    // If desktop actions were executed and progress card is not in output, append zero-ui:progress card
+    if (executedActions.length > 0 && !finalContent.includes('zero-ui:progress')) {
+      const progressPayload = {
+        title: 'Zero Computer Execution',
+        step: executedActions.length,
+        totalSteps: executedActions.length,
+        status: 'completed',
+        details: executedActions[executedActions.length - 1]?.execRes?.window?.title || 'Desktop Action Completed',
+        logs: executedActions.map((a) => `✔ ${a.action} (${a.execRes.ok ? 'OK' : 'failed'})`),
+      };
+      finalContent = (finalContent ? `${finalContent}\n\n` : '') + `\`\`\`\`zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n\`\`\`\``;
+    }
+
+    return sendCompletionResponse(res, cleanModelId, finalContent, body.stream);
   } catch (err) {
     console.error(`[Zero Gateway] Upstream forward error for ${cleanModelId}:`, err.message);
     if (!res.writableEnded) {
@@ -567,7 +686,8 @@ async function handleChatCompletions(req, res) {
       },
     ];
 
-    if (!Array.isArray(body.tools) || body.tools.length === 0) {
+    const callerProvidedTools = Array.isArray(body.tools) && body.tools.length > 0;
+    if (!callerProvidedTools) {
       body.tools = [...DESKTOP_TOOLS];
     } else {
       for (const dt of DESKTOP_TOOLS) {
@@ -582,153 +702,12 @@ async function handleChatCompletions(req, res) {
     const userText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : 'Hello';
     const hasToolResult = messages.some((m) => m.role === 'tool');
     const toolMatch = !hasToolResult && userText.match(/(?:Simulate tool|Run tool|Call tool|Test tool):\s*([a-zA-Z0-9_]+)(?:\s*(\{.*\}))?/i);
-    const replyMatch = !hasToolResult && !toolMatch && userText.match(/Reply with exactly:\s*([^\n\r]+)/i);
 
-    // Execute real autonomous desktop actions immediately when intent is detected
-    const isYouTubeCmd = !hasToolResult && !toolMatch && !replyMatch && ((/youtube/i.test(userText) || /song|music|video/i.test(userText)) && /open|play|turn on|start/i.test(userText));
-    const isNotepadCmd = !hasToolResult && !toolMatch && !replyMatch && (/notepad/i.test(userText) && /open|launch|start|write|type/i.test(userText));
-    const isWindowInspectionCmd = !hasToolResult && !toolMatch && !replyMatch && (/check.*window|list.*window|what windows|open windows/i.test(userText) || (/focus.*browser/i.test(userText) && /scroll/i.test(userText)));
-    const isMediaControlFollowUp = !hasToolResult && !toolMatch && !replyMatch && (/^(?:pause|resume|next song|next video|volume up|mute)\b/i.test(userText) || (/band karke doosra|doosra chalao|suggestion wala|pause karo/i.test(userText)));
-
-    if (isYouTubeCmd) {
-      try {
-        console.log('[Zero Gateway] Real YouTube action: Opening browser and playing video...');
-        const qMatch = userText.match(/(?:play|turn on|start|open)\s+(?:the\s+)?([^"'\n\r]+?)(?:\s+on\s+youtube)?$/i);
-        const songQuery = qMatch ? qMatch[1].trim() : 'latest trending song on youtube';
-        const mediaResult = await gatewayOperator.execute('play', { query: songQuery });
-        console.log('[Zero Gateway] Real YouTube action: Browser opened, video player clicked & audio verified!');
-
-        const videoTitle = mediaResult.videoTitle || songQuery;
-        const videoId = mediaResult.videoId || '';
-        const clickCoords = mediaResult.clickCoordinates || { x: 720, y: 480 };
-        const winTitle = mediaResult.window?.title || 'YouTube - Google Chrome';
-
-        const mediaPayload = {
-          title: videoTitle,
-          videoId: videoId,
-          url: mediaResult.url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : 'https://www.youtube.com'),
-          thumbnail: mediaResult.thumbnail || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : ''),
-          status: 'playing',
-          artist: 'YouTube Music',
-          details: `Active Window: ${winTitle}`,
-        };
-
-        const progressPayload = {
-          title: 'OpenMausBot Computer Execution',
-          step: 4,
-          totalSteps: 4,
-          status: 'completed',
-          details: `Active Window: ${winTitle}`,
-          logs: [
-            `✔ Resolved top playable video: "${videoTitle}"`,
-            '✔ Launched browser & waited for YouTube render',
-            `✔ Physical mouse click on video player at (${clickCoords.x}, ${clickCoords.y})`,
-            '✔ Audio playback verified & unmuted',
-          ],
-        };
-
-        const responseText = `🎵 **Now Playing:** ${videoTitle}\n\nI have opened YouTube in your foreground browser, executed a real physical hardware mouse click on the video player to bypass autoplay restrictions, and verified unmuted audio playback.\n\n\`\`\`\`zero-ui:media\n${JSON.stringify(mediaPayload, null, 2)}\n\`\`\`\`\n\n\`\`\`\`zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n\`\`\`\``;
-
-        return sendCompletionResponse(res, modelId, responseText, stream);
-      } catch (err) {
-        console.warn('[Zero Gateway] Real YouTube action error:', err.message);
-      }
-    } else if (isNotepadCmd) {
-      try {
-        console.log('[Zero Gateway] Real desktop action: Opening Notepad and typing text...');
-        await gatewayOperator.execute('open_app', { app: 'notepad' });
-        const textMatch = userText.match(/type\s+["']?([^"'\n\r]+)["']?/i) || userText.match(/write\s+["']?([^"'\n\r]+)["']?/i);
-        const textToType = textMatch ? textMatch[1].trim() : 'Hello from Zero AI';
-        await new Promise((r) => setTimeout(r, 800));
-        await gatewayOperator.execute('type_text', { text: textToType });
-        const winState = await gatewayOperator.execute('get_window_state');
-        console.log('[Zero Gateway] Real desktop action: Notepad opened and text typed successfully!');
-
-        const progressPayload = {
-          title: 'OpenMausBot Computer Execution',
-          step: 4,
-          totalSteps: 4,
-          status: 'completed',
-          details: `Active Window: ${winState.window?.title || 'Notepad'}`,
-          logs: [
-            '✔ Launched process: notepad.exe',
-            `✔ Focused target window: ${winState.window?.title || 'Notepad'}`,
-            `✔ Typed text: "${textToType}" via physical SendInput`,
-            `✔ Verified process running (PID: ${winState.window?.pid || 18900})`,
-          ],
-        };
-
-        const responseText = `I have opened **Notepad** on your desktop, brought it to the foreground, and typed your text: *"${textToType}"*.\n\n\`\`\`\`zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n\`\`\`\``;
-
-        return sendCompletionResponse(res, modelId, responseText, stream);
-      } catch (err) {
-        console.warn('[Zero Gateway] Real desktop action error:', err.message);
-      }
-    } else if (isWindowInspectionCmd) {
-      try {
-        console.log('[Zero Gateway] Multi-step desktop action: Listing windows, focusing browser, scrolling...');
-        const winList = await gatewayOperator.execute('list_windows');
-        await gatewayOperator.execute('focus_window', { target: 'browser', command: 'restore' });
-        await new Promise((r) => setTimeout(r, 400));
-        await gatewayOperator.execute('scroll', { direction: 'down', amount: 3 });
-        const winState = await gatewayOperator.execute('get_window_state');
-
-        const windowCount = (winList.windows || []).length;
-        const progressPayload = {
-          title: 'OpenMausBot Multi-Step Agent Execution',
-          step: 3,
-          totalSteps: 3,
-          status: 'completed',
-          details: `Active Window: ${winState.window?.title || 'Browser'}`,
-          logs: [
-            `✔ Inspected open windows (${windowCount} active windows discovered)`,
-            `✔ Focused target browser window: "${winState.window?.title || 'Browser'}"`,
-            '✔ Executed 3-notch downward viewport scroll',
-          ],
-        };
-
-        const responseText = `I have inspected your desktop windows (${windowCount} open), brought your browser to the foreground, and scrolled down.\n\n\`\`\`\`zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n\`\`\`\``;
-
-        return sendCompletionResponse(res, modelId, responseText, stream);
-      } catch (err) {
-        console.warn('[Zero Gateway] Window inspection action error:', err.message);
-      }
-    } else if (isMediaControlFollowUp) {
-      try {
-        console.log('[Zero Gateway] Real media control action...');
-        let cmd = 'play_pause';
-        if (/next|doosra|suggestion/i.test(userText)) cmd = 'next';
-        else if (/pause|stop|band/i.test(userText)) cmd = 'pause';
-        else if (/volume|unmute/i.test(userText)) cmd = 'volume_up';
-
-        const ctrlRes = await gatewayOperator.execute('media_control', { command: cmd });
-        const winTitle = ctrlRes.window?.title || 'YouTube';
-
-        const progressPayload = {
-          title: 'OpenMausBot Media Control',
-          step: 2,
-          totalSteps: 2,
-          status: 'completed',
-          details: `Active Window: ${winTitle}`,
-          logs: [
-            `✔ Dispatched media command: ${cmd}`,
-            `✔ Execution confirmed in "${winTitle}"`,
-          ],
-        };
-
-        const responseText = `Action **${cmd}** executed successfully on YouTube.\n\n\`\`\`\`zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n\`\`\`\``;
-
-        return sendCompletionResponse(res, modelId, responseText, stream);
-      } catch (err) {
-        console.warn('[Zero Gateway] Media control error:', err.message);
-      }
-    }
-
-    // 4. For all real user queries (not test simulations), forward to upstream provider!
-    if (!toolMatch && !replyMatch) {
+    // 4. Forward real user requests to upstream Zero Model Fabric with real tool execution
+    if (!toolMatch) {
       const upstreamInfo = resolveUpstreamProvider(modelId);
       if (upstreamInfo && upstreamInfo.provider) {
-        const handled = await forwardToUpstreamProvider(req, res, upstreamInfo, body);
+        const handled = await forwardToUpstreamProvider(req, res, upstreamInfo, body, callerProvidedTools);
         if (handled) return;
       }
     }
