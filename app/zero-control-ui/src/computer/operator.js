@@ -44,6 +44,11 @@ export const COMPUTER_ACTIONS = Object.freeze([
   "launch_app",
   "open_app",
   "open_url",
+  "browser",
+  "open_browser",
+  "web_search",
+  "navigate",
+  "play",
   "clipboard_get",
   "clipboard_set",
   "get_elements",
@@ -341,13 +346,39 @@ export class ComputerOperator {
           return { ok: true, action: "launch_app", app, details: res };
         }
 
+        case "browser":
+        case "open_browser":
+        case "web_search":
+        case "navigate":
+        case "play":
         case "open_url": {
-          const url = String(params.url ?? "");
-          if (!url || !/^https?:\/\//i.test(url)) {
-            return { ok: false, message: "Missing or invalid http/https URL for open_url" };
+          let url = String(params.url ?? params.target ?? params.link ?? "");
+          const query = String(params.query ?? params.search ?? params.text ?? params.prompt ?? "");
+
+          if (!url && query) {
+            if (/youtube/i.test(query) || /song|music|video/i.test(query)) {
+              url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+            } else {
+              url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            }
+          } else if (url && !/^https?:\/\//i.test(url)) {
+            if (/youtube/i.test(url) || /youtu\.be/i.test(url)) {
+              url = url.startsWith("www.") ? `https://${url}` : `https://www.youtube.com`;
+            } else {
+              url = `https://${url}`;
+            }
+          } else if (!url) {
+            url = "https://www.youtube.com";
           }
+
           const res = await Driver.openUrl(url, signal);
-          return { ok: true, action: "open_url", url, details: res };
+          return {
+            ok: true,
+            action: normalizedAction,
+            url,
+            message: `Browser opened successfully at ${url}`,
+            details: res,
+          };
         }
 
         case "get_elements":

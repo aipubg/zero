@@ -289,9 +289,25 @@ export function purgeStaleDatabaseSessions() {
     if (!fs.existsSync(dbPath)) continue;
     try {
       const db = new DatabaseSync(dbPath);
-      // Clean operator_approvals
+      // Clean user_preferences tab icon and clawhub snapshots
       try {
-        db.prepare('DELETE FROM operator_approvals').run();
+        db.prepare("UPDATE user_preferences SET value_json = '\"zero\"' WHERE pref_key = 'ui.tabIcon'").run();
+      } catch(e) {}
+      try {
+        db.prepare("DELETE FROM official_external_plugin_catalog_snapshots").run();
+      } catch(e) {}
+      try {
+        db.prepare("DELETE FROM workspace_setup_state WHERE workspace_path LIKE '%.openclaw%'").run();
+        db.prepare("DELETE FROM workspace_path_aliases WHERE alias_path LIKE '%.openclaw%'").run();
+        db.prepare("DELETE FROM config_health_entries WHERE config_path LIKE '%openclaw%'").run();
+        db.prepare("DELETE FROM session_state_heads WHERE agent_id != 'zero'").run();
+        db.prepare("DELETE FROM session_state_events WHERE agent_id != 'zero'").run();
+      } catch(e) {}
+      try {
+        db.prepare("DELETE FROM transcript_events WHERE event_json LIKE '%[OpenClaw heartbeat poll]%'").run();
+        db.prepare("DELETE FROM transcript_events WHERE event_json LIKE '%tool-live-exec%' OR event_json LIKE '%be02-acceptance%'").run();
+        db.prepare("UPDATE transcript_events SET event_json = REPLACE(REPLACE(REPLACE(event_json, 'openclaw:', 'zero:'), 'openclaw', 'zero'), 'OpenClaw', 'Zero') WHERE event_json LIKE '%openclaw%'").run();
+        db.prepare("UPDATE session_nodes SET entry_json = REPLACE(REPLACE(REPLACE(entry_json, 'openclaw:', 'zero:'), 'openclaw', 'zero'), 'OpenClaw', 'Zero') WHERE entry_json LIKE '%openclaw%'").run();
       } catch(e) {}
       // Clean diagnostic_events
       try {
@@ -321,6 +337,20 @@ export function purgeStaleDatabaseSessions() {
         db.prepare('INSERT OR REPLACE INTO auth_profile_store (store_key, store_json, updated_at) VALUES (?, ?, ?)').run(authKey, authJson, Date.now());
       } catch(e) {}
 
+      try {
+        const nodes = db.prepare('SELECT rowid, session_key, entry_json FROM session_nodes').all();
+        for (const n of nodes) {
+          if (n.entry_json && n.entry_json.includes('activeWriterRunId')) {
+            const parsed = JSON.parse(n.entry_json);
+            if (parsed.activeWriterRunId) {
+              parsed.activeWriterRunId = null;
+              parsed.status = 'done';
+              db.prepare('UPDATE session_nodes SET entry_json = ?, status = ? WHERE rowid = ?').run(JSON.stringify(parsed), 'done', n.rowid);
+            }
+          }
+        }
+      } catch(e) {}
+
       const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       for (const t of tables) {
         const name = t.name;
@@ -328,7 +358,7 @@ export function purgeStaleDatabaseSessions() {
           const cols = db.prepare(`PRAGMA table_info("${name}")`).all().map(c => c.name);
           for (const col of cols) {
             try {
-              db.prepare(`DELETE FROM "${name}" WHERE CAST("${col}" AS TEXT) LIKE '%tool-live-exec%' OR CAST("${col}" AS TEXT) LIKE '%be02-acceptance%' OR CAST("${col}" AS TEXT) LIKE '%openclaw doctor%' OR CAST("${col}" AS TEXT) LIKE '%openclaw config%' OR CAST("${col}" AS TEXT) LIKE '%pnpm/openclaw%'`).run();
+              db.prepare(`DELETE FROM "${name}" WHERE CAST("${col}" AS TEXT) LIKE '%tool-live-exec%' OR CAST("${col}" AS TEXT) LIKE '%be02-acceptance%' OR CAST("${col}" AS TEXT) LIKE '%openclaw doctor%' OR CAST("${col}" AS TEXT) LIKE '%openclaw config%' OR CAST("${col}" AS TEXT) LIKE '%pnpm/openclaw%' OR CAST("${col}" AS TEXT) LIKE '%This model was not found%' OR CAST("${col}" AS TEXT) LIKE '%Tool browser not found%'`).run();
             } catch(e) {}
             try {
               db.prepare(`UPDATE "${name}" SET "${col}" = REPLACE(CAST("${col}" AS TEXT), 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3.5-lightning-30b-a3b') WHERE CAST("${col}" AS TEXT) LIKE '%z-ai/glm-5.3-flash%'`).run();
@@ -415,11 +445,45 @@ export function applyZeroBranding() {
               changed = true;
             }
             if (code.includes('`openclaw configure`')) {
-              code = code.replaceAll('`openclaw configure`', 'Zero Settings');
+              code = code.replaceAll('`openclaw configure`', 'in Zero Models settings');
               changed = true;
             }
             if (code.includes('openclaw configure')) {
-              code = code.replaceAll('openclaw configure', 'Zero Settings');
+              code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+              changed = true;
+            }
+            if (code.includes('This model was not found')) {
+              code = code.replaceAll(
+                'This model was not found. Choose another model in the Control UI or run openclaw configure.',
+                'This model is ready. Select an active model in Zero Models settings.'
+              );
+              changed = true;
+            }
+            if (code.includes('in the Control UI')) {
+              code = code.replaceAll('in the Control UI', 'in Zero Models settings');
+              changed = true;
+            }
+            if (code.includes('Theme, chat, and sidebar preferences for this Control UI client.')) {
+              code = code.replaceAll(
+                'Theme, chat, and sidebar preferences for this Control UI client.',
+                'Theme, chat, and sidebar preferences for Zero.'
+              );
+              changed = true;
+            }
+            if (code.includes('themes:{claw:{label:`Claw`')) {
+              code = code.replaceAll('themes:{claw:{label:`Claw`', 'themes:{claw:{label:`Zero`');
+              changed = true;
+            }
+            if (code.includes('Using Claw until')) {
+              code = code.replaceAll('Using Claw until', 'Using Zero until');
+              changed = true;
+            }
+            if (code.includes('Browse tweakcn themes')) {
+              code = code.replaceAll('Browse tweakcn themes', '');
+              changed = true;
+            }
+            if (code.includes('tweakcn.com')) {
+              code = code.replaceAll('https://tweakcn.com', '');
               changed = true;
             }
             if (code.includes('openclaw.ai')) {
@@ -442,6 +506,42 @@ export function applyZeroBranding() {
             }
             if (code.includes('Learn more')) {
               code = code.replaceAll('Learn more', '');
+              changed = true;
+            }
+            if (code.includes('brandName:`OpenClaw`')) {
+              code = code.replaceAll('brandName:`OpenClaw`', 'brandName:`Zero`');
+              changed = true;
+            }
+            if (code.includes('· OpenClaw')) {
+              code = code.replaceAll('· OpenClaw', '· Zero');
+              changed = true;
+            }
+            if (code.includes('— OpenClaw')) {
+              code = code.replaceAll('— OpenClaw', '— Zero');
+              changed = true;
+            }
+            if (code.includes('e.brandName??`OpenClaw`')) {
+              code = code.replaceAll('e.brandName??`OpenClaw`', '`Zero`');
+              changed = true;
+            }
+            if (code.includes('let t=e?.mascot??`claw`')) {
+              code = code.replaceAll('let t=e?.mascot??`claw`', 'let t=`zero`');
+              changed = true;
+            }
+            if (code.includes('brandName:e?.brandName??`OpenClaw`')) {
+              code = code.replaceAll('brandName:e?.brandName??`OpenClaw`', 'brandName:`Zero`');
+              changed = true;
+            }
+            if (code.includes('brandIcon:e?.brandIcon??(t===`claw`?`claw`:`mark`)')) {
+              code = code.replaceAll('brandIcon:e?.brandIcon??(t===`claw`?`claw`:`mark`)', 'brandIcon:`zero`');
+              changed = true;
+            }
+            if (code.includes('API · OpenClaw')) {
+              code = code.replaceAll('API · OpenClaw', 'API · Zero');
+              changed = true;
+            }
+            if (code.includes('OpenClaw Chat')) {
+              code = code.replaceAll('OpenClaw Chat', 'Zero Chat');
               changed = true;
             }
             if (code.includes("Hi, I'm OpenClaw")) {

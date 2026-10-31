@@ -31,19 +31,19 @@
         "models": [
           {
             "id": "nvidia/nemotron-3-super-120b-a12b",
-            "name": "3-super-120b-a12b"
+            "name": "nvidia/nemotron-3-super-120b-a12b"
           },
           {
             "id": "nvidia/nemotron-3-ultra-550b-a55b",
-            "name": "3-ultra-550b-a55b"
+            "name": "nvidia/nemotron-3-ultra-550b-a55b"
           },
           {
             "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-            "name": "3.5-lightning-30b-a3b"
+            "name": "nvidia/nemotron-3.5-lightning-30b-a3b"
           },
           {
             "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-            "name": "3.5-super-vl-120b-a12b"
+            "name": "nvidia/nemotron-3.5-super-vl-120b-a12b"
           }
         ],
         "apiKey": "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"
@@ -57,7 +57,7 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+        "primary": "nvidia/nemotron-3.5-super-vl-120b-a12b",
         "fallbacks": [
           "nv/nvidia/nemotron-3-ultra-550b-a55b"
         ]
@@ -81,7 +81,11 @@
             "computer",
             "zero_computer",
             "zero_computer_action",
-            "zero_screen_context"
+            "zero_screen_context",
+            "browser",
+            "open_browser",
+            "open_url",
+            "web_search"
           ],
           "exec": {
             "mode": "ask"
@@ -92,7 +96,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+          "primary": "nvidia/nemotron-3.5-super-vl-120b-a12b",
           "fallbacks": [
             "nv/nvidia/nemotron-3-ultra-550b-a55b"
           ]

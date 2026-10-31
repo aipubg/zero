@@ -538,9 +538,9 @@
 }
 
 .zero-providers-badge--active {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
-  border-color: rgba(34, 197, 94, 0.4);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .zero-provider-card__details {
@@ -1309,8 +1309,8 @@ a[href*="github.com/openclaw"],
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 50%, transparent);
   flex-shrink: 0;
 }
 
@@ -1325,7 +1325,7 @@ a[href*="github.com/openclaw"],
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #10b981;
+  color: var(--accent);
 }
 
 .zero-models-header__title {
@@ -1365,14 +1365,14 @@ a[href*="github.com/openclaw"],
 }
 
 .zero-models-btn--add-provider {
-  border: 1px solid #10b981 !important;
-  color: #10b981 !important;
-  background: rgba(16, 185, 129, 0.08) !important;
+  border: 1px solid var(--accent) !important;
+  color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
 }
 
 .zero-models-btn--add-provider:hover {
-  background: rgba(16, 185, 129, 0.16) !important;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+  background: color-mix(in srgb, var(--accent) 22%, transparent) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .zero-models-btn--import-gguf,
@@ -1389,16 +1389,16 @@ a[href*="github.com/openclaw"],
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Section Cards */
+/* Section Cards - Compact */
 .zero-models-card {
   background: var(--surface, rgba(255, 255, 255, 0.03));
   border: 1px solid var(--border, #343946);
   border-radius: 12px;
-  padding: 24px 28px;
+  padding: 14px 18px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .zero-models-card__head {
@@ -1444,22 +1444,32 @@ a[href*="github.com/openclaw"],
 
 .zero-selector-field__select {
   width: 100%;
-  padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--border, #343946);
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 13.5px;
+  padding: 7px 12px;
+  background: var(--bg-elevated, #18181b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  color: var(--text, #f4f4f5);
+  font-size: 12.5px;
   font-family: inherit;
   outline: none;
   cursor: pointer;
+  color-scheme: dark;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
 
+.zero-selector-field__select option,
+.zero-agent-assign-select option,
+select option {
+  color-scheme: dark;
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+  padding: 8px 12px;
+}
+
 .zero-selector-field__select:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .zero-defaults-actions {
@@ -1470,31 +1480,31 @@ a[href*="github.com/openclaw"],
 }
 
 .zero-btn-save-defaults {
-  border: 1px solid #ef4444 !important;
-  color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1px solid var(--accent) !important;
+  color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
   font-weight: 600;
-  font-size: 13px;
-  padding: 9px 20px;
+  font-size: 12.5px;
+  padding: 7px 16px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .zero-btn-save-defaults:hover {
-  background: rgba(239, 68, 68, 0.16) !important;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+  background: color-mix(in srgb, var(--accent) 20%, transparent) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
-/* Agent Model Bindings Box */
+/* Agent Model Bindings Box - Compact */
 .zero-agent-binding-box {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--border, #343946);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .zero-agent-binding-head {
@@ -1507,15 +1517,15 @@ a[href*="github.com/openclaw"],
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 700;
   color: var(--text-primary, #ffffff);
 }
 
 .zero-agent-binding-badge {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  border: 1px solid #10b981;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 4px;
   padding: 2px 8px;
   font-size: 10.5px;
@@ -1528,11 +1538,11 @@ a[href*="github.com/openclaw"],
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 12.5px;
+  padding: 6px 10px;
+  font-size: 11.5px;
   color: var(--text-secondary, #a1a7b5);
   display: flex;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -1554,45 +1564,46 @@ a[href*="github.com/openclaw"],
 .zero-agent-assign-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .zero-agent-assign-select {
   flex: 1;
-  min-width: 240px;
-  padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--border, #343946);
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 13.5px;
+  min-width: 220px;
+  padding: 7px 12px;
+  background: var(--bg-elevated, #18181b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  color: var(--text, #f4f4f5);
+  font-size: 12.5px;
   outline: none;
   cursor: pointer;
+  color-scheme: dark;
   box-sizing: border-box;
 }
 
 .zero-agent-assign-select:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .zero-btn-assign-agent {
-  padding: 10px 20px;
-  background: #10b981;
-  color: #0b101b;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: var(--accent-foreground, #ffffff);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12.5px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
 .zero-btn-assign-agent:hover {
-  background: #059669;
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+  background: color-mix(in srgb, var(--accent) 85%, black);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .zero-agent-override-row {
@@ -1603,9 +1614,9 @@ a[href*="github.com/openclaw"],
 }
 
 .zero-agent-override-checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: #10b981;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -1825,12 +1836,12 @@ a[href*="github.com/openclaw"],
   --text-muted: var(--muted, #6b7280);
   --border-subtle: var(--border, #343946);
   --border-strong: var(--border-strong, #4b5563);
-  --accent-primary: var(--accent, #10b981);
-  --accent-hover: var(--accent-hover, #059669);
+  --accent-primary: var(--accent);
+  --accent-hover: color-mix(in srgb, var(--accent) 85%, black);
   scroll-behavior: smooth;
 }
 
-.zero-about__mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: #fff; background: linear-gradient(135deg, var(--accent, #10b981), #059669); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25); font-size: 22px; font-weight: 800; line-height: 1; }
+.zero-about__mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: #fff; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 80%, black)); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent); font-size: 22px; font-weight: 800; line-height: 1; }
 .zero-about__brand-copy { display: flex; flex-direction: column; gap: 2px; }
 .zero-about__brand-name { font-size: 16px; font-weight: 700; letter-spacing: .01em; }
 .zero-about__brand-tag { color: var(--text-tertiary, #858b99); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
@@ -1963,3 +1974,24 @@ a[href*="github.com/openclaw"],
 }
 .zero-about__action:hover { border-color: var(--accent, #ff5c5c); }
 .zero-about__action:focus-visible { outline: 2px solid var(--accent, #ff5c5c); outline-offset: 2px; }
+
+/* Hide unused settings sidebar items */
+.settings-sidebar a[href*="custodian"],
+.settings-sidebar a[href*="cloud-workers"],
+.settings-sidebar a[href*="channels"],
+.settings-sidebar a[href*="communications"],
+[data-sidebar-entry*="custodian"],
+[data-sidebar-entry*="cloud-workers"],
+[data-sidebar-entry*="channels"],
+[data-sidebar-entry*="communications"] {
+  display: none !important;
+}
+
+/* Hide tweakcn theme import and external browse links */
+[data-custom-theme-import-input],
+.settings-theme-card--custom,
+a[href*="tweakcn.com"],
+.custom-theme-import,
+[class*="custom-theme-import"] {
+  display: none !important;
+}

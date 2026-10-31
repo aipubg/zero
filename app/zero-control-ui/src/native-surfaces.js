@@ -543,6 +543,7 @@ function installNativeSurfaces(host) {
       rebrandChrome();
       syncChatControls();
       rebrandCustodianLinks();
+      cleanSettingsSidebar();
       redirectCustodianRoute();
       redirectStaleSessionRoute();
       purgeStaleSessions();
@@ -606,6 +607,36 @@ function installNativeSurfaces(host) {
     }
   };
 
+  const cleanSettingsSidebar = () => {
+    // Hide/remove Ask Zero (custodian duplicate), Cloud workers, Channels, Communications
+    const itemsToRemove = [
+      "a[href*='custodian']",
+      "a[href*='cloud-workers']",
+      "a[href*='channels']",
+      "a[href*='communications']",
+      "[data-sidebar-entry*='custodian']",
+      "[data-sidebar-entry*='cloud-workers']",
+      "[data-sidebar-entry*='channels']",
+      "[data-sidebar-entry*='communications']"
+    ];
+    for (const sel of itemsToRemove) {
+      for (const el of document.querySelectorAll(sel)) {
+        el.closest("li, .settings-sidebar__item, [class*='item']")?.remove() || el.remove();
+      }
+    }
+    for (const el of document.querySelectorAll(".settings-sidebar a, .settings-sidebar button, nav a")) {
+      const txt = (el.textContent || "").trim().toLowerCase();
+      if (
+        txt === "ask zero" ||
+        txt.includes("cloud worker") ||
+        txt === "channels" ||
+        txt === "communications"
+      ) {
+        el.closest("li, .settings-sidebar__item, [class*='item']")?.remove() || el.remove();
+      }
+    }
+  };
+
   const removeExternalLearnMoreLinks = () => {
     for (const a of document.querySelectorAll("a[href*='openclaw.ai'], a[href*='docs.openclaw'], a.callout__link, a.help-link")) {
       a.remove();
@@ -620,19 +651,32 @@ function installNativeSurfaces(host) {
 
   const syncChatControls = () => {
     if (disposed) return;
-    const isChat = routePath(currentLocation()).startsWith("/chat");
+    const cur = routePath(currentLocation()) || "";
+    const isChat =
+      cur.startsWith("/chat") ||
+      cur.startsWith("/session") ||
+      cur.startsWith("/conversations") ||
+      cur === "/" ||
+      !!document.querySelector(".chat-pane, .chat-shell, .chat-header, .chat-controls, [data-chat], textarea");
+
     if (!isChat) {
       document.querySelector(".zero-chat-control-pill")?.remove();
       return;
     }
 
-    const existingBtn = document.querySelector(".zero-chat-control-pill");
     const container = document.querySelector(
       ".chat-pane__session-trail, .chat-pane__crumbs, .chat-pane__header, .chat-header, .topbar-actions, .chat-header__actions, .topbar-shell"
     );
-    if (!container || existingBtn) return;
+    if (!container) return;
 
-    const pill = document.createElement("div");
+    let pill = document.querySelector(".zero-chat-control-pill");
+    if (pill) {
+      if (container.contains(pill)) return;
+      container.appendChild(pill);
+      return;
+    }
+
+    pill = document.createElement("div");
     pill.className = "zero-chat-control-pill";
     pill.style.cssText = "display:inline-flex;align-items:center;gap:8px;margin-left:12px;font-size:11px;font-weight:600;user-select:none;";
 

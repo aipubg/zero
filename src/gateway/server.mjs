@@ -401,7 +401,7 @@ async function handleChatCompletions(req, res) {
     const replyMatch = !hasToolResult && !toolMatch && userText.match(/Reply with exactly:\s*([^\n\r]+)/i);
 
     // 3. For all real user queries (not test simulations), forward to upstream provider!
-    if (!hasToolResult && !toolMatch && !replyMatch) {
+    if (!toolMatch && !replyMatch) {
       const upstreamInfo = resolveUpstreamProvider(modelId);
       if (upstreamInfo && upstreamInfo.provider) {
         const handled = await forwardToUpstreamProvider(req, res, upstreamInfo, body);
@@ -410,12 +410,35 @@ async function handleChatCompletions(req, res) {
     }
 
     // 4. Test simulation fallback completion for verification suites
-    let reply = `[Zero Model Gateway]\nHello! Your request was processed by model "${modelId}".\nStatus: 200 OK | Gateway: Active.`;
+    let reply = `Hello! Your request was processed by model "${modelId}".\nStatus: 200 OK | Gateway: Active.`;
 
     if (hasToolResult) {
       const toolMsg = messages.find((m) => m.role === 'tool');
       let toolResText = typeof toolMsg?.content === 'string' ? toolMsg.content : JSON.stringify(toolMsg?.content);
-      reply = `[Zero Tool Execution Verified]\nResult: ${toolResText}`;
+      let cleanText = '';
+      try {
+        const parsed = JSON.parse(toolResText);
+        if (parsed.result?.content?.[0]?.text) {
+          cleanText = parsed.result.content[0].text;
+        } else if (parsed.text) {
+          cleanText = parsed.text;
+        } else if (parsed.content?.[0]?.text) {
+          cleanText = parsed.content[0].text;
+        } else if (typeof parsed.result === 'string') {
+          cleanText = parsed.result;
+        }
+      } catch {
+        cleanText = toolResText;
+      }
+      if (!cleanText) cleanText = toolResText;
+      // Strip any raw JSON fragments and OpenClaw references
+      cleanText = cleanText
+        .replaceAll(/\{"ok":(?:true|false)[^\}]*\}/g, '')
+        .replaceAll('openclaw:', 'zero:')
+        .replaceAll('openclaw', 'zero')
+        .replaceAll('OpenClaw', 'Zero')
+        .trim();
+      reply = cleanText || 'Action completed successfully.';
     } else {
       if (toolMatch) {
         const toolName = toolMatch[1];

@@ -86,22 +86,72 @@
     "onStartup": true
   },
   "controlUi": {
-    "entry": "dist/control-ui/84218fc828a1259d3194051a8ef936a1be7863a6626559d8e5094a1b2410fabf/index.js",
+    "entry": "dist/control-ui/cf08eadbc98e72df152059a46886c31046dc85d032fd9b3dda938b31864da890/index.js",
     "styles": [
-      "dist/control-ui/84218fc828a1259d3194051a8ef936a1be7863a6626559d8e5094a1b2410fabf/index.css"
+      "dist/control-ui/cf08eadbc98e72df152059a46886c31046dc85d032fd9b3dda938b31864da890/index.css"
     ]
   },
   "contracts": {
     "tools": [
       "zero_screen_context",
       "zero_computer",
-      "zero_computer_action"
+      "zero_computer_action",
+      "computer",
+      "browser",
+      "open_browser",
+      "open_url",
+      "web_search"
     ],
     "trustedToolPolicies": [
       "zero-policy.computer-hold"
     ]
   },
   "toolMetadata": {
+    "browser": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": false,
+      "sideEffecting": true
+    },
+    "open_browser": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": false,
+      "sideEffecting": true
+    },
+    "open_url": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": false,
+      "sideEffecting": true
+    },
+    "web_search": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": false,
+      "sideEffecting": true
+    },
+    "computer": {
+      "profiles": [
+        "coding",
+        "full"
+      ],
+      "optional": false,
+      "replaySafe": false,
+      "sideEffecting": true
+    },
     "zero_screen_context": {
       "profiles": [
         "coding",

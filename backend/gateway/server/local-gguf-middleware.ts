@@ -293,6 +293,10 @@ export function createGatewayConfigMiddleware() {
                       parsed.contextBudgetStatus.model = safeFallbackModel;
                       nodeChanged = true;
                     }
+                    if (parsed.activeWriterRunId && (parsed.status === 'done' || !parsed.status)) {
+                      parsed.activeWriterRunId = null;
+                      nodeChanged = true;
+                    }
                     if (nodeChanged) {
                       db.prepare("UPDATE session_nodes SET entry_json = ? WHERE rowid = ?").run(JSON.stringify(parsed), n.rowid);
                     }

@@ -26,24 +26,24 @@
     "mode": "replace",
     "providers": {
       "nv": {
-        "baseUrl": "https://integrate.api.nvidia.com/v1",
+        "baseUrl": "http://127.0.0.1:18790/v1",
         "api": "openai-completions",
         "models": [
           {
-            "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-            "name": "3-super-120b-a12b"
+            "id": "nvidia/nemotron-3-super-120b-a12b",
+            "name": "nvidia/nemotron-3-super-120b-a12b"
           },
           {
             "id": "nvidia/nemotron-3-ultra-550b-a55b",
-            "name": "3-ultra-550b-a55b"
+            "name": "nvidia/nemotron-3-ultra-550b-a55b"
           },
           {
             "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-            "name": "3.5-lightning-30b-a3b"
+            "name": "nvidia/nemotron-3.5-lightning-30b-a3b"
           },
           {
             "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-            "name": "3.5-super-vl-120b-a12b"
+            "name": "nvidia/nemotron-3.5-super-vl-120b-a12b"
           }
         ],
         "apiKey": "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"
@@ -57,7 +57,7 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+        "primary": "nvidia/nemotron-3.5-super-vl-120b-a12b",
         "fallbacks": []
       },
       "utilityModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
@@ -90,7 +90,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+          "primary": "nvidia/nemotron-3.5-super-vl-120b-a12b",
           "fallbacks": []
         }
       }

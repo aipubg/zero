@@ -583,6 +583,85 @@ export function mountModelsPage(container, context = {}) {
     fallbacksVal.textContent = systemDefaults.fallback || "None";
   }
 
+  function renderProviderLogo(p) {
+    const icon = element("div", "zero-provider-icon");
+    const id = String(p?.id || "").toLowerCase();
+    const name = String(p?.name || "").toLowerCase();
+    const api = String(p?.api || "").toLowerCase();
+
+    if (id.includes("nv") || name.includes("nvidia") || id.includes("nvidia")) {
+      icon.classList.add("zero-provider-icon--nv");
+      icon.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="display:block;">
+          <rect width="24" height="24" rx="6" fill="#76b900" />
+          <path d="M5.5 15.5C5.5 12.2 8.2 9.5 11.5 9.5C13.2 9.5 14.8 10.2 15.9 11.4L13.8 13.2C13.2 12.5 12.4 12.1 11.5 12.1C9.6 12.1 8.1 13.6 8.1 15.5H5.5Z" fill="#ffffff"/>
+          <path d="M4 17C4 12.9 7.4 9.5 11.5 9.5C13.8 9.5 15.9 10.5 17.3 12.1L19 10.5C17.1 8.4 14.5 7 11.5 7C6 7 1.5 11.5 1.5 17H4Z" fill="#ffffff" opacity="0.75"/>
+          <text x="12" y="18" font-family="-apple-system, sans-serif" font-weight="900" font-size="8" fill="#ffffff" text-anchor="middle">NV</text>
+        </svg>
+      `;
+      return icon;
+    }
+
+    if (id.includes("openai") || name.includes("openai") || api.includes("openai")) {
+      icon.classList.add("zero-provider-icon--openai");
+      icon.innerHTML = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M22.28 9.47a5.55 5.55 0 0 0-.47-4.48 5.66 5.66 0 0 0-5.74-2.73 5.55 5.55 0 0 0-4.07-1.8 5.66 5.66 0 0 0-5.38 3.9 5.55 5.55 0 0 0-3.6 2.6 5.66 5.66 0 0 0 .72 6.13 5.55 5.55 0 0 0 .47 4.48 5.66 5.66 0 0 0 5.74 2.73 5.55 5.55 0 0 0 4.07 1.8 5.66 5.66 0 0 0 5.38-3.9 5.55 5.55 0 0 0 3.6-2.6 5.66 5.66 0 0 0-.72-6.13ZM12 20.08a3.68 3.68 0 0 1-2.43-.9l1.24-1.24a1.93 1.93 0 0 0 2.38 0l1.24 1.24a3.68 3.68 0 0 1-2.43.9Z"/>
+        </svg>
+      `;
+      return icon;
+    }
+
+    if (id.includes("anthropic") || name.includes("claude") || name.includes("anthropic")) {
+      icon.classList.add("zero-provider-icon--anthropic");
+      icon.innerHTML = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13.8 4.2L18.6 19.8H15.1L14 16.1H10L8.9 19.8H5.4L10.2 4.2H13.8ZM12 8.8L10.8 13.2H13.2L12 8.8Z"/>
+        </svg>
+      `;
+      return icon;
+    }
+
+    if (id.includes("gemini") || name.includes("gemini") || id.includes("google")) {
+      icon.classList.add("zero-provider-icon--gemini");
+      icon.innerHTML = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>
+        </svg>
+      `;
+      return icon;
+    }
+
+    if (id.includes("ollama") || name.includes("ollama") || api.includes("ollama")) {
+      icon.classList.add("zero-provider-icon--ollama");
+      icon.innerHTML = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="9" cy="11" r="1.5"/>
+          <circle cx="15" cy="11" r="1.5"/>
+          <path d="M10 15C10.5 16 11.2 16.5 12 16.5C12.8 16.5 13.5 16 14 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      `;
+      return icon;
+    }
+
+    if (api === "local-gguf" || id.includes("gguf") || id.includes("local")) {
+      icon.classList.add("zero-provider-icon--gguf");
+      icon.innerHTML = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="5" y="5" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+          <rect x="8" y="8" width="8" height="8" rx="1"/>
+          <path d="M2 9H5M2 15H5M19 9H22M19 15H22M9 2V5M15 2V5M9 19V22M15 19V22" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+      `;
+      return icon;
+    }
+
+    const monogram = (p?.name || p?.id || "AI").slice(0, 2).toUpperCase();
+    icon.innerHTML = `<span style="font-size:12px;font-weight:800;letter-spacing:0.04em;">${monogram}</span>`;
+    return icon;
+  }
+
   function renderProvidersAndModelsList() {
     modelsListContainer.replaceChildren();
 
@@ -612,7 +691,7 @@ export function mountModelsPage(container, context = {}) {
       const ggufCard = element("div", "zero-provider-card zero-provider-card--gguf");
       const cardHeader = element("div", "zero-provider-card__header");
       const left = element("div", "zero-provider-card__left");
-      const icon = element("div", "zero-provider-icon zero-provider-icon--ollama");
+      const icon = renderProviderLogo({ id: "local-gguf", name: "Local GGUF Engine", api: "local-gguf" });
       const meta = element("div", "zero-provider-card__meta");
 
       const titleRow = element("div", "zero-provider-card__title-row");
@@ -634,7 +713,7 @@ export function mountModelsPage(container, context = {}) {
       const testBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Test Connection");
       const testResult = element("span", "zero-test-latency");
       testResult.style.fontSize = "11px";
-      testResult.style.color = "var(--color-success, var(--color-success, #34d399))";
+      testResult.style.color = "var(--accent)";
       testResult.style.display = "none";
 
       testBtn.onclick = async () => {
@@ -681,7 +760,7 @@ export function mountModelsPage(container, context = {}) {
       for (const m of offlineModels) {
         const isCurrentActive = systemDefaults.primary === m.id || agentBindings?.zero?.model === m.id;
         const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
-        chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"};border:1px solid ${isCurrentActive ? "var(--accent, #10b981)" : "rgba(255,255,255,0.1)"};cursor:pointer;`;
+        chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "rgba(255,255,255,0.04)"};border:1px solid ${isCurrentActive ? "var(--accent)" : "rgba(255,255,255,0.08)"};color:${isCurrentActive ? "var(--accent)" : "inherit"};cursor:pointer;`;
 
         const nameSpan = element("span", "zero-model-chip__name", getCleanDisplayName(m.name, m.id));
         nameSpan.style.fontWeight = isCurrentActive ? "700" : "500";
@@ -701,7 +780,7 @@ export function mountModelsPage(container, context = {}) {
         }
 
         const setActSpan = element("span", "zero-chip-action", isCurrentActive ? "✓ Active" : "Set Active");
-        setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--color-success, #34d399)" : "var(--text-muted, #a5aab8)"};`;
+        setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--accent)" : "var(--text-muted)"};`;
         chip.append(setActSpan);
 
         chip.onclick = async (e) => {
@@ -743,7 +822,7 @@ export function mountModelsPage(container, context = {}) {
       card.setAttribute("data-provider-id", p.id);
       const cardHeader = element("div", "zero-provider-card__header");
       const left = element("div", "zero-provider-card__left");
-      const icon = element("div", `zero-provider-icon zero-provider-icon--${p.api || "openai"}`);
+      const icon = renderProviderLogo(p);
       const meta = element("div", "zero-provider-card__meta");
 
       const titleRow = element("div", "zero-provider-card__title-row");
@@ -764,7 +843,7 @@ export function mountModelsPage(container, context = {}) {
       const actions = element("div", "zero-provider-card__actions");
       const latencySpan = element("span", "zero-test-latency");
       latencySpan.style.fontSize = "11px";
-      latencySpan.style.color = "var(--color-success, var(--color-success, #34d399))";
+      latencySpan.style.color = "var(--accent)";
       latencySpan.style.display = "none";
 
       const testBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Test Connection");
@@ -830,7 +909,7 @@ export function mountModelsPage(container, context = {}) {
 
           const isCurrentActive = systemDefaults.primary === mid || agentBindings?.zero?.model === mid;
           const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
-          chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"};border:1px solid ${isCurrentActive ? "var(--accent, #10b981)" : "rgba(255,255,255,0.1)"};cursor:pointer;`;
+          chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "rgba(255,255,255,0.04)"};border:1px solid ${isCurrentActive ? "var(--accent)" : "rgba(255,255,255,0.08)"};color:${isCurrentActive ? "var(--accent)" : "inherit"};cursor:pointer;`;
 
           const nameSpan = element("span", "zero-model-chip__name", getCleanDisplayName(mname, mid));
           nameSpan.style.fontWeight = isCurrentActive ? "700" : "500";
@@ -850,7 +929,7 @@ export function mountModelsPage(container, context = {}) {
           }
 
           const setActSpan = element("span", "zero-chip-action", isCurrentActive ? "✓ Active" : "Set Active");
-          setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--color-success, #34d399)" : "var(--text-muted, #a5aab8)"};`;
+          setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--accent)" : "var(--text-muted)"};`;
           chip.append(setActSpan);
 
           chip.onclick = async (e) => {
@@ -1178,7 +1257,7 @@ export function mountModelsPage(container, context = {}) {
     discHead.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
     const discCount = element("span", null, "0 models found");
     discCount.style.fontWeight = "600";
-    discCount.style.color = "var(--color-success, var(--color-success, #34d399))";
+    discCount.style.color = "var(--accent)";
 
     const discSelectActions = element("div", "zero-disc-actions");
     discSelectActions.style.display = "flex";
@@ -1604,7 +1683,7 @@ export function mountModelsPage(container, context = {}) {
         const titleSpan = element("span", "zero-provider-card__title", m.name || m.id);
         const ramBadge = element("span", "zero-providers-badge", isLoadedInPs ? "Loaded in RAM" : "Standby");
         ramBadge.style.cssText = isLoadedInPs
-          ? "background:rgba(34,197,94,0.15);color:var(--color-success, #34d399);border:1px solid var(--accent, #10b981);"
+          ? "background:color-mix(in srgb, var(--accent) 15%, transparent);color:var(--accent);border:1px solid var(--accent);"
           : "background:rgba(255,255,255,0.05);color:var(--text-subtle, #9ca3af);border:1px solid rgba(255,255,255,0.1);";
         tRow.append(titleSpan, ramBadge);
 
@@ -1808,7 +1887,7 @@ export function mountModelsPage(container, context = {}) {
 
           const addStep = (text, status = "active") => {
             const row = element("div", null);
-            row.style.cssText = `color:${status === "done" ? "var(--color-success, #34d399)" : status === "active" ? "var(--accent, #60a5fa)" : "var(--color-danger, #ef4444)"};`;
+            row.style.cssText = `color:${status === "done" ? "var(--accent)" : status === "active" ? "var(--accent)" : "var(--color-danger, #ef4444)"};`;
             row.textContent = `${status === "done" ? "✓" : status === "active" ? "⏳" : "✗"} ${text}`;
             stepsList.append(row);
           };

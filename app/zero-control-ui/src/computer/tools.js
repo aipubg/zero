@@ -51,6 +51,11 @@ export const ZERO_COMPUTER_TOOL_PARAMETERS = Object.freeze({
         "open_app",
         "launch_app",
         "open_url",
+        "browser",
+        "open_browser",
+        "web_search",
+        "navigate",
+        "play",
         "clipboard_get",
         "clipboard_set",
         "get_elements",
@@ -203,6 +208,57 @@ export function createComputerTool({ toolName = ZERO_COMPUTER_TOOL_NAME, operato
 }
 
 /**
+ * Creates a browser tool for web navigation and multimedia control.
+ */
+export function createBrowserTool({ toolName = "browser", operator } = {}) {
+  const op = operator || new ComputerOperator();
+
+  return {
+    name: toolName,
+    label: "Browser & Desktop Web Control",
+    description:
+      "Control the desktop web browser on Windows. Open URLs, search YouTube, play songs/videos, navigate to websites, and perform web searches.",
+    parameters: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          description: "Action to perform: 'open', 'open_url', 'navigate', 'search', or 'play'.",
+        },
+        url: {
+          type: "string",
+          description: "Web URL to open in browser (e.g. 'https://www.youtube.com').",
+        },
+        query: {
+          type: "string",
+          description: "Search query or video/song name to search and play.",
+        },
+        target: {
+          type: "string",
+          description: "Target URL or search phrase.",
+        },
+      },
+    },
+    async execute(_toolCallId, params, signal) {
+      signal?.throwIfAborted?.();
+      const actualParams =
+        params && typeof params === "object" && params.args && typeof params.args === "object"
+          ? { ...params.args, ...params }
+          : params || {};
+
+      const res = await op.execute("browser", actualParams, signal);
+      if (!res.ok) {
+        return toolResult(`Browser action failed: ${res.message || res.error}`, res);
+      }
+      return toolResult(
+        res.message || `Browser opened successfully at ${res.url || actualParams.url || "https://www.youtube.com"}`,
+        res,
+      );
+    },
+  };
+}
+
+/**
  * Create all computer tools for registration.
  */
 export function createAllComputerTools({ getPolicyState = null, logger = console } = {}) {
@@ -210,5 +266,10 @@ export function createAllComputerTools({ getPolicyState = null, logger = console
   return [
     createComputerTool({ toolName: ZERO_COMPUTER_ACTION_TOOL_NAME, operator }),
     createComputerTool({ toolName: ZERO_COMPUTER_TOOL_NAME, operator }),
+    createComputerTool({ toolName: "computer", operator }),
+    createBrowserTool({ toolName: "browser", operator }),
+    createBrowserTool({ toolName: "open_browser", operator }),
+    createBrowserTool({ toolName: "open_url", operator }),
+    createBrowserTool({ toolName: "web_search", operator }),
   ];
 }

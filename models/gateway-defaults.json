@@ -1,12 +1,10 @@
 {
   "defaults": {
-    "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
-    "utility": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
-    "thinking": "default"
+    "primary": "nvidia/nemotron-3.5-super-vl-120b-a12b"
   },
   "agentBindings": {
     "zero": {
-      "model": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "allowOverride": true
     }
   }
