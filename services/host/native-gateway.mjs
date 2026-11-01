@@ -199,7 +199,7 @@ export class ZeroNativeHost {
       // Protocol 4 Handshake & Connect negotiation
       if (method === 'handshake' || method === 'gateway.handshake' || method === 'hello' || method === 'connect') {
         const result = validateHandshake(params, this.expectedToken);
-        if (!result.ok && this.expectedToken) {
+        if (!result.ok) {
           if (parsed.isReferenceWire) {
             ws.send(JSON.stringify({ type: 'res', id, ok: false, error: result.message }));
           } else {
@@ -254,6 +254,15 @@ export class ZeroNativeHost {
             bootId: this.bootId,
           })));
         }
+        return;
+      }
+
+      // Reject RPC traffic until handshake has established a client session.
+      if (!clientSession?.authenticated) {
+        const errorMessage = 'Authenticated handshake required before RPC dispatch';
+        ws.send(JSON.stringify(parsed.isReferenceWire
+          ? { type: 'res', id, ok: false, error: errorMessage }
+          : createError(id, RPC_ERROR_CODES.UNAUTHORIZED, errorMessage)));
         return;
       }
 
