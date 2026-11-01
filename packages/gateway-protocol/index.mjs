@@ -294,11 +294,25 @@ export function validateHandshake(params, authOptions = '') {
   const resolvedClientId = clientId || params.client?.id || 'zero-client';
   const resolvedDeviceLabel = deviceLabel || params.client?.displayName || params.client?.platform || 'Zero Operator Terminal';
 
+  const validSessions = typeof authOptions === 'object' && authOptions !== null ? authOptions.validSessions : null;
+  const verifiedSession = typeof authOptions === 'object' && authOptions !== null ? authOptions.verifiedSession : null;
+
   let isAuthenticated = false;
   let grantedRole = ROLES.VIEWER;
   let grantedScopes = [...VIEWER_SCOPES];
 
-  if (expectedToken.length > 0) {
+  if (verifiedSession) {
+    isAuthenticated = true;
+    const clientReqRole = params.role || requestedRole;
+    grantedRole = clientReqRole === ROLES.ADMIN && verifiedSession.role === ROLES.ADMIN ? ROLES.ADMIN : (verifiedSession.role || ROLES.OPERATOR);
+    grantedScopes = [...(verifiedSession.scopes || ADMIN_SCOPES)];
+  } else if (validSessions && clientToken && (typeof validSessions.has === 'function' ? validSessions.has(clientToken) : validSessions[clientToken])) {
+    const sessionObj = typeof validSessions.get === 'function' ? validSessions.get(clientToken) : validSessions[clientToken];
+    isAuthenticated = true;
+    const clientReqRole = params.role || requestedRole;
+    grantedRole = clientReqRole === ROLES.ADMIN && sessionObj?.role === ROLES.ADMIN ? ROLES.ADMIN : (sessionObj?.role || ROLES.OPERATOR);
+    grantedScopes = [...(sessionObj?.scopes || ADMIN_SCOPES)];
+  } else if (expectedToken.length > 0) {
     if (clientToken === expectedToken) {
       isAuthenticated = true;
       const clientReqRole = params.role || requestedRole;

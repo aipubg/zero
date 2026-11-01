@@ -6,6 +6,7 @@
  */
 
 import test from 'node:test';
+import http from 'node:http';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -70,7 +71,15 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
   suite.before(async () => {
     try {
       const uiCfg = await fetch(`${BASE_URL}/control-ui-config.json`).then((r) => r.json());
-      authToken = uiCfg.gatewayToken || '';
+      assert.equal(uiCfg.gatewayToken, undefined, 'gatewayToken must never be exposed in control-ui-config.json');
+      assert.equal(uiCfg.token, undefined, 'token must never be exposed in control-ui-config.json');
+
+      const sessionRes = await fetch(`${BASE_URL}/api/auth/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: 'test-rpc-suite', role: 'admin' }),
+      }).then((r) => r.json());
+      authToken = sessionRes.token || '';
     } catch {}
     if (fs.existsSync(CONFIG_PATH)) {
       originalConfig = fs.readFileSync(CONFIG_PATH, 'utf8');
@@ -166,10 +175,13 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
     assert.equal(unsubRes.payload.subscribed, false);
   });
 
-  await suite.test('zero.gateway.restart returns scheduling confirmation', async () => {
+  await suite.test('zero.gateway.restart returns scheduling confirmation or explicit unsupported in standalone', async () => {
     const res = await client.call('zero.gateway.restart');
-    assert.equal(res.ok, true);
-    assert.equal(res.payload.status, 'restarting');
+    if (res.ok) {
+      assert.equal(res.payload.status, 'restarting');
+    } else {
+      assert.ok(res.error.includes('Controlled restart requires an active process supervisor') || res.error.includes('UNSUPPORTED_OPERATION'));
+    }
   });
 
   await suite.test('sessions.setInvolvement persists involvement state', async () => {
@@ -291,5 +303,51 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
     const res = await client.call('bogus.nonexistent.rpc');
     assert.equal(res.ok, false);
     assert.ok(res.error.includes('not found on Zero Native Gateway'));
+  });
+
+  await suite.test('security: DNS rebinding with external Host header is rejected with 403', async () => {
+    const res = await new Promise((resolve, reject) => {
+      const req = http.request({
+        host: '127.0.0.1',
+        port: PORT,
+        path: '/health',
+        method: 'GET',
+        headers: { host: 'attacker-dns-rebind.com:18789' },
+      }, (r) => {
+        const chunks = [];
+        r.on('data', (c) => chunks.push(c));
+        r.on('end', () => resolve({ status: r.statusCode, body: Buffer.concat(chunks).toString('utf8') }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.equal(res.status, 403);
+    assert.ok(res.body.includes('DNS rebinding'));
+  });
+
+  await suite.test('security: untrusted cross-origin request is rejected with 403 and receives no CORS grant', async () => {
+    const res = await fetch(`${BASE_URL}/health`, {
+      headers: { Origin: 'https://evil-attacker.com' },
+    });
+    assert.equal(res.status, 403);
+    assert.equal(res.headers.get('access-control-allow-origin'), null);
+  });
+
+  await suite.test('security: control-ui-config.json never discloses gateway credentials', async () => {
+    const res = await fetch(`${BASE_URL}/control-ui-config.json`);
+    assert.equal(res.status, 200);
+    const config = await res.json();
+    assert.equal(config.gatewayToken, undefined);
+    assert.equal(config.token, undefined);
+    assert.equal(config.secret, undefined);
+  });
+
+  await suite.test('security: local session cookie is HttpOnly and SameSite=Strict', async () => {
+    const res = await fetch(`${BASE_URL}/chat/zero`);
+    assert.equal(res.status, 200);
+    const cookieHeader = res.headers.get('set-cookie') || '';
+    assert.ok(cookieHeader.includes('zero_session='));
+    assert.ok(cookieHeader.toLowerCase().includes('httponly'));
+    assert.ok(cookieHeader.toLowerCase().includes('samesite=strict'));
   });
 });

@@ -19,16 +19,18 @@ const gatewayOperator = new ComputerOperator();
 
 export function setScopedCorsHeaders(req, res) {
   const origin = req.headers?.origin;
-  if (origin && (/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(origin) || origin === 'null')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (!origin) {
-    res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:18789');
+  if (origin) {
+    if (/^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/i.test(origin) || origin === 'null') {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
+    }
   } else {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:18789');
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -177,13 +179,15 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
   };
 
   try {
-    // If the caller provided their own tools (e.g. OpenClaw agent runner),
-    // delegate tool lifecycle directly to the caller.
-    if (callerProvidedTools) {
+    // If caller provided tools or requested direct streaming, delegate directly to upstream provider
+    if (callerProvidedTools || body.stream === true) {
       const payload = {
         ...body,
         model: cleanModelId,
       };
+      if (!callerProvidedTools && body.stream === true) {
+        delete payload.tools;
+      }
 
       const upstreamRes = await fetchWithRetry(payload);
 
@@ -324,7 +328,7 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
  * Universal Proxy Handler for Cloud / Custom Providers
  */
 async function handleProxy(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
@@ -589,7 +593,7 @@ function sendCompletionResponse(res, modelId, content, stream) {
  * Standard OpenAI-Compatible /v1/chat/completions Endpoint
  */
 async function handleChatCompletions(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
 
@@ -725,7 +729,9 @@ async function handleChatCompletions(req, res) {
 
     const callerProvidedTools = Array.isArray(body.tools) && body.tools.length > 0;
     if (!callerProvidedTools) {
-      body.tools = [...DESKTOP_TOOLS];
+      if (body.stream !== true) {
+        body.tools = [...DESKTOP_TOOLS];
+      }
     } else {
       for (const dt of DESKTOP_TOOLS) {
         if (!body.tools.some((t) => t?.function?.name === dt.function.name)) {
@@ -762,7 +768,7 @@ async function handleChatCompletions(req, res) {
  * Standard OpenAI-Compatible /v1/models Listing Endpoint
  */
 async function handleListModels(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
 
@@ -855,7 +861,7 @@ const spacesState = {
 };
 
 function handleSpacesApi(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -923,7 +929,7 @@ function handleSpacesApi(req, res) {
 }
 
 function handleModeApi(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -971,7 +977,7 @@ function handleModeApi(req, res) {
  * Interactive Media Control API Endpoint (/api/zero/media)
  */
 async function handleMediaControlApi(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -1029,7 +1035,7 @@ async function handleMediaControlApi(req, res) {
  * Autonomous Computer Control API Endpoint (/api/zero/computer)
  */
 async function handleComputerControlApi(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -1404,14 +1410,42 @@ async function handleAutomationApi(req, res) {
  * Handle Zero Gateway requests directly when embedded in port 18789 (Single Port Architecture)
  */
 export async function handleZeroGatewayRequest(req, res) {
+  const host = req.headers?.host;
+  if (host) {
+    const hostWithoutPort = host.replace(/:\d+$/, '').trim().toLowerCase();
+    const isLoopbackHost = hostWithoutPort === '127.0.0.1' || hostWithoutPort === 'localhost' || hostWithoutPort === '[::1]' || hostWithoutPort === '::1';
+    if (!isLoopbackHost) {
+      res.statusCode = 403;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: { message: 'Forbidden: invalid host header (DNS rebinding protection)', code: 403 } }));
+      return true;
+    }
+  }
+
+  const origin = req.headers?.origin;
+  if (origin && origin !== 'null') {
+    let isLoopbackOrigin = false;
+    try {
+      const parsed = new URL(origin);
+      const h = parsed.hostname.toLowerCase();
+      isLoopbackOrigin = h === '127.0.0.1' || h === 'localhost' || h === '::1' || h === '[::1]';
+    } catch (_) {}
+    if (!isLoopbackOrigin) {
+      res.statusCode = 403;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: { message: 'Forbidden: untrusted origin', code: 403 } }));
+      return true;
+    }
+  }
+
   const url = req.url || '/';
   const pathname = url.split('?')[0];
 
   // 1. Health check
   if (pathname === '/health') {
+    setScopedCorsHeaders(req, res);
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.end(JSON.stringify({ status: 'ok', gateway: 'zero-gateway', runtime: 'zero-native', version: '1.0.0', port: PORT }));
     return true;
   }
@@ -1507,7 +1541,7 @@ const server = http.createServer(async (req, res) => {
     if (fs.existsSync(indexPath)) {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      setScopedCorsHeaders(req, res);
       res.setHeader('X-Frame-Options', 'ALLOWALL');
       fs.createReadStream(indexPath).pipe(res);
       return;
@@ -1528,7 +1562,7 @@ const server = http.createServer(async (req, res) => {
       };
       res.statusCode = 200;
       res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      setScopedCorsHeaders(req, res);
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.setHeader('Clear-Site-Data', '"cache"');
       fs.createReadStream(safePath).pipe(res);
