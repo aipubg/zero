@@ -11,8 +11,8 @@
 | Metric | Target | Current | Status |
 |---|---|---|---|
 | **Audit Reports Generated** | 5 / 5 | 5 / 5 | **COMPLETE** |
-| **Acceptance Matrix (T01–T25)** | 25 Scenarios | 25 Pass / 0 Fail / 1 Blocked (T22 external credentials) | **VERIFIED** |
-| **RPC Contract & Security Negative Suite** | 17 Tests | 17 Pass / 0 Fail (8 mandatory security negative tests) | **VERIFIED** |
+| **Acceptance Matrix (T01–T25)** | 25 Scenarios | 24 Pass / 0 Fail / 1 Blocked (T22 external credentials) | **VERIFIED** |
+| **RPC Contract & Security Negative Suite** | 21 Tests | 21 Pass / 0 Fail (12 mandatory security negative tests) | **VERIFIED** |
 | **E2E Scenario Verification Suite** | 16 Tests | 16 Pass / 0 Fail | **VERIFIED** |
 | **Model Fabric Unit Suite** | 6 Tests | 6 Pass / 0 Fail | **VERIFIED** |
 | **Gateway Protocol Specification Suite** | 5 Tests | 5 Pass / 0 Fail | **VERIFIED** |
@@ -79,6 +79,10 @@
 | Viewer automation registration | `operator.admin` | **Security Negative (P0)** | **PASS** (Rejected with `FORBIDDEN` -32003) |
 | Viewer gateway restart/reconfig | `operator.admin` | **Security Negative (P0)** | **PASS** (Rejected with `FORBIDDEN` -32003) |
 | Unknown RPC method | Any | Negative Spec Test | **PASS** (Deterministic -32601 Method not found) |
+| DNS rebinding check (external Host) | Any | **Security Negative (P0)** | **PASS** (Rejected with 403 Forbidden) |
+| Untrusted cross-origin check | Any | **Security Negative (P0)** | **PASS** (Rejected with 403 Forbidden, 0 CORS grant) |
+| Public token disclosure check | Public | **Security Negative (P0)** | **PASS** (`control-ui-config.json` contains 0 tokens) |
+| Local session cookie check | Loopback | **Security Negative (P0)** | **PASS** (Cookie is `HttpOnly; SameSite=Strict; Path=/`) |
 
 ---
 

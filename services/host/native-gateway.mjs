@@ -36,6 +36,14 @@ import { PersistentMemoryStore } from '../../packages/memory/index.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { handleZeroGatewayRequest } from '../../backend/gateway/server.mjs';
+import {
+  isValidLoopbackHost,
+  isAllowedLoopbackOrigin,
+  isLoopbackRemoteAddress,
+  applyStrictLoopbackCors,
+  parseCookies,
+  DesktopSessionStore,
+} from './security.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -116,6 +124,7 @@ export class ZeroNativeHost {
         resolvedToken = (process.env.ZERO_GATEWAY_TOKEN || process.env.OPENCLAW_GATEWAY_TOKEN || '').trim();
       }
     }
+    this.localDesktopSessions = new DesktopSessionStore();
     this.loopbackUiToken = crypto.randomBytes(24).toString('hex');
     this.expectedToken = resolvedToken || this.loopbackUiToken;
 
@@ -224,6 +233,39 @@ export class ZeroNativeHost {
 
   async _handleHttpRequest(req, res) {
     try {
+      // DNS rebinding attack protection: validate Host header
+      const host = req.headers['host'];
+      if (host && !isValidLoopbackHost(host)) {
+        res.statusCode = 403;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: { message: 'Forbidden: invalid host header (DNS rebinding protection)', code: 403 } }));
+        return;
+      }
+
+      // Cross-origin request forgery protection: validate Origin header
+      const origin = req.headers['origin'];
+      if (origin && !isAllowedLoopbackOrigin(origin)) {
+        res.statusCode = 403;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: { message: 'Forbidden: untrusted cross-origin access denied', code: 403 } }));
+        return;
+      }
+
+      // Apply strict loopback-only CORS headers (no wildcards)
+      const corsAllowed = applyStrictLoopbackCors(req, res);
+      if (!corsAllowed) {
+        res.statusCode = 403;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: { message: 'Forbidden: cross-origin access denied', code: 403 } }));
+        return;
+      }
+
+      if (req.method === 'OPTIONS') {
+        res.statusCode = 204;
+        res.end();
+        return;
+      }
+
       // 1. Dispatch Zero Gateway API routes
       const handled = await handleZeroGatewayRequest(req, res);
       if (handled) return;
@@ -232,19 +274,73 @@ export class ZeroNativeHost {
       const parsedUrl = new URL(urlRaw, `http://${this.host}:${this.port}`);
       let pathname = decodeURIComponent(parsedUrl.pathname);
 
-      // Apply standard security and CORS headers
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+      // Local Desktop Authentication & Session Management
+      if (pathname === '/api/auth/session') {
+        if (req.method === 'POST') {
+          let body = {};
+          try {
+            const chunks = [];
+            for await (const chunk of req) chunks.push(chunk);
+            if (chunks.length) body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          } catch (_) {}
 
-      if (req.method === 'OPTIONS') {
-        res.statusCode = 204;
-        res.end();
+          const authHeader = req.headers.authorization;
+          const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+          const clientToken = (body.token || bearerToken || '').trim();
+
+          // Verify token if gateway has a configured expected token
+          if (this.expectedToken && clientToken && clientToken !== this.expectedToken) {
+            res.statusCode = 401;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ ok: false, error: 'Unauthorized: invalid gateway token' }));
+            return;
+          }
+
+          const session = this.localDesktopSessions.create({
+            role: body.role === 'admin' ? 'admin' : 'operator',
+            clientId: body.clientId || 'zero-desktop-browser',
+          });
+
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Set-Cookie', `zero_session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`);
+          res.end(JSON.stringify({
+            ok: true,
+            session: { role: session.role, scopes: session.scopes, expiresAt: session.expiresAt },
+            token: session.id,
+          }));
+          return;
+        }
+
+        if (req.method === 'GET') {
+          const cookies = parseCookies(req.headers.cookie);
+          const token = cookies['zero_session'] || (req.headers.authorization?.replace(/^Bearer\s+/i, '').trim());
+          const session = this.localDesktopSessions.get(token);
+          if (session) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ ok: true, session: { role: session.role, scopes: session.scopes } }));
+            return;
+          }
+          res.statusCode = 401;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ ok: false, error: 'Unauthorized: active session required' }));
+          return;
+        }
+      }
+
+      if (pathname === '/api/auth/logout' && req.method === 'POST') {
+        const cookies = parseCookies(req.headers.cookie);
+        const token = cookies['zero_session'] || (req.headers.authorization?.replace(/^Bearer\s+/i, '').trim());
+        if (token) this.localDesktopSessions.delete(token);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Set-Cookie', 'zero_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
+        res.end(JSON.stringify({ ok: true }));
         return;
       }
 
-      // 2. Control UI bootstrap config endpoint
+      // 2. Control UI bootstrap config endpoint (NEVER disclose bootstrap credentials)
       if (pathname === '/control-ui-config.json' || pathname === '/__openclaw__/control-ui-config.json') {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -260,7 +356,6 @@ export class ZeroNativeHost {
           serverVersion: '1.0.0',
           serverBuildId: 'zero-native-2026',
           devGitBranch: 'main',
-          gatewayToken: this.expectedToken || this.loopbackUiToken,
           terminalEnabled: true,
           cliAgentsEnabled: true,
           pluginAssetsRequireAuth: false,
@@ -394,6 +489,14 @@ export class ZeroNativeHost {
       // Prevent aggressive SPA fallback reload loops while modules hydrate
       html = html.replace('function retryCurrentDocument() {', 'function retryCurrentDocument() { return;');
 
+      // Secure session cookie issuance for loopback browser desktop sessions
+      const cookies = parseCookies(req.headers.cookie);
+      let session = this.localDesktopSessions.get(cookies['zero_session']);
+      if (!session && isLoopbackRemoteAddress(req.socket.remoteAddress)) {
+        session = this.localDesktopSessions.create();
+        res.setHeader('Set-Cookie', `zero_session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`);
+      }
+
       const bodyBuffer = Buffer.from(html, 'utf8');
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -450,21 +553,23 @@ export class ZeroNativeHost {
     ws.subscribedSessions = new Set();
     this.clients.add(ws);
 
+    // DNS rebinding protection on WebSocket upgrade
+    const host = req.headers['host'];
+    if (host && !isValidLoopbackHost(host)) {
+      ws.close(1008, 'Forbidden: invalid host header');
+      return;
+    }
+
     // Validate Origin header (CORS/CSRF & WebSocket hijacking prevention)
     const origin = req.headers['origin'];
-    if (origin) {
-      try {
-        const parsedUrl = new URL(origin);
-        const isLoopback = ['127.0.0.1', 'localhost', '[::1]'].includes(parsedUrl.hostname);
-        if (!isLoopback) {
-          ws.close(1008, 'Forbidden: untrusted origin');
-          return;
-        }
-      } catch {
-        ws.close(1008, 'Forbidden: invalid origin header');
-        return;
-      }
+    if (origin && !isAllowedLoopbackOrigin(origin)) {
+      ws.close(1008, 'Forbidden: untrusted origin');
+      return;
     }
+
+    // Extract loopback desktop session from HttpOnly cookie
+    const cookies = parseCookies(req.headers['cookie']);
+    const verifiedSession = this.localDesktopSessions.get(cookies['zero_session']);
 
     ws.on('close', () => {
       this.clients.delete(ws);
@@ -481,7 +586,12 @@ export class ZeroNativeHost {
 
       // Protocol 4 Handshake & Connect negotiation
       if (method === 'handshake' || method === 'gateway.handshake' || method === 'hello' || method === 'connect') {
-        const result = validateHandshake(params, { expectedToken: this.expectedToken, allowViewer: true });
+        const result = validateHandshake(params, {
+          expectedToken: this.expectedToken,
+          validSessions: this.localDesktopSessions,
+          verifiedSession,
+          allowViewer: true,
+        });
         if (!result.ok) {
           if (parsed.isReferenceWire) {
             ws.send(JSON.stringify({ type: 'res', id, ok: false, error: result.message }));
@@ -560,6 +670,22 @@ export class ZeroNativeHost {
       // RPC Methods dispatch
       try {
         const responseResult = await this._dispatchRpc(method, params, clientSession, ws, parsed.isReferenceWire);
+        if (responseResult && typeof responseResult === 'object' && responseResult.ok === false) {
+          if (parsed.isReferenceWire) {
+            ws.send(JSON.stringify({
+              type: 'res',
+              id,
+              ok: false,
+              error: responseResult.error || 'Operation failed',
+              code: responseResult.code,
+            }));
+          } else {
+            const code = responseResult.code || RPC_ERROR_CODES.INTERNAL_ERROR;
+            ws.send(JSON.stringify(createError(id, code, responseResult.error || 'Operation failed')));
+          }
+          return;
+        }
+
         if (parsed.isReferenceWire) {
           ws.send(JSON.stringify({
             type: 'res',
@@ -788,6 +914,7 @@ export class ZeroNativeHost {
           ok: true,
           health: this.modelFabric.getHealthReport(),
           providers: this.modelFabric.getProviders(),
+          upstreamRequestCount: this.modelFabric?.upstreamRequestCount || 0,
         };
       }
 
@@ -871,17 +998,34 @@ export class ZeroNativeHost {
           nodeVersion: process.version,
           pid: process.pid,
           memory: process.memoryUsage(),
+          upstreamRequestCount: this.modelFabric?.upstreamRequestCount || 0,
         };
       }
 
-      case 'zero.gateway.restart':
+      case 'zero.gateway.restart': {
         console.log('[Zero Host] Controlled gateway restart requested via RPC.');
+        if (typeof this.onRestart === 'function') {
+          setTimeout(() => this.onRestart(), 100);
+          return {
+            ok: true,
+            status: 'restarting',
+            message: 'Zero Gateway restart scheduled via supervisor',
+          };
+        }
+        if (process.env.ZERO_SUPERVISED) {
+          setTimeout(() => process.exit(42), 100);
+          return {
+            ok: true,
+            status: 'restarting',
+            message: 'Zero Gateway restart signaled to supervisor',
+          };
+        }
         return {
-          ok: true,
-          status: 'restarting',
-          message: 'Zero Gateway restart scheduled',
-          scheduledInMs: 500,
+          ok: false,
+          code: 'UNSUPPORTED_OPERATION',
+          error: 'Controlled restart requires an active process supervisor. Standalone Zero Host cannot restart itself.',
         };
+      }
 
       case 'zero.computer.control': {
         if (this.computerHold.held) {
@@ -1286,6 +1430,11 @@ export class ZeroNativeHost {
         ...(m.tool_calls ? { tool_calls: m.tool_calls } : {}),
       }));
 
+      if (currentMessages.length === 0 && userContent) {
+        this.sessions.appendMessage(sessionKey, { role: 'user', content: userContent });
+        currentMessages.push({ role: 'user', content: userContent });
+      }
+
       let turns = 0;
       const maxTurns = 5;
       let finalContent = '';
@@ -1347,8 +1496,16 @@ export class ZeroNativeHost {
                 } else {
                   const existing = toolCallsMap.get(idx);
                   if (tc.id) existing.id = tc.id;
-                  if (tc.function?.name) existing.function.name += tc.function.name;
-                  if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
+                  if (tc.function?.name) {
+                    if (!existing.function.name) {
+                      existing.function.name = tc.function.name;
+                    } else if (!existing.function.name.endsWith(tc.function.name)) {
+                      existing.function.name += tc.function.name;
+                    }
+                  }
+                  if (tc.function?.arguments) {
+                    existing.function.arguments += tc.function.arguments;
+                  }
                 }
               }
             }
@@ -1390,14 +1547,38 @@ export class ZeroNativeHost {
         currentMessages.push(assistantMsg);
         this.sessions.appendMessage(sessionKey, assistantMsg);
 
+        const executedCallIds = new Set();
         for (const call of toolCalls) {
+          if (!call.id) call.id = `call_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+          if (executedCallIds.has(call.id)) {
+            console.warn(`[Zero Host] Skipping duplicate tool call ID '${call.id}'`);
+            continue;
+          }
+          executedCallIds.add(call.id);
+
           const fnName = call.function?.name || '';
           let args = {};
+          let parseError = null;
           try {
             args = typeof call.function?.arguments === 'string'
               ? JSON.parse(call.function.arguments)
               : (call.function?.arguments || {});
-          } catch {}
+          } catch (err) {
+            parseError = `Malformed tool arguments JSON: ${err.message}`;
+          }
+
+          if (parseError) {
+            console.warn(`[Zero Host] Tool call argument parse failure for '${fnName}':`, parseError);
+            const errObservation = { ok: false, error: parseError, raw: call.function?.arguments };
+            const toolMsg = {
+              role: 'tool',
+              tool_call_id: call.id,
+              content: JSON.stringify(errObservation),
+            };
+            currentMessages.push(toolMsg);
+            this.sessions.appendMessage(sessionKey, toolMsg);
+            continue;
+          }
 
           let action = args.action || fnName;
           if (fnName === 'open_app' || fnName === 'launch_app') action = 'open_app';
@@ -1453,7 +1634,7 @@ export class ZeroNativeHost {
           artist: 'YouTube',
           details: `Active Window: ${mediaResult.window?.title || 'YouTube'}`,
         };
-        finalContent = (finalContent ? `${finalContent}\n\n` : '') + `````zero-ui:media\n${JSON.stringify(mediaPayload, null, 2)}\n`````;
+        finalContent = (finalContent ? `${finalContent}\n\n` : '') + '```zero-ui:media\n' + JSON.stringify(mediaPayload, null, 2) + '\n```';
       }
 
       // Truthful progress card
@@ -1476,7 +1657,7 @@ export class ZeroNativeHost {
           details: executedActions[executedActions.length - 1]?.execRes?.after || `Desktop Action ${overallOutcome}`,
           logs: executedActions.map((a) => `${a.execRes?.verified ? '✔' : '⚠'} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'FAILED')})`),
         };
-        finalContent = (finalContent ? `${finalContent}\n\n` : '') + `````zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n`````;
+        finalContent = (finalContent ? `${finalContent}\n\n` : '') + '```zero-ui:progress\n' + JSON.stringify(progressPayload, null, 2) + '\n```';
 
         // If any action failed or was unverified, append truth in assistant text
         if (overallOutcome !== 'COMPLETED') {

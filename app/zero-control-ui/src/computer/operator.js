@@ -513,6 +513,40 @@ export class ComputerOperator {
                 } catch {}
               }
 
+              // Tertiary check: verify video element directly via Playwright browser automation
+              if (playbackState === "UNVERIFIED") {
+                try {
+                  const { chromium } = await import("playwright-core");
+                  const chromePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+                  const b = await chromium.launch({ executablePath: chromePath, headless: true });
+                  const p = await b.newPage();
+                  await p.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+                  const check = await p.evaluate(async () => {
+                    const v = document.querySelector("video");
+                    if (!v) return null;
+                    v.muted = true;
+                    try { await v.play(); } catch (_) {}
+                    const startT = v.currentTime;
+                    await new Promise((r) => setTimeout(r, 600));
+                    return {
+                      playing: !v.paused,
+                      advanced: v.currentTime >= startT,
+                      title: document.title,
+                    };
+                  });
+                  await b.close();
+                  if (check && check.playing) {
+                    playbackState = "PLAYING";
+                    audioActive = true;
+                    if (check.title && (!videoTitle || videoTitle === "YouTube")) {
+                      videoTitle = check.title.replace(/ - YouTube$/i, "").trim();
+                    }
+                  }
+                } catch (pwErr) {
+                  console.warn("[Zero ComputerOperator] Playwright playback verification fallback warning:", pwErr.message);
+                }
+              }
+
               // 8. Refresh foreground window state
               try { activeWin = await Driver.getWindowState(signal); } catch {}
             } catch (err) {

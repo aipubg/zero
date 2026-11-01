@@ -26,7 +26,11 @@ export function createGatewayConfigMiddleware() {
   const configFile = path.resolve(root, 'models', 'gateway-providers.json');
   const defaultsFile = path.resolve(root, 'models', 'gateway-defaults.json');
   return async (req: IncomingMessage, res: ServerResponse) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers?.origin;
+    if (origin && /^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/i.test(origin as string)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
 
@@ -367,7 +371,11 @@ export function createGatewayConfigMiddleware() {
 export function createLocalGgufMiddleware() {
   return async (req: IncomingMessage, res: ServerResponse) => {
     // Enable CORS for frontend
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers?.origin;
+    if (origin && /^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/i.test(origin as string)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
 
