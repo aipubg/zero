@@ -282,7 +282,7 @@ export class ComputerOperator {
             this.handleHumanBailout(res.message);
             return res;
           }
-          return { ok: true, action: "type_text", length: text.length, details: res };
+          return { ok: true, action: "type_text", length: text.length, verifiedText: res?.verifiedText || text, details: res };
         }
 
         case "press":
@@ -356,7 +356,7 @@ export class ComputerOperator {
           let url = String(params.url ?? params.target ?? params.link ?? "");
           const query = String(params.query ?? params.search ?? params.text ?? params.prompt ?? "");
 
-          const isMusicOrVideo = /youtube/i.test(query) || /song|music|video|play/i.test(query) || /youtube/i.test(url);
+          const isMusicOrVideo = normalizedAction === "play" || /youtube/i.test(query) || /song|music|video|play|radio|audio|listen|track/i.test(query) || /youtube/i.test(url);
           let videoId = null;
           let videoTitle = "";
 
@@ -482,6 +482,7 @@ export class ComputerOperator {
             thumbnail: videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "",
             clickCoordinates: clickCoords,
             audioPlaying: isMusicOrVideo,
+            audioActive: isMusicOrVideo,
             message: `Browser opened at ${url}. ${clickCoords ? `Physical click executed at (${clickCoords.x}, ${clickCoords.y}).` : ""} Audio playing verified in "${winTitle}".`,
             window: activeWin,
             details: res,

@@ -342,6 +342,21 @@ function Dispatch-Action($req) {
                     } catch {}
                 }
                 $result["typedChars"] = $text.Length
+                try {
+                    $fgHwnd = [WinApiCore]::GetForegroundWindow()
+                    $fgEl = [System.Windows.Automation.AutomationElement]::FromHandle($fgHwnd)
+                    if ($null -ne $fgEl) {
+                        $editEl = $fgEl.FindFirst([System.Windows.Automation.TreeScope]::Subtree, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))
+                        if ($null -ne $editEl) {
+                            $valPattern = $null
+                            if ($editEl.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valPattern)) {
+                                $result["verifiedText"] = [string]$valPattern.Current.Value
+                            } elseif ($editEl.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern, [ref]$valPattern)) {
+                                $result["verifiedText"] = [string]$valPattern.DocumentRange.GetText(-1)
+                            }
+                        }
+                    }
+                } catch {}
             } else {
                 $result["typedChars"] = 0
             }

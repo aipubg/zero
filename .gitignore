@@ -37,6 +37,8 @@ models/**/*.bin
 test-results/
 playwright-report/
 blob-report/
+.backup/
+*.png
 
 # OS/editor files
 .DS_Store

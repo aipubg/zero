@@ -79,18 +79,41 @@ export class SessionManager {
 
   listSessions(limit = 50, offset = 0) {
     const stmt = this.db.prepare(`
-      SELECT * FROM zero_sessions
-      ORDER BY updated_at DESC
+      SELECT s.*,
+        (SELECT COUNT(*) FROM zero_messages m WHERE m.session_id = s.id) AS messages_count,
+        (SELECT m.content FROM zero_messages m WHERE m.session_id = s.id ORDER BY m.seq DESC LIMIT 1) AS last_message
+      FROM zero_sessions s
+      ORDER BY s.updated_at DESC
       LIMIT ? OFFSET ?
     `);
     const rows = stmt.all(limit, offset);
-    return rows.map((r) => ({
-      id: r.id,
-      title: r.title,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-      metadata: r.metadata ? JSON.parse(r.metadata) : {},
-    }));
+    return rows.map((r) => {
+      const meta = r.metadata ? JSON.parse(r.metadata) : {};
+      return {
+        key: r.id,
+        id: r.id,
+        agentId: meta.agentId || 'zero',
+        title: r.title,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+        messagesCount: Number(r.messages_count || 0),
+        lastMessage: r.last_message || '',
+        metadata: meta,
+      };
+    });
+  }
+
+  patchSession(id, updates = {}) {
+    const existing = this.getSession(id);
+    if (!existing) return null;
+    const title = updates.title !== undefined ? String(updates.title) : existing.title;
+    const metadata = { ...existing.metadata, ...(updates.metadata || {}) };
+    const now = Date.now();
+    const stmt = this.db.prepare(`
+      UPDATE zero_sessions SET title = ?, metadata = ?, updated_at = ? WHERE id = ?
+    `);
+    stmt.run(title, JSON.stringify(metadata), now, id);
+    return this.getSession(id);
   }
 
   deleteSession(id) {

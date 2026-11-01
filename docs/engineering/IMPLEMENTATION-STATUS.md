@@ -25,8 +25,8 @@
 | **Streaming & Abort Protocol (DEF-15)** | Clean SSE + Abort | Client disconnect cancellation, 60s timeout, scoped CORS | **RESOLVED** |
 | **Durable Automation Engine** | Cron Scheduler | `packages/automation` SQLite persistence, run history | **RESOLVED** |
 | **Persistent Memory Store** | Semantic Memory | `packages/memory` keyword scoring, tag matching, recency | **RESOLVED** |
-| **Zero Host Runtime Independence (DEF-09)** | Native Zero Host | `ZeroNativeHost` on port 18789, Protocol 4 WS, zero legacy imports | **RESOLVED** |
-| **Single Control Plane (Port 18789)** | 1 Port | 1 Port (Host 18789) | **ACTIVE** |
+| **Zero Host Runtime Independence (DEF-09)** | Native Zero Host | `ZeroNativeHost` fully operational on port 18789; all 29 UI routes, complete Protocol 4 RPC, SQLite stores | **RESOLVED** |
+| **Single Control Plane (Port 18789)** | 1 Port | 1 Port (Zero Native Host 18789) | **ACTIVE & VERIFIED** |
 
 ---
 
@@ -45,6 +45,7 @@
 | `packages/memory/test/*.mjs` | Semantic Persistent Memory Store | **7 Pass / 0 Fail** | None | **VERIFIED GREEN** |
 | `backend/gateway/test-tasks-api.mjs` | Task Inspection REST Endpoints | **5 Pass / 0 Fail** | None | **VERIFIED GREEN** |
 | `backend/gateway/test-memory-automation-api.mjs` | Memory & Automation REST Endpoints | **9 Pass / 0 Fail** | None | **VERIFIED GREEN** |
+| `test/e2e-matrix.test.mjs` | Master Acceptance Matrix (T01–T25) | **26 Pass / 0 Fail** | None | **VERIFIED GREEN** |
 | `test/e2e-scenarios.test.mjs` | T01–T15 Master Scenario Verification Matrix | **16 Pass / 0 Fail** | None | **VERIFIED GREEN** |
 | `test/native-gateway.test.mjs` | Zero Native Host & WS Protocol Dispatcher | **2 Pass / 0 Fail** | None | **VERIFIED GREEN** |
 | `backend/scripts/test/*.test.mjs` | Managed Block & Agent Migration | **8 Pass / 0 Fail** | None | **VERIFIED GREEN** |
@@ -71,7 +72,7 @@
 | **DEF-06** | Plaintext API credentials across JSON configs & templates | `CRITICAL` | Phase 0/B | **OPEN / REMEDIATED (Pending Operator Key Rotation)** (Untracked `.env`, tracked `.env.example`, automated `scan-secrets.mjs` in preflight, 0 secrets in repo) |
 | **DEF-07** | Hardcoded `E:\zero` absolute paths in config and scripts | `HIGH` | Phase 1 | **RESOLVED** (`$PSScriptRoot` / `$env:ZERO_ROOT`) |
 | **DEF-08** | Runtime monkeypatching of node_modules via `apply-zero-branding.mjs` | `CRITICAL` | Phase 2 | **RESOLVED** (Decommissioned at Boot; Replaced with `api.registerHttpRoute`) |
-| **DEF-09** | Upstream binary coupling (`server-BS3i_xS_.mjs`) & runtime independence | `CRITICAL` | Phase 2/C | **RESOLVED** (Version-hashed binary imports eliminated. Zero Native Host `ZeroNativeHost` on single port 18789 operational with full Protocol 4 WS dispatch, streaming deltas, SQLite session persistence, durable task engine, persistent memory, and cron automation. Verified passing all acceptance tests in WS and HTTP modes) |
+| **DEF-09** | Upstream binary coupling (`server-BS3i_xS_.mjs`) & runtime independence | `CRITICAL` | Phase P1 | **RESOLVED** (`ZeroNativeHost` in `services/host/native-gateway.mjs` provides complete independent native control plane on port 18789, first-party static asset router for all 29 routes, complete Protocol 4 RPC dispatch, multi-turn tool loops, and SQLite persistence) |
 | **DEF-10** | Unrestricted proxy endpoint `/api/gateway/proxy` (SSRF vulnerability) | `HIGH` | Phase 3 | **RESOLVED** (Destination & SSRF Guard) |
 | **DEF-11** | Hardcoded regex intercepts (`isYouTubeCmd`/`isNotepadCmd`) in `server.mjs` | `HIGH` | Phase 3 | **RESOLVED** (Autonomous LLM Multi-Turn Tool Loop) |
 | **DEF-12** | Loose model substring matching and silent provider fallback | `MEDIUM` | Phase 3 | **RESOLVED** (Deterministic Resolver) |

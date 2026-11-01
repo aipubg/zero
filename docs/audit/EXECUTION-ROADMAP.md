@@ -11,12 +11,14 @@
 
 ```mermaid
 flowchart LR
-    P0["Phase 0<br/>Stabilization"] --> P1["Phase 1<br/>Native Foundation"]
-    P1 --> P2["Phase 2<br/>Runtime Independence"]
-    P2 --> P3["Phase 3<br/>Model Fabric"]
-    P3 --> P4["Phase 4<br/>Feature Parity"]
-    P4 --> P5["Phase 5<br/>Zero UI/UX"]
-    P5 --> P6["Phase 6<br/>Release Engineering"]
+    P0["P0<br/>Lock Baseline"] --> P1["P1<br/>Native Host Complete"]
+    P1 --> P2["P2<br/>Model Fabric & Agent Turn"]
+    P2 --> P3["P3<br/>Real Windows Automation"]
+    P3 --> P4["P4<br/>Sessions & Persistence"]
+    P4 --> P5["P5<br/>Parity & Native UI"]
+    P5 --> P6["P6<br/>Live Acceptance Matrix"]
+    P6 --> P7["P7<br/>Security & Packaging"]
+    P7 --> P8["P8<br/>Decommission & Release"]
 ```
 
 ---

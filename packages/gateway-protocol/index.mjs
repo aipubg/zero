@@ -244,19 +244,23 @@ export function validateHandshake(params, expectedToken = '') {
     };
   }
 
-  const { protocol, role, scopes, token, clientId, deviceLabel } = params;
+  const { role, scopes, clientId, deviceLabel } = params;
 
-  // Protocol version check
-  const protoNum = Number(protocol);
+  // Protocol version check - support both 'protocol' and negotiation range ('minProtocol' / 'maxProtocol')
+  const effectiveProtocol = params.protocol !== undefined
+    ? params.protocol
+    : (params.maxProtocol !== undefined ? params.maxProtocol : params.minProtocol);
+  const protoNum = Number(effectiveProtocol);
   if (!SUPPORTED_PROTOCOLS.includes(protoNum)) {
     return {
       ok: false,
       code: RPC_ERROR_CODES.INVALID_PARAMS,
-      message: `Unsupported protocol version ${protocol}. Supported versions: ${SUPPORTED_PROTOCOLS.join(', ')}`,
+      message: `Unsupported protocol version ${effectiveProtocol}. Supported versions: ${SUPPORTED_PROTOCOLS.join(', ')}`,
     };
   }
 
   // Authentication token check if expectedToken is set
+  const token = params.token || params.auth?.token || '';
   if (expectedToken && expectedToken.trim().length > 0) {
     if (!token || String(token).trim() !== expectedToken.trim()) {
       return {
@@ -277,14 +281,17 @@ export function validateHandshake(params, expectedToken = '') {
     };
   }
 
+  const resolvedClientId = clientId || params.client?.id || 'zero-client';
+  const resolvedDeviceLabel = deviceLabel || params.client?.displayName || params.client?.platform || 'Zero Operator Terminal';
+
   return {
     ok: true,
     session: {
-      clientId: String(clientId || 'zero-client'),
-      deviceLabel: String(deviceLabel || 'Zero Operator Terminal'),
+      clientId: String(resolvedClientId),
+      deviceLabel: String(resolvedDeviceLabel),
       role: effectiveRole,
       scopes: Array.isArray(scopes) ? scopes : [...DEFAULT_SCOPES],
-      negotiatedProtocol: PROTOCOL_VERSION,
+      negotiatedProtocol: protoNum,
       authenticated: true,
       connectedAt: Date.now(),
     },

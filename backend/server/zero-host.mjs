@@ -42,8 +42,7 @@ async function bootstrap() {
   console.log(`[Zero Host] Root: ${REPO_ROOT}`);
   console.log(`[Zero Host] Config: ${CONFIG_PATH}`);
 
-  const hasLegacyPackage = fs.existsSync(path.join(REPO_ROOT, 'backend', 'node_modules', 'openclaw', 'dist'));
-  const runtimeMode = process.env.ZERO_RUNTIME_MODE || (hasLegacyPackage ? 'legacy-compat' : 'native');
+  const runtimeMode = process.env.ZERO_RUNTIME_MODE || 'native';
   console.log(`[Zero Host] Runtime Mode: ${runtimeMode.toUpperCase()}`);
 
   let instance;

@@ -78,6 +78,12 @@ function installLegacyRouteInterceptor(host) {
   const navigate = (target) => {
     try {
       const href = surfaceHref(host, target);
+      const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, "");
+      const targetPath = String(target || "").toLowerCase().replace(/\/+$/, "");
+      const hrefPath = String(href || "").toLowerCase().replace(/\/+$/, "");
+      if (hrefPath === currentPath || targetPath === currentPath) {
+        return;
+      }
       // A history-only change leaves the host rendering the blocked screen
       // until the next reload (the host owns its own router state). Replace the
       // document instead so the native destination is the only rendered
@@ -99,7 +105,13 @@ function installLegacyRouteInterceptor(host) {
     try {
       const current = `${window.location.pathname || ""}${window.location.search || ""}${window.location.hash || ""}`;
       const target = targetFor(current);
-      if (target) navigate(target);
+      if (target) {
+        const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, "");
+        const targetPath = String(target || "").toLowerCase().replace(/\/+$/, "");
+        if (targetPath !== currentPath) {
+          navigate(target);
+        }
+      }
     } catch {
       // ignore
     }

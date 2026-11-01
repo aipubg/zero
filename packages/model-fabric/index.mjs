@@ -62,6 +62,39 @@ export class ModelFabric {
     }
   }
 
+  listModels() {
+    const models = [];
+    for (const provider of this.providers.values()) {
+      if (Array.isArray(provider.models)) {
+        for (const m of provider.models) {
+          const id = typeof m === 'string' ? m : (m.id || m.name);
+          const name = typeof m === 'object' && m.name ? m.name : id;
+          models.push({
+            id,
+            name,
+            provider: provider.id || provider.name || 'nvidia',
+            reasoning: typeof m === 'object' ? Boolean(m.reasoning) : false,
+            input: typeof m === 'object' && m.image ? ['text', 'image'] : ['text'],
+            contextWindow: 131072,
+            maxTokens: 4096,
+          });
+        }
+      }
+    }
+    return models;
+  }
+
+  getProviders() {
+    return Array.from(this.providers.values()).map((p) => ({
+      id: p.id,
+      name: p.name || p.id,
+      baseUrl: p.baseUrl,
+      api: p.api,
+      modelsCount: Array.isArray(p.models) ? p.models.length : 0,
+      hasApiKey: Boolean(this.resolveApiKey(p)),
+    }));
+  }
+
   registerAlias(alias, canonicalModelId) {
     this.aliases.set(alias.toLowerCase(), canonicalModelId);
   }

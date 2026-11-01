@@ -1412,7 +1412,7 @@ export async function handleZeroGatewayRequest(req, res) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.end(JSON.stringify({ status: 'ok', gateway: 'zero-gateway', version: '1.0.0', port: PORT }));
+    res.end(JSON.stringify({ status: 'ok', gateway: 'zero-gateway', runtime: 'zero-native', version: '1.0.0', port: PORT }));
     return true;
   }
 
