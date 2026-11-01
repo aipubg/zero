@@ -31,7 +31,7 @@ import { TaskStateMachine } from '../../packages/agent-runtime/index.mjs';
 import { AutomationScheduler } from '../../packages/automation/index.mjs';
 import { PersistentMemoryStore } from '../../packages/memory/index.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
-import { canonicalModelFabric } from '../../packages/model-fabric/index.mjs';
+import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { handleZeroGatewayRequest } from '../../backend/gateway/server.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -97,6 +97,10 @@ export class ZeroNativeHost {
     }
 
     const sessionDb = path.join(dataDir, 'zero-sessions.sqlite');
+    this.modelFabric = new ModelFabric({
+      configPath: path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
+      aliases: { 'zero-lead': 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
+    });
     this.sessions = new SessionManager({ dbPath: sessionDb });
     this.tasks = new TaskStateMachine({ dbPath: path.join(dataDir, 'zero-tasks.sqlite') });
     this.memory = new PersistentMemoryStore({ dbPath: path.join(dataDir, 'zero-memory.sqlite') });
@@ -358,24 +362,12 @@ export class ZeroNativeHost {
           messages: transcript.map((m) => ({ role: m.role, content: m.content })),
         };
 
-        const execOutcome = await canonicalModelFabric.executeChat(modelPayload).catch((err) => {
-          return {
-            data: {
-              choices: [
-                {
-                  message: {
-                    role: 'assistant',
-                    content: userContent.includes('Reply with exactly:')
-                      ? userContent.match(/Reply with exactly:\s*([^\n\r]+)/i)?.[1]?.trim() || 'ZERO_WS_ACCEPTANCE_OK'
-                      : `Zero AI completed your request. (${err.message})`,
-                  },
-                },
-              ],
-            },
-          };
-        });
-
-        const replyContent = execOutcome.data?.choices?.[0]?.message?.content || 'Action completed successfully.';
+        // Real provider output only: never fabricate a successful chat turn.
+        const execOutcome = await this.modelFabric.executeChat(modelPayload);
+        const replyContent = execOutcome.data?.choices?.[0]?.message?.content;
+        if (typeof replyContent !== 'string' || !replyContent.trim()) {
+          throw new Error('Model provider returned no text response; no completion was recorded.');
+        }
         this.sessions.appendMessage(sessionKey, { role: 'assistant', content: replyContent });
 
         // Emit streaming delta if ws is active
