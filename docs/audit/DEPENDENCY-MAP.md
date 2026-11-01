@@ -119,7 +119,7 @@ The desktop automation engine relies directly on Windows OS subsystems:
 1. **Plaintext Secret Storage:**
    `models/gateway-providers.json` stores active API keys in unencrypted plaintext on disk and within the git working tree:
    ```json
-   "apiKey": "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"
+   "apiKey": "nvapi-REDACTED"
    ```
 2. **Unvalidated Open Proxy:**
    `backend/gateway/server.mjs` endpoint `/api/gateway/proxy` forwards HTTP requests to arbitrary `targetUrl` or `baseUrl` specified in the client request body, without URL domain allowlisting or server-side destination verification.

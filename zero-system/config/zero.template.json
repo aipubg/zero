@@ -46,7 +46,7 @@
             "name": "nvidia/nemotron-3.5-super-vl-120b-a12b"
           }
         ],
-        "apiKey": "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"
+        "apiKey": "env:NVIDIA_API_KEY"
       }
     }
   },

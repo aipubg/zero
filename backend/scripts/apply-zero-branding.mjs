@@ -547,7 +547,7 @@ export function purgeStaleDatabaseSessions() {
             nv: {
               provider: 'nv',
               type: 'api_key',
-              key: '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',
+              key: 'env:NVIDIA_API_KEY',
             },
           },
         });

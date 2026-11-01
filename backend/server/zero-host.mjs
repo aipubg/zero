@@ -10,12 +10,22 @@
  * 4. Zero runtime monkeypatching
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = process.env.ZERO_ROOT || path.resolve(__dirname, '..', '..');
+
+const envFile = path.join(REPO_ROOT, '.env');
+if (fs.existsSync(envFile) && typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile(envFile);
+  } catch (err) {
+    console.warn('[Zero Host] Warning loading .env file:', err.message);
+  }
+}
 
 const PORT = Number(process.env.ZERO_PORT || process.env.PORT || 18789);
 const CONFIG_PATH = process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
@@ -32,13 +42,22 @@ async function bootstrap() {
   console.log(`[Zero Host] Root: ${REPO_ROOT}`);
   console.log(`[Zero Host] Config: ${CONFIG_PATH}`);
 
-  const serverEntryModule = path.join(REPO_ROOT, 'backend', 'node_modules', 'openclaw', 'dist', 'server-BS3i_xS_.mjs');
-  const { startGatewayServer } = await import(pathToFileURL(serverEntryModule).href);
+  const hasLegacyPackage = fs.existsSync(path.join(REPO_ROOT, 'backend', 'node_modules', 'openclaw', 'dist'));
+  const runtimeMode = process.env.ZERO_RUNTIME_MODE || (hasLegacyPackage ? 'legacy-compat' : 'native');
+  console.log(`[Zero Host] Runtime Mode: ${runtimeMode.toUpperCase()}`);
 
   let instance;
   try {
-    instance = await startGatewayServer(PORT);
-    console.log(`[Zero Host] Zero Host successfully listening on http://127.0.0.1:${PORT}`);
+    if (runtimeMode === 'legacy-compat') {
+      const { LegacyRuntimeAdapter } = await import('../../services/host/legacy-adapter.mjs');
+      const adapter = new LegacyRuntimeAdapter({ port: PORT, repoRoot: REPO_ROOT });
+      instance = await adapter.start();
+    } else {
+      const { ZeroNativeHost } = await import('../../services/host/native-gateway.mjs');
+      const host = new ZeroNativeHost({ port: PORT, host: '127.0.0.1' });
+      instance = await host.start();
+    }
+    console.log(`[Zero Host] Zero Host successfully operational on http://127.0.0.1:${PORT}`);
   } catch (err) {
     console.error(`[Zero Host] Fatal startup error on port ${PORT}:`, err.message);
     process.exit(1);

@@ -25,8 +25,8 @@
       }
     ],
     "apiKeys": [
-      "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"
+      "env:NVIDIA_API_KEY"
     ],
-    "apiKey": "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"
+    "apiKey": "env:NVIDIA_API_KEY"
   }
 ]

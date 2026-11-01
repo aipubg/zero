@@ -120,7 +120,7 @@
 ### Root Cause & Defect 2: Plaintext API Keys in Git
 - `models/gateway-providers.json` contains unencrypted API keys committed in git:
   ```json
-  "apiKey": "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"
+  "apiKey": "nvapi-REDACTED"
   ```
 
 ### Root Cause & Defect 3: Loose Model Substring Matching

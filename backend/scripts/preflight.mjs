@@ -9,7 +9,7 @@
 // Run: node backend/scripts/preflight.mjs [--json]
 
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -296,7 +296,14 @@ async function main() {
     haveGatewayToken ? undefined : "OpenClaw refuses to bind without auth; needed from Phase 3 onward, not for Phase 1",
   );
 
-  // 12. repo hygiene
+  // 12. secret scan & repo hygiene
+  const secretScan = spawnSync(process.execPath, [join(BACKEND, "scripts", "scan-secrets.mjs")], { encoding: "utf8" });
+  record(
+    "security.secrets",
+    secretScan.status === 0 ? "pass" : "fail",
+    secretScan.status === 0 ? "0 unmasked secrets in tracked files" : "unmasked credentials detected by secret scanner",
+  );
+
   record("repo.hygiene", "pass", "clean zero-only architecture; upstream clones purged");
   record("backend.size", "pass", `${(statSync(BACKEND).isDirectory() ? "dir" : "?")} at ${BACKEND}`);
 

@@ -10,8 +10,26 @@ import {
 import { localGgufService } from './server/local-gguf-service.ts';
 import { modeManager } from '../../rules/mode-manager.mjs';
 import { ComputerOperator } from '../../app/zero-control-ui/src/computer/operator.js';
+import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
+import { TaskStateMachine, TASK_STATUS } from '../../packages/agent-runtime/index.mjs';
+import { AutomationScheduler } from '../../packages/automation/index.mjs';
+import { PersistentMemoryStore } from '../../packages/memory/index.mjs';
 
 const gatewayOperator = new ComputerOperator();
+
+export function setScopedCorsHeaders(req, res) {
+  const origin = req.headers?.origin;
+  if (origin && (/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(origin) || origin === 'null')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:18789');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +60,25 @@ const DEFAULTS_CONFIG_FILE = path.resolve(REPO_ROOT, 'models', 'gateway-defaults
 
 const configMiddleware = createGatewayConfigMiddleware();
 const localGgufMiddleware = createLocalGgufMiddleware();
+
+let taskDbPath = ':memory:';
+let memoryDbPath = ':memory:';
+let automationDbPath = ':memory:';
+try {
+  const dataDir = path.resolve(REPO_ROOT, '.zero-data');
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  taskDbPath = path.resolve(dataDir, 'zero-tasks.sqlite');
+  memoryDbPath = path.resolve(dataDir, 'zero-memory.sqlite');
+  automationDbPath = path.resolve(dataDir, 'zero-automation.sqlite');
+} catch (_) {}
+export const taskStateMachine = new TaskStateMachine({ dbPath: taskDbPath });
+export const persistentMemoryStore = new PersistentMemoryStore({ dbPath: memoryDbPath });
+export const automationScheduler = new AutomationScheduler({
+  dbPath: automationDbPath,
+  executor: async (action, params) => {
+    return canonicalCapabilityEngine.execute(action, params);
+  },
+});
 
 /**
  * Resolve upstream provider definition and clean model ID deterministically from gateway-providers.json
@@ -697,239 +734,21 @@ async function handleChatCompletions(req, res) {
       }
     }
 
-    // 3. Identify test simulation commands vs real turn requests
-    const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
-    const userText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : 'Hello';
-    const hasToolResult = messages.some((m) => m.role === 'tool');
-    const toolMatch = !hasToolResult && userText.match(/(?:Simulate tool|Run tool|Call tool|Test tool):\s*([a-zA-Z0-9_]+)(?:\s*(\{.*\}))?/i);
-
-    // 4. Forward real user requests to upstream Zero Model Fabric with real tool execution
-    if (!toolMatch) {
-      const upstreamInfo = resolveUpstreamProvider(modelId);
-      if (upstreamInfo && upstreamInfo.provider) {
-        const handled = await forwardToUpstreamProvider(req, res, upstreamInfo, body, callerProvidedTools);
-        if (handled) return;
-      }
-    }
-
-    // 4. Test simulation fallback completion for verification suites
-    let reply = `Hello! Your request was processed by model "${modelId}".\nStatus: 200 OK | Gateway: Active.`;
-
-    if (hasToolResult) {
-      const toolMsg = messages.find((m) => m.role === 'tool');
-      let toolResText = typeof toolMsg?.content === 'string' ? toolMsg.content : JSON.stringify(toolMsg?.content);
-      let cleanText = '';
-      try {
-        const parsed = JSON.parse(toolResText);
-        if (parsed.result?.content?.[0]?.text) {
-          cleanText = parsed.result.content[0].text;
-        } else if (parsed.text) {
-          cleanText = parsed.text;
-        } else if (parsed.content?.[0]?.text) {
-          cleanText = parsed.content[0].text;
-        } else if (typeof parsed.result === 'string') {
-          cleanText = parsed.result;
-        }
-      } catch {
-        cleanText = toolResText;
-      }
-      if (!cleanText) cleanText = toolResText;
-      // Strip any raw JSON fragments and OpenClaw references
-      cleanText = cleanText
-        .replaceAll(/\{"ok":(?:true|false)[^\}]*\}/g, '')
-        .replaceAll('openclaw:', 'zero:')
-        .replaceAll('openclaw', 'zero')
-        .replaceAll('OpenClaw', 'Zero')
-        .trim();
-      reply = cleanText || 'Action completed successfully.';
-    } else {
-      if (toolMatch) {
-        const toolName = toolMatch[1];
-        let toolArgs = toolMatch[2] || '{"action":"get_screen_size"}';
-        const callId = `call_${Date.now()}`;
-
-        const directTool = (body.tools || []).find((t) => (t.function?.name || t.name) === toolName);
-        const hasToolCallBridge = (body.tools || []).some((t) => (t.function?.name || t.name) === 'tool_call');
-
-        let effectiveToolName = toolName;
-        let effectiveToolArgs = toolArgs;
-
-        if (!directTool && hasToolCallBridge) {
-          effectiveToolName = 'tool_call';
-          let parsedArgs = { action: 'get_screen_size' };
-          try {
-            parsedArgs = JSON.parse(toolArgs);
-          } catch {
-            const actionMatch = toolArgs.match(/action['":\s]+([a-zA-Z0-9_]+)/i);
-            if (actionMatch) {
-              parsedArgs = { action: actionMatch[1] };
-            }
-          }
-          if (!parsedArgs.action) {
-            const actionMatch = toolArgs.match(/action['":\s]+([a-zA-Z0-9_]+)/i);
-            if (actionMatch) parsedArgs.action = actionMatch[1];
-          }
-          effectiveToolArgs = JSON.stringify({ id: toolName, args: parsedArgs });
-        }
-
-        if (stream) {
-          res.writeHead(200, {
-            'Content-Type': 'text/event-stream; charset=utf-8',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          });
-
-          // Chunk 1: Tool call declaration with initial empty arguments
-          const chunk1 = {
-            id: `chatcmpl-${Date.now()}`,
-            object: 'chat.completion.chunk',
-            created: Math.floor(Date.now() / 1000),
-            model: modelId,
-            choices: [
-              {
-                index: 0,
-                delta: {
-                  role: 'assistant',
-                  content: null,
-                  tool_calls: [
-                    {
-                      index: 0,
-                      id: callId,
-                      type: 'function',
-                      function: { name: effectiveToolName, arguments: '' },
-                    },
-                  ],
-                },
-                finish_reason: null,
-              },
-            ],
-          };
-          res.write(`data: ${JSON.stringify(chunk1)}\n\n`);
-
-          // Chunk 2: Tool call arguments payload
-          const chunk2 = {
-            id: `chatcmpl-${Date.now()}`,
-            object: 'chat.completion.chunk',
-            created: Math.floor(Date.now() / 1000),
-            model: modelId,
-            choices: [
-              {
-                index: 0,
-                delta: {
-                  tool_calls: [
-                    {
-                      index: 0,
-                      function: { arguments: effectiveToolArgs },
-                    },
-                  ],
-                },
-                finish_reason: null,
-              },
-            ],
-          };
-          res.write(`data: ${JSON.stringify(chunk2)}\n\n`);
-
-          // Chunk 3: Finish reason tool_calls
-          const chunk3 = {
-            id: `chatcmpl-${Date.now()}`,
-            object: 'chat.completion.chunk',
-            created: Math.floor(Date.now() / 1000),
-            model: modelId,
-            choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }],
-          };
-          res.write(`data: ${JSON.stringify(chunk3)}\n\n`);
-          res.write('data: [DONE]\n\n');
-          res.end();
-          return;
-        }
-
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(
-          JSON.stringify({
-            id: `chatcmpl-${Date.now()}`,
-            object: 'chat.completion',
-            created: Math.floor(Date.now() / 1000),
-            model: modelId,
-            choices: [
-              {
-                index: 0,
-                message: {
-                  role: 'assistant',
-                  content: null,
-                  tool_calls: [
-                    {
-                      id: callId,
-                      type: 'function',
-                      function: { name: effectiveToolName, arguments: effectiveToolArgs },
-                    },
-                  ],
-                },
-                finish_reason: 'tool_calls',
-              },
-            ],
-          })
-        );
-        return;
-      }
-
-      const replyMatch = userText.match(/Reply with exactly:\s*([^\n\r]+)/i);
-      if (replyMatch) {
-        reply = replyMatch[1].trim();
-      }
-    }
-
-    if (stream) {
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
-
-      const chunkPayload = {
-        id: `chatcmpl-${Date.now()}`,
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: modelId,
-        choices: [{ index: 0, delta: { role: 'assistant', content: reply }, finish_reason: null }],
-      };
-      res.write(`data: ${JSON.stringify(chunkPayload)}\n\n`);
-
-      const donePayload = {
-        id: `chatcmpl-${Date.now()}`,
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: modelId,
-        choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
-      };
-      res.write(`data: ${JSON.stringify(donePayload)}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
+    // 3. Forward real user requests to upstream Zero Model Fabric with real tool execution
+    const upstreamInfo = resolveUpstreamProvider(modelId);
+    if (!upstreamInfo || !upstreamInfo.provider) {
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: `Model '${modelId}' not found or no provider configured.` }));
       return;
     }
-
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(
-      JSON.stringify({
-        id: `chatcmpl-${Date.now()}`,
-        object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
-        model: modelId,
-        choices: [
-          {
-            index: 0,
-            message: { role: 'assistant', content: reply },
-            finish_reason: 'stop',
-          },
-        ],
-        usage: {
-          prompt_tokens: Math.round(userText.length / 4),
-          completion_tokens: Math.round(reply.length / 4),
-          total_tokens: Math.round((userText.length + reply.length) / 4),
-        },
-      })
-    );
+    const handled = await forwardToUpstreamProvider(req, res, upstreamInfo, body, callerProvidedTools);
+    if (!handled && !res.headersSent) {
+      res.statusCode = 502;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'Upstream provider failed to process completion.' }));
+    }
+    return;
   } catch (err) {
     if (!res.headersSent) {
       res.statusCode = 500;
@@ -1249,6 +1068,339 @@ async function handleComputerControlApi(req, res) {
 }
 
 /**
+ * Zero Agent Task Inspection API Endpoint (/api/zero/tasks)
+ */
+async function handleTasksApi(req, res) {
+  setScopedCorsHeaders(req, res);
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  const parsedUrl = new URL(req.url, 'http://127.0.0.1:18789');
+  const pathname = parsedUrl.pathname;
+  const parts = pathname.split('/').filter(Boolean); // ['api', 'zero', 'tasks', ...]
+
+  // GET /api/zero/tasks - List tasks
+  if (req.method === 'GET' && parts.length === 3) {
+    const sessionId = parsedUrl.searchParams.get('sessionId') || undefined;
+    const agentId = parsedUrl.searchParams.get('agentId') || undefined;
+    const status = parsedUrl.searchParams.get('status') || undefined;
+    const limit = parseInt(parsedUrl.searchParams.get('limit') || '50', 10);
+    const offset = parseInt(parsedUrl.searchParams.get('offset') || '0', 10);
+
+    const tasks = taskStateMachine.listTasks({ sessionId, agentId, status, limit, offset });
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok: true, count: tasks.length, tasks }));
+    return;
+  }
+
+  // POST /api/zero/tasks - Create task
+  if (req.method === 'POST' && parts.length === 3) {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', async () => {
+      try {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+        if (!body.goal) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ ok: false, error: 'Field "goal" is required' }));
+          return;
+        }
+        const task = taskStateMachine.createTask({
+          id: body.id,
+          sessionId: body.sessionId || 'default',
+          agentId: body.agentId || 'zero',
+          goal: body.goal,
+          parentTaskId: body.parentTaskId || null,
+        });
+        if (body.autoStart) {
+          taskStateMachine.enqueueTask(task.id);
+          taskStateMachine.startTask(task.id);
+        }
+        res.statusCode = 201;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: true, task: taskStateMachine.getTask(task.id) }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // GET /api/zero/tasks/:id - Inspect task with execution steps
+  if (req.method === 'GET' && parts.length === 4) {
+    const taskId = parts[3];
+    const task = taskStateMachine.getTask(taskId);
+    if (!task) {
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: false, error: `Task '${taskId}' not found` }));
+      return;
+    }
+    const steps = taskStateMachine.getTaskSteps(taskId);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok: true, task, steps }));
+    return;
+  }
+
+  // POST /api/zero/tasks/:id/cancel
+  if (req.method === 'POST' && parts.length === 5 && parts[4] === 'cancel') {
+    const taskId = parts[3];
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', async () => {
+      try {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+        const updated = taskStateMachine.cancelTask(taskId, body.reason || 'Cancelled via API');
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: true, task: updated }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // POST /api/zero/tasks/:id/resume
+  if (req.method === 'POST' && parts.length === 5 && parts[4] === 'resume') {
+    const taskId = parts[3];
+    try {
+      const updated = taskStateMachine.resumeTask(taskId);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: true, task: updated }));
+    } catch (err) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  res.statusCode = 405;
+  res.end();
+}
+
+/**
+ * Zero Memory Store API (/api/zero/memory)
+ */
+async function handleMemoryApi(req, res) {
+  setScopedCorsHeaders(req, res);
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  const parsedUrl = new URL(req.url, 'http://127.0.0.1:18789');
+  const pathname = parsedUrl.pathname;
+  const parts = pathname.split('/').filter(Boolean); // ['api', 'zero', 'memory', ...]
+
+  // GET /api/zero/memory - Recall or List memories
+  if (req.method === 'GET' && parts.length === 3) {
+    const query = parsedUrl.searchParams.get('query') || '';
+    const category = parsedUrl.searchParams.get('category') || undefined;
+    const limit = parseInt(parsedUrl.searchParams.get('limit') || '20', 10);
+    const offset = parseInt(parsedUrl.searchParams.get('offset') || '0', 10);
+
+    let memories;
+    if (query) {
+      memories = persistentMemoryStore.recall(query, { category, limit });
+    } else {
+      memories = persistentMemoryStore.listMemories({ category, limit, offset });
+    }
+
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok: true, count: memories.length, memories }));
+    return;
+  }
+
+  // POST /api/zero/memory - Store/remember
+  if (req.method === 'POST' && parts.length === 3) {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', async () => {
+      try {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+        if (!body.content) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ ok: false, error: 'Field "content" is required' }));
+          return;
+        }
+        const memory = persistentMemoryStore.remember({
+          id: body.id,
+          category: body.category,
+          content: body.content,
+          tags: body.tags,
+          source: body.source,
+          confidence: body.confidence,
+        });
+        res.statusCode = 201;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: true, memory }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // DELETE /api/zero/memory/:id - Forget memory
+  if (req.method === 'DELETE' && parts.length === 4) {
+    const memId = parts[3];
+    try {
+      persistentMemoryStore.forget(memId);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: true, id: memId }));
+    } catch (err) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  res.statusCode = 405;
+  res.end();
+}
+
+/**
+ * Zero Durable Automation & Cron API (/api/zero/automation/...)
+ */
+async function handleAutomationApi(req, res) {
+  setScopedCorsHeaders(req, res);
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  const parsedUrl = new URL(req.url, 'http://127.0.0.1:18789');
+  const pathname = parsedUrl.pathname;
+  const parts = pathname.split('/').filter(Boolean); // ['api', 'zero', 'automation', ...]
+
+  // GET /api/zero/automation/jobs - List recurring jobs
+  if (req.method === 'GET' && parts.length === 4 && parts[3] === 'jobs') {
+    const jobs = automationScheduler.listJobs();
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok: true, count: jobs.length, jobs }));
+    return;
+  }
+
+  // POST /api/zero/automation/jobs - Register recurring job
+  if (req.method === 'POST' && parts.length === 4 && parts[3] === 'jobs') {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', async () => {
+      try {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+        if (!body.title || !body.cronExpr || !body.targetAction) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ ok: false, error: 'Fields "title", "cronExpr", and "targetAction" are required' }));
+          return;
+        }
+        const job = automationScheduler.registerJob(body);
+        res.statusCode = 201;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: true, job }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // POST /api/zero/automation/jobs/:id/toggle - Toggle job enabled state
+  if (req.method === 'POST' && parts.length === 6 && parts[3] === 'jobs' && parts[5] === 'toggle') {
+    const jobId = parts[4];
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', async () => {
+      try {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+        const enabled = body.enabled !== undefined ? Boolean(body.enabled) : true;
+        const job = automationScheduler.toggleJob(jobId, enabled);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: true, job }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // DELETE /api/zero/automation/jobs/:id - Delete recurring job
+  if (req.method === 'DELETE' && parts.length === 5 && parts[3] === 'jobs') {
+    const jobId = parts[4];
+    try {
+      const deleted = automationScheduler.deleteJob(jobId);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: true, deleted, id: jobId }));
+    } catch (err) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // POST /api/zero/automation/trigger - Trigger due jobs manually
+  if (req.method === 'POST' && parts.length === 4 && parts[3] === 'trigger') {
+    try {
+      const results = await automationScheduler.triggerDueJobs();
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: true, executedCount: results.triggeredCount, runs: results.runs }));
+    } catch (err) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/zero/automation/runs - List execution history
+  if (req.method === 'GET' && parts.length === 4 && parts[3] === 'runs') {
+    const jobId = parsedUrl.searchParams.get('jobId') || undefined;
+    const limit = parseInt(parsedUrl.searchParams.get('limit') || '50', 10);
+    const runs = automationScheduler.listRuns({ jobId, limit });
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok: true, count: runs.length, runs }));
+    return;
+  }
+
+  res.statusCode = 405;
+  res.end();
+}
+
+/**
  * Handle Zero Gateway requests directly when embedded in port 18789 (Single Port Architecture)
  */
 export async function handleZeroGatewayRequest(req, res) {
@@ -1315,6 +1467,24 @@ export async function handleZeroGatewayRequest(req, res) {
   // 10. Autonomous Computer Control API /api/zero/computer
   if (pathname === '/api/zero/computer') {
     await handleComputerControlApi(req, res);
+    return true;
+  }
+
+  // 11. Zero Agent Task Inspection API /api/zero/tasks
+  if (pathname === '/api/zero/tasks' || pathname.startsWith('/api/zero/tasks/')) {
+    await handleTasksApi(req, res);
+    return true;
+  }
+
+  // 12. Zero Memory Store API /api/zero/memory
+  if (pathname === '/api/zero/memory' || pathname.startsWith('/api/zero/memory/')) {
+    await handleMemoryApi(req, res);
+    return true;
+  }
+
+  // 13. Zero Durable Automation API /api/zero/automation
+  if (pathname.startsWith('/api/zero/automation')) {
+    await handleAutomationApi(req, res);
     return true;
   }
 

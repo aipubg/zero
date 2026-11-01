@@ -7,6 +7,16 @@ if (-not $ZeroRoot) {
 }
 $env:ZERO_ROOT = $ZeroRoot
 
+# Load local environment variables from .env if present
+$EnvFilePath = Join-Path $ZeroRoot '.env'
+if (Test-Path $EnvFilePath) {
+  Get-Content $EnvFilePath | ForEach-Object {
+    if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') {
+      [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2].Trim(), 'Process')
+    }
+  }
+}
+
 # Ensure config paths match dynamic installation location
 $ConfigPath = Join-Path $ZeroRoot 'zero-system\config\zero.json'
 if (Test-Path $ConfigPath) {
