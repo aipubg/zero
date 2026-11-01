@@ -35,6 +35,7 @@ import { AutomationScheduler } from '../../packages/automation/index.mjs';
 import { PersistentMemoryStore } from '../../packages/memory/index.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
+import { canonicalScreenObserver } from '../../packages/screen-intelligence/index.mjs';
 import { handleZeroGatewayRequest } from '../../backend/gateway/server.mjs';
 import {
   isValidLoopbackHost,
@@ -780,6 +781,51 @@ export class ZeroNativeHost {
           },
         };
 
+      case 'gateway.liveness':
+        return {
+          ok: true,
+          status: 'live',
+          uptime: process.uptime(),
+          pid: process.pid,
+          memory: process.memoryUsage(),
+          bootId: this.bootId,
+          runtime: 'zero-native',
+          timestamp: Date.now(),
+        };
+
+      case 'gateway.readiness':
+        return {
+          ok: true,
+          status: 'ready',
+          services: {
+            gateway: 'ready',
+            modelFabric: 'ready',
+            capabilityEngine: 'ready',
+            sessionStore: 'ready',
+            taskStore: 'ready',
+          },
+          bootId: this.bootId,
+          timestamp: Date.now(),
+        };
+
+      case 'gateway.features':
+        return {
+          ok: true,
+          status: 'ok',
+          features: {
+            models: { active: true, streaming: true, localGguf: true, cloudProviders: true },
+            agents: { active: true, delegation: true },
+            computer: { active: true, platform: 'win32', automation: ['uia', 'dom', 'user32'] },
+            memory: { active: true, store: 'sqlite-wal' },
+            automation: { active: true, scheduler: 'durable-cron' },
+            skills: { active: true, nativeCount: 11 },
+            plugins: { active: true, nativeSdk: true },
+            voice: { active: false, plannedPhase: 15 },
+            screen: { active: false, plannedPhase: 8 },
+          },
+          timestamp: Date.now(),
+        };
+
       case 'agents.list':
       case 'gateway.agents.list':
         return {
@@ -1044,11 +1090,21 @@ export class ZeroNativeHost {
         try {
           windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {});
         } catch {}
+        const observerTelemetry = canonicalScreenObserver.getStatus();
         return {
           ok: true,
           screen: { available: true, active: true },
           accessibility: { available: true, active: true, engine: 'UIAutomation' },
           activeWindow: windowState?.window || null,
+          observer: observerTelemetry,
+        };
+      }
+
+      case 'zero.observation.query': {
+        const queryRes = canonicalScreenObserver.queryContext(params.query || '');
+        return {
+          ok: true,
+          ...queryRes,
         };
       }
 

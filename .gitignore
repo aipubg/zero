@@ -19,6 +19,8 @@ __pycache__/
 zero-data/
 .openclaw/
 zero-system/state/
+zero-system/config/user-prefs.json
+zero-system/config/*.tmp*
 *.sqlite
 *.sqlite*
 *.db

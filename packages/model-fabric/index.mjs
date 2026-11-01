@@ -32,6 +32,13 @@ export class ModelFabric {
     this.providers = new Map();
     this.healthStats = new Map();
     this.upstreamRequestCount = 0;
+    this.agentBindingsPath = options.agentBindingsPath || path.resolve(__dirname, '..', '..', 'models', 'gateway-defaults.json');
+    this.usageStats = {
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalRequests: 0,
+      byModel: {},
+    };
 
     if (Array.isArray(options.providers)) {
       this.loadProviders(options.providers);
@@ -198,6 +205,78 @@ export class ModelFabric {
     return report;
   }
 
+  recordUsage(modelId, promptTokens = 0, completionTokens = 0) {
+    this.usageStats.totalRequests++;
+    this.usageStats.totalPromptTokens += promptTokens;
+    this.usageStats.totalCompletionTokens += completionTokens;
+
+    if (!this.usageStats.byModel[modelId]) {
+      this.usageStats.byModel[modelId] = {
+        requests: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      };
+    }
+    const m = this.usageStats.byModel[modelId];
+    m.requests++;
+    m.promptTokens += promptTokens;
+    m.completionTokens += completionTokens;
+    m.totalTokens += (promptTokens + completionTokens);
+  }
+
+  getUsageReport() {
+    return {
+      ...this.usageStats,
+      totalTokens: this.usageStats.totalPromptTokens + this.usageStats.totalCompletionTokens,
+    };
+  }
+
+  calculateContextBudget(modelId, messages = []) {
+    const resolution = this.resolveModel(modelId);
+    const contextWindow = 131072; // Default Nemotron/Modern LLM context
+    let rawChars = 0;
+    for (const msg of messages) {
+      if (typeof msg.content === 'string') rawChars += msg.content.length;
+      else if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part?.text) rawChars += part.text.length;
+        }
+      }
+    }
+    const estimatedPromptTokens = Math.ceil(rawChars / 3.8) + (messages.length * 4) + 10;
+    const remainingTokens = Math.max(0, contextWindow - estimatedPromptTokens);
+    const maxCompletionTokens = Math.min(4096, remainingTokens);
+
+    return {
+      modelId: resolution?.canonicalModelId || modelId,
+      contextWindow,
+      estimatedPromptTokens,
+      remainingTokens,
+      maxCompletionTokens,
+      withinBudget: estimatedPromptTokens < (contextWindow - 128),
+    };
+  }
+
+  resolveAgentModel(agentId = 'zero') {
+    try {
+      if (this.agentBindingsPath && fs.existsSync(this.agentBindingsPath)) {
+        const raw = fs.readFileSync(this.agentBindingsPath, 'utf8');
+        const data = JSON.parse(raw);
+        const binding = data?.agentBindings?.[agentId]?.model;
+        if (binding) {
+          const resolved = this.resolveModel(binding);
+          if (resolved) return resolved;
+        }
+        if (data?.defaults?.primary) {
+          const resolved = this.resolveModel(data.defaults.primary);
+          if (resolved) return resolved;
+        }
+      }
+    } catch (_) {}
+    return this.resolveModel('zero-lead');
+  }
+
   /**
    * Execute chat completion with backoff retries and optional fallback cascade.
    */
@@ -327,8 +406,13 @@ export class ModelFabric {
             try {
               const json = JSON.parse(trimmed.slice(6));
               const choice = json.choices?.[0];
+              const deltaContent = choice?.delta?.content || choice?.delta?.reasoning_content || null;
+              if (json.usage) {
+                this.recordUsage(json.model || 'streamed-model', json.usage.prompt_tokens, json.usage.completion_tokens);
+              }
               yield {
-                delta: choice?.delta?.content || null,
+                delta: deltaContent,
+                reasoning_content: choice?.delta?.reasoning_content || null,
                 tool_calls: choice?.delta?.tool_calls || null,
                 finish_reason: choice?.finish_reason || null,
                 usage: json.usage || null,

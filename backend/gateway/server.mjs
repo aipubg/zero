@@ -1441,11 +1441,62 @@ export async function handleZeroGatewayRequest(req, res) {
   const url = req.url || '/';
   const pathname = url.split('?')[0];
 
-  // 1. Health check
-  if (pathname === '/health') {
+  // 1. Health, Liveness, Readiness & Feature Endpoints
+  if (pathname === '/health' || pathname === '/health/liveness' || pathname === '/health/readiness' || pathname === '/health/features') {
     setScopedCorsHeaders(req, res);
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
+
+    if (pathname === '/health/liveness') {
+      res.end(JSON.stringify({
+        status: 'live',
+        runtime: 'zero-native',
+        uptime: process.uptime(),
+        pid: process.pid,
+        memory: process.memoryUsage(),
+        nodeVersion: process.version,
+        platform: process.platform,
+        timestamp: Date.now(),
+      }));
+      return true;
+    }
+
+    if (pathname === '/health/readiness') {
+      res.end(JSON.stringify({
+        status: 'ready',
+        runtime: 'zero-native',
+        port: PORT,
+        services: {
+          gateway: 'ready',
+          modelFabric: 'ready',
+          capabilityEngine: 'ready',
+          sessionStore: 'ready',
+          taskStore: 'ready',
+        },
+        timestamp: Date.now(),
+      }));
+      return true;
+    }
+
+    if (pathname === '/health/features') {
+      res.end(JSON.stringify({
+        status: 'ok',
+        features: {
+          models: { active: true, streaming: true, localGguf: true, cloudProviders: true },
+          agents: { active: true, delegation: true },
+          computer: { active: true, platform: 'win32', automation: ['uia', 'dom', 'user32'] },
+          memory: { active: true, store: 'sqlite-wal' },
+          automation: { active: true, scheduler: 'durable-cron' },
+          skills: { active: true, nativeCount: 11 },
+          plugins: { active: true, nativeSdk: true },
+          voice: { active: false, plannedPhase: 15 },
+          screen: { active: false, plannedPhase: 8 },
+        },
+        timestamp: Date.now(),
+      }));
+      return true;
+    }
+
     res.end(JSON.stringify({ status: 'ok', gateway: 'zero-gateway', runtime: 'zero-native', version: '1.0.0', port: PORT }));
     return true;
   }
