@@ -346,7 +346,11 @@ function Dispatch-Action($req) {
                     $fgHwnd = [WinApiCore]::GetForegroundWindow()
                     $fgEl = [System.Windows.Automation.AutomationElement]::FromHandle($fgHwnd)
                     if ($null -ne $fgEl) {
-                        $editEl = $fgEl.FindFirst([System.Windows.Automation.TreeScope]::Subtree, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))
+                        $condList = New-Object System.Collections.Generic.List[System.Windows.Automation.Condition]
+                        $condList.Add((New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))
+                        $condList.Add((New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document)))
+                        $orCond = New-Object System.Windows.Automation.OrCondition($condList.ToArray())
+                        $editEl = $fgEl.FindFirst([System.Windows.Automation.TreeScope]::Subtree, $orCond)
                         if ($null -ne $editEl) {
                             $valPattern = $null
                             if ($editEl.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valPattern)) {
@@ -627,6 +631,40 @@ function Dispatch-Action($req) {
             } else {
                 throw "Missing url parameter"
             }
+        }
+
+        { $_ -in "inspect_media_playback", "verify_playback" } {
+            $hwnd = [WinApiCore]::GetForegroundWindow()
+            $playbackState = "UNVERIFIED"
+            $audioPlaying = $false
+            $title = ""
+            if ($hwnd -ne [IntPtr]::Zero) {
+                $sb = New-Object System.Text.StringBuilder 256
+                [WinApiCore]::GetWindowText($hwnd, $sb, $sb.Capacity) | Out-Null
+                $title = $sb.ToString()
+                try {
+                    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                    if ($null -ne $root) {
+                        $btnCondition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+                        $buttons = $root.FindAll([System.Windows.Automation.TreeScope]::Subtree, $btnCondition)
+                        for ($i = 0; $i -lt [Math]::Min($buttons.Count, 30); $i++) {
+                            $btnName = [string]$buttons[$i].Current.Name.ToLower()
+                            if ($btnName.Contains("pause (k)") -or $btnName.Contains("pause video")) {
+                                $playbackState = "PLAYING"
+                                $audioPlaying = $true
+                                break
+                            } elseif ($btnName.Contains("play (k)") -or $btnName.Contains("play video")) {
+                                $playbackState = "PAUSED"
+                                $audioPlaying = $false
+                                break
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            $result["playbackState"] = $playbackState
+            $result["audioPlaying"] = $audioPlaying
+            $result["title"] = $title
         }
 
         { $_ -in "get_elements", "get_uia_elements" } {

@@ -276,13 +276,31 @@ export class ComputerOperator {
         case "type":
         case "type_text": {
           const text = String(params.text ?? "");
-          if (!text) return { ok: false, message: "Missing text parameter for type_text" };
+          if (!text) {
+            return { ok: false, executed: false, verified: false, completed: false, outcome: "FAILED", message: "Missing text parameter for type_text" };
+          }
           const res = await Driver.typeText(text, signal);
           if (res?.error === "computer-hold:human-bailout") {
             this.handleHumanBailout(res.message);
-            return res;
+            return { ok: false, executed: false, verified: false, completed: false, outcome: "BLOCKED", error: res.error, message: res.message };
           }
-          return { ok: true, action: "type_text", length: text.length, verifiedText: res?.verifiedText || text, details: res };
+          const executed = Boolean(res?.ok || res?.typedChars !== undefined);
+          const verifiedText = res?.verifiedText !== undefined ? res.verifiedText : null;
+          // Genuine verification: read-back must contain the typed text
+          const verified = Boolean(verifiedText !== null && verifiedText.includes(text));
+          const outcome = verified ? "COMPLETED" : (executed ? (verifiedText !== null ? "FAILED" : "UNVERIFIED") : "FAILED");
+          return {
+            ok: executed,
+            executed,
+            verified,
+            completed: outcome === "COMPLETED",
+            outcome,
+            action: "type_text",
+            length: text.length,
+            verifiedText, // STRICT: No fallback to text!
+            expectedText: text,
+            details: res
+          };
         }
 
         case "press":
@@ -395,6 +413,8 @@ export class ComputerOperator {
           const res = await Driver.openUrl(url, signal);
           let activeWin = null;
           let clickCoords = null;
+          let playbackState = "UNVERIFIED";
+          let audioActive = false;
 
           if (isMusicOrVideo) {
             try {
@@ -463,7 +483,37 @@ export class ComputerOperator {
               await Driver.pressKey("up", signal);
               await Driver.pressKey("volume_up", signal);
 
-              // 7. Refresh foreground window state
+              // 7. Independently verify playback state
+              try {
+                const pbCheck = await Driver.inspectMediaPlayback(signal);
+                if (pbCheck?.playbackState && pbCheck.playbackState !== "UNVERIFIED") {
+                  playbackState = pbCheck.playbackState;
+                  audioActive = Boolean(pbCheck.audioPlaying);
+                }
+              } catch {}
+
+              // Secondary check: inspect UIA elements for "Pause (k)" vs "Play (k)"
+              if (playbackState === "UNVERIFIED") {
+                try {
+                  const checkUia = await Driver.getElements(signal);
+                  if (Array.isArray(checkUia?.elements)) {
+                    for (const el of checkUia.elements) {
+                      const n = String(el.name || "").toLowerCase();
+                      if (n.includes("pause (k)") || n.includes("pause video")) {
+                        playbackState = "PLAYING";
+                        audioActive = true;
+                        break;
+                      } else if (n.includes("play (k)") || n.includes("play video")) {
+                        playbackState = "PAUSED";
+                        audioActive = false;
+                        break;
+                      }
+                    }
+                  }
+                } catch {}
+              }
+
+              // 8. Refresh foreground window state
               try { activeWin = await Driver.getWindowState(signal); } catch {}
             } catch (err) {
               console.warn(`[Zero ComputerOperator] Music playback automation warning:`, err.message);
@@ -473,17 +523,26 @@ export class ComputerOperator {
           }
 
           const winTitle = activeWin?.title || "YouTube";
+          const executed = Boolean(res?.ok !== false);
+          const isVerified = (playbackState === "PLAYING");
+          const outcome = isVerified ? "COMPLETED" : (executed ? "UNVERIFIED" : "FAILED");
+
           return {
-            ok: true,
+            ok: executed,
+            executed,
+            verified: isVerified,
+            completed: outcome === "COMPLETED",
+            outcome,
             action: normalizedAction,
             url,
             videoId,
             videoTitle: videoTitle || winTitle,
             thumbnail: videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "",
             clickCoordinates: clickCoords,
-            audioPlaying: isMusicOrVideo,
-            audioActive: isMusicOrVideo,
-            message: `Browser opened at ${url}. ${clickCoords ? `Physical click executed at (${clickCoords.x}, ${clickCoords.y}).` : ""} Audio playing verified in "${winTitle}".`,
+            playbackState,
+            audioPlaying: audioActive,
+            audioActive, // STRICT: Only true when verified playing!
+            message: `Browser opened at ${url}. ${clickCoords ? `Physical click executed at (${clickCoords.x}, ${clickCoords.y}).` : ""} Playback status: ${playbackState}.`,
             window: activeWin,
             details: res,
           };

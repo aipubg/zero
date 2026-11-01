@@ -68,9 +68,21 @@ try {
   manifest.controlUi = controlUi;
   writeFileSync(sourceManifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
+  // Sync built bundle directly to first-party dist/web targets
+  const repoDistWeb = resolve(root, "..", "..", "dist", "web");
+  const targetPluginDir1 = join(repoDistWeb, "plugins", "control-ui", "zero-control-ui", generation);
+  const targetPluginDir2 = join(repoDistWeb, "__openclaw__", "plugins", "control-ui", "zero-control-ui", generation);
+  mkdirSync(targetPluginDir1, { recursive: true });
+  mkdirSync(targetPluginDir2, { recursive: true });
+  copyFileSync(join(scratch, "index.js"), join(targetPluginDir1, "index.js"));
+  copyFileSync(join(scratch, "index.css"), join(targetPluginDir1, "index.css"));
+  copyFileSync(join(scratch, "index.js"), join(targetPluginDir2, "index.js"));
+  copyFileSync(join(scratch, "index.css"), join(targetPluginDir2, "index.css"));
+
   console.log(`generation: ${generation}`);
   console.log(`entry:      ${controlUi.entry} (${js.length} bytes)`);
   console.log(`styles:     ${controlUi.styles[0]} (${css.length} bytes)`);
+  console.log(`synced to:  dist/web/plugins/control-ui/zero-control-ui/${generation}`);
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

@@ -529,6 +529,13 @@ export async function getElements(signal = null) {
 }
 
 /**
+ * Inspect live media playback state (checks YouTube play/pause UI state).
+ */
+export async function inspectMediaPlayback(signal = null) {
+  return await runNativeWinAction("inspect_media_playback", {}, signal);
+}
+
+/**
  * Inspect the exact target element and window under current cursor (Point & Ask).
  */
 export async function getCursorTarget(signal = null) {

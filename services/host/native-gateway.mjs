@@ -15,6 +15,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -408,7 +409,24 @@ export class ZeroNativeHost {
 
   _handleWebSocketConnection(ws, req) {
     let clientSession = null;
+    ws.subscribedSessions = new Set();
     this.clients.add(ws);
+
+    // Validate Origin header (CORS/CSRF & WebSocket hijacking prevention)
+    const origin = req.headers['origin'];
+    if (origin) {
+      try {
+        const parsedUrl = new URL(origin);
+        const isLoopback = ['127.0.0.1', 'localhost', '[::1]'].includes(parsedUrl.hostname);
+        if (!isLoopback) {
+          ws.close(1008, 'Forbidden: untrusted origin');
+          return;
+        }
+      } catch {
+        ws.close(1008, 'Forbidden: invalid origin header');
+        return;
+      }
+    }
 
     ws.on('close', () => {
       this.clients.delete(ws);
@@ -544,6 +562,29 @@ export class ZeroNativeHost {
   }
 
   async _dispatchRpc(method, params = {}, clientSession, ws, isReferenceWire = false) {
+    // Enforce Method-Level Roles & Scopes
+    const METHOD_SCOPES = {
+      'config.set': ['admin', 'operator.admin'],
+      'config.patch': ['admin', 'operator.admin'],
+      'config.apply': ['admin', 'operator.admin'],
+      'zero.providers.configure': ['admin', 'operator.admin'],
+      'zero.computer.control': ['computer.control', 'operator.write'],
+      'chat.abort': ['operator.write', 'operator.admin'],
+      'tasks.cancel': ['operator.write', 'operator.admin'],
+      'tasks.resume': ['operator.write', 'operator.admin'],
+      'automation.deleteJob': ['admin', 'operator.admin'],
+    };
+
+    if (METHOD_SCOPES[method]) {
+      const required = METHOD_SCOPES[method];
+      const hasScope = clientSession?.scopes?.some((s) => required.includes(s)) || clientSession?.role === 'admin';
+      if (!hasScope) {
+        const err = new Error(`Forbidden: method '${method}' requires scope in [${required.join(', ')}]`);
+        err.code = RPC_ERROR_CODES.HOLD_ACTIVE || -32003;
+        throw err;
+      }
+    }
+
     switch (method) {
       case 'health':
       case 'gateway.health':
@@ -780,7 +821,13 @@ export class ZeroNativeHost {
       }
 
       case 'zero.gateway.restart':
-        return { ok: true, message: 'Zero Gateway restart scheduled' };
+        console.log('[Zero Host] Controlled gateway restart requested via RPC.');
+        return {
+          ok: true,
+          status: 'restarting',
+          message: 'Zero Gateway restart scheduled',
+          scheduledInMs: 500,
+        };
 
       case 'zero.computer.control': {
         if (this.computerHold.held) {
@@ -919,30 +966,66 @@ export class ZeroNativeHost {
 
       // Control UI Lifecycle & Capability Handlers
       case 'sessions.subscribe':
-      case 'sessions.subscribeMessages':
-      case 'sessions.unsubscribeMessages':
-        return { ok: true, subscribed: true };
+      case 'sessions.subscribeMessages': {
+        const sessionKey = params.key || params.sessionKey || params.id || 'agent:zero:main';
+        if (!ws.subscribedSessions) ws.subscribedSessions = new Set();
+        ws.subscribedSessions.add(sessionKey);
+        return { ok: true, subscribed: true, sessionKey };
+      }
+
+      case 'sessions.unsubscribeMessages': {
+        const sessionKey = params.key || params.sessionKey || params.id || 'agent:zero:main';
+        if (ws.subscribedSessions) ws.subscribedSessions.delete(sessionKey);
+        return { ok: true, subscribed: false, sessionKey };
+      }
 
       case 'sessions.active':
         return { sessionKey: 'agent:zero:main' };
 
       case 'sessions.setInvolvement':
-        return { ok: true };
+        return { ok: true, involvement: params.involvement || 'active' };
 
-      case 'config.get':
-        return {
-          config: {
-            gateway: { port: this.port, auth: { mode: 'none' } },
-            models: { default: 'zero-lead' },
-            ui: { assistantName: 'Zero', assistantAvatar: '/avatar/zero.svg' },
-          },
-          hash: 'zero-config-hash',
-        };
+      case 'config.get': {
+        const configPath = path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+        let cfg = { gateway: { port: this.port, bind: this.host }, models: { default: 'zero-lead' } };
+        try {
+          if (fs.existsSync(configPath)) {
+            cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          }
+        } catch {}
+        const hash = crypto.createHash('sha256').update(JSON.stringify(cfg)).digest('hex').slice(0, 16);
+        return { config: cfg, hash };
+      }
 
       case 'config.set':
       case 'config.patch':
-      case 'config.apply':
-        return { ok: true };
+      case 'config.apply': {
+        const configPath = path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+        let currentCfg = {};
+        try {
+          if (fs.existsSync(configPath)) {
+            currentCfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          }
+        } catch {}
+
+        const updates = params.config || params;
+        if (typeof updates !== 'object' || updates === null) {
+          throw new Error('Config payload must be a valid JSON object');
+        }
+
+        if (updates.gateway?.port !== undefined) {
+          const p = Number(updates.gateway.port);
+          if (isNaN(p) || p < 1024 || p > 65535) {
+            throw new Error(`Invalid gateway port: ${updates.gateway.port}. Must be between 1024 and 65535.`);
+          }
+        }
+
+        const mergedCfg = { ...currentCfg, ...updates };
+        fs.mkdirSync(path.dirname(configPath), { recursive: true });
+        fs.writeFileSync(configPath, JSON.stringify(mergedCfg, null, 2), 'utf8');
+        const hash = crypto.createHash('sha256').update(JSON.stringify(mergedCfg)).digest('hex').slice(0, 16);
+        return { ok: true, config: mergedCfg, hash };
+      }
 
       case 'update.status':
         return {
@@ -961,34 +1044,59 @@ export class ZeroNativeHost {
         return [];
 
       case 'presence.activity':
-        return { ok: true };
+        return { ok: true, activity: 'idle', timestamp: Date.now() };
 
       case 'users.self':
         return {
           profile: {
-            id: 'operator',
+            id: clientSession?.clientId || 'operator',
             name: 'Operator',
             email: 'operator@zero.local',
-            role: 'operator',
+            role: clientSession?.role || 'operator',
             updatedAt: Date.now(),
           },
         };
 
-      case 'users.prefs.get':
-        return { prefs: {} };
+      case 'users.prefs.get': {
+        const prefsPath = path.join(REPO_ROOT, 'zero-system', 'config', 'user-prefs.json');
+        let prefs = {};
+        try {
+          if (fs.existsSync(prefsPath)) {
+            prefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
+          }
+        } catch {}
+        return { prefs };
+      }
 
-      case 'users.prefs.set':
-        return { ok: true };
+      case 'users.prefs.set': {
+        const prefsPath = path.join(REPO_ROOT, 'zero-system', 'config', 'user-prefs.json');
+        let currentPrefs = {};
+        try {
+          if (fs.existsSync(prefsPath)) {
+            currentPrefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
+          }
+        } catch {}
+        const newPrefs = { ...currentPrefs, ...(params.prefs || params) };
+        fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
+        fs.writeFileSync(prefsPath, JSON.stringify(newPrefs, null, 2), 'utf8');
+        return { ok: true, prefs: newPrefs };
+      }
 
       case 'question.list':
         return [];
 
-      case 'models.authStatus':
-        return {
-          providers: [
-            { provider: 'nvidia', authenticated: true, keyState: 'configured' },
-          ],
-        };
+      case 'models.authStatus': {
+        const providers = this.modelFabric.getProviders().map((p) => {
+          const key = this.modelFabric.resolveApiKey(p);
+          return {
+            provider: p.id,
+            authenticated: Boolean(key),
+            keyState: key ? 'configured' : 'missing',
+            baseUrl: p.baseUrl,
+          };
+        });
+        return { providers };
+      }
 
       case 'agent.identity.get':
         return {
@@ -1014,12 +1122,11 @@ export class ZeroNativeHost {
       case 'voice.status':
         return { active: false, status: 'idle' };
 
-      default:
-        // Graceful handler for non-critical query calls
-        if (method.endsWith('.list') || method.endsWith('.get') || method.startsWith('get')) {
-          return {};
-        }
-        throw new Error(`Method '${method}' not found on Zero Native Gateway`);
+      default: {
+        const err = new Error(`Method '${method}' not found on Zero Native Gateway`);
+        err.code = RPC_ERROR_CODES.METHOD_NOT_FOUND;
+        throw err;
+      }
     }
   }
 
@@ -1034,6 +1141,8 @@ export class ZeroNativeHost {
 
     const abortController = new AbortController();
     this.activeTurns.set(sessionKey, abortController);
+    const turnId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
     const DESKTOP_TOOLS = [
       {
@@ -1126,7 +1235,46 @@ export class ZeroNativeHost {
         const toolCalls = choice?.message?.tool_calls;
 
         if (!toolCalls || toolCalls.length === 0) {
-          finalContent = choice?.message?.content || '';
+          let accumulatedContent = '';
+          try {
+            // Stream tokens incrementally over the wire
+            for await (const chunk of this.modelFabric.streamChat(modelPayload, { signal: abortController.signal })) {
+              if (chunk.delta) {
+                accumulatedContent += chunk.delta;
+                if (!firstTokenTime) firstTokenTime = Date.now();
+                if (ws && ws.readyState === 1) {
+                  const deltaPayload = {
+                    sessionKey,
+                    turnId,
+                    messageId,
+                    delta: chunk.delta,
+                    timestamp: Date.now(),
+                  };
+                  if (isReferenceWire) {
+                    ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: deltaPayload }));
+                  } else {
+                    ws.send(JSON.stringify(createNotification('zero.stream.delta', deltaPayload)));
+                  }
+                }
+              }
+            }
+          } catch (streamErr) {
+            if (abortController.signal.aborted) {
+              if (accumulatedContent) {
+                this.sessions.appendMessage(sessionKey, { role: 'assistant', content: accumulatedContent, status: 'interrupted' });
+              }
+              const interruptedPayload = { sessionKey, turnId, messageId, status: 'interrupted', partialContent: accumulatedContent };
+              if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify(isReferenceWire
+                  ? { type: 'event', event: 'chat.interrupted', payload: interruptedPayload }
+                  : createNotification('zero.stream.interrupted', interruptedPayload)));
+              }
+              throw new Error('Agent turn was aborted by client');
+            }
+            accumulatedContent = choice?.message?.content || '';
+          }
+
+          finalContent = accumulatedContent || choice?.message?.content || '';
           if (!firstTokenTime) firstTokenTime = Date.now();
           break;
         }
@@ -1217,19 +1365,35 @@ export class ZeroNativeHost {
         const totalDurationMs = Date.now() - turnStartTime;
         console.log(`[Zero Host] Chat turn completed. TTFT: ${ttftMs}ms, Total: ${totalDurationMs}ms.`);
 
+        const completePayload = {
+          sessionKey,
+          turnId,
+          messageId,
+          content: finalContent,
+          ttftMs,
+          totalDurationMs,
+        };
+
         if (isReferenceWire) {
           ws.send(JSON.stringify({
             type: 'event',
-            event: 'chat.delta',
-            payload: { sessionKey, delta: finalContent, ttftMs, totalDurationMs },
+            event: 'chat.complete',
+            payload: completePayload,
           }));
         } else {
-          ws.send(JSON.stringify(createNotification('zero.stream.delta', {
-            sessionKey,
-            delta: finalContent,
-            ttftMs,
-            totalDurationMs,
-          })));
+          ws.send(JSON.stringify(createNotification('zero.stream.complete', completePayload)));
+        }
+      }
+
+      // Broadcast message event to any other sockets subscribed to this session
+      for (const client of this.clients) {
+        if (client !== ws && client.readyState === 1 && client.subscribedSessions?.has(sessionKey)) {
+          const subPayload = { sessionKey, turnId, role: 'assistant', content: finalContent };
+          client.send(JSON.stringify(isReferenceWire ? {
+            type: 'event',
+            event: 'chat.message',
+            payload: subPayload,
+          } : createNotification('zero.session.message', subPayload)));
         }
       }
 

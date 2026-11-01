@@ -282,6 +282,53 @@ export class ModelFabric {
     this.recordFailure(provider.id, lastError?.message || 'Exceeded retry attempts');
     throw lastError;
   }
+
+  async *streamChat(payload, options = {}) {
+    const res = await this.executeChat({ ...payload, stream: true }, options);
+    if (!res.stream) {
+      if (res.data?.choices?.[0]?.message?.content) {
+        yield { delta: res.data.choices[0].message.content, done: true };
+      }
+      return;
+    }
+
+    const reader = res.stream.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith(':')) continue;
+          if (trimmed === 'data: [DONE]') {
+            yield { done: true };
+            return;
+          }
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              const choice = json.choices?.[0];
+              if (choice?.delta?.content) {
+                yield { delta: choice.delta.content, id: json.id, model: json.model };
+              }
+              if (choice?.delta?.tool_calls) {
+                yield { tool_calls: choice.delta.tool_calls, id: json.id };
+              }
+            } catch {}
+          }
+        }
+      }
+    } finally {
+      try { reader.releaseLock(); } catch (_) {}
+    }
+  }
 }
 
 export const canonicalModelFabric = new ModelFabric();

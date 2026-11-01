@@ -39,6 +39,18 @@ export class CapabilityEngine {
     this.logger = logger;
     this.auditLog = [];
     this.maxAuditEntries = 1000;
+    this.customCapabilities = new Map();
+  }
+
+  /**
+   * Dynamically register an external capability (e.g. from plugin)
+   */
+  registerCapability(definition) {
+    if (!definition || !definition.name) {
+      throw new Error('Capability definition requires a valid name');
+    }
+    this.customCapabilities.set(definition.name, definition);
+    return true;
   }
 
   /**
@@ -46,12 +58,24 @@ export class CapabilityEngine {
    */
   validate(toolName, args = {}) {
     const cleanName = String(toolName || '').trim();
+
+    // Check custom registered plugin capabilities first
+    if (this.customCapabilities.has(cleanName)) {
+      return {
+        valid: true,
+        capability: cleanName,
+        action: args.action || cleanName,
+        params: args,
+        custom: true,
+      };
+    }
+
     const def = CAPABILITY_DEFINITIONS[cleanName];
 
     if (!def) {
       return {
         valid: false,
-        error: `Unsupported capability '${cleanName}'. Registered capabilities: ${Object.keys(CAPABILITY_DEFINITIONS).join(', ')}`,
+        error: `Unsupported capability '${cleanName}'. Registered capabilities: ${[...Object.keys(CAPABILITY_DEFINITIONS), ...this.customCapabilities.keys()].join(', ')}`,
       };
     }
 
@@ -107,11 +131,51 @@ export class CapabilityEngine {
 
     const { action, params } = validation;
 
+    if (validation.custom) {
+      const customDef = this.customCapabilities.get(toolName);
+      try {
+        const customRes = await customDef.handler(params, signal);
+        const durationMs = Date.now() - startedAt;
+        const res = {
+          ok: true,
+          executed: true,
+          verified: true,
+          completed: true,
+          outcome: 'COMPLETED',
+          capability: toolName,
+          data: customRes,
+          durationMs,
+          auditId,
+        };
+        this._recordAudit(agentId, toolName, args, 'COMPLETED', res);
+        return res;
+      } catch (err) {
+        const durationMs = Date.now() - startedAt;
+        const res = {
+          ok: false,
+          executed: true,
+          verified: false,
+          completed: false,
+          outcome: 'FAILED',
+          capability: toolName,
+          error: err.message,
+          durationMs,
+          auditId,
+        };
+        this._recordAudit(agentId, toolName, args, 'FAILED', res);
+        return res;
+      }
+    }
+
     // 2. Deterministic Safety & Human Takeover Enforcement
     const safety = this.operator.evaluateSafety(action);
     if (!safety.allowed) {
       const holdResult = {
         ok: false,
+        executed: false,
+        verified: false,
+        completed: false,
+        outcome: 'BLOCKED',
         capability: toolName,
         action,
         error: safety.error,
@@ -155,34 +219,53 @@ export class CapabilityEngine {
 
     // 5. After-State Verification
     let afterState = null;
-    let verified = execResult.ok;
+    let verified = Boolean(execResult.verified);
     try {
-      if (execResult.ok && ['open_app', 'launch_app', 'focus_window', 'play'].includes(action)) {
+      if (execResult.ok && ['open_app', 'launch_app', 'focus_window'].includes(action)) {
         afterState = await this.operator.execute('get_window_state', {}, null).catch(() => null);
-        if (afterState && beforeState) {
-          verified = Boolean(afterState.window?.title !== beforeState.window?.title || afterState.window?.pid !== beforeState.window?.pid || execResult.ok);
+        if (afterState?.window) {
+          const winTitle = String(afterState.window.title || '').toLowerCase();
+          const target = String(params.app || params.target || '').toLowerCase();
+          verified = Boolean(winTitle.includes(target) || (afterState.window.pid && afterState.window.pid !== beforeState?.window?.pid));
         }
       }
     } catch {}
 
+    const executed = Boolean(execResult.executed ?? execResult.ok);
     const durationMs = Date.now() - startedAt;
+    const isCancelled = combinedSignal.aborted;
+    let outcome = execResult.outcome;
+    if (isCancelled) {
+      outcome = 'CANCELLED';
+    } else if (!outcome) {
+      outcome = executed ? (verified ? 'COMPLETED' : 'UNVERIFIED') : 'FAILED';
+    }
+
     const finalResult = {
-      ok: execResult.ok,
+      ok: executed,
+      executed,
+      verified,
+      completed: outcome === 'COMPLETED',
+      outcome,
       capability: toolName,
       action,
-      verified,
       data: execResult,
-      window: execResult.window,
+      window: execResult.window || afterState?.window,
       before: beforeState?.window?.title,
       after: afterState?.window?.title || execResult.window?.title,
-      ...(execResult.verifiedText || (['type_text', 'type'].includes(action) && execResult.ok) ? { verifiedText: execResult.verifiedText || params.text } : {}),
-      ...(action === 'play' ? { audioActive: Boolean(execResult.audioActive ?? execResult.audioPlaying), videoTitle: execResult.videoTitle, videoId: execResult.videoId } : {}),
+      ...(execResult.verifiedText !== undefined ? { verifiedText: execResult.verifiedText } : {}),
+      ...(action === 'play' ? {
+        audioActive: Boolean(execResult.audioActive),
+        playbackState: execResult.playbackState || (execResult.audioActive ? 'PLAYING' : 'UNVERIFIED'),
+        videoTitle: execResult.videoTitle,
+        videoId: execResult.videoId,
+      } : {}),
       auditId,
       durationMs,
       ...(execResult.error ? { error: execResult.error, message: execResult.message } : {}),
     };
 
-    this._recordAudit(agentId, toolName, params, execResult.ok ? 'ALLOWED' : 'FAILED', finalResult);
+    this._recordAudit(agentId, toolName, params, outcome, finalResult);
     return finalResult;
   }
 

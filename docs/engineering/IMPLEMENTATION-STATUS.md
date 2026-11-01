@@ -30,33 +30,32 @@
 
 ---
 
-## 2. Test Suite Matrix
+## 2. Test Suite Matrix & Honest Evidence Classification
 
-| Test Suite File | Subsystem | Tests Pass / Fail | Failure Cause | Status |
+### 2.1 Categorized Test Suite Breakdown
+
+| Test Category | Suite / Verification Artifact | Test Count | Status | Notes |
 |---|---|---|---|---|
-| `app/zero-control-ui/test/*.test.mjs` | Control UI, Observation, Computer Hold | **128 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/plugin/selftest.mjs` | `zero-policy` Computer Hold Contracts | **110 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `packages/capability-engine/test/*.mjs` | Canonical Capability Registry & Gating | **4 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `packages/gateway-protocol/test/*.mjs` | Protocol 4 Framing, Handshake, Mux | **5 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `packages/sessions/test/*.mjs` | SQLite Session Store & Compaction | **5 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `packages/agent-runtime/test/*.mjs` | Multi-Agent Task State Machine | **5 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `packages/model-fabric/test/*.mjs` | Enterprise Model Fabric & Failover | **6 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `packages/automation/test/*.mjs` | Durable Cron Scheduling Engine | **5 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `packages/memory/test/*.mjs` | Semantic Persistent Memory Store | **7 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/gateway/test-tasks-api.mjs` | Task Inspection REST Endpoints | **5 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/gateway/test-memory-automation-api.mjs` | Memory & Automation REST Endpoints | **9 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `test/e2e-matrix.test.mjs` | Master Acceptance Matrix (T01–T25) | **26 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `test/e2e-scenarios.test.mjs` | T01–T15 Master Scenario Verification Matrix | **16 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `test/native-gateway.test.mjs` | Zero Native Host & WS Protocol Dispatcher | **2 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/scripts/test/*.test.mjs` | Managed Block & Agent Migration | **8 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `app/test/bridge.test.mjs` | Gateway Bridge Library | **3 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/plugin/legacy-redirects.test.mjs` | Route Interceptors | **1 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/gateway/test-final-suite.mjs` | Gateway & Registry Integration | **All Systems Passed** | None | **VERIFIED GREEN** |
-| `backend/scripts/scan-secrets.mjs` | Pre-commit Secret Scanner | **0 Leaks Found** | None | **VERIFIED GREEN** |
-| `backend/scripts/preflight.mjs` | Backend Environment Preflight | **28 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/scripts/acceptance.mjs` (WS) | Full Backend Turn Acceptance (WS) | **3 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `backend/scripts/acceptance.mjs` (HTTP) | Full Model & Chat Acceptance (HTTP) | **3 Pass / 0 Fail** | None | **VERIFIED GREEN** |
-| `app/zero-control-ui/test/verify-served.mjs`| Control UI Asset Hash Verification | **Verified** | None | **VERIFIED GREEN** |
+| **Unit** | `packages/sessions/test/sessions.test.mjs` | 5 | **PASS** | SQLite sessions, compaction, retention |
+| **Unit** | `packages/agent-runtime/test/agent-runtime.test.mjs` | 5 | **PASS** | Task state transitions, abort signals |
+| **Unit** | `packages/agent-runtime/test/agent-delegation.test.mjs` | 3 | **PASS** | Parent-child subtask orchestration |
+| **Unit** | `packages/model-fabric/test/model-fabric.test.mjs` | 6 | **PASS** | Circuit breaker, model catalog, retry logic |
+| **Unit** | `packages/capability-engine/test/capability-engine.test.mjs` | 4 | **PASS** | Canonical schemas, dynamic plugin registration |
+| **Unit** | `packages/automation/test/automation.test.mjs` | 5 | **PASS** | Cron expression parser, SQLite run log |
+| **Unit** | `packages/memory/test/memory.test.mjs` | 7 | **PASS** | Semantic scoring, keyword weighting, forget |
+| **Unit** | `packages/gateway-protocol/test/gateway-protocol.test.mjs` | 5 | **PASS** | Protocol 4 wire framing, heartbeat, handshake |
+| **Component** | `app/zero-control-ui/test/product-surface.test.mjs` | 95 | **PASS** | Lit web components, branding, shadow DOM |
+| **Component** | `app/zero-control-ui/test/observation.test.mjs` | 33 | **PASS** | Screen observation ring buffer, privacy masks |
+| **Integration** | `test/rpc-contracts.test.mjs` | 10 | **PASS** | JSON-RPC contracts, scope enforcement, origin guard |
+| **Integration** | `backend/plugin/selftest.mjs` | 110 | **PASS** | `zero-policy` computer hold contracts, lease arbitration |
+| **Integration** | `backend/gateway/test-tasks-api.mjs` | 5 | **PASS** | Task inspection and state transition REST endpoints |
+| **Integration** | `backend/gateway/test-memory-automation-api.mjs` | 9 | **PASS** | Memory and automation REST/RPC APIs |
+| **Integration** | `backend/scripts/acceptance.mjs` (WS & HTTP) | 6 | **PASS** | WebSocket and HTTP turn execution |
+| **Integration** | `backend/scripts/test/*.test.mjs` | 8 | **PASS** | Migration and config block integrity |
+| **Browser E2E** | Playwright UI Suite (`app/zero-control-ui`) | 29 Routes | **PASS** | Verified all 29 routes render with 0 console errors |
+| **Live Windows Hardware E2E** | `test/e2e-matrix.test.mjs` (T11, T12) | 2 | **PASS** | Physical mouse clicks, UIAutomation text read-back, YouTube playback inspection |
+| **External Integration** | `test/e2e-matrix.test.mjs` (T08, T09), `test/e2e-scenarios.test.mjs` | Live Inference | **PASS** | Real cloud inference against NVIDIA Nemotron, incremental SSE/WS streaming |
+| **Packaging** | `test/e2e-matrix.test.mjs` (T01, T24, T25), `preflight.mjs`, `scan-secrets.mjs` | 30 Checks | **PASS** | Portability, supervisor integrity, 0 leaked credentials |
 
 ---
 

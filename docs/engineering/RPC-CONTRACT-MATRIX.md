@@ -108,3 +108,54 @@ Zero Native Host natively supports dual framing over WebSocket:
 | `tasks.get` | — | `{ id: string }` | Task state, transition history, steps | `TaskStateMachine.getTask()` |
 | `tasks.cancel` | — | `{ id: string, reason?: string }` | Task in `CANCELLED` state | `TaskStateMachine.cancelTask()` |
 | `tasks.resume` | — | `{ id: string }` | Task resumed in `RUNNING` state | `TaskStateMachine.resumeTask()` |
+
+---
+
+## 9. Host Configuration & User Preferences Contracts
+
+| Method | Aliases | Required Scopes | Request Params | Success Payload | Failure Code | Backing Engine |
+|---|---|---|---|---|---|---|
+| `config.get` | — | `operator.read` | `{}` | `{ config: object, hash: string }` | `-32603 Internal Error` | `zero-system/config/zero.json` read + SHA-256 hash |
+| `config.set` | — | `admin`, `operator.admin` | `{ config: object }` | `{ ok: true, config: object, hash: string }` | `-32003 Forbidden` / `-32602 Invalid Params` | `zero-system/config/zero.json` validated write |
+| `config.patch` | `config.apply` | `admin`, `operator.admin` | `{ config: object }` | `{ ok: true, config: object, hash: string }` | `-32003 Forbidden` / `-32602 Invalid Params` | Deep merge + port bounds check (1024–65535) |
+| `users.prefs.get` | — | `operator.read` | `{}` | `{ ok: true, prefs: object }` | `-32603 Internal Error` | `zero-system/config/user-prefs.json` |
+| `users.prefs.set` | — | `operator.write` | `{ prefs: object }` | `{ ok: true, prefs: object }` | `-32602 Invalid Params` | `zero-system/config/user-prefs.json` write |
+| `models.authStatus` | — | `operator.read` | `{}` | `{ ok: true, providers: { provider: string, authenticated: boolean, configured: boolean }[] }` | `-32603 Internal Error` | Live credential probe across configured providers |
+| `zero.gateway.status` | — | `operator.read` | `{}` | `{ ok: true, status: 'running', bootId: string, uptimeSeconds: number, port: number, host: string, nodeVersion: string, pid: number, memory: object }` | `-32603 Internal Error` | Live Zero Native Host process telemetry |
+| `zero.gateway.restart` | — | `admin`, `operator.admin` | `{}` | `{ ok: true, status: 'restarting', message: string, scheduledInMs: 500 }` | `-32003 Forbidden` | Graceful host reboot scheduler |
+| `sessions.subscribe` | `sessions.subscribeMessages` | `operator.read` | `{ key: string }` | `{ ok: true, subscribed: true, sessionKey: string }` | `-32602 Invalid Params` | WebSocket connection subscription registry |
+| `sessions.unsubscribeMessages` | — | `operator.read` | `{ key: string }` | `{ ok: true, subscribed: false, sessionKey: string }` | `-32602 Invalid Params` | Subscription deregistration |
+
+---
+
+## 10. Security Scope Enforcement Matrix
+
+All RPC invocations are strictly authorized using the client's negotiated session role and scopes:
+
+| Scope | Allowed Methods |
+|---|---|
+| `admin` / `operator.admin` | Unrestricted access: `config.*`, `zero.gateway.restart`, `zero.providers.configure`, `automation.deleteJob`, all task cancellations |
+| `computer.control` | `zero.computer.control` desktop and hardware actions (subject to human takeover arbitration) |
+| `operator.write` | `chat.send`, `chat.abort`, `tasks.create`, `tasks.cancel`, `tasks.resume`, `users.prefs.set`, `memory.remember`, `memory.forget`, `automation.registerJob`, `automation.toggleJob` |
+| `operator.read` | `config.get`, `users.prefs.get`, `models.list`, `models.status`, `models.authStatus`, `sessions.list`, `sessions.get`, `sessions.subscribe`, `tasks.list`, `tasks.get`, `memory.list`, `memory.recall`, `automation.listJobs`, `automation.listRuns` |
+
+### WebSocket Origin Validation Guard
+In accordance with production security standards:
+- Any WebSocket upgrade request containing an untrusted or external `Origin` header (e.g. `evil.com`) is immediately rejected with HTTP `403 Forbidden` and WebSocket close code `1008 Policy Violation`.
+- Allowed origins are restricted to `null`, loopback hostnames (`127.0.0.1`, `localhost`, `[::1]`), and internal client identifiers.
+
+---
+
+## 11. Deterministic Error Codes
+
+| JSON-RPC Code | Constant | Meaning |
+|---|---|---|
+| `-32700` | `PARSE_ERROR` | Invalid JSON received by the host |
+| `-32600` | `INVALID_REQUEST` | The JSON sent is not a valid Request object |
+| `-32601` | `METHOD_NOT_FOUND` | The method does not exist / is not recognized |
+| `-32602` | `INVALID_PARAMS` | Invalid method parameter(s) |
+| `-32603` | `INTERNAL_ERROR` | Internal JSON-RPC error |
+| `-32001` | `UNAUTHORIZED` | Handshake or authentication failed |
+| `-32003` | `FORBIDDEN` | Caller lacks the required role or scope for this method |
+| `-32004` | `HUMAN_HOLD_ACTIVE` | Desktop action rejected due to active human takeover lease |
+
