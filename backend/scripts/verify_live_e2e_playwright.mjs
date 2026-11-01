@@ -194,6 +194,10 @@ async function runLivePlaywrightVerification() {
   console.log('   ', replyText.substring(0, 150).replace(/\n/g, ' '));
   console.log('   -------------------------------------------------');
 
+  if (!completed || !replyText.trim()) {
+    throw new Error('FAIL: No completed assistant reply was observed after submitting the prompt');
+  }
+
   // -------------------------------------------------------------
   // Test 4: Windows Process Verification & Card Snapshot
   // -------------------------------------------------------------
@@ -216,7 +220,7 @@ async function runLivePlaywrightVerification() {
       console.log('   Closed Notepad cleanly.');
     } catch {}
   } else {
-    console.log('ℹ Note: Notepad process already settled or closed cleanly by action.');
+    throw new Error('FAIL: Could not verify a running Notepad process after the automation command');
   }
 
   await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified-live-chat-turn-completed.png') });
