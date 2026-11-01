@@ -8,6 +8,16 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'models', 'gateway-providers.json');
+const DEFAULT_ALIASES = {
+  'zero-lead': 'nvidia/nemotron-3.5-lightning-30b-a3b',
+  'zero-vision': 'nvidia/nemotron-3.5-super-vl-120b-a12b',
+  'zero-ultra': 'nvidia/nemotron-3-ultra-550b-a55b',
+};
 
 export class ModelFabric {
   /**
@@ -17,10 +27,11 @@ export class ModelFabric {
    * @param {Object} [options.aliases] - Model alias map (e.g. { 'zero-lead': 'nvidia/nemotron-3.5-lightning-30b-a3b' })
    */
   constructor(options = {}) {
-    this.configPath = options.configPath || null;
-    this.aliases = new Map(Object.entries(options.aliases || {}));
+    this.configPath = options.configPath || (fs.existsSync(DEFAULT_CONFIG_PATH) ? DEFAULT_CONFIG_PATH : null);
+    this.aliases = new Map(Object.entries({ ...DEFAULT_ALIASES, ...(options.aliases || {}) }));
     this.providers = new Map();
     this.healthStats = new Map();
+    this.upstreamRequestCount = 0;
 
     if (Array.isArray(options.providers)) {
       this.loadProviders(options.providers);
@@ -239,6 +250,7 @@ export class ModelFabric {
         : timeoutSignal;
 
       try {
+        this.upstreamRequestCount++;
         const res = await fetch(endpoint, {
           method: 'POST',
           headers,
@@ -287,7 +299,7 @@ export class ModelFabric {
     const res = await this.executeChat({ ...payload, stream: true }, options);
     if (!res.stream) {
       if (res.data?.choices?.[0]?.message?.content) {
-        yield { delta: res.data.choices[0].message.content, done: true };
+        yield { delta: res.data.choices[0].message.content, finish_reason: 'stop', done: true };
       }
       return;
     }
@@ -308,19 +320,21 @@ export class ModelFabric {
           const trimmed = line.trim();
           if (!trimmed || trimmed.startsWith(':')) continue;
           if (trimmed === 'data: [DONE]') {
-            yield { done: true };
+            yield { done: true, finish_reason: 'stop' };
             return;
           }
           if (trimmed.startsWith('data: ')) {
             try {
               const json = JSON.parse(trimmed.slice(6));
               const choice = json.choices?.[0];
-              if (choice?.delta?.content) {
-                yield { delta: choice.delta.content, id: json.id, model: json.model };
-              }
-              if (choice?.delta?.tool_calls) {
-                yield { tool_calls: choice.delta.tool_calls, id: json.id };
-              }
+              yield {
+                delta: choice?.delta?.content || null,
+                tool_calls: choice?.delta?.tool_calls || null,
+                finish_reason: choice?.finish_reason || null,
+                usage: json.usage || null,
+                id: json.id,
+                model: json.model,
+              };
             } catch {}
           }
         }

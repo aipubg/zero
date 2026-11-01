@@ -9,15 +9,31 @@ export const PROTOCOL_VERSION = 4;
 export const SUPPORTED_PROTOCOLS = [4];
 
 export const ROLES = Object.freeze({
+  ADMIN: 'admin',
   OPERATOR: 'operator',
   AGENT: 'agent',
   CLIENT: 'client',
+  VIEWER: 'viewer',
 });
 
 export const DEFAULT_SCOPES = Object.freeze([
   'operator.read',
   'operator.write',
   'operator.approvals',
+]);
+
+export const VIEWER_SCOPES = Object.freeze([
+  'operator.read',
+]);
+
+export const ADMIN_SCOPES = Object.freeze([
+  'admin',
+  'operator.admin',
+  'operator.write',
+  'operator.read',
+  'operator.approvals',
+  'operator.sessions.read',
+  'computer.control',
 ]);
 
 export const RPC_ERROR_CODES = Object.freeze({
@@ -28,8 +44,9 @@ export const RPC_ERROR_CODES = Object.freeze({
   INTERNAL_ERROR: -32603,
   UNAUTHORIZED: -32001,
   TIMEOUT: -32002,
-  HOLD_ACTIVE: -32003,
-  RATE_LIMITED: -32004,
+  FORBIDDEN: -32003,
+  HOLD_ACTIVE: -32004,
+  RATE_LIMITED: -32005,
 });
 
 /**
@@ -234,8 +251,14 @@ function _categorizeFrame(data) {
 
 /**
  * Validate Protocol 4 Handshake payload from client.
+ * Strictly derives authenticated principal, roles, and scopes from server-side policy.
+ * Client-supplied role/scopes are treated only as non-binding requests and NEVER grant authority.
+ * 
+ * @param {Object} params Handshake payload from client
+ * @param {string|Object} authOptions Configured expected token or auth policy object
+ * @returns {Object} Handshake verification result with server-authorized session
  */
-export function validateHandshake(params, expectedToken = '') {
+export function validateHandshake(params, authOptions = '') {
   if (!params || typeof params !== 'object') {
     return {
       ok: false,
@@ -244,12 +267,19 @@ export function validateHandshake(params, expectedToken = '') {
     };
   }
 
-  const { role, scopes, clientId, deviceLabel } = params;
+  const expectedToken = typeof authOptions === 'string'
+    ? authOptions.trim()
+    : (authOptions?.expectedToken || '').trim();
+  const allowViewer = typeof authOptions === 'object' && authOptions !== null
+    ? authOptions.allowViewer !== false
+    : true;
+
+  const { clientId, deviceLabel, requestedRole, requestedScopes } = params;
 
   // Protocol version check - support both 'protocol' and negotiation range ('minProtocol' / 'maxProtocol')
   const effectiveProtocol = params.protocol !== undefined
     ? params.protocol
-    : (params.maxProtocol !== undefined ? params.maxProtocol : params.minProtocol);
+    : (params.maxProtocol !== undefined ? params.maxProtocol : (params.minProtocol !== undefined ? params.minProtocol : PROTOCOL_VERSION));
   const protoNum = Number(effectiveProtocol);
   if (!SUPPORTED_PROTOCOLS.includes(protoNum)) {
     return {
@@ -259,40 +289,60 @@ export function validateHandshake(params, expectedToken = '') {
     };
   }
 
-  // Authentication token check if expectedToken is set
-  const token = params.token || params.auth?.token || '';
-  if (expectedToken && expectedToken.trim().length > 0) {
-    if (!token || String(token).trim() !== expectedToken.trim()) {
+  // Authentication token resolution from params
+  const clientToken = (params.token || params.auth?.token || '').trim();
+  const resolvedClientId = clientId || params.client?.id || 'zero-client';
+  const resolvedDeviceLabel = deviceLabel || params.client?.displayName || params.client?.platform || 'Zero Operator Terminal';
+
+  let isAuthenticated = false;
+  let grantedRole = ROLES.VIEWER;
+  let grantedScopes = [...VIEWER_SCOPES];
+
+  if (expectedToken.length > 0) {
+    if (clientToken === expectedToken) {
+      isAuthenticated = true;
+      const clientReqRole = params.role || requestedRole;
+      grantedRole = clientReqRole === ROLES.ADMIN ? ROLES.ADMIN : ROLES.OPERATOR;
+      grantedScopes = [...ADMIN_SCOPES];
+    } else if (clientToken.length > 0) {
+      // Provided an invalid token
       return {
         ok: false,
         code: RPC_ERROR_CODES.UNAUTHORIZED,
-        message: 'Invalid or missing gateway authentication token',
+        message: 'Invalid gateway authentication token',
+      };
+    } else if (!allowViewer) {
+      // Tokenless and viewer disallowed
+      return {
+        ok: false,
+        code: RPC_ERROR_CODES.UNAUTHORIZED,
+        message: 'Missing gateway authentication token',
       };
     }
+  } else {
+    // If no expectedToken was configured in host (development/local trust)
+    isAuthenticated = true;
+    const clientReqRole = params.role || requestedRole;
+    grantedRole = clientReqRole === ROLES.ADMIN ? ROLES.ADMIN : ROLES.OPERATOR;
+    grantedScopes = [...ADMIN_SCOPES];
   }
 
-  // Role validation
-  const effectiveRole = role || ROLES.OPERATOR;
-  if (!Object.values(ROLES).includes(effectiveRole)) {
-    return {
-      ok: false,
-      code: RPC_ERROR_CODES.INVALID_PARAMS,
-      message: `Invalid role '${effectiveRole}'. Must be one of: ${Object.values(ROLES).join(', ')}`,
-    };
+  // If client requested a narrower subset of authorized scopes, filter them
+  const clientRequestedScopes = Array.isArray(params.scopes) ? params.scopes : (Array.isArray(requestedScopes) ? requestedScopes : null);
+  if (isAuthenticated && clientRequestedScopes && clientRequestedScopes.length > 0) {
+    // Authenticated client can request a narrower subset of granted scopes; cannot self-grant!
+    grantedScopes = grantedScopes.filter((s) => clientRequestedScopes.includes(s));
   }
-
-  const resolvedClientId = clientId || params.client?.id || 'zero-client';
-  const resolvedDeviceLabel = deviceLabel || params.client?.displayName || params.client?.platform || 'Zero Operator Terminal';
 
   return {
     ok: true,
     session: {
       clientId: String(resolvedClientId),
       deviceLabel: String(resolvedDeviceLabel),
-      role: effectiveRole,
-      scopes: Array.isArray(scopes) ? scopes : [...DEFAULT_SCOPES],
+      role: grantedRole,
+      scopes: grantedScopes,
       negotiatedProtocol: protoNum,
-      authenticated: true,
+      authenticated: isAuthenticated,
       connectedAt: Date.now(),
     },
   };

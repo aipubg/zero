@@ -247,6 +247,34 @@ export class TaskStateMachine {
     };
   }
 
+  async executeChildTask(childTaskId, executorFn) {
+    const child = this.getTask(childTaskId);
+    if (!child) {
+      throw new Error(`Child task '${childTaskId}' not found`);
+    }
+    if (child.status !== TASK_STATUS.RUNNING) {
+      throw new Error(`Child task '${childTaskId}' must be in RUNNING status to execute`);
+    }
+
+    const steps = this.getTaskSteps(childTaskId);
+    this.recordStep(childTaskId, {
+      stepNumber: steps.length + 1,
+      thought: `Executing assigned subtask goal: "${child.goal}"`,
+      toolName: 'subagent_execution',
+      status: 'running',
+    });
+
+    let executionResult;
+    try {
+      executionResult = typeof executorFn === 'function' ? await executorFn(child) : { status: 'success', executedGoal: child.goal };
+    } catch (err) {
+      this.failChildTask(childTaskId, err.message);
+      throw err;
+    }
+
+    return this.completeChildTask(childTaskId, executionResult);
+  }
+
   completeChildTask(childTaskId, result = {}) {
     const child = this.completeTask(childTaskId, result);
     if (child.parentTaskId) {

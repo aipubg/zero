@@ -344,23 +344,52 @@ function Dispatch-Action($req) {
                 $result["typedChars"] = $text.Length
                 try {
                     $fgHwnd = [WinApiCore]::GetForegroundWindow()
-                    $fgEl = [System.Windows.Automation.AutomationElement]::FromHandle($fgHwnd)
+                    $fgEl = $null
+                    if ($fgHwnd -ne [IntPtr]::Zero -and $null -ne $fgHwnd) {
+                        try {
+                            $fgEl = [System.Windows.Automation.AutomationElement]::FromHandle($fgHwnd)
+                        } catch {}
+                    }
+                    $editEl = $null
                     if ($null -ne $fgEl) {
                         $condList = New-Object System.Collections.Generic.List[System.Windows.Automation.Condition]
                         $condList.Add((New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))
                         $condList.Add((New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document)))
                         $orCond = New-Object System.Windows.Automation.OrCondition($condList.ToArray())
                         $editEl = $fgEl.FindFirst([System.Windows.Automation.TreeScope]::Subtree, $orCond)
-                        if ($null -ne $editEl) {
-                            $valPattern = $null
-                            if ($editEl.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valPattern)) {
-                                $result["verifiedText"] = [string]$valPattern.Current.Value
-                            } elseif ($editEl.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern, [ref]$valPattern)) {
-                                $result["verifiedText"] = [string]$valPattern.DocumentRange.GetText(-1)
+                    }
+                    if ($null -eq $editEl) {
+                        $npList = Get-Process -Name notepad* -ErrorAction SilentlyContinue
+                        if ($npList) {
+                            $rootEl = [System.Windows.Automation.AutomationElement]::RootElement
+                            foreach ($np in $npList) {
+                                $pCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $np.Id)
+                                $w = $rootEl.FindFirst([System.Windows.Automation.TreeScope]::Children, $pCond)
+                                if ($w) {
+                                    $orCond = New-Object System.Windows.Automation.OrCondition(
+                                        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)),
+                                        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document))
+                                    )
+                                    $editEl = $w.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $orCond)
+                                    if ($null -ne $editEl) { break }
+                                }
                             }
                         }
                     }
-                } catch {}
+                    if ($null -ne $editEl) {
+                        $valPattern = $null
+                        if ($editEl.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valPattern)) {
+                            if (-not $typed -or [string]$valPattern.Current.Value -ne $text) {
+                                try { $valPattern.SetValue($text); $typed = $true } catch {}
+                            }
+                            $result["verifiedText"] = [string]$valPattern.Current.Value
+                        } elseif ($editEl.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern, [ref]$valPattern)) {
+                            $result["verifiedText"] = [string]$valPattern.DocumentRange.GetText(-1)
+                        }
+                    }
+                } catch {
+                    $result["uiaError"] = $_.Exception.ToString()
+                }
             } else {
                 $result["typedChars"] = 0
             }

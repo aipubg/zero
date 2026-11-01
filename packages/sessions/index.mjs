@@ -68,12 +68,14 @@ export class SessionManager {
     const stmt = this.db.prepare(`SELECT * FROM zero_sessions WHERE id = ?`);
     const row = stmt.get(id);
     if (!row) return null;
+    const metadata = row.metadata ? JSON.parse(row.metadata) : {};
     return {
       id: row.id,
       title: row.title,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      metadata: row.metadata ? JSON.parse(row.metadata) : {},
+      metadata,
+      involvement: metadata.involvement,
     };
   }
 
@@ -108,6 +110,9 @@ export class SessionManager {
     if (!existing) return null;
     const title = updates.title !== undefined ? String(updates.title) : existing.title;
     const metadata = { ...existing.metadata, ...(updates.metadata || {}) };
+    if (updates.involvement !== undefined) {
+      metadata.involvement = updates.involvement;
+    }
     const now = Date.now();
     const stmt = this.db.prepare(`
       UPDATE zero_sessions SET title = ?, metadata = ?, updated_at = ? WHERE id = ?

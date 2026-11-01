@@ -380,15 +380,6 @@ export async function scroll({ x, y, direction = "down", amount = 3 } = {}, sign
  * Type text into the focused application.
  */
 export async function typeText(text, signal = null) {
-  const driver = await getCuaDriver();
-  if (driver) {
-    try {
-      const res = await driver.callTool("type_text", JSON.stringify({ text }));
-      if (res && !res.isError) {
-        return { ok: true, typedChars: text.length };
-      }
-    } catch {}
-  }
   return await runNativeWinAction("type_text", { text }, signal);
 }
 

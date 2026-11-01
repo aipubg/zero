@@ -54,6 +54,51 @@ export class CapabilityEngine {
   }
 
   /**
+   * Load and register a full plugin manifest through the production plugin lifecycle
+   */
+  registerPlugin(manifest, handlers = {}) {
+    if (!manifest || !manifest.id) {
+      throw new Error('Plugin manifest requires a valid id');
+    }
+    if (!this.loadedPlugins) {
+      this.loadedPlugins = new Map();
+    }
+    const pluginRecord = {
+      id: manifest.id,
+      name: manifest.name || manifest.id,
+      version: manifest.version || '1.0.0',
+      description: manifest.description || '',
+      permissions: Array.isArray(manifest.permissions) ? manifest.permissions : [],
+      capabilities: Array.isArray(manifest.capabilities) ? manifest.capabilities.map(c => c.name || c) : [],
+      loadedAt: Date.now(),
+      status: 'active',
+    };
+    this.loadedPlugins.set(manifest.id, pluginRecord);
+
+    if (Array.isArray(manifest.capabilities)) {
+      for (const cap of manifest.capabilities) {
+        const capDef = typeof cap === 'string' ? { name: cap } : cap;
+        const handler = handlers[capDef.name] || (async (p) => ({ status: 'executed', pluginId: manifest.id, ...p }));
+        this.registerCapability({
+          name: capDef.name,
+          description: capDef.description || `Plugin capability from ${manifest.id}`,
+          parameters: capDef.parameters || { type: 'object' },
+          handler,
+        });
+      }
+    }
+    return pluginRecord;
+  }
+
+  getPlugin(pluginId) {
+    return this.loadedPlugins?.get(pluginId) || null;
+  }
+
+  listLoadedPlugins() {
+    return Array.from(this.loadedPlugins?.values() || []);
+  }
+
+  /**
    * Validate tool name and parameters against canonical capability schema
    */
   validate(toolName, args = {}) {
@@ -255,8 +300,11 @@ export class CapabilityEngine {
       after: afterState?.window?.title || execResult.window?.title,
       ...(execResult.verifiedText !== undefined ? { verifiedText: execResult.verifiedText } : {}),
       ...(action === 'play' ? {
+        browserOpened: Boolean(execResult.browserOpened),
+        pageLoaded: Boolean(execResult.pageLoaded),
         audioActive: Boolean(execResult.audioActive),
         playbackState: execResult.playbackState || (execResult.audioActive ? 'PLAYING' : 'UNVERIFIED'),
+        audioAudible: execResult.audioAudible || 'UNVERIFIED',
         videoTitle: execResult.videoTitle,
         videoId: execResult.videoId,
       } : {}),

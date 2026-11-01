@@ -201,6 +201,72 @@ switch ($Action.ToLower()) {
     $result["amount"] = $Amount
   }
 
+  "type_text" {
+    if ($Text.Length -gt 0) {
+      $typed = $false
+      try {
+        $wshell = New-Object -ComObject WScript.Shell
+        $escaped = $Text.Replace("{", "{{}").Replace("}", "{}}").Replace("+", "{+}").Replace("^", "{^}").Replace("%", "{%}").Replace("~", "{~}").Replace("(", "{(}").Replace(")", "{)}")
+        $wshell.SendKeys($escaped)
+        $typed = $true
+      } catch {}
+      if (-not $typed) {
+        try {
+          [System.Windows.Forms.Clipboard]::SetText($Text)
+          [System.Windows.Forms.SendKeys]::SendWait("^v")
+          $typed = $true
+        } catch {}
+      }
+      $result["typedChars"] = $Text.Length
+      try {
+        $fgHwnd = [WinApiCore]::GetForegroundWindow()
+        $fgEl = $null
+        if ($fgHwnd -ne [IntPtr]::Zero -and $null -ne $fgHwnd) {
+          try {
+            $fgEl = [System.Windows.Automation.AutomationElement]::FromHandle($fgHwnd)
+          } catch {}
+        }
+        $editEl = $null
+        if ($null -ne $fgEl) {
+          $orCond = New-Object System.Windows.Automation.OrCondition(
+            (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)),
+            (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document))
+          )
+          $editEl = $fgEl.FindFirst([System.Windows.Automation.TreeScope]::Subtree, $orCond)
+        }
+        if ($null -eq $editEl) {
+          $npList = Get-Process -Name notepad* -ErrorAction SilentlyContinue
+          if ($npList) {
+            $rootEl = [System.Windows.Automation.AutomationElement]::RootElement
+            foreach ($np in $npList) {
+              $pCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $np.Id)
+              $w = $rootEl.FindFirst([System.Windows.Automation.TreeScope]::Children, $pCond)
+              if ($w) {
+                $orCond = New-Object System.Windows.Automation.OrCondition(
+                  (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)),
+                  (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document))
+                )
+                $editEl = $w.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $orCond)
+                if ($null -ne $editEl) { break }
+              }
+            }
+          }
+        }
+        if ($null -ne $editEl) {
+          $valPattern = $null
+          if ($editEl.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valPattern)) {
+            if (-not $typed -or [string]$valPattern.Current.Value -ne $Text) {
+              try { $valPattern.SetValue($Text); $typed = $true } catch {}
+            }
+            $result["verifiedText"] = [string]$valPattern.Current.Value
+          } elseif ($editEl.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern, [ref]$valPattern)) {
+            $result["verifiedText"] = [string]$valPattern.DocumentRange.GetText(-1)
+          }
+        }
+      } catch {}
+    }
+  }
+
   "type" {
     if ($Text.Length -gt 0) {
       try {

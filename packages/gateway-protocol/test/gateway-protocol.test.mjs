@@ -31,7 +31,8 @@ test('Zero Gateway Protocol Specification', async (t) => {
     const err = createError(101, RPC_ERROR_CODES.HOLD_ACTIVE, 'Human hold active', { holdReason: 'Manual pause' });
     assert.equal(err.jsonrpc, '2.0');
     assert.equal(err.id, 101);
-    assert.equal(err.error.code, -32003);
+    assert.equal(err.error.code, -32004);
+    assert.equal(RPC_ERROR_CODES.FORBIDDEN, -32003);
     assert.equal(err.error.data.holdReason, 'Manual pause');
 
     const notif = createNotification('zero.stream.delta', { chunk: 'Hello' });

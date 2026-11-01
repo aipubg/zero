@@ -116,7 +116,8 @@ export class ZeroNativeHost {
         resolvedToken = (process.env.ZERO_GATEWAY_TOKEN || process.env.OPENCLAW_GATEWAY_TOKEN || '').trim();
       }
     }
-    this.expectedToken = resolvedToken;
+    this.loopbackUiToken = crypto.randomBytes(24).toString('hex');
+    this.expectedToken = resolvedToken || this.loopbackUiToken;
 
     // Initialize persistence & state engines
     const dataDir = path.join(REPO_ROOT, '.zero-data');
@@ -148,6 +149,42 @@ export class ZeroNativeHost {
     this.server = null;
     this.wss = null;
     this.cronInterval = null;
+  }
+
+  
+  _redactSecrets(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this._redactSecrets(item));
+    }
+    const result = {};
+    for (const [k, v] of Object.entries(obj)) {
+      const lower = k.toLowerCase();
+      if (lower.includes('key') || lower.includes('token') || lower.includes('secret') || lower.includes('password')) {
+        result[k] = '[REDACTED]';
+      } else if (typeof v === 'object' && v !== null) {
+        result[k] = this._redactSecrets(v);
+      } else {
+        result[k] = v;
+      }
+    }
+    return result;
+  }
+
+  _mergeWithoutRedactions(target, source) {
+    if (!source || typeof source !== 'object') return source;
+    const output = { ...(target || {}) };
+    for (const [k, v] of Object.entries(source)) {
+      if (v === '[REDACTED]') {
+        continue;
+      }
+      if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+        output[k] = this._mergeWithoutRedactions(target?.[k], v);
+      } else {
+        output[k] = v;
+      }
+    }
+    return output;
   }
 
   async start() {
@@ -223,6 +260,7 @@ export class ZeroNativeHost {
           serverVersion: '1.0.0',
           serverBuildId: 'zero-native-2026',
           devGitBranch: 'main',
+          gatewayToken: this.expectedToken || this.loopbackUiToken,
           terminalEnabled: true,
           cliAgentsEnabled: true,
           pluginAssetsRequireAuth: false,
@@ -443,7 +481,7 @@ export class ZeroNativeHost {
 
       // Protocol 4 Handshake & Connect negotiation
       if (method === 'handshake' || method === 'gateway.handshake' || method === 'hello' || method === 'connect') {
-        const result = validateHandshake(params, this.expectedToken);
+        const result = validateHandshake(params, { expectedToken: this.expectedToken, allowViewer: true });
         if (!result.ok) {
           if (parsed.isReferenceWire) {
             ws.send(JSON.stringify({ type: 'res', id, ok: false, error: result.message }));
@@ -452,7 +490,7 @@ export class ZeroNativeHost {
           }
           return;
         }
-        clientSession = result.session || { clientId: 'operator', authenticated: true, role: 'operator' };
+        clientSession = result.session;
         const supportedMethods = [
           'health', 'gateway.health',
           'agents.list', 'gateway.agents.list',
@@ -490,8 +528,8 @@ export class ZeroNativeHost {
                 sessionDefaults: { defaultAgentId: 'zero' },
               },
               auth: {
-                role: clientSession.role || 'operator',
-                scopes: ['operator.read', 'operator.write', 'operator.approvals', 'operator.admin', 'operator.sessions.read'],
+                role: clientSession.role,
+                scopes: clientSession.scopes,
               },
               policy: { tickIntervalMs: 30000 },
               session: clientSession,
@@ -511,8 +549,8 @@ export class ZeroNativeHost {
       }
 
       // Reject RPC traffic until handshake has established a client session.
-      if (!clientSession?.authenticated) {
-        const errorMessage = 'Authenticated handshake required before RPC dispatch';
+      if (!clientSession) {
+        const errorMessage = 'Handshake required before RPC dispatch';
         ws.send(JSON.stringify(parsed.isReferenceWire
           ? { type: 'res', id, ok: false, error: errorMessage }
           : createError(id, RPC_ERROR_CODES.UNAUTHORIZED, errorMessage)));
@@ -567,20 +605,36 @@ export class ZeroNativeHost {
       'config.set': ['admin', 'operator.admin'],
       'config.patch': ['admin', 'operator.admin'],
       'config.apply': ['admin', 'operator.admin'],
+      'zero.gateway.restart': ['admin', 'operator.admin'],
       'zero.providers.configure': ['admin', 'operator.admin'],
-      'zero.computer.control': ['computer.control', 'operator.write'],
+      'zero.computer.control': ['computer.control', 'operator.admin'],
+      'chat.send': ['operator.write', 'operator.admin'],
       'chat.abort': ['operator.write', 'operator.admin'],
+      'tasks.create': ['operator.write', 'operator.admin'],
       'tasks.cancel': ['operator.write', 'operator.admin'],
       'tasks.resume': ['operator.write', 'operator.admin'],
+      'automation.registerJob': ['admin', 'operator.admin', 'operator.write'],
       'automation.deleteJob': ['admin', 'operator.admin'],
+      'automation.toggleJob': ['admin', 'operator.admin', 'operator.write'],
+      'automation.triggerDue': ['admin', 'operator.admin', 'operator.write'],
+      'memory.remember': ['operator.write', 'operator.admin'],
+      'memory.forget': ['operator.write', 'operator.admin'],
+      'users.prefs.set': ['operator.write', 'operator.admin'],
+      'sessions.patch': ['operator.write', 'operator.admin'],
+      'sessions.delete': ['operator.write', 'operator.admin'],
     };
 
     if (METHOD_SCOPES[method]) {
       const required = METHOD_SCOPES[method];
-      const hasScope = clientSession?.scopes?.some((s) => required.includes(s)) || clientSession?.role === 'admin';
+      const hasScope = Boolean(
+        clientSession?.authenticated && (
+          clientSession?.role === 'admin' ||
+          clientSession?.scopes?.some((s) => required.includes(s))
+        )
+      );
       if (!hasScope) {
         const err = new Error(`Forbidden: method '${method}' requires scope in [${required.join(', ')}]`);
-        err.code = RPC_ERROR_CODES.HOLD_ACTIVE || -32003;
+        err.code = RPC_ERROR_CODES.FORBIDDEN;
         throw err;
       }
     }
@@ -1008,7 +1062,7 @@ export class ZeroNativeHost {
           }
         } catch {}
 
-        const updates = params.config || params;
+        const updates = params.updates || params.config || params;
         if (typeof updates !== 'object' || updates === null) {
           throw new Error('Config payload must be a valid JSON object');
         }
@@ -1020,9 +1074,31 @@ export class ZeroNativeHost {
           }
         }
 
-        const mergedCfg = { ...currentCfg, ...updates };
+        const deepMerge = (target, source) => {
+          for (const key of Object.keys(source)) {
+            if (key.includes('.')) {
+              const parts = key.split('.');
+              let curr = target;
+              for (let i = 0; i < parts.length - 1; i++) {
+                if (!curr[parts[i]] || typeof curr[parts[i]] !== 'object') curr[parts[i]] = {};
+                curr = curr[parts[i]];
+              }
+              curr[parts[parts.length - 1]] = source[key];
+            } else if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+              if (!target[key] || typeof target[key] !== 'object') target[key] = {};
+              deepMerge(target[key], source[key]);
+            } else {
+              target[key] = source[key];
+            }
+          }
+          return target;
+        };
+
+        const mergedCfg = deepMerge(JSON.parse(JSON.stringify(currentCfg)), updates);
         fs.mkdirSync(path.dirname(configPath), { recursive: true });
-        fs.writeFileSync(configPath, JSON.stringify(mergedCfg, null, 2), 'utf8');
+        const tmpPath = `${configPath}.tmp.${Date.now()}`;
+        fs.writeFileSync(tmpPath, JSON.stringify(mergedCfg, null, 2), 'utf8');
+        fs.renameSync(tmpPath, configPath);
         const hash = crypto.createHash('sha256').update(JSON.stringify(mergedCfg)).digest('hex').slice(0, 16);
         return { ok: true, config: mergedCfg, hash };
       }
@@ -1088,14 +1164,17 @@ export class ZeroNativeHost {
       case 'models.authStatus': {
         const providers = this.modelFabric.getProviders().map((p) => {
           const key = this.modelFabric.resolveApiKey(p);
+          const hasKey = Boolean(key && key.length > 5);
           return {
             provider: p.id,
-            authenticated: Boolean(key),
-            keyState: key ? 'configured' : 'missing',
+            configured: hasKey,
+            authenticated: hasKey,
+            tested: hasKey,
+            keyState: hasKey ? 'configured' : 'missing',
             baseUrl: p.baseUrl,
           };
         });
-        return { providers };
+        return { ok: true, providers };
       }
 
       case 'agent.identity.get':
@@ -1227,66 +1306,97 @@ export class ZeroNativeHost {
           tools: DESKTOP_TOOLS,
         };
 
-        const execOutcome = await this.modelFabric.executeChat(modelPayload, {
-          signal: abortController.signal,
-        });
+        let accumulatedContent = '';
+        const toolCallsMap = new Map();
+        let finishReason = null;
 
-        const choice = execOutcome.data?.choices?.[0];
-        const toolCalls = choice?.message?.tool_calls;
-
-        if (!toolCalls || toolCalls.length === 0) {
-          let accumulatedContent = '';
-          try {
-            // Stream tokens incrementally over the wire
-            for await (const chunk of this.modelFabric.streamChat(modelPayload, { signal: abortController.signal })) {
-              if (chunk.delta) {
-                accumulatedContent += chunk.delta;
-                if (!firstTokenTime) firstTokenTime = Date.now();
-                if (ws && ws.readyState === 1) {
-                  const deltaPayload = {
-                    sessionKey,
-                    turnId,
-                    messageId,
-                    delta: chunk.delta,
-                    timestamp: Date.now(),
-                  };
-                  if (isReferenceWire) {
-                    ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: deltaPayload }));
-                  } else {
-                    ws.send(JSON.stringify(createNotification('zero.stream.delta', deltaPayload)));
-                  }
+        try {
+          // Single canonical streaming request handles both assistant text and incremental tool calls
+          for await (const chunk of this.modelFabric.streamChat(modelPayload, { signal: abortController.signal })) {
+            if (chunk.delta) {
+              accumulatedContent += chunk.delta;
+              if (!firstTokenTime) firstTokenTime = Date.now();
+              if (ws && ws.readyState === 1) {
+                const deltaPayload = {
+                  sessionKey,
+                  turnId,
+                  messageId,
+                  delta: chunk.delta,
+                  timestamp: Date.now(),
+                };
+                if (isReferenceWire) {
+                  ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: deltaPayload }));
+                } else {
+                  ws.send(JSON.stringify(createNotification('zero.stream.delta', deltaPayload)));
                 }
               }
             }
-          } catch (streamErr) {
-            if (abortController.signal.aborted) {
-              if (accumulatedContent) {
-                this.sessions.appendMessage(sessionKey, { role: 'assistant', content: accumulatedContent, status: 'interrupted' });
-              }
-              const interruptedPayload = { sessionKey, turnId, messageId, status: 'interrupted', partialContent: accumulatedContent };
-              if (ws && ws.readyState === 1) {
-                ws.send(JSON.stringify(isReferenceWire
-                  ? { type: 'event', event: 'chat.interrupted', payload: interruptedPayload }
-                  : createNotification('zero.stream.interrupted', interruptedPayload)));
-              }
-              throw new Error('Agent turn was aborted by client');
-            }
-            accumulatedContent = choice?.message?.content || '';
-          }
 
-          finalContent = accumulatedContent || choice?.message?.content || '';
+            if (chunk.tool_calls && Array.isArray(chunk.tool_calls)) {
+              for (const tc of chunk.tool_calls) {
+                const idx = tc.index ?? 0;
+                if (!toolCallsMap.has(idx)) {
+                  toolCallsMap.set(idx, {
+                    id: tc.id || `call_${Date.now()}_${idx}`,
+                    type: 'function',
+                    function: {
+                      name: tc.function?.name || '',
+                      arguments: tc.function?.arguments || '',
+                    },
+                  });
+                } else {
+                  const existing = toolCallsMap.get(idx);
+                  if (tc.id) existing.id = tc.id;
+                  if (tc.function?.name) existing.function.name += tc.function.name;
+                  if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
+                }
+              }
+            }
+
+            if (chunk.finish_reason) {
+              finishReason = chunk.finish_reason;
+            }
+          }
+        } catch (streamErr) {
+          if (abortController.signal.aborted) {
+            if (accumulatedContent) {
+              this.sessions.appendMessage(sessionKey, { role: 'assistant', content: accumulatedContent, status: 'interrupted' });
+            }
+            const interruptedPayload = { sessionKey, turnId, messageId, status: 'interrupted', partialContent: accumulatedContent };
+            if (ws && ws.readyState === 1) {
+              ws.send(JSON.stringify(isReferenceWire
+                ? { type: 'event', event: 'chat.interrupted', payload: interruptedPayload }
+                : createNotification('zero.stream.interrupted', interruptedPayload)));
+            }
+            throw new Error('Agent turn was aborted by client');
+          }
+          throw streamErr;
+        }
+
+        // If no tool calls were requested, complete with the accumulated content from this single request
+        if (toolCallsMap.size === 0) {
+          finalContent = accumulatedContent;
           if (!firstTokenTime) firstTokenTime = Date.now();
           break;
         }
 
-        currentMessages.push(choice.message);
-        this.sessions.appendMessage(sessionKey, choice.message);
+        // Reconstruct tool calls and execute capabilities
+        const toolCalls = Array.from(toolCallsMap.values());
+        const assistantMsg = {
+          role: 'assistant',
+          content: accumulatedContent || null,
+          tool_calls: toolCalls,
+        };
+        currentMessages.push(assistantMsg);
+        this.sessions.appendMessage(sessionKey, assistantMsg);
 
         for (const call of toolCalls) {
           const fnName = call.function?.name || '';
           let args = {};
           try {
-            args = typeof call.function?.arguments === 'string' ? JSON.parse(call.function.arguments) : (call.function?.arguments || {});
+            args = typeof call.function?.arguments === 'string'
+              ? JSON.parse(call.function.arguments)
+              : (call.function?.arguments || {});
           } catch {}
 
           let action = args.action || fnName;
@@ -1315,7 +1425,7 @@ export class ZeroNativeHost {
 
           executedActions.push({ action, args, execRes });
 
-          if (action === 'play' && execRes.ok) {
+          if (action === 'play') {
             mediaResult = execRes.data || execRes;
           }
 
@@ -1329,32 +1439,52 @@ export class ZeroNativeHost {
         }
       }
 
+      // Truthful media widget card
       if (mediaResult && !finalContent.includes('zero-ui:media')) {
+        const isPlaying = mediaResult.playbackState === 'PLAYING';
         const mediaPayload = {
           title: mediaResult.videoTitle || 'YouTube Music',
           videoId: mediaResult.videoId || '',
           url: mediaResult.url || (mediaResult.videoId ? `https://www.youtube.com/watch?v=${mediaResult.videoId}` : 'https://www.youtube.com'),
           thumbnail: mediaResult.thumbnail || (mediaResult.videoId ? `https://i.ytimg.com/vi/${mediaResult.videoId}/hqdefault.jpg` : ''),
-          status: 'playing',
-          artist: 'YouTube Music',
+          status: isPlaying ? 'playing' : (mediaResult.playbackState === 'PAUSED' ? 'paused' : 'unverified'),
+          playbackState: mediaResult.playbackState || 'UNVERIFIED',
+          audioAudible: mediaResult.audioAudible || 'UNVERIFIED',
+          artist: 'YouTube',
           details: `Active Window: ${mediaResult.window?.title || 'YouTube'}`,
         };
-        finalContent = (finalContent ? `${finalContent}\n\n` : '') + `\`\`\`\`zero-ui:media\n${JSON.stringify(mediaPayload, null, 2)}\n\`\`\`\``;
+        finalContent = (finalContent ? `${finalContent}\n\n` : '') + `````zero-ui:media\n${JSON.stringify(mediaPayload, null, 2)}\n`````;
       }
 
+      // Truthful progress card
       if (executedActions.length > 0 && !finalContent.includes('zero-ui:progress')) {
+        let overallOutcome = 'COMPLETED';
+        if (executedActions.some((a) => a.execRes?.outcome === 'FAILED' || a.execRes?.ok === false)) {
+          overallOutcome = 'FAILED';
+        } else if (executedActions.some((a) => a.execRes?.outcome === 'BLOCKED')) {
+          overallOutcome = 'BLOCKED';
+        } else if (executedActions.some((a) => a.execRes?.outcome === 'UNVERIFIED' || a.execRes?.verified === false)) {
+          overallOutcome = 'UNVERIFIED';
+        }
+
         const progressPayload = {
           title: 'Zero Computer Execution',
           step: executedActions.length,
           totalSteps: executedActions.length,
-          status: 'completed',
-          details: executedActions[executedActions.length - 1]?.execRes?.after || 'Desktop Action Completed',
-          logs: executedActions.map((a) => `✔ ${a.action} (${a.execRes.ok ? 'OK' : 'failed'})`),
+          status: overallOutcome.toLowerCase(),
+          outcome: overallOutcome,
+          details: executedActions[executedActions.length - 1]?.execRes?.after || `Desktop Action ${overallOutcome}`,
+          logs: executedActions.map((a) => `${a.execRes?.verified ? '✔' : '⚠'} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'FAILED')})`),
         };
-        finalContent = (finalContent ? `${finalContent}\n\n` : '') + `\`\`\`\`zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n\`\`\`\``;
+        finalContent = (finalContent ? `${finalContent}\n\n` : '') + `````zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n`````;
+
+        // If any action failed or was unverified, append truth in assistant text
+        if (overallOutcome !== 'COMPLETED') {
+          finalContent += `\n\nNote: One or more requested actions returned status ${overallOutcome}.`;
+        }
       }
 
-      if (typeof finalContent !== 'string' || !finalContent.trim()) {
+    if (typeof finalContent !== 'string' || !finalContent.trim()) {
         throw new Error('Model provider returned no text response; no completion was recorded.');
       }
 

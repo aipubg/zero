@@ -79,6 +79,12 @@ try {
   copyFileSync(join(scratch, "index.js"), join(targetPluginDir2, "index.js"));
   copyFileSync(join(scratch, "index.css"), join(targetPluginDir2, "index.css"));
 
+  // First-party root asset bundles
+  const assetsDir = join(repoDistWeb, "assets");
+  mkdirSync(assetsDir, { recursive: true });
+  copyFileSync(join(scratch, "index.js"), join(assetsDir, "zero-control-ui.js"));
+  copyFileSync(join(scratch, "index.css"), join(assetsDir, "zero-control-ui.css"));
+
   console.log(`generation: ${generation}`);
   console.log(`entry:      ${controlUi.entry} (${js.length} bytes)`);
   console.log(`styles:     ${controlUi.styles[0]} (${css.length} bytes)`);

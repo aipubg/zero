@@ -540,8 +540,11 @@ export class ComputerOperator {
             thumbnail: videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "",
             clickCoordinates: clickCoords,
             playbackState,
+            browserOpened: Boolean(res?.ok !== false),
+            pageLoaded: Boolean(activeWin !== null),
             audioPlaying: audioActive,
             audioActive, // STRICT: Only true when verified playing!
+            audioAudible: "UNVERIFIED",
             message: `Browser opened at ${url}. ${clickCoords ? `Physical click executed at (${clickCoords.x}, ${clickCoords.y}).` : ""} Playback status: ${playbackState}.`,
             window: activeWin,
             details: res,
