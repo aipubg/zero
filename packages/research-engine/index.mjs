@@ -31,60 +31,80 @@ export class ResearchEngine {
    */
   async executeResearchWorkflow({
     topic,
+    query,
     limit = 5,
     taskId = 'research-workflow',
     memoryEngine = null,
   }) {
     const startedAt = Date.now();
-    const searchRes = await this.searchEngine.search(topic, { limit });
+    const effectiveTopic = topic || query || '';
+    const searchRes = await this.searchEngine.search(effectiveTopic, { limit });
+    const hasRealSources = searchRes.totalResults > 0;
 
-    // Build synthesized research markdown
-    const citationList = searchRes.citations.map(
-      (c) => `[${c.citationIndex}] [${c.title}](${c.url})\n    *${c.snippet}*`
-    ).join('\n\n');
+    // Build research markdown
+    let reportContent;
+    if (hasRealSources) {
+      const citationList = searchRes.citations.map(
+        (c) => `[${c.citationIndex}] [${c.title}](${c.url})\n    *Source: ${c.domain} | Provenance: ${c.provenance?.provider || 'web'}*\n    ${c.snippet}`
+      ).join('\n\n');
 
-    const reportContent = `# Research Brief: ${topic}
+      reportContent = `# Research Brief: ${effectiveTopic}
 
-**Generated At:** ${new Date().toISOString()}  
-**Total Sources Examined:** ${searchRes.totalResults}  
-**Search Provider:** ${searchRes.provider}  
+**Generated At:** ${new Date().toISOString()}
+**Total Sources Examined:** ${searchRes.totalResults}
+**Search Status:** Retrieved (${searchRes.provider}); source claims not independently verified
 
 ## Key Findings & Sources
 
 ${citationList}
 
 ---
-*Verified autonomously by Zero Research Engine.*
+*Sources returned by the listed search providers. Their claims have not been independently verified.*
 `;
+    } else {
+      reportContent = `# Research Brief: ${effectiveTopic}
 
-    // Produce verified artifact
+**Generated At:** ${new Date().toISOString()}
+**Total Sources Examined:** 0
+**Search Status:** ${searchRes.status.toUpperCase()} (No sources retrieved)
+
+## Notice
+No live web documents could be retrieved for topic "${effectiveTopic}".
+Report generated with unverified status.
+`;
+    }
+
+    // Produce artifact with truthful verified status
     const artifact = this.artifactManager.createArtifact({
       taskId,
       type: ARTIFACT_TYPES.REPORT,
-      title: `Research Report: ${topic}`,
+      title: `Research Report: ${effectiveTopic}`,
       content: reportContent,
-      verified: true,
+      verified: false,
     });
 
-    // Index into persistent memory if engine provided
-    if (memoryEngine && typeof memoryEngine.remember === 'function') {
+    // Index into persistent memory only if real sources were confirmed
+    if (hasRealSources && memoryEngine && typeof memoryEngine.remember === 'function') {
       try {
         memoryEngine.remember({
           layer: 'semantic',
           category: 'research_findings',
-          content: `Research findings for '${topic}': Found ${searchRes.totalResults} sources. Primary reference: ${searchRes.citations[0]?.title || 'web'}`,
-          tags: ['research', topic.toLowerCase().slice(0, 20)],
-          confidence: 0.95,
+          content: `Search results for '${effectiveTopic}': Retrieved ${searchRes.totalResults} sources; claims unverified. Primary reference: ${searchRes.citations[0]?.title} (${searchRes.citations[0]?.url})`,
+          tags: ['research', effectiveTopic.toLowerCase().slice(0, 20)],
+          confidence: 0.5,
         });
       } catch (_) {}
     }
 
     return {
-      ok: true,
+      ok: hasRealSources,
+      status: searchRes.status,
       topic,
       totalSources: searchRes.totalResults,
       citations: searchRes.citations,
       artifact,
+      retrieved: hasRealSources,
+      verified: false,
       durationMs: Date.now() - startedAt,
     };
   }

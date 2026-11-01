@@ -3,106 +3,194 @@
  *
  * Implements structured web search, source extraction, and citation numbering
  * for research agents and user queries.
+ *
+ * Mandatory Verification Rules:
+ * 1. Never fabricate synthetic search citations with verified: true.
+ * 2. Distinguish real retrieved sources from query links.
+ * 3. Return explicit unavailable, empty or failed states when searches cannot retrieve real results.
+ * 4. Record source URLs and citation provenance.
  */
 
 export class SearchEngine {
   /**
    * @param {Object} [options]
-   * @param {string} [options.defaultProvider='duckduckgo']
+   * @param {string} [options.defaultProvider='multi-source']
    */
   constructor(options = {}) {
-    this.defaultProvider = options.defaultProvider || 'duckduckgo';
+    this.defaultProvider = options.defaultProvider || 'multi-source';
     this.history = [];
+    this.fetch = options.fetch || globalThis.fetch;
   }
 
   /**
-   * Perform structured search query across web sources
+   * Validate that a URL is a genuine HTTP(S) address with valid domain
+   * @param {string} urlString
+   * @returns {boolean}
+   */
+  static isValidWebUrl(urlString) {
+    if (!urlString || typeof urlString !== 'string') return false;
+    try {
+      const parsed = new URL(urlString);
+      return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.includes('.');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Perform structured search query across live web sources
    * @param {string} query Search terms
    * @param {Object} [options]
    * @param {number} [options.limit=5] Maximum results
    * @param {string} [options.domain] Specific domain filter
-   * @returns {Promise<{ query: string, totalResults: number, citations: Array, durationMs: number }>}
+   * @returns {Promise<{ query: string, status: string, totalResults: number, citations: Array, provider: string, durationMs: number, verified: boolean }>}
    */
   async search(query, options = {}) {
-    if (!query || typeof query !== 'string') {
+    if (!query || typeof query !== 'string' || !query.trim()) {
       throw new Error('Search requires a non-empty query string');
     }
 
     const startedAt = Date.now();
-    const limit = options.limit || 5;
+    const limit = Math.min(Math.max(options.limit || 5, 1), 20);
     const cleanQuery = query.trim();
-
     const citations = [];
+    let providerUsed = this.defaultProvider;
+    const attempts = [];
 
-    // 1. Live DuckDuckGo Instant Answer / HTML Search or structured fetch
+    // 1. Try DuckDuckGo Instant Answer API
     try {
-      const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1&skip_disambig=1`;
+      const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1&skip_disambig=1`;
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 6000);
+      const timer = setTimeout(() => controller.abort(), 4000);
 
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'ZeroAI-ResearchAgent/1.0' },
+      const res = await this.fetch(ddgUrl, {
+        headers: { 'User-Agent': 'ZeroAI-ResearchEngine/1.0 (Windows)' },
         signal: controller.signal,
       }).finally(() => clearTimeout(timer));
+      attempts.push({ provider: 'duckduckgo-instant', status: res.ok ? 'retrieved' : 'failed', httpStatus: res.status });
 
       if (res.ok) {
         const data = await res.json();
-        
-        // Extract Abstract if available
-        if (data.Abstract && data.AbstractURL) {
+        if (data.Abstract && data.AbstractURL && SearchEngine.isValidWebUrl(data.AbstractURL)) {
           citations.push({
-            citationIndex: 1,
+            citationIndex: citations.length + 1,
             title: data.Heading || cleanQuery,
             url: data.AbstractURL,
-            source: data.AbstractSource || 'DuckDuckGo Abstract',
+            source: data.AbstractSource || new URL(data.AbstractURL).hostname,
+            domain: new URL(data.AbstractURL).hostname,
             snippet: data.Abstract,
-            verified: true,
+            provenance: {
+              provider: 'duckduckgo-instant',
+              fetchedAt: Date.now(),
+              endpoint: ddgUrl,
+            },
+            retrieved: true,
+            verified: false,
           });
         }
 
-        // Extract RelatedTopics
         if (Array.isArray(data.RelatedTopics)) {
           for (const topic of data.RelatedTopics) {
             if (citations.length >= limit) break;
-            if (topic.Text && topic.FirstURL) {
+            if (topic.Text && topic.FirstURL && SearchEngine.isValidWebUrl(topic.FirstURL)) {
               citations.push({
                 citationIndex: citations.length + 1,
                 title: topic.Text.split(' - ')[0] || topic.Text.slice(0, 60),
                 url: topic.FirstURL,
                 source: new URL(topic.FirstURL).hostname,
+                domain: new URL(topic.FirstURL).hostname,
                 snippet: topic.Text,
-                verified: true,
+                provenance: {
+                  provider: 'duckduckgo-related',
+                  fetchedAt: Date.now(),
+                  endpoint: ddgUrl,
+                },
+                retrieved: true,
+                verified: false,
               });
             }
           }
         }
       }
-    } catch (err) {
-      // Network timeout or offline mode; provide structured fallback
+    } catch (_) {
+      attempts.push({ provider: 'duckduckgo-instant', status: 'unavailable' });
+      // DuckDuckGo unavailable or timed out; continue to secondary live provider
     }
 
-    // 2. If online search yielded fewer than required, synthesize verified query context
-    if (citations.length === 0) {
-      citations.push({
-        citationIndex: 1,
-        title: `Search Query Reference: ${cleanQuery}`,
-        url: `https://duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}`,
-        source: 'DuckDuckGo Search',
-        snippet: `Synthesized research context for topic query: "${cleanQuery}". Direct exploration required.`,
-        verified: true,
-      });
+    // 2. If citations below limit, query Wikipedia OpenSearch API for real encyclopedic documents
+    if (citations.length < limit) {
+      try {
+        const wikiUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(cleanQuery)}&limit=${limit}&namespace=0&format=json`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4000);
+
+        const res = await this.fetch(wikiUrl, {
+          headers: { 'User-Agent': 'ZeroAI-ResearchEngine/1.0 (Windows)' },
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timer));
+        attempts.push({ provider: 'wikipedia-opensearch', status: res.ok ? 'retrieved' : 'failed', httpStatus: res.status });
+
+        if (res.ok) {
+          const [term, titles, snippets, urls] = await res.json();
+          if (Array.isArray(titles) && Array.isArray(urls)) {
+            for (let i = 0; i < titles.length; i++) {
+              if (citations.length >= limit) break;
+              const link = urls[i];
+              const title = titles[i];
+              const snippet = snippets && snippets[i] ? snippets[i] : `Wikipedia reference for ${title}`;
+
+              if (SearchEngine.isValidWebUrl(link) && !citations.some((c) => c.url === link)) {
+                citations.push({
+                  citationIndex: citations.length + 1,
+                  title,
+                  url: link,
+                  source: new URL(link).hostname,
+                  domain: new URL(link).hostname,
+                  snippet,
+                  provenance: {
+                    provider: 'wikipedia-opensearch',
+                    fetchedAt: Date.now(),
+                    endpoint: wikiUrl,
+                  },
+                  retrieved: true,
+                  verified: false,
+                });
+              }
+            }
+          }
+        }
+      } catch (_) {
+        attempts.push({ provider: 'wikipedia-opensearch', status: 'unavailable' });
+        // Wikipedia unavailable or offline
+      }
     }
 
+    // TRUTHFULNESS RULE:
+    // If no citations were retrieved from real providers, return an explicit empty/unavailable state.
+    // DO NOT synthesize search results and DO NOT mark query URLs as verified sources.
+    const allowed = citations.filter(c => !options.domain || c.domain === options.domain || c.domain.endsWith('.' + options.domain));
+    citations.splice(0, citations.length, ...allowed.slice(0, limit).map((c, i) => ({ ...c, citationIndex: i + 1 })));
+    const isSuccess = citations.length > 0;
     const searchResult = {
       query: cleanQuery,
+      status: isSuccess ? 'ok' : attempts.some(a => a.status === 'retrieved') ? 'empty' : attempts.some(a => a.status === 'failed') ? 'failed' : 'unavailable',
       totalResults: citations.length,
       citations,
-      provider: this.defaultProvider,
+      provider: providerUsed,
+      retrieved: isSuccess,
+      verified: false,
+      attempts,
       durationMs: Date.now() - startedAt,
       timestamp: Date.now(),
+      notice: isSuccess ? null : 'No external web documents could be retrieved from live search providers.',
     };
 
-    this.history.push({ query: cleanQuery, timestamp: Date.now(), resultCount: citations.length });
+    this.history.push({
+      query: cleanQuery,
+      timestamp: Date.now(),
+      resultCount: citations.length,
+      status: searchResult.status,
+    });
     if (this.history.length > 200) this.history.shift();
 
     return searchResult;
