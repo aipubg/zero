@@ -1483,14 +1483,14 @@ export async function handleZeroGatewayRequest(req, res) {
         status: 'ok',
         features: {
           models: { active: true, streaming: true, localGguf: true, cloudProviders: true },
-          agents: { active: true, delegation: true },
+          agents: { active: true, delegation: true, teams: true, leaseLock: true },
           computer: { active: true, platform: 'win32', automation: ['uia', 'dom', 'user32'] },
           memory: { active: true, store: 'sqlite-wal' },
           automation: { active: true, scheduler: 'durable-cron' },
           skills: { active: true, nativeCount: 11 },
           plugins: { active: true, nativeSdk: true },
           voice: { active: false, plannedPhase: 15 },
-          screen: { active: false, plannedPhase: 8 },
+          screen: { active: true, rollingBuffer: true, changeDetection: true, persistentMemory: true },
         },
         timestamp: Date.now(),
       }));

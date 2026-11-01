@@ -34,7 +34,8 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
 });
 
 export class CapabilityEngine {
-  constructor({ operator = null, logger = console } = {}) {
+  constructor({ operator = null, leaseManager = null, logger = console } = {}) {
+    this.leaseManager = leaseManager;
     this.operator = operator || new ComputerOperator();
     this.logger = logger;
     this.auditLog = [];
@@ -178,6 +179,18 @@ export class CapabilityEngine {
 
     if (validation.custom) {
       const customDef = this.customCapabilities.get(toolName);
+      if (customDef?.disabled) {
+        const disabledResult = {
+          ok: false,
+          outcome: 'BLOCKED',
+          error: 'capability-disabled',
+          message: `Plugin capability '${toolName}' is currently disabled.`,
+          durationMs: Date.now() - startedAt,
+          auditId,
+        };
+        this._recordAudit(agentId, toolName, args, 'BLOCKED_BY_DISABLED', disabledResult);
+        return disabledResult;
+      }
       try {
         const customRes = await customDef.handler(params, signal);
         const durationMs = Date.now() - startedAt;
@@ -189,6 +202,7 @@ export class CapabilityEngine {
           outcome: 'COMPLETED',
           capability: toolName,
           data: customRes,
+          ...(typeof customRes === 'object' && customRes !== null ? customRes : {}),
           durationMs,
           auditId,
         };
@@ -232,7 +246,35 @@ export class CapabilityEngine {
       return holdResult;
     }
 
-    // 3. Before-State Observation
+
+    // 3. Desktop Lease Coordination
+    const isDesktopAction = ['type_text', 'type', 'press_key', 'press', 'hotkey', 'mouse_move', 'move', 'left_click', 'click', 'right_click', 'double_click', 'mouse_drag', 'drag', 'focus_window', 'control_window'].includes(action);
+    let leaseAcquiredLocally = false;
+    if (this.leaseManager && isDesktopAction) {
+      const leaseRes = await this.leaseManager.acquireLease(agentId, {
+        reason: `Executing action ${action}`,
+        timeoutMs: 15000,
+        waitMs: 5000,
+      });
+      if (!leaseRes.acquired) {
+        const leaseContentionResult = {
+          ok: false,
+          outcome: 'BLOCKED',
+          error: 'DESKTOP_LEASE_CONTENTION',
+          message: `Desktop action blocked: lease currently held by agent [${leaseRes.holder}]`,
+          holder: leaseRes.holder,
+          durationMs: Date.now() - startedAt,
+          auditId,
+        };
+        this._recordAudit(agentId, toolName, params, 'BLOCKED_BY_LEASE', leaseContentionResult);
+        return leaseContentionResult;
+      }
+      if (!leaseRes.renewed) {
+        leaseAcquiredLocally = true;
+      }
+    }
+
+    // 4. Before-State Observation
     let beforeState = null;
     try {
       if (['open_app', 'launch_app', 'focus_window', 'play'].includes(action)) {
@@ -240,7 +282,7 @@ export class CapabilityEngine {
       }
     } catch {}
 
-    // 4. Execution with Deadline and Cancellation
+    // 5. Execution with Deadline and Cancellation
     const abortController = new AbortController();
     const timer = setTimeout(() => {
       abortController.abort(new Error(`Capability execution exceeded ${timeoutMs}ms deadline`));
@@ -262,7 +304,7 @@ export class CapabilityEngine {
       clearTimeout(timer);
     }
 
-    // 5. After-State Verification
+    // 6. After-State Verification
     let afterState = null;
     let verified = Boolean(execResult.verified);
     try {

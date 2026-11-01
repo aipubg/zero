@@ -30,9 +30,11 @@ import {
 } from '../../packages/gateway-protocol/index.mjs';
 
 import { SessionManager } from '../../packages/sessions/index.mjs';
-import { TaskStateMachine } from '../../packages/agent-runtime/index.mjs';
+import { TaskStateMachine, AgentMessageBus, DesktopLeaseManager, AgentTeamOrchestrator, CANONICAL_AGENT_PROFILES } from '../../packages/agent-runtime/index.mjs';
 import { AutomationScheduler } from '../../packages/automation/index.mjs';
-import { PersistentMemoryStore } from '../../packages/memory/index.mjs';
+import { PersistentMemoryStore, UnifiedMemoryEngine, MEMORY_LAYERS } from '../../packages/memory/index.mjs';
+import { SkillLoader } from '../../packages/skill-sdk/index.mjs';
+import { PluginManager } from '../../packages/plugin-sdk/index.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { canonicalScreenObserver } from '../../packages/screen-intelligence/index.mjs';
@@ -142,7 +144,25 @@ export class ZeroNativeHost {
     });
     this.sessions = new SessionManager({ dbPath: sessionDb });
     this.tasks = new TaskStateMachine({ dbPath: path.join(dataDir, 'zero-tasks.sqlite') });
+    this.messageBus = new AgentMessageBus({ db: this.tasks.db });
+    this.leaseManager = new DesktopLeaseManager();
+    this.teamOrchestrator = new AgentTeamOrchestrator({
+      stateMachine: this.tasks,
+      messageBus: this.messageBus,
+      leaseManager: this.leaseManager,
+      logger: this.logger || console,
+    });
+    canonicalCapabilityEngine.leaseManager = this.leaseManager;
+    this.skillLoader = new SkillLoader({ skillsDir: path.join(REPO_ROOT, 'skills') });
+    this.pluginManager = new PluginManager({
+      dbPath: path.join(dataDir, 'zero-plugins.sqlite'),
+      capabilityEngine: canonicalCapabilityEngine,
+      logger: this.logger || console,
+    });
+
+
     this.memory = new PersistentMemoryStore({ dbPath: path.join(dataDir, 'zero-memory.sqlite') });
+    this.unifiedMemory = new UnifiedMemoryEngine({ dbPath: path.join(dataDir, 'zero-unified-memory.sqlite') });
     this.automation = new AutomationScheduler({
       dbPath: path.join(dataDir, 'zero-automation.sqlite'),
       executor: async (action, params) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action, ...params } }),
@@ -619,9 +639,15 @@ export class ZeroNativeHost {
           'zero-policy.computer-hold.status',
           'zero-policy.computer-hold.take',
           'zero-policy.computer-hold.release',
-          'memory.remember', 'memory.recall', 'memory.forget', 'memory.list',
+          'memory.remember', 'memory.recall', 'memory.forget', 'memory.list', 'memory.layers', 'memory.update', 'memory.consolidate',
           'automation.listJobs', 'automation.registerJob', 'automation.toggleJob', 'automation.deleteJob', 'automation.triggerDue', 'automation.listRuns',
           'tasks.list', 'tasks.get', 'tasks.create', 'tasks.cancel', 'tasks.resume',
+'agent.profile.list', 'agent.team.list', 'agent.team.create',
+          'agent.task.plan', 'agent.task.execute',
+          'agent.lease.status', 'agent.lease.acquire', 'agent.lease.release', 'agent.lease.force_release',
+          'tasks.checkpoint.save', 'tasks.checkpoint.get', 'tasks.checkpoint.list', 'tasks.retry',
+'skills.list', 'skills.get', 'skills.create', 'skills.match',
+          'plugins.list', 'plugins.install', 'plugins.enable', 'plugins.disable', 'plugins.uninstall', 'plugins.diagnostics',
         ];
 
         if (parsed.isReferenceWire) {
@@ -814,14 +840,14 @@ export class ZeroNativeHost {
           status: 'ok',
           features: {
             models: { active: true, streaming: true, localGguf: true, cloudProviders: true },
-            agents: { active: true, delegation: true },
+            agents: { active: true, delegation: true, teams: true, leaseLock: true },
             computer: { active: true, platform: 'win32', automation: ['uia', 'dom', 'user32'] },
             memory: { active: true, store: 'sqlite-wal' },
             automation: { active: true, scheduler: 'durable-cron' },
             skills: { active: true, nativeCount: 11 },
             plugins: { active: true, nativeSdk: true },
             voice: { active: false, plannedPhase: 15 },
-            screen: { active: false, plannedPhase: 8 },
+            screen: { active: true, rollingBuffer: true, changeDetection: true, persistentMemory: true },
           },
           timestamp: Date.now(),
         };
@@ -1074,10 +1100,12 @@ export class ZeroNativeHost {
       }
 
       case 'zero.computer.control': {
-        if (this.computerHold.held) {
+        const requestedAction = params.action || params.capability || params.toolName;
+        const isObservation = ['screenshot', 'get_screen_size', 'get_cursor', 'get_cursor_position', 'get_window_state', 'list_windows', 'list_apps', 'get_elements', 'get_uia_elements', 'clipboard_get', 'wait'].includes(requestedAction);
+        if (this.computerHold.held && !isObservation) {
           return { ok: false, error: 'Action refused: Human takeover hold is currently active.' };
         }
-        const toolName = params.toolName || 'zero_computer_action';
+        const toolName = params.toolName || (canonicalCapabilityEngine.customCapabilities.has(requestedAction) ? requestedAction : 'zero_computer_action');
         return await canonicalCapabilityEngine.execute({
           agentId: clientSession?.clientId || 'zero',
           toolName,
@@ -1141,6 +1169,7 @@ export class ZeroNativeHost {
       // Computer Hold Takeover Arbitration
       case 'zero-policy.computer-hold.status':
         return {
+          ok: true,
           held: this.computerHold.held,
           controlLeaseId: this.computerHold.leaseId,
         };
@@ -1171,17 +1200,27 @@ export class ZeroNativeHost {
       }
 
       // Memory Store RPC Methods
+      // Unified 8-Layer Memory RPC Methods
       case 'memory.remember':
-        return this.memory.remember(params);
+        return this.unifiedMemory.remember(params);
 
       case 'memory.recall':
-        return this.memory.recall(params.query || '', params.options || {});
+        return this.unifiedMemory.recall(params.query || '', params.options || params);
 
       case 'memory.forget':
-        return { ok: this.memory.forget(params.id), id: params.id };
+        return this.unifiedMemory.forget(params.id);
 
       case 'memory.list':
-        return this.memory.listMemories(params);
+        return this.unifiedMemory.listMemories(params);
+
+      case 'memory.layers':
+        return this.unifiedMemory.getLayerStats();
+
+      case 'memory.update':
+        return this.unifiedMemory.updateMemory(params.id, params);
+
+      case 'memory.consolidate':
+        return this.unifiedMemory.consolidateMemories(params);
 
       // Durable Automation RPC Methods
       case 'automation.listJobs':
@@ -1217,6 +1256,84 @@ export class ZeroNativeHost {
 
       case 'tasks.resume':
         return this.tasks.resumeTask(params.id);
+
+      // Multi-Agent Workforce & Specialist Teams
+      case 'agent.profile.list':
+        return { ok: true, profiles: this.teamOrchestrator.listAgentProfiles() };
+
+      case 'agent.team.list':
+        return { ok: true, teams: this.teamOrchestrator.listTeams() };
+
+      case 'agent.team.create':
+        return { ok: true, team: this.teamOrchestrator.registerTeam(params) };
+
+      case 'agent.task.plan':
+        return { ok: true, plan: this.teamOrchestrator.planGoal(params.goal, params) };
+
+      case 'agent.task.execute': {
+        const workflowResult = await this.teamOrchestrator.executeTeamWorkflow(params);
+        return { ok: workflowResult.status === 'COMPLETED', ...workflowResult };
+      }
+
+      // Physical Desktop Lease Management
+      case 'agent.lease.status':
+        return { ok: true, ...this.leaseManager.getStatus() };
+
+      case 'agent.lease.acquire':
+        return await this.leaseManager.acquireLease(params.agentId, params);
+
+      case 'agent.lease.release':
+        return this.leaseManager.releaseLease(params.agentId);
+
+      case 'agent.lease.force_release':
+        return this.leaseManager.forceRelease(params.reason);
+
+      // Task Checkpoints & Idempotency
+      case 'tasks.checkpoint.save':
+        return { ok: true, checkpoint: this.tasks.saveCheckpoint(params.taskId, params.stepIndex, params.stateSnapshot, params.artifacts) };
+
+      case 'tasks.checkpoint.get':
+        return { ok: true, checkpoint: this.tasks.getLatestCheckpoint(params.taskId) };
+
+      case 'tasks.checkpoint.list':
+        return { ok: true, checkpoints: this.tasks.listCheckpoints(params.taskId) };
+
+      case 'tasks.retry':
+        return { ok: true, task: this.tasks.retryFailedTask(params.taskId) };
+
+      // Skills SDK RPCs
+      case 'skills.list':
+        return { ok: true, skills: this.skillLoader.listSkills() };
+
+      case 'skills.get':
+        return { ok: true, skill: this.skillLoader.getSkill(params.name) };
+
+      case 'skills.create':
+        return this.skillLoader.createCustomSkill(params);
+
+      case 'skills.match':
+        return { ok: true, match: this.skillLoader.matchSkill(params.prompt) };
+
+      // Plugins SDK RPCs
+      case 'plugins.list':
+        return { ok: true, plugins: this.pluginManager.listPlugins(params) };
+
+      case 'plugins.install':
+        return { ok: true, plugin: await this.pluginManager.installPlugin(params.manifest, params.handlers) };
+
+      case 'plugins.enable':
+        return { ok: true, plugin: await this.pluginManager.enablePlugin(params.id || params.pluginId) };
+
+      case 'plugins.disable':
+        return { ok: true, plugin: await this.pluginManager.disablePlugin(params.id || params.pluginId) };
+
+      case 'plugins.uninstall':
+        return await this.pluginManager.uninstallPlugin(params.id || params.pluginId);
+
+      case 'plugins.diagnostics':
+        return this.pluginManager.getDiagnostics();
+
+
 
       // Control UI Lifecycle & Capability Handlers
       case 'sessions.subscribe':
@@ -1798,6 +1915,7 @@ export class ZeroNativeHost {
     this.sessions.close();
     this.tasks.close();
     this.memory.close();
+    this.unifiedMemory?.close();
     this.automation.close();
     console.log(`[Zero Host] Zero Native Gateway stopped cleanly (${options.reason || 'normal'}).`);
   }

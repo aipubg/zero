@@ -76,6 +76,29 @@ export class TaskStateMachine {
       );
 
       CREATE INDEX IF NOT EXISTS idx_zero_task_steps_task ON zero_task_steps(task_id, step_number);
+
+      CREATE TABLE IF NOT EXISTS zero_task_checkpoints (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        step_index INTEGER NOT NULL,
+        state_snapshot TEXT NOT NULL,
+        artifacts TEXT,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (task_id) REFERENCES zero_tasks(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_task_checkpoints ON zero_task_checkpoints(task_id, step_index);
+
+      CREATE TABLE IF NOT EXISTS zero_idempotency_keys (
+        key TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        result TEXT,
+        status TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        completed_at INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_idempotency_task ON zero_idempotency_keys(task_id);
+
     `);
   }
 
@@ -421,6 +444,185 @@ export class TaskStateMachine {
     }));
   }
 
+
+  saveCheckpoint(taskId, stepIndex, stateSnapshot = {}, artifacts = []) {
+    const task = this.getTask(taskId);
+    if (!task) throw new Error(`Cannot save checkpoint for non-existent task '${taskId}'`);
+
+    const now = Date.now();
+    const checkpointId = `ckpt_${now}_${Math.random().toString(36).slice(2, 8)}`;
+    const stmt = this.db.prepare(`
+      INSERT INTO zero_task_checkpoints (id, task_id, step_index, state_snapshot, artifacts, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      checkpointId,
+      taskId,
+      stepIndex,
+      JSON.stringify(stateSnapshot),
+      JSON.stringify(artifacts),
+      now
+    );
+
+    const record = {
+      id: checkpointId,
+      taskId,
+      stepIndex,
+      stateSnapshot,
+      artifacts,
+      createdAt: now,
+    };
+    this.events.emit(`task:${taskId}:checkpoint`, record);
+    return record;
+  }
+
+  getLatestCheckpoint(taskId) {
+    const stmt = this.db.prepare(`
+      SELECT * FROM zero_task_checkpoints WHERE task_id = ? ORDER BY step_index DESC, created_at DESC LIMIT 1
+    `);
+    const row = stmt.get(taskId);
+    if (!row) return null;
+    return {
+      id: row.id,
+      taskId: row.task_id,
+      stepIndex: row.step_index,
+      stateSnapshot: JSON.parse(row.state_snapshot),
+      artifacts: row.artifacts ? JSON.parse(row.artifacts) : [],
+      createdAt: row.created_at,
+    };
+  }
+
+  listCheckpoints(taskId) {
+    const stmt = this.db.prepare(`
+      SELECT * FROM zero_task_checkpoints WHERE task_id = ? ORDER BY step_index ASC, created_at ASC
+    `);
+    const rows = stmt.all(taskId);
+    return rows.map((r) => ({
+      id: r.id,
+      taskId: r.task_id,
+      stepIndex: r.step_index,
+      stateSnapshot: JSON.parse(r.state_snapshot),
+      artifacts: r.artifacts ? JSON.parse(r.artifacts) : [],
+      createdAt: r.created_at,
+    }));
+  }
+
+  async executeIdempotent(idempotencyKey, { taskId, action, executeFn }) {
+    if (!idempotencyKey) throw new Error('executeIdempotent requires an idempotencyKey');
+    if (!executeFn || typeof executeFn !== 'function') throw new Error('executeIdempotent requires executeFn');
+
+    const checkStmt = this.db.prepare(`SELECT * FROM zero_idempotency_keys WHERE key = ?`);
+    const existing = checkStmt.get(idempotencyKey);
+
+    if (existing) {
+      if (existing.status === 'COMPLETED') {
+        return {
+          cached: true,
+          key: idempotencyKey,
+          result: existing.result ? JSON.parse(existing.result) : null,
+          executedAt: existing.completed_at,
+        };
+      }
+      if (existing.status === 'PENDING') {
+        throw new Error(`Idempotent action '${idempotencyKey}' is already in progress.`);
+      }
+    }
+
+    const now = Date.now();
+    const insertStmt = this.db.prepare(`
+      INSERT INTO zero_idempotency_keys (key, task_id, action, result, status, created_at, completed_at)
+      VALUES (?, ?, ?, NULL, 'PENDING', ?, NULL)
+      ON CONFLICT(key) DO UPDATE SET status = 'PENDING', created_at = excluded.created_at
+    `);
+    insertStmt.run(idempotencyKey, taskId || 'anonymous', action || 'action', now);
+
+    try {
+      const result = await executeFn();
+      const completedNow = Date.now();
+      const updateStmt = this.db.prepare(`
+        UPDATE zero_idempotency_keys
+        SET status = 'COMPLETED', result = ?, completed_at = ?
+        WHERE key = ?
+      `);
+      updateStmt.run(JSON.stringify(result ?? null), completedNow, idempotencyKey);
+      return {
+        cached: false,
+        key: idempotencyKey,
+        result,
+        executedAt: completedNow,
+      };
+    } catch (err) {
+      const failStmt = this.db.prepare(`
+        UPDATE zero_idempotency_keys
+        SET status = 'FAILED', result = ?, completed_at = ?
+        WHERE key = ?
+      `);
+      failStmt.run(JSON.stringify({ error: err.message }), Date.now(), idempotencyKey);
+      throw err;
+    }
+  }
+
+  setBudget(taskId, { maxSteps = 50, maxDurationMs = 300000, maxRetries = 3 } = {}) {
+    if (!this._budgets) this._budgets = new Map();
+    this._budgets.set(taskId, { maxSteps, maxDurationMs, maxRetries, retriesUsed: 0 });
+    return this._budgets.get(taskId);
+  }
+
+  checkBudget(taskId) {
+    if (!this._budgets || !this._budgets.has(taskId)) return { ok: true };
+    const budget = this._budgets.get(taskId);
+    const task = this.getTask(taskId);
+    if (!task) return { ok: true };
+
+    const steps = this.getTaskSteps(taskId);
+    if (steps.length >= budget.maxSteps) {
+      throw new Error(`Task '${taskId}' exceeded step budget limit of ${budget.maxSteps} steps (current: ${steps.length})`);
+    }
+
+    const elapsed = Date.now() - task.createdAt;
+    if (elapsed > budget.maxDurationMs) {
+      throw new Error(`Task '${taskId}' exceeded duration budget of ${budget.maxDurationMs}ms (elapsed: ${elapsed}ms)`);
+    }
+
+    return { ok: true, stepsRemaining: budget.maxSteps - steps.length, timeRemainingMs: budget.maxDurationMs - elapsed };
+  }
+
+  retryFailedTask(taskId) {
+    const task = this.getTask(taskId);
+    if (!task) throw new Error(`Cannot retry non-existent task '${taskId}'`);
+    if (task.status !== TASK_STATUS.FAILED) {
+      throw new Error(`Cannot retry task in '${task.status}' status (must be FAILED)`);
+    }
+
+    const budget = this._budgets?.get(taskId);
+    if (budget) {
+      if (budget.retriesUsed >= budget.maxRetries) {
+        throw new Error(`Task '${taskId}' has exhausted maximum retry attempts (${budget.maxRetries})`);
+      }
+      budget.retriesUsed += 1;
+    }
+
+    // Recover by recording step and transitioning to QUEUED
+    this.recordStep(taskId, {
+      stepNumber: this.getTaskSteps(taskId).length + 1,
+      thought: 'Retrying previously failed task from last stable state.',
+      toolName: 'task_retry',
+      status: 'retried',
+    });
+
+    const now = Date.now();
+    const updateStmt = this.db.prepare(`
+      UPDATE zero_tasks
+      SET status = 'QUEUED', error = NULL, updated_at = ?
+      WHERE id = ?
+    `);
+    updateStmt.run(now, taskId);
+
+    const updatedTask = this.getTask(taskId);
+    this._emitStateChange(updatedTask, TASK_STATUS.FAILED);
+    return updatedTask;
+  }
+
   _formatTask(row) {
     return {
       id: row.id,
@@ -463,3 +665,6 @@ export class TaskStateMachine {
     } catch (_) {}
   }
 }
+export { AgentMessageBus, MESSAGE_TYPES } from './structured-messaging.mjs';
+export { DesktopLeaseManager } from './desktop-lease.mjs';
+export { AgentTeamOrchestrator, CANONICAL_AGENT_PROFILES } from './agent-team.mjs';

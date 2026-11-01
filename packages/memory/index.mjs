@@ -189,3 +189,4 @@ export class PersistentMemoryStore {
     } catch (_) {}
   }
 }
+export { UnifiedMemoryEngine, MEMORY_LAYERS } from './unified-memory.mjs';
