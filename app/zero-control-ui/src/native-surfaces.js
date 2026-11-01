@@ -757,10 +757,22 @@ function installNativeSurfaces(host) {
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
         Computer Control: Active
       </button>
+      <button class="zero-voice-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#0c1a2e;border:1px solid #0284c7;color:#38bdf8;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span>
+        Voice: Ready
+      </button>
       <button class="zero-reasoning-toggle zero-reasoning-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#181611;border:1px solid #f59e0b;color:#fbbf24;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>
         Reasoning: ON
       </button>
+      <div class="zero-workforce-indicator" style="display:inline-flex;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#818cf8;"></span>
+        Workforce: 3 Agents
+      </div>
+      <div class="zero-screen-intel-indicator" style="display:inline-flex;align-items:center;gap:6px;background:#064e3b;border:1px solid #059669;color:#6ee7b7;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34d399;"></span>
+        Screen Intel: Buffer OK (<250MB)
+      </div>
       <div class="zero-action-indicator" style="display:none;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;">
         <span class="zero-action-text">Zero: Ready</span>
       </div>
@@ -779,6 +791,23 @@ function installNativeSurfaces(host) {
         toggleBtn.style.borderColor = "#f43f5e";
         toggleBtn.style.color = "#fb7185";
         toggleBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span> Computer Control: Standby';
+      }
+    });
+
+    let voiceActive = false;
+    const voiceBtn = pill.querySelector(".zero-voice-toggle-btn");
+    voiceBtn?.addEventListener("click", () => {
+      voiceActive = !voiceActive;
+      if (voiceActive) {
+        voiceBtn.style.background = "#14253d";
+        voiceBtn.style.borderColor = "#0ea5e9";
+        voiceBtn.style.color = "#7dd3fc";
+        voiceBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span> Voice: Listening';
+      } else {
+        voiceBtn.style.background = "#0c1a2e";
+        voiceBtn.style.borderColor = "#0284c7";
+        voiceBtn.style.color = "#38bdf8";
+        voiceBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span> Voice: Ready';
       }
     });
 

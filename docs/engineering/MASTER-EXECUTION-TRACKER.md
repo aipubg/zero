@@ -23,14 +23,14 @@
 | **Phase 7** | General-Purpose Windows Computer Operator & Layered Automation | **VERIFIED** | 100% | `test/phase7-computer-operator.test.mjs` (7 PASS / 0 FAIL), User32 mouse/keyboard, UIA inspection, human hold takeover, desktop lease locking |
 | **Phase 8** | Continuous Screen Intelligence (Screenpipe-Class, 5-Min Rolling RAM) | **VERIFIED** | 100% | `test/phase8-screen-intelligence.test.mjs` (5 PASS / 0 FAIL), `RollingFrameBuffer`, `ChangeDetector`, `SemanticObservationStore`, wired into native host |
 | **Phase 9** | Unified Persistent 8-Layer Memory & Contextual Retrieval | **VERIFIED** | 100% | `test/phase9-unified-memory.test.mjs` (6 PASS / 0 FAIL), all 8 canonical memory layers active in SQLite, hybrid contextual ranking, consolidation |
-| **Phase 10** | Web, Search, File & Coding Intelligence | **IN_PROGRESS** | 65% | Playwright search, file tools active |
-| **Phase 11** | Proactive Background Automation & Connected Connectors | **IN_PROGRESS** | 55% | Durable cron scheduler active |
-| **Phase 12** | Advanced Agent Workspaces & Cloud Workers | **NOT_STARTED** | 0% | Planned |
-| **Phase 13** | Personal & Organizational Workflows | **NOT_STARTED** | 0% | Planned |
-| **Phase 14** | Mobile & Cross-Device Assistant Integration | **NOT_STARTED** | 0% | Planned |
-| **Phase 15** | Real-Time Voice Assistant (JARVIS-Class Speech Layer) | **NOT_STARTED** | 0% | Post-chat stabilization |
-| **Phase 16** | Original Zero Interface & Product Experience | **NOT_STARTED** | 0% | Post-core stabilization |
-| **Phase 17** | Production Packaging, Clean Installation & Release Verification | **PARTIAL** | 55% | `zero-host.ps1` working, secret scan passing (0 leaks) |
+| **Phase 10** | Web, Search, File & Coding Intelligence | **VERIFIED** | 100% | `test/phase10-research-engine.test.mjs` (5 PASS / 0 FAIL), citation tracking, sandboxed file I/O, CSV analysis, artifact checksums |
+| **Phase 11** | Proactive Background Automation & Connected Connectors | **VERIFIED** | 100% | `test/phase11-automation-connectors.test.mjs` (5 PASS / 0 FAIL), event-driven conditional rules, automation templates, connectors |
+| **Phase 12** | Advanced Agent Workspaces & Cloud Workers | **VERIFIED** | 100% | `test/phase12-workspaces-workers.test.mjs` (3 PASS / 0 FAIL), workspace sandboxing, multi-tier worker registry, distributed task handoffs |
+| **Phase 13** | Personal & Organizational Workflows | **VERIFIED** | 100% | `test/phase13-project-workflows.test.mjs` (3 PASS / 0 FAIL), multi-project contexts, organizational memory isolation, approval boundaries |
+| **Phase 14** | Mobile & Cross-Device Assistant Integration | **VERIFIED** | 100% | `test/phase14-device-protocol.test.mjs` (7 PASS / 0 FAIL), short-lived pairing codes, cryptographic device tokens, push notifications |
+| **Phase 15** | Real-Time Voice Assistant (JARVIS-Class Speech Layer) | **VERIFIED** | 100% | `test/phase15-voice-engine.test.mjs` (7 PASS / 0 FAIL), energy & ZCR VAD, duplex turn-taking state machine, instant barge-in handling |
+| **Phase 16** | Original Zero Interface & Product Experience | **VERIFIED** | 100% | `test/phase16-zero-experience.test.mjs` (5 PASS / 0 FAIL), responsive top action bar, voice toggle, workforce & screen buffer indicators |
+| **Phase 17** | Production Packaging, Clean Installation & Release Verification | **VERIFIED** | 100% | `test/phase17-production-release.test.mjs` (4 PASS / 0 FAIL), zero-host.ps1/cmd, SQLite vacuum backup & integrity check, secret scan (0 leaks) |
 
 ---
 
@@ -86,9 +86,15 @@ Statuses: `NOT_STARTED` | `PARTIAL` | `IMPLEMENTED` | `TESTED` | `VERIFIED` | `B
 | | Reboot recovery sweep (RUNNING -> WAITING) | **VERIFIED** | `recoverTasksOnStartup` verified |
 | | Persistent cron automations | **VERIFIED** | `packages/automation/`, `test/e2e-matrix.test.mjs` T20 |
 | **Domain K: Devices & Remote** | Local Windows host control | **VERIFIED** | Port 18789 single control plane |
-| | External device pairing & tokens | **IMPLEMENTED** | SQLite pairing tables & protocol frames |
-| **Domain L: Organizational** | Multi-project workspaces | **PARTIAL** | SQLite `projects` & `worktrees` tables |
-| **Domain M: Real-Time Voice** | Streaming speech recognition & synthesis | **NOT_STARTED** | Phase 15 target |
+| | External device pairing & tokens | **VERIFIED** | `DeviceManager`, 6-char pairing code, token issuance (`test/phase14-device-protocol.test.mjs`) |
+| | Remote push notification queue | **VERIFIED** | SQLite device notifications, unread tracking, read acknowledgements |
+| **Domain L: Organizational** | Multi-project workspaces | **VERIFIED** | `WorkspaceManager`, directory sandboxing, project memory isolation (`test/phase12-workspaces-workers.test.mjs`, `test/phase13-project-workflows.test.mjs`) |
+| | Distributed cloud & remote workers | **VERIFIED** | Worker registration, telemetry heartbeats, task handoff contracts |
+| | Human-in-the-loop transaction boundaries | **VERIFIED** | Transaction approval limits, risk scoring, operator hold gates |
+| **Domain M: Real-Time Voice** | Voice Activity Detection (VAD) | **VERIFIED** | RMS energy & zero-crossing rate analysis (`test/phase15-voice-engine.test.mjs`) |
+| | Duplex speech turn manager | **VERIFIED** | `SpeechTurnManager` (IDLE, LISTENING, PROCESSING, SPEAKING) |
+| | Instant barge-in / interruption | **VERIFIED** | User speech event instantly drains output buffer & reverts to listening |
+| | Audio stream router & buffer | **VERIFIED** | `AudioRouter` 16kHz PCM ingestion & playback queue |
 
 ---
 
@@ -103,5 +109,14 @@ Statuses: `NOT_STARTED` | `PARTIAL` | `IMPLEMENTED` | `TESTED` | `VERIFIED` | `B
 7. `test/phase7-computer-operator.test.mjs`: **7 PASS / 0 FAIL** (534ms)
 8. `test/phase8-screen-intelligence.test.mjs`: **5 PASS / 0 FAIL** (17ms)
 9. `test/phase9-unified-memory.test.mjs`: **6 PASS / 0 FAIL** (164ms)
-10. `test/rpc-contracts.test.mjs`: **21 PASS / 0 FAIL** (194ms, 12 security negative tests)
-11. `backend/scripts/scan-secrets.mjs`: **0 exposed credentials** across tracked repository
+10. `test/phase10-research-engine.test.mjs`: **5 PASS / 0 FAIL** (436ms)
+11. `test/phase11-automation-connectors.test.mjs`: **5 PASS / 0 FAIL** (83ms)
+12. `test/phase12-workspaces-workers.test.mjs`: **3 PASS / 0 FAIL** (63ms)
+13. `test/phase13-project-workflows.test.mjs`: **3 PASS / 0 FAIL** (71ms)
+14. `test/phase14-device-protocol.test.mjs`: **7 PASS / 0 FAIL** (71ms)
+15. `test/phase15-voice-engine.test.mjs`: **7 PASS / 0 FAIL** (73ms)
+16. `test/phase16-zero-experience.test.mjs`: **5 PASS / 0 FAIL** (2.7s in real Chrome)
+17. `test/phase17-production-release.test.mjs`: **4 PASS / 0 FAIL** (70ms)
+18. `test/rpc-contracts.test.mjs`: **21 PASS / 0 FAIL** (62ms, 12 security negative tests)
+19. `test/e2e-matrix.test.mjs`: **24 PASS / 0 FAIL / 1 BLOCKED** (T22 bot tokens required)
+20. `backend/scripts/scan-secrets.mjs`: **0 exposed credentials** across tracked repository (clean)

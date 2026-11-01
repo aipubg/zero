@@ -41,6 +41,8 @@ playwright-report/
 blob-report/
 .backup/
 *.png
+/artifacts/
+/workspaces/
 
 # OS/editor files
 .DS_Store

@@ -246,3 +246,6 @@ export class AutomationScheduler {
     } catch (_) {}
   }
 }
+
+export { EventAutomationEngine, AUTOMATION_TEMPLATES } from './event-automation.mjs';
+

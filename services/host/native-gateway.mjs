@@ -31,10 +31,14 @@ import {
 
 import { SessionManager } from '../../packages/sessions/index.mjs';
 import { TaskStateMachine, AgentMessageBus, DesktopLeaseManager, AgentTeamOrchestrator, CANONICAL_AGENT_PROFILES } from '../../packages/agent-runtime/index.mjs';
-import { AutomationScheduler } from '../../packages/automation/index.mjs';
+import { AutomationScheduler, EventAutomationEngine, AUTOMATION_TEMPLATES } from '../../packages/automation/index.mjs';
 import { PersistentMemoryStore, UnifiedMemoryEngine, MEMORY_LAYERS } from '../../packages/memory/index.mjs';
 import { SkillLoader } from '../../packages/skill-sdk/index.mjs';
 import { PluginManager } from '../../packages/plugin-sdk/index.mjs';
+import { ResearchEngine } from '../../packages/research-engine/index.mjs';
+import { WorkspaceManager } from '../../packages/workspaces/index.mjs';
+import { DeviceManager } from '../../packages/device-protocol/index.mjs';
+import { VoiceEngine } from '../../packages/voice-engine/index.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { canonicalScreenObserver } from '../../packages/screen-intelligence/index.mjs';
@@ -163,10 +167,32 @@ export class ZeroNativeHost {
 
     this.memory = new PersistentMemoryStore({ dbPath: path.join(dataDir, 'zero-memory.sqlite') });
     this.unifiedMemory = new UnifiedMemoryEngine({ dbPath: path.join(dataDir, 'zero-unified-memory.sqlite') });
+    this.researchEngine = new ResearchEngine({
+      dbPath: path.join(dataDir, 'zero-artifacts.sqlite'),
+      baseDir: REPO_ROOT,
+      storageDir: path.join(REPO_ROOT, 'artifacts'),
+    });
+    this.workspaceManager = new WorkspaceManager({
+      dbPath: path.join(dataDir, 'zero-workspaces.sqlite'),
+      baseStorageDir: path.join(REPO_ROOT, 'workspaces'),
+    });
+    this.deviceManager = new DeviceManager({
+      dbPath: path.join(dataDir, 'zero-devices.sqlite'),
+    });
+    this.voiceEngine = new VoiceEngine({
+      modelFabric: this.modelFabric,
+    });
+
+
     this.automation = new AutomationScheduler({
       dbPath: path.join(dataDir, 'zero-automation.sqlite'),
       executor: async (action, params) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action, ...params } }),
     });
+    this.eventAutomation = new EventAutomationEngine({
+      dbPath: path.join(dataDir, 'zero-event-automation.sqlite'),
+      executor: async (action, params) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action, ...params } }),
+    });
+
 
     // Active human hold state
     this.computerHold = {
@@ -641,6 +667,9 @@ export class ZeroNativeHost {
           'zero-policy.computer-hold.release',
           'memory.remember', 'memory.recall', 'memory.forget', 'memory.list', 'memory.layers', 'memory.update', 'memory.consolidate',
           'automation.listJobs', 'automation.registerJob', 'automation.toggleJob', 'automation.deleteJob', 'automation.triggerDue', 'automation.listRuns',
+'automation.events.emit', 'automation.events.rules', 'automation.events.registerRule', 'automation.events.deleteRule',
+          'automation.templates.list', 'automation.templates.instantiate',
+          'automation.connectors.list', 'automation.connectors.register', 'automation.connectors.test',
           'tasks.list', 'tasks.get', 'tasks.create', 'tasks.cancel', 'tasks.resume',
 'agent.profile.list', 'agent.team.list', 'agent.team.create',
           'agent.task.plan', 'agent.task.execute',
@@ -648,6 +677,15 @@ export class ZeroNativeHost {
           'tasks.checkpoint.save', 'tasks.checkpoint.get', 'tasks.checkpoint.list', 'tasks.retry',
 'skills.list', 'skills.get', 'skills.create', 'skills.match',
           'plugins.list', 'plugins.install', 'plugins.enable', 'plugins.disable', 'plugins.uninstall', 'plugins.diagnostics',
+'research.search', 'research.file.read', 'research.file.write', 'research.file.list',
+          'research.artifact.create', 'research.artifact.get', 'research.artifact.list', 'research.artifact.verify',
+          'research.workflow.execute',
+'workspaces.create', 'workspaces.list', 'workspaces.get',
+          'projects.create', 'projects.list', 'projects.get',
+          'workers.register', 'workers.list', 'workers.get', 'workers.heartbeat', 'workers.handoff', 'workers.handoffs.list',
+          'devices.pair.generateCode', 'devices.pair.claim', 'devices.list', 'devices.get', 'devices.unpair',
+          'devices.notify', 'devices.notifications.list', 'devices.notifications.markRead',
+          'voice.session.start', 'voice.session.stop', 'voice.chunk', 'voice.synthesize', 'voice.transcribe', 'voice.status',
         ];
 
         if (parsed.isReferenceWire) {
@@ -1241,6 +1279,35 @@ export class ZeroNativeHost {
       case 'automation.listRuns':
         return this.automation.listRuns(params);
 
+      // Event-driven automations and connectors (Phase 11)
+      case 'automation.events.emit':
+        return await this.eventAutomation.dispatchEvent(params.eventType, params.eventData || params.data || {});
+
+      case 'automation.events.rules':
+        return { ok: true, rules: this.eventAutomation.listRules() };
+
+      case 'automation.events.registerRule':
+        return { ok: true, rule: this.eventAutomation.registerRule(params) };
+
+      case 'automation.events.deleteRule':
+        return this.eventAutomation.deleteRule(params.id || params.ruleId);
+
+      case 'automation.templates.list':
+        return { ok: true, templates: this.eventAutomation.listTemplates() };
+
+      case 'automation.templates.instantiate':
+        return { ok: true, instantiated: this.eventAutomation.instantiateTemplate(params.templateId, params.params) };
+
+      case 'automation.connectors.list':
+        return { ok: true, connectors: this.eventAutomation.listConnectors() };
+
+      case 'automation.connectors.register':
+        return { ok: true, connector: this.eventAutomation.registerConnector(params) };
+
+      case 'automation.connectors.test':
+        return await this.eventAutomation.testConnector(params.id || params.connectorId);
+
+
       // Tasks State Machine RPC Methods
       case 'tasks.list':
         return this.tasks.listTasks(params);
@@ -1332,6 +1399,122 @@ export class ZeroNativeHost {
 
       case 'plugins.diagnostics':
         return this.pluginManager.getDiagnostics();
+
+      // Research, File & Artifact RPCs (Phase 10)
+      case 'research.search':
+        return await this.researchEngine.searchEngine.search(params.query, params);
+
+      case 'research.file.read':
+        return await this.researchEngine.fileOps.readFile(params.path, params);
+
+      case 'research.file.write':
+        return await this.researchEngine.fileOps.writeFile(params.path, params.content, params);
+
+      case 'research.file.list':
+        return await this.researchEngine.fileOps.listFiles(params.path || '.', params);
+
+      case 'research.artifact.create':
+        return { ok: true, artifact: this.researchEngine.artifactManager.createArtifact(params) };
+
+      case 'research.artifact.get':
+        return { ok: true, artifact: this.researchEngine.artifactManager.getArtifact(params.id) };
+
+      case 'research.artifact.list':
+        return { ok: true, artifacts: this.researchEngine.artifactManager.listArtifacts(params) };
+
+      case 'research.artifact.verify':
+        return this.researchEngine.artifactManager.verifyChecksum(params.id);
+
+      case 'research.workflow.execute':
+        return await this.researchEngine.executeResearchWorkflow({
+          topic: params.topic || params.query,
+          limit: params.limit,
+          taskId: params.taskId,
+          memoryEngine: this.unifiedMemory,
+        });
+
+      // Workspaces & Cloud Workers RPCs (Phase 12 & 13)
+      case 'workspaces.create':
+        return { ok: true, workspace: this.workspaceManager.createWorkspace(params) };
+
+      case 'workspaces.list':
+        return { ok: true, workspaces: this.workspaceManager.listWorkspaces(params) };
+
+      case 'workspaces.get':
+        return { ok: true, workspace: this.workspaceManager.getWorkspace(params.id) };
+
+      case 'projects.create':
+        return { ok: true, project: this.workspaceManager.createProject(params) };
+
+      case 'projects.list':
+        return { ok: true, projects: this.workspaceManager.listProjects() };
+
+      case 'projects.get':
+        return { ok: true, project: this.workspaceManager.getProject(params.id) };
+
+      case 'workers.register':
+        return { ok: true, worker: this.workspaceManager.registerWorker(params) };
+
+      case 'workers.list':
+        return { ok: true, workers: this.workspaceManager.listWorkers(params) };
+
+      case 'workers.get':
+        return { ok: true, worker: this.workspaceManager.getWorker(params.id) };
+
+      case 'workers.heartbeat':
+        return this.workspaceManager.recordHeartbeat(params.id || params.workerId);
+
+      case 'workers.handoff':
+        return this.workspaceManager.handoffTask(params);
+
+      case 'workers.handoffs.list':
+        return { ok: true, handoffs: this.workspaceManager.getTaskHandoffs(params.taskId) };
+
+      // Cross-Device Protocol RPCs (Phase 14)
+      case 'devices.pair.generateCode':
+        return { ok: true, ...this.deviceManager.generatePairingCode(params) };
+
+      case 'devices.pair.claim':
+        return this.deviceManager.claimPairingCode(params);
+
+      case 'devices.list':
+        return { ok: true, devices: this.deviceManager.listDevices() };
+
+      case 'devices.get':
+        return { ok: true, device: this.deviceManager.getDevice(params.id || params.deviceId) };
+
+      case 'devices.unpair':
+        return this.deviceManager.unpairDevice(params.id || params.deviceId);
+
+      case 'devices.notify':
+        return this.deviceManager.sendNotification(params);
+
+      case 'devices.notifications.list':
+        return { ok: true, notifications: this.deviceManager.listNotifications(params.deviceId, params) };
+
+      case 'devices.notifications.markRead':
+        return this.deviceManager.markNotificationRead(params.id || params.notificationId);
+
+      // Real-Time Voice Engine RPCs (Phase 15)
+      case 'voice.session.start':
+        return this.voiceEngine.startSession(params.sessionId);
+
+      case 'voice.session.stop':
+        return this.voiceEngine.stopSession(params.sessionId);
+
+      case 'voice.chunk':
+        return this.voiceEngine.ingestChunk(params.sessionId, params.chunk);
+
+      case 'voice.synthesize':
+        return await this.voiceEngine.synthesizeSpeech(params.sessionId, params.text);
+
+      case 'voice.transcribe':
+        return await this.voiceEngine.transcribe(params.sessionId);
+
+      case 'voice.status':
+        return { ok: true, ...this.voiceEngine.getStatus() };
+
+
 
 
 
@@ -1916,7 +2099,12 @@ export class ZeroNativeHost {
     this.tasks.close();
     this.memory.close();
     this.unifiedMemory?.close();
+    this.researchEngine?.close();
+    this.workspaceManager?.close();
+    this.deviceManager?.close();
+    this.voiceEngine?.close();
     this.automation.close();
+    this.eventAutomation?.close();
     console.log(`[Zero Host] Zero Native Gateway stopped cleanly (${options.reason || 'normal'}).`);
   }
 }
