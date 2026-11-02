@@ -7,6 +7,7 @@ import { createScreenObserver, SemanticObservationStore } from '../packages/scre
 import { captureRealDesktopFrame } from '../packages/screen-intelligence/windows-capture.mjs';
 import { stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
 import { LocalInferenceRuntime } from '../packages/model-fabric/local-runtime.mjs';
+import { ResourceTotals } from '../packages/screen-intelligence/resource-totals.mjs';
 
 function parseArgs(args) {
   const result = { hours: 24, 'interval-ms': 2000, 'sample-ms': 10_000, 'max-memory-mib': 250,
@@ -49,6 +50,7 @@ const counters = { capturesStarted: 0, capturesSucceeded: 0, capturesFailed: 0, 
   ocrSucceeded: 0, ocrUnavailable: 0, metadataUnavailable: 0, overlapViolations: 0,
   bufferBudgetViolations: 0, rssBudgetViolations: 0, samplingGapViolations: 0 };
 const captureResources = { measuredFrames: 0, missingFrames: 0, sameProcessFrames: 0 };
+const resources = new ResourceTotals();
 const latencyBoundsMs = [100, 250, 500, 1000, 2000, 5000, 10000, 20000, 60000];
 const latencyCounts = new Array(latencyBoundsMs.length + 1).fill(0);
 let active = 0, peakActive = 0, peakRssBytes = 0, peakRetainedBytes = 0, maxCaptureMs = 0;
@@ -85,6 +87,8 @@ const observer = createScreenObserver({ dataDir: outputDir,
       if (signal.aborted || frame.aborted) counters.capturesAborted++;
       else if (frame.ok) {
         counters.capturesSucceeded++;
+        resources.observe('metadata', frame.resourceUsage?.metadata);
+        resources.observe('ocr', frame.resourceUsage?.ocr);
         if (frame.resourceUsage?.capture) captureResources.measuredFrames++; else captureResources.missingFrames++;
         if (frame.resourceUsage?.capture?.processTopology === 'same-process') captureResources.sameProcessFrames++;
         if (frame.ocr?.ok) counters.ocrSucceeded++; else counters.ocrUnavailable++;
@@ -124,7 +128,7 @@ function report(status = 'running') {
     localVisionEnabled: Boolean(localVision),
     verdict: status === 'running' ? 'in-progress' : fatalError ? 'failed' : status !== 'completed' || !durationReached ? 'incomplete' : healthy && pipelineHealthy && persistenceVerified ? 'partial' : 'failed',
     pipelineVerdict: status === 'completed' && durationReached && healthy && pipelineHealthy && persistenceVerified ? 'passed' : 'unverified',
-    counters: { ...counters }, peakActiveCaptures: peakActive, sampleCount, peakRssBytes, peakRetainedBytes,
+    counters: { ...counters }, resourceTotals: resources.snapshot(), peakActiveCaptures: peakActive, sampleCount, peakRssBytes, peakRetainedBytes,
     maxSampleGapMs, maxSuccessGapMs, maxCaptureMs, latencyHistogram: { upperBoundsMs: [...latencyBoundsMs, 'above-60000'], counts: [...latencyCounts] },
     cpu: process.cpuUsage(cpuBegan), firstWindowMeanRssBytes: mean(firstRss), lastWindowMeanRssBytes: mean(lastRss),
     persistenceVerified, persistenceEvidence, observer: observer.getStatus(), outputDir };
@@ -134,6 +138,8 @@ function sample() {
   // Single-flight sampler reads the owned model PID; the next sample includes
   // its timestamped cumulative counters. It does not sum repeated CPU totals.
   void localVision?.sampleResources();
+  const modelResources = localVision?.getStatus().resources;
+  if (modelResources?.status === 'measured') resources.observe('vision', modelResources);
   const now = performance.now(), gapMs = now - lastSampleAt;
   lastSampleAt = now;
   maxSampleGapMs = Math.max(maxSampleGapMs, gapMs);

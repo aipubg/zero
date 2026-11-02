@@ -813,3 +813,19 @@ measurements are present in sample rows. Pipeline/persistence pass; overall
 verdict remains PARTIAL for whole-lifetime aggregation/final counters. One
 in-flight capture is aborted during orderly stop. This 20-second run is not a
 24-hour endurance result and does not validate other SDK execution modes.
+
+Native OCR/action counters now include actual Windows process start time.
+ResourceTotals maintains bounded per-role cumulative CPU deltas keyed by PID and
+start time, separating a reused PID from the previous process. Repeated samples
+do not inflate CPU; stale older-process samples are ignored and counter
+regressions/missing identity remain visible. Embedded capture is prohibited as a
+separate subprocess role to prevent double counting with Node totals. RAM peaks
+remain per role and are not misrepresented as simultaneous whole-pipeline RAM.
+
+Two UNIT accounting checks pass. The separate actual combined run in
+[endurance-resource-deltas-short.json](endurance-resource-deltas-short.json)
+records positive native metadata/OCR/local-model CPU, eight distinct OCR process
+lifetimes for eight real successful frames, zero invalid resource samples and
+zero counter regressions. Capture/OCR/vision/persistence pass for this short
+duration; final process-lifetime tails and simultaneous resource acceptance remain
+incomplete, so overall verdict stays PARTIAL and completed24Hours remains false.

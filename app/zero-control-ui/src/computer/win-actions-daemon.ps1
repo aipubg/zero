@@ -775,6 +775,7 @@ while ($null -ne ($line = $reader.ReadLine())) {
         $currentProcess.Refresh()
         $res['resourceUsage'] = [ordered]@{
             pid = $currentProcess.Id
+            startedAt = $currentProcess.StartTime.ToUniversalTime().ToString('o')
             cpuMs = $currentProcess.TotalProcessorTime.TotalMilliseconds
             workingSetBytes = $currentProcess.WorkingSet64
             peakWorkingSetBytes = $currentProcess.PeakWorkingSet64

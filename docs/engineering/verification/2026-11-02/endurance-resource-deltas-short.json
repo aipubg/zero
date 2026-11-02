@@ -1,0 +1,213 @@
+{
+  "status": "completed",
+  "pid": 8092,
+  "startedAt": "2026-11-02T16:50:35.614Z",
+  "updatedAt": "2026-11-02T16:50:56.365Z",
+  "elapsedMs": 20751.1138,
+  "requestedDurationMs": 20000,
+  "elapsedHours": 0.005764198277777777,
+  "durationReached": true,
+  "stopReason": "duration-reached",
+  "fatalError": null,
+  "captureOcrCompleted24Hours": false,
+  "completed24Hours": false,
+  "resourceAcceptance": "PARTIAL",
+  "captureResources": {
+    "measuredFrames": 8,
+    "missingFrames": 0,
+    "sameProcessFrames": 8
+  },
+  "resourceGaps": [
+    "Whole-process-lifetime aggregation and final counters"
+  ],
+  "localVisionEnabled": true,
+  "verdict": "partial",
+  "pipelineVerdict": "passed",
+  "counters": {
+    "capturesStarted": 9,
+    "capturesSucceeded": 8,
+    "capturesFailed": 0,
+    "capturesAborted": 1,
+    "ocrSucceeded": 8,
+    "ocrUnavailable": 0,
+    "metadataUnavailable": 0,
+    "overlapViolations": 0,
+    "bufferBudgetViolations": 0,
+    "rssBudgetViolations": 0,
+    "samplingGapViolations": 0
+  },
+  "resourceTotals": {
+    "accounting": "Measured subprocess cumulative CPU deltas; embedded capture is already in Node totals. RAM peaks are per role, not additive concurrent RAM.",
+    "finalLifetimeCountersVerified": false,
+    "invalidSamples": 0,
+    "counterRegressions": 0,
+    "subprocessCpuMs": 35281.25,
+    "roles": {
+      "metadata": {
+        "cpuMs": 390.625,
+        "lastCpuMs": 390.625,
+        "key": "6744:2026-11-02T16:50:36.1218206Z",
+        "startedAt": "2026-11-02T16:50:36.1218206Z",
+        "processes": 1,
+        "samples": 8,
+        "peakWorkingSetBytes": 104128512
+      },
+      "ocr": {
+        "cpuMs": 3125,
+        "lastCpuMs": 406.25,
+        "key": "6628:2026-11-02T16:50:53.4027115Z",
+        "startedAt": "2026-11-02T16:50:53.4027115Z",
+        "processes": 8,
+        "samples": 8,
+        "peakWorkingSetBytes": 128258048
+      },
+      "vision": {
+        "cpuMs": 31765.625,
+        "lastCpuMs": 31765.625,
+        "key": "2752:2026-11-02T16:50:36.8865481Z",
+        "startedAt": "2026-11-02T16:50:36.8865481Z",
+        "processes": 1,
+        "samples": 10,
+        "peakWorkingSetBytes": 463355904
+      }
+    }
+  },
+  "peakActiveCaptures": 1,
+  "sampleCount": 12,
+  "peakRssBytes": 101560320,
+  "peakRetainedBytes": 4148702,
+  "maxSampleGapMs": 2016.7459999999999,
+  "maxSuccessGapMs": 2437.177599999999,
+  "maxCaptureMs": 889.2538,
+  "latencyHistogram": {
+    "upperBoundsMs": [
+      100,
+      250,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      60000,
+      "above-60000"
+    ],
+    "counts": [
+      0,
+      0,
+      8,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "cpu": {
+    "user": 250000,
+    "system": 281000
+  },
+  "firstWindowMeanRssBytes": 90588842.66666667,
+  "lastWindowMeanRssBytes": 90588842.66666667,
+  "persistenceVerified": true,
+  "persistenceEvidence": {
+    "beforeCloseCount": 8,
+    "afterReopenCount": 8,
+    "latestObservationId": "obs_1793638253756_7ap5w",
+    "visionPersisted": true,
+    "path": "E:\\zero\\artifacts\\screen-intelligence\\endurance-2026-11-02T16-50-35-613Z\\screen-observations.sqlite",
+    "dbBytes": 73728
+  },
+  "observer": {
+    "running": false,
+    "state": "destroyed",
+    "current": false,
+    "ageMs": 2969,
+    "activeApplication": null,
+    "activeWindowTitle": null,
+    "contextSource": "historical-or-unavailable",
+    "captureInFlight": false,
+    "localVision": {
+      "enabled": true,
+      "available": false,
+      "status": "stopped",
+      "reason": "This operation was aborted",
+      "confidence": null,
+      "model": "zero-local-vision",
+      "runtime": "llama.cpp b11960",
+      "transport": "loopback-http",
+      "threads": 2,
+      "pid": null,
+      "resources": {
+        "status": "measured",
+        "pid": 2752,
+        "processName": "llama-server",
+        "startedAt": "2026-11-02T16:50:36.8865481Z",
+        "measuredAt": "2026-11-02T16:50:54.1971170Z",
+        "cpuMs": 31765.625,
+        "workingSetBytes": 449339392,
+        "peakWorkingSetBytes": 463355904,
+        "privateMemoryBytes": 527687680,
+        "cpuAccounting": "cumulative-per-process; do not sum repeated samples",
+        "currentProcess": false
+      },
+      "requests": 2,
+      "completed": 1,
+      "failures": 1,
+      "active": 0
+    },
+    "visionInference": {
+      "attempted": 2,
+      "completed": 1,
+      "failed": 0,
+      "lastStartedAt": 1793638248930,
+      "lastCompletedAt": 1793638247645,
+      "lastError": null,
+      "retainedImageBytes": 0,
+      "pending": false,
+      "minIntervalMs": 1000
+    },
+    "stats": {
+      "totalCaptureAttempts": 9,
+      "totalCaptureFailures": 0,
+      "totalCapturesDiscarded": 1,
+      "lastCaptureError": null,
+      "lastCaptureTimestamp": 1793638253396,
+      "lastOcrStatus": "available",
+      "lastMetadataStatus": "available",
+      "lastFrameTimestamp": 1793638253396,
+      "totalFramesIngested": 8,
+      "totalChangesDetected": 8,
+      "totalObservationsStored": 8,
+      "lastChangeTimestamp": 1793638253396,
+      "activeApplication": "ChatGPT",
+      "activeWindowTitle": "ChatGPT"
+    },
+    "buffer": {
+      "frameCount": 0,
+      "currentMemoryBytes": 0,
+      "retainedMemoryBytes": 0,
+      "accounting": "owned-image-bytes-plus-conservative-metadata-estimate; excludes process/driver/OCR working memory",
+      "maxFrames": 4096,
+      "maxMemoryBytes": 262144000,
+      "memoryUtilizationPercent": 0,
+      "oldestTimestamp": null,
+      "newestTimestamp": null,
+      "maxWindowMs": 300000
+    },
+    "observationStore": {
+      "active": false,
+      "path": "E:\\zero\\artifacts\\screen-intelligence\\endurance-2026-11-02T16-50-35-613Z\\screen-observations.sqlite",
+      "persistent": true,
+      "mode": "sqlite-file",
+      "retentionMs": 604800000,
+      "encryptedFields": true,
+      "keyStorage": "windows-user-dpapi",
+      "migrationBackup": null,
+      "observationCount": null
+    }
+  },
+  "outputDir": "E:\\zero\\artifacts\\screen-intelligence\\endurance-2026-11-02T16-50-35-613Z"
+}
