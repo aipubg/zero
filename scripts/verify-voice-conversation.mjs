@@ -54,8 +54,16 @@ try {
   await call('connect', { minProtocol: 4, token });
   const sessionId = 'voice-and-chat-proof';
   await call('sessions.subscribe', { sessionKey: sessionId });
-  const chat = await call('chat.send', { sessionKey: sessionId, message: 'Remember the conversation code word BLUEBIRD. Reply only READY.' });
+  const chatRequest = { sessionKey: sessionId, message: 'Remember the conversation code word BLUEBIRD. Reply only READY.', idempotencyKey: 'actual-websocket-retry' };
+  const [chat, concurrentRetry] = await Promise.all([call('chat.send', chatRequest), call('chat.send', chatRequest)]);
   assert.equal(chat.ok, true);
+  assert.equal(concurrentRetry.taskId, chat.taskId);
+  const upstreamBeforeReplay = host.modelFabric.upstreamRequestCount;
+  const replay = await call('chat.send', chatRequest);
+  assert.equal(replay.taskId, chat.taskId); assert.equal(replay.content, chat.content);
+  assert.equal(host.modelFabric.upstreamRequestCount, upstreamBeforeReplay);
+  assert.equal(host.sessions.getTranscript(sessionId).filter(message => message.role === 'user').length, 1);
+  report.retryIdentity = { sameTaskAcrossConcurrentRequests: true, completedReplaySameTask: true, additionalModelCallsOnReplay: 0, userMessagesBeforeVoice: 1, taskId: chat.taskId };
   const backend = new WindowsSpeechBackend();
   const prompt = await backend.synthesize('What is the code word?');
   await call('voice.session.start', { sessionId, playback: false });

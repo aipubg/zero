@@ -364,3 +364,12 @@ Session continuity regressions also pass. Actual WebSocket retry, UI reconnect
 replay and receipt/task crash recovery gates still require real execution; this
 component evidence alone does not close them. Owner PID 15384 retains its prior
 loaded executor until the updated path passes those gates and is reloaded.
+
+The real authenticated WebSocket retry gate now passes in
+[websocket-retry-voice.json](websocket-retry-voice.json): concurrent identical
+requests return the same actual NVIDIA-backed task, completed replay makes zero
+additional upstream model calls, and only one user message is persisted. The
+same run also passes actual Windows STT/TTS and shared chat/voice continuity.
+This uses genuinely synthesized speech, not a human microphone utterance.
+Fresh-process receipt replay, UI reconnect replay and interrupted-task recovery
+still require their own gates; no owner host reload was performed for this test.
