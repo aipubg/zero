@@ -330,3 +330,10 @@ DOM title change had not yet reached the OS title at the immediate capture. The
 runner now waits for the actual captured title rather than assuming propagation.
 This proves the screen-to-rule/action seam; UI configuration, broader event types
 and sustained event execution remain separate acceptance work.
+
+Screen automation status now also counts configured rule failures returned as
+resolved dispatch results, rather than only thrown dispatcher exceptions.
+Observation status exposes the bridge's counters/error. Both bridge CONTRACT
+tests pass and the real Windows transition/native action runner passes again in
+`artifacts/screen-automation/1793599071198/report.json`. Owner host reload and UI
+rendering of these additional diagnostic fields remain unverified separately.

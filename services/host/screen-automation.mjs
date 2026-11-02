@@ -13,12 +13,15 @@ export function connectScreenAutomation(observer, automation) {
     if (!changed) return;
     status.windowTransitions++;
     // Screen text cannot register rules, choose actions, or grant authority.
-    const request = Promise.resolve().then(() => {
+    const request = Promise.resolve().then(async () => {
       if (closed) return;
-      return automation.dispatchEvent('screen:window_changed', {
+      const result = await automation.dispatchEvent('screen:window_changed', {
         application: event.appName, windowTitle: event.windowTitle, timestamp: event.timestamp,
         observationId: event.observationId, source: 'native-screen-observer',
       });
+      const failures = result?.executions?.filter(execution => execution.status === 'failed') || [];
+      if (failures.length) { status.failures += failures.length; status.lastError = failures[0].error || 'Configured rule execution failed'; }
+      return result;
     }).catch(error => { status.failures++; status.lastError = error.message; }).finally(() => pending.delete(request));
     pending.add(request);
   };

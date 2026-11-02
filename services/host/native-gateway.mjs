@@ -1238,6 +1238,7 @@ export class ZeroNativeHost {
         return {
           ok: true,
           ...this.observationLifecycle.status(),
+          automation: this.screenAutomation.status(),
           screen: { available: process.platform === 'win32', active: observerTelemetry.running },
           accessibility: { available: Boolean(windowState?.ok), engine: 'UIAutomation' },
           activeWindow: windowState?.window || null,

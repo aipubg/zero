@@ -15,3 +15,14 @@ test('[CONTRACT] only observed window transitions dispatch configured events and
   await bridge.close(); observer.emit('change', { appName: 'c', windowTitle: 'third' });
   assert.equal(events.length, 1); assert.equal(observer.listenerCount('change'), 0);
 });
+
+test('[CONTRACT] resolved rule failures remain visible in screen automation status', async () => {
+  const observer = new EventEmitter();
+  const bridge = connectScreenAutomation(observer, { dispatchEvent: async () => ({ executions: [{ status: 'failed', error: 'Native action rejected' }] }) });
+  observer.emit('change', { appName: 'a', windowTitle: 'first' });
+  observer.emit('change', { appName: 'b', windowTitle: 'second' });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(bridge.status().failures, 1);
+  assert.match(bridge.status().lastError, /Native action rejected/);
+  await bridge.close();
+});
