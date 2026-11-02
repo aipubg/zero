@@ -215,8 +215,8 @@ test('Phase 11: Proactive Automation & Connected Connectors Suite', async (suite
       assert.equal(reachable.status, 'reachable'); assert.equal(reachable.httpStatus, 204);
       assert.equal(reachable.functionalExecutionVerified, false);
       await client.call('automation.connectors.register', { id, name: 'Disposable probe', type: 'webhook', config: { url: url + '/failed' } });
-      const failed = await client.call('automation.connectors.test', { id });
-      assert.equal(failed.ok, false); assert.equal(failed.httpStatus, 503); assert.equal(requests, 2);
+      await assert.rejects(client.call('automation.connectors.test', { id }), /Webhook probe HTTP 503/);
+      assert.equal(requests, 2);
     } finally { await new Promise(resolve => server.close(resolve)); }
   });
 });

@@ -299,7 +299,7 @@ export class EventAutomationEngine extends EventEmitter {
         const url = new URL(conn.config.url);
         if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Unsupported webhook protocol');
         const response = await fetch(url, { method: 'HEAD', redirect: 'error', signal: AbortSignal.timeout(5000) });
-        return { ok: response.ok, id, status: response.ok ? 'reachable' : 'failed', httpStatus: response.status,
+        return { ok: response.ok, id, status: response.ok ? 'reachable' : 'failed', httpStatus: response.status, ...(!response.ok ? { error: `Webhook probe HTTP ${response.status}` } : {}),
           latencyMs: performance.now() - started, scope: 'HTTP HEAD reachability only', functionalExecutionVerified: false };
       }
       if (conn.type === 'cli') {

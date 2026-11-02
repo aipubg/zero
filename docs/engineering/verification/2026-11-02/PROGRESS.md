@@ -281,3 +281,13 @@ execution. Real local HTTP/CLI tests plus automation/settings regressions pass
 seven tests. The historical phase11 healthy-status expectation is superseded
 and still requires re-audit; it is not counted as currently passing. Owner host
 PID 6172 retains the previous loaded connector implementation until next restart.
+
+The revised phase11 suite subsequently passed all four leaves against an owned
+disposable process via `node scripts/verify-automation-isolated.mjs`. Evidence:
+[automation-isolated-pass.json](automation-isolated-pass.json). The initial run
+[automation-isolated-failure.json](automation-isolated-failure.json) exposed a
+generic RPC error for an actual HTTP 503; the probe now surfaces that status in
+its error message. Failure assertions match the gateway's actual error envelope.
+Both runs retain their logs in `artifacts/automation-acceptance/`. This closes
+the scoped scheduling/event/template/local-probe suite, not third-party service
+execution. The owner host and its stored jobs were not used by either run.

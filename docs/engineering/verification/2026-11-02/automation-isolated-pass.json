@@ -1,0 +1,12 @@
+{
+  "classification": [
+    "INTEGRATION",
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T05:52:13.611Z",
+  "port": 63072,
+  "scope": "Four automation RPC acceptance leaves against isolated state; local HTTP connector probes are not third-party workflow acceptance",
+  "exitCode": 0,
+  "finishedAt": "2026-11-02T05:52:14.918Z"
+}

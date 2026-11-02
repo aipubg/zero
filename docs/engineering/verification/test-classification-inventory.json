@@ -1327,7 +1327,7 @@
     {
       "id": "phase11",
       "file": "test/phase11-automation-connectors.test.mjs",
-        "sha256": "66915bf5891cd8d89380c65f3b3e5477f391cf4c4acc2e3c228490397516060d",
+        "sha256": "f86db2dd6016eb0749cb72672c7d63fed23fcb1f050566a350c395a150a30ecd",
       "prerequisites": [
         "node24",
         "host18789"
