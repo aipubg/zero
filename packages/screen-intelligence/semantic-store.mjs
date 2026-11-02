@@ -17,10 +17,16 @@ export class SemanticObservationStore {
    * @param {string} [options.dbPath] - Path to SQLite database file
    */
   constructor(options = {}) {
-    const defaultDir = path.resolve('zero-system', 'state', 'state');
-    fs.mkdirSync(defaultDir, { recursive: true });
-    this.dbPath = options.dbPath || path.join(defaultDir, 'screen-observations.sqlite');
+    const dataDir = path.resolve(options.dataDir ?? process.env.ZERO_DATA_DIR ?? '.zero-data');
+    this.dbPath = options.dbPath === ':memory:' ? ':memory:' : path.resolve(options.dbPath ?? path.join(dataDir, 'screen-observations.sqlite'));
+    this.persistent = this.dbPath !== ':memory:';
+    this.closed = false;
+    this.retentionMs = options.observationRetentionMs ?? 7 * 24 * 60 * 60 * 1000;
+    if (!Number.isFinite(this.retentionMs) || this.retentionMs < 1) throw new RangeError('observationRetentionMs must be positive');
+    this._lastPruneAt = 0;
+    if (this.persistent) fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
     this.db = new DatabaseSync(this.dbPath);
+    this.db.exec('PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=-4096; PRAGMA wal_autocheckpoint=100; PRAGMA journal_size_limit=16777216;');
     this.initSchema();
   }
 
@@ -37,14 +43,26 @@ export class SemanticObservationStore {
         semantic_summary TEXT,
         event_type TEXT,
         related_task_id TEXT,
-        confidence REAL DEFAULT 1.0,
-        expiry_policy TEXT DEFAULT '7d'
+        confidence REAL,
+        expiry_policy TEXT DEFAULT '7d',
+        ocr_engine TEXT,
+        ocr_status TEXT DEFAULT 'unavailable',
+        local_vision_status TEXT DEFAULT 'unavailable',
+        metadata_json TEXT DEFAULT '{}'
       );
 
       CREATE INDEX IF NOT EXISTS idx_obs_timestamp ON semantic_observations(timestamp);
       CREATE INDEX IF NOT EXISTS idx_obs_app ON semantic_observations(application_id);
       CREATE INDEX IF NOT EXISTS idx_obs_task ON semantic_observations(related_task_id);
     `);
+    // Add provenance without replacing or dropping the owner's existing observations.
+    const columns = new Set(this.db.prepare('PRAGMA table_info(semantic_observations)').all().map(row => row.name));
+    for (const [name, definition] of Object.entries({
+      ocr_engine: 'TEXT', ocr_status: "TEXT DEFAULT 'unavailable'",
+      local_vision_status: "TEXT DEFAULT 'unavailable'", metadata_json: "TEXT DEFAULT '{}'",
+    })) {
+      if (!columns.has(name)) this.db.exec(`ALTER TABLE semantic_observations ADD COLUMN ${name} ${definition}`);
+    }
   }
 
   /**
@@ -56,25 +74,33 @@ export class SemanticObservationStore {
       INSERT INTO semantic_observations (
         observation_id, timestamp, source_device, display_id, application_id,
         window_context, observed_text, semantic_summary, event_type, related_task_id,
-        confidence, expiry_policy
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        confidence, expiry_policy, ocr_engine, ocr_status, local_vision_status, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
       id,
-      obs.timestamp || Date.now(),
+      obs.timestamp ?? Date.now(),
       obs.source_device || 'local-windows-host',
-      obs.display_id || 'primary',
+      obs.display_id || 'unknown',
       obs.application_id || 'unknown',
       obs.window_context || '',
-      obs.observed_text || '',
-      obs.semantic_summary || '',
+      String(obs.observed_text || '').slice(0, 12000),
+      String(obs.semantic_summary || '').slice(0, 16000),
       obs.event_type || 'ui_state',
       obs.related_task_id || null,
-      obs.confidence !== undefined ? obs.confidence : 1.0,
-      obs.expiry_policy || '7d'
+      obs.confidence ?? null,
+      obs.expiry_policy || '7d',
+      obs.ocr_engine ?? null,
+      obs.ocr_status ?? 'unavailable',
+      obs.local_vision_status ?? 'unavailable',
+      JSON.stringify(obs.metadata ?? {})
     );
-
+    const now = Date.now();
+    if (now - this._lastPruneAt >= 60_000) {
+      this.db.prepare('DELETE FROM semantic_observations WHERE timestamp < ?').run(now - this.retentionMs);
+      this._lastPruneAt = now;
+    }
     return id;
   }
 
@@ -84,10 +110,10 @@ export class SemanticObservationStore {
   getRecentObservations(limit = 20) {
     const stmt = this.db.prepare(`
       SELECT * FROM semantic_observations
-      ORDER BY timestamp DESC
+      ORDER BY timestamp DESC, rowid DESC
       LIMIT ?
     `);
-    return stmt.all(limit);
+    return stmt.all(this._limit(limit));
   }
 
   /**
@@ -97,11 +123,11 @@ export class SemanticObservationStore {
     const stmt = this.db.prepare(`
       SELECT * FROM semantic_observations
       WHERE application_id LIKE ? OR window_context LIKE ? OR observed_text LIKE ? OR semantic_summary LIKE ?
-      ORDER BY timestamp DESC
+      ORDER BY timestamp DESC, rowid DESC
       LIMIT ?
     `);
     const q = `%${query}%`;
-    return stmt.all(q, q, q, q, limit);
+    return stmt.all(q, q, q, q, this._limit(limit));
   }
 
   /**
@@ -110,7 +136,7 @@ export class SemanticObservationStore {
   getLatestContext() {
     const stmt = this.db.prepare(`
       SELECT * FROM semantic_observations
-      ORDER BY timestamp DESC
+      ORDER BY timestamp DESC, rowid DESC
       LIMIT 1
     `);
     const rows = stmt.all();
@@ -121,6 +147,15 @@ export class SemanticObservationStore {
    * Close database handle.
    */
   close() {
-    try { this.db.close(); } catch (_) {}
+    if (!this.closed) this.db.close();
+    this.closed = true;
+  }
+
+  _limit(limit) { return Number.isFinite(limit) ? Math.max(1, Math.min(1000, Math.floor(limit))) : 20; }
+
+  getStatus() {
+    return { active: !this.closed, path: this.dbPath, persistent: this.persistent,
+      mode: this.persistent ? 'sqlite-file' : 'sqlite-memory', retentionMs: this.retentionMs,
+      observationCount: this.closed ? null : this.db.prepare('SELECT COUNT(*) AS count FROM semantic_observations').get().count };
   }
 }

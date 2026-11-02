@@ -1,10 +1,9 @@
 /**
  * @fileoverview Screen Intelligence — Lightweight Visual & Contextual Change Detector
  * 
- * Prevents unnecessary heavy vision model inference by gating frames through:
+ * Gates persistent observations through:
  * - Active application & foreground window title comparison
- * - Fast perceptual hash & block luminance comparison
- * - Configurable change threshold (default 5% visual delta)
+ * - Full encoded-image SHA-256 equality (not a perceptual/semantic score)
  */
 
 import crypto from 'node:crypto';
@@ -12,13 +11,15 @@ import crypto from 'node:crypto';
 export class ChangeDetector {
   /**
    * @param {Object} [options]
-   * @param {number} [options.threshold=0.05] - Minimum visual delta (0.0 to 1.0)
+   * @param {number} [options.threshold=0.05] - Retained for compatibility; byte equality has no perceptual threshold
    */
   constructor(options = {}) {
     this.threshold = options.threshold !== undefined ? options.threshold : 0.05;
     this.lastWindowTitle = '';
     this.lastAppName = '';
     this.lastHash = '';
+    this.lastOcrText = '';
+    this.lastOcrStatus = '';
     this.lastSample = null;
   }
 
@@ -28,52 +29,35 @@ export class ChangeDetector {
    * @param {string} [frameMetadata.windowTitle='']
    * @param {string} [frameMetadata.appName='']
    * @param {Buffer|Uint8Array} [frameMetadata.data]
-   * @returns {Object} { hasChanged: boolean, reason: string, score: number }
+   * @returns {Object} { hasChanged: boolean, reason: string, score: null }
    */
   detectChange(frameMetadata = {}) {
     const windowTitle = frameMetadata.windowTitle || '';
     const appName = frameMetadata.appName || '';
     const data = frameMetadata.data;
 
-    // 1. Contextual metadata change (highest confidence, 0 inference cost)
-    if (appName && this.lastAppName && appName !== this.lastAppName) {
-      this.lastAppName = appName;
-      this.lastWindowTitle = windowTitle;
-      return { hasChanged: true, reason: 'app_switched', score: 1.0 };
-    }
-
-    if (windowTitle && this.lastWindowTitle && windowTitle !== this.lastWindowTitle) {
-      this.lastWindowTitle = windowTitle;
-      return { hasChanged: true, reason: 'window_title_changed', score: 0.8 };
-    }
-
-    // 2. Perceptual data hash comparison
-    if (data && data.length > 0) {
-      const hash = crypto.createHash('sha256').update(data.slice(0, Math.min(data.length, 4096))).digest('hex');
-      if (!this.lastHash) {
-        this.lastHash = hash;
-        this.lastWindowTitle = windowTitle;
-        this.lastAppName = appName;
-        return { hasChanged: true, reason: 'initial_frame', score: 1.0 };
-      }
-
-      if (hash === this.lastHash) {
-        return { hasChanged: false, reason: 'identical_hash', score: 0.0 };
-      }
-
-      this.lastHash = hash;
-      this.lastWindowTitle = windowTitle;
-      this.lastAppName = appName;
-      return { hasChanged: true, reason: 'visual_delta', score: 0.5 };
-    }
-
-    return { hasChanged: false, reason: 'static', score: 0.0 };
+    if (!data?.length) return { hasChanged: false, reason: 'static', score: null };
+    const hash = crypto.createHash('sha256').update(data).digest('hex');
+    let reason = 'identical_hash';
+    if (!this.lastHash) reason = 'initial_frame';
+    else if (appName !== this.lastAppName) reason = 'app_switched';
+    else if (windowTitle !== this.lastWindowTitle) reason = 'window_title_changed';
+    else if (hash !== this.lastHash) reason = 'visual_delta';
+    else if ((frameMetadata.ocrText || '') !== this.lastOcrText || (frameMetadata.ocr?.status || '') !== this.lastOcrStatus) reason = 'ocr_changed';
+    this.lastHash = hash;
+    this.lastAppName = appName;
+    this.lastWindowTitle = windowTitle;
+    this.lastOcrText = String(frameMetadata.ocrText || '').slice(0, 12000);
+    this.lastOcrStatus = frameMetadata.ocr?.status || '';
+    return { hasChanged: reason !== 'identical_hash', reason, score: null, imageHash: hash };
   }
 
   reset() {
     this.lastWindowTitle = '';
     this.lastAppName = '';
     this.lastHash = '';
+    this.lastOcrText = '';
+    this.lastOcrStatus = '';
     this.lastSample = null;
   }
 }

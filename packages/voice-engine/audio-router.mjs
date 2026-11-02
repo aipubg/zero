@@ -22,6 +22,8 @@ export class AudioRouter extends EventEmitter {
     this._inputBytes = 0;
     this._outputQueue = [];
     this._outputBytes = 0;
+    this._droppedInputBytes = 0;
+    this._droppedOutputBytes = 0;
   }
 
   /**
@@ -32,14 +34,18 @@ export class AudioRouter extends EventEmitter {
   ingestInputChunk(chunk) {
     if (!chunk || chunk.length === 0) return { bytesIngested: 0, totalBuffered: this._inputBytes };
 
-    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    const buf = Buffer.from(chunk);
     this._inputChunks.push(buf);
     this._inputBytes += buf.length;
 
     // Prune if exceeded max
     while (this._inputBytes > this.maxBufferSize && this._inputChunks.length > 0) {
-      const removed = this._inputChunks.shift();
-      this._inputBytes -= removed.length;
+      const removed = this._inputChunks[0];
+      const bytes = Math.min(removed.length, this._inputBytes - this.maxBufferSize);
+      if (bytes === removed.length) this._inputChunks.shift();
+      else this._inputChunks[0] = Buffer.from(removed.subarray(bytes));
+      this._inputBytes -= bytes;
+      this._droppedInputBytes += bytes;
     }
 
     this.emit('input:chunk', buf);
@@ -58,16 +64,42 @@ export class AudioRouter extends EventEmitter {
     return combined;
   }
 
+  // Restore failed recognition ahead of any newly arriving audio.
+  restoreInputBuffer(pcm) {
+    this._inputChunks.unshift(Buffer.from(pcm));
+    this._inputBytes += pcm.length;
+    while (this._inputBytes > this.maxBufferSize && this._inputChunks.length) {
+      const dropped = this._inputChunks[0];
+      const bytes = Math.min(dropped.length, this._inputBytes - this.maxBufferSize);
+      if (bytes === dropped.length) this._inputChunks.shift();
+      else this._inputChunks[0] = Buffer.from(dropped.subarray(bytes));
+      this._inputBytes -= bytes;
+      this._droppedInputBytes += bytes;
+    }
+  }
+
   /**
    * Queue audio chunk for output playback
    * @param {Buffer|Uint8Array} chunk
    */
   enqueueOutputChunk(chunk) {
     if (!chunk || chunk.length === 0) return;
-    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    const buf = Buffer.from(chunk);
     this._outputQueue.push(buf);
     this._outputBytes += buf.length;
+    while (this._outputBytes > this.maxBufferSize && this._outputQueue.length) {
+      const dropped = this._outputQueue.shift().length;
+      this._outputBytes -= dropped;
+      this._droppedOutputBytes += dropped;
+    }
     this.emit('output:chunk', buf);
+  }
+
+  drainOutputBuffer() {
+    const pcm = Buffer.concat(this._outputQueue, this._outputBytes);
+    this._outputQueue = [];
+    this._outputBytes = 0;
+    return pcm;
   }
 
   /**
@@ -89,6 +121,8 @@ export class AudioRouter extends EventEmitter {
       bufferedInputBytes: this._inputBytes,
       bufferedOutputBytes: this._outputBytes,
       outputQueueLength: this._outputQueue.length,
+      droppedInputBytes: this._droppedInputBytes,
+      droppedOutputBytes: this._droppedOutputBytes,
     };
   }
 
@@ -97,5 +131,7 @@ export class AudioRouter extends EventEmitter {
     this._inputBytes = 0;
     this._outputQueue = [];
     this._outputBytes = 0;
+    this._droppedInputBytes = 0;
+    this._droppedOutputBytes = 0;
   }
 }
