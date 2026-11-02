@@ -50,8 +50,10 @@ try {
     await call('zero-policy.computer-hold.take');
     await assert.rejects(call('chat.send', request), /hold/i);
     const db = new DatabaseSync(path.join(state, 'data/zero-sessions.sqlite'), { readOnly: true });
-    const failed = db.prepare('SELECT status,task_id FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey);
+    const failed = db.prepare('SELECT status,task_id,model_id FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey);
     assert.equal(failed.status, 'failed'); assert.ok(failed.task_id); assert.equal(fs.existsSync(filename), false);
+    assert.ok(failed.model_id, 'The effective original model must be persisted before execution');
+    await call('sessions.patch', { key: request.sessionKey, model: 'unavailable-model-for-retry-regression' });
     await call('zero-policy.computer-hold.release');
     const retried = await call('tasks.retry', { taskId: failed.task_id });
     assert.equal(retried.taskId, failed.task_id); assert.ok(retried.content.trim());
@@ -66,7 +68,7 @@ try {
     assert.equal((await call('chat.send', request)).taskId, failed.task_id);
     assert.equal((await call('models.status')).upstreamRequestCount, before);
     report.scope = 'Actual hold-induced FAILED assistant task explicitly retried through real model/tools; original task ID, single user message, file output and durable receipt verified';
-    report.retry = { taskId: failed.task_id, actualFileEffect: true, originalUserMessages: 1, replayModelCalls: 0 };
+    report.retry = { taskId: failed.task_id, pinnedModel: failed.model_id, sessionModelChangedBeforeRetry: true, actualFileEffect: true, originalUserMessages: 1, replayModelCalls: 0 };
   } else {
   const filename = path.join(output, 'actual-effect.txt'); const marker = 'ZERO_CRASH_EFFECT_ONCE';
   const request = { sessionKey: 'real-crash-task', idempotencyKey: 'real-crash-request', message: `Use write_file to create ${JSON.stringify(filename)} with exactly ${JSON.stringify(marker)}. Then read_file to verify it. Only after that, write a detailed 1000-word explanation of the verification.` };

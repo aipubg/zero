@@ -564,3 +564,20 @@ task COMPLETED status, one original user message, completed SQLite receipt and
 zero additional model calls on original chat request replay were checked.
 This verifies assistant retry after that bounded failure, not arbitrary external
 side-effect reconciliation, every task family or a provider/model reassignment UI.
+
+Assistant requests now resolve their effective model once before execution and
+persist its ID in an additive receipt model_id column. Explicit retry/resume
+reuses that recorded selection rather than silently following later chat/default
+model changes. Input hashing still uses the original request, so durable replay
+identity remains unchanged. Existing rows/columns/transcripts are preserved;
+legacy receipts lacking a model ID retain the previous fallback behavior because
+their original model cannot be reconstructed reliably.
+
+[assistant-retry-model-pinning.json](assistant-retry-model-pinning.json) records
+a fresh real configured-model/tool run. After a hold-induced failure, the test
+changes the session's model to an unavailable name before retry. Retry still
+completes the same task using its pinned nvidia/nemotron-3.5-lightning-30b-a3b
+selection, creates and reads the actual file, preserves one user message and
+replays the original completed request with zero additional upstream calls.
+Receipt integration and write-scope contracts pass. This is not broad provider
+failover, a clean-machine migration or proof of every model assignment UI.

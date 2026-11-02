@@ -1904,7 +1904,7 @@ export class ZeroNativeHost {
     let result;
     try {
       result = await this._executeAssistantRequest({ ...context, sessionKey: receipt.session_id, runId: receipt.run_id,
-        userContent: task.goal, source: retry ? 'retry' : 'resume', resumeTaskId: taskId, retryFailed: retry });
+        userContent: task.goal, model: receipt.model_id || undefined, source: retry ? 'retry' : 'resume', resumeTaskId: taskId, retryFailed: retry });
     } catch (error) {
       this.sessions.db.prepare("UPDATE zero_assistant_receipts SET status='failed',error=?,updated_at=? WHERE session_id=? AND run_id=?")
         .run(error.message, Date.now(), receipt.session_id, receipt.run_id);
@@ -1920,9 +1920,10 @@ export class ZeroNativeHost {
     const request = (async () => {
       const { sessionKey, userContent, signal, source = 'chat' } = options;
       if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
+      options.model ||= this.sessions.getSession(sessionKey)?.metadata?.model || this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || 'zero-lead';
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
       const task = options.resumeTaskId ? this.tasks.getTask(options.resumeTaskId) : this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
-      this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=? WHERE session_id=? AND run_id=?').run(task.id, sessionKey, options.runId);
+      this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=?,model_id=COALESCE(model_id,?) WHERE session_id=? AND run_id=?').run(task.id, options.model, sessionKey, options.runId);
       if (options.retryFailed) { this.tasks.retryFailedTask(task.id); this.tasks.startTask(task.id); }
       else if (options.resumeTaskId) this.tasks.resumeTask(task.id);
       else { this.tasks.enqueueTask(task.id); this.tasks.startTask(task.id); }

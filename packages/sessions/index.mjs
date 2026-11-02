@@ -27,6 +27,7 @@ export class SessionManager {
       PRIMARY KEY(session_id, run_id)
     )`);
     if (!this.db.prepare('PRAGMA table_info(zero_assistant_receipts)').all().some(column => column.name === 'task_id')) this.db.exec('ALTER TABLE zero_assistant_receipts ADD COLUMN task_id TEXT');
+    if (!this.db.prepare('PRAGMA table_info(zero_assistant_receipts)').all().some(column => column.name === 'model_id')) this.db.exec('ALTER TABLE zero_assistant_receipts ADD COLUMN model_id TEXT');
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS zero_sessions (
         id TEXT PRIMARY KEY,
