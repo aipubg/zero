@@ -1,5 +1,5 @@
 /** Capture pixels and retain provenance dropped by the UI driver's convenience wrapper. */
-import { getCuaDriver, runNativeWinAction, getWindowState } from '../../app/zero-control-ui/src/computer/windows-driver.js';
+import { getCuaDriver, getCuaDriverResourceUsage, runNativeWinAction, getWindowState } from '../../app/zero-control-ui/src/computer/windows-driver.js';
 import { LocalVisionExtractor, LOCAL_VISION_STATUS } from './ocr-vision.mjs';
 import { crc32 } from 'node:zlib';
 
@@ -39,7 +39,7 @@ export async function captureDriverDesktop({ signal } = {}) {
       const img = result?.images?.[0];
       if (!result?.isError && img?.dataBase64) {
         return { ok: true, base64: img.dataBase64, mimeType: img.mimeType,
-          captureSource: 'cua-driver', displayId: null };
+          captureSource: 'cua-driver', displayId: null, resourceUsage: getCuaDriverResourceUsage() };
       }
     } catch (error) { if (signal?.aborted) throw error; }
   }

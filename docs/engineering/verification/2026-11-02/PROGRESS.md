@@ -794,3 +794,22 @@ eight completed captures/OCR and one capture aborted on orderly shutdown.
 Overall acceptance stays PARTIAL. The final source refines gap wording to SDK
 accounting plus whole-lifetime aggregation/final counters and writes model
 snapshots into sample rows; this last sample-row field was not separately rerun.
+
+Capture SDK topology correction: installed @trycua/cua-driver 0.32.0 documents
+create() as same-process/no daemon IPC, and its actual executionMode() returns
+Embedded. The driver now validates that mode using the SDK enum and records the
+current Node PID's real CPU/RSS/peak as a same-process total. Unknown/remote modes
+retain missing resource data. Embedded SDK CPU/RSS must NOT be added to Node
+totals again; per-frame counters explicitly state this accounting scope.
+
+[capture-embedded-process-resources.json](capture-embedded-process-resources.json)
+passes actual Windows capture/OCR with counters for embedded Node capture, native
+metadata daemon and separate OCR process. Ten screen-intelligence regressions
+pass. [endurance-embedded-capture-short.json](endurance-embedded-capture-short.json)
+records eight actual captured/OCR frames with measured same-process capture
+counters and zero missing capture measurements. Independent JSONL inspection
+checks all captured PIDs equal the runner PID and confirms model resource
+measurements are present in sample rows. Pipeline/persistence pass; overall
+verdict remains PARTIAL for whole-lifetime aggregation/final counters. One
+in-flight capture is aborted during orderly stop. This 20-second run is not a
+24-hour endurance result and does not validate other SDK execution modes.

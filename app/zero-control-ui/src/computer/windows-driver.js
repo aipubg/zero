@@ -30,6 +30,17 @@ const WIN_ACTIONS_DAEMON_SCRIPT = path.join(__dirname, "win-actions-daemon.ps1")
 
 let cachedCuaDriver = null;
 let cuaDriverInitAttempted = false;
+let cuaDriverMode = 'unknown';
+
+/** Embedded Rust SDK memory/CPU is already part of this Node process total. */
+export function getCuaDriverResourceUsage() {
+  if (cuaDriverMode !== 'Embedded') return null;
+  const cpu = process.cpuUsage();
+  return { pid: process.pid, cpuMs: (cpu.user + cpu.system) / 1000,
+    workingSetBytes: process.memoryUsage().rss, peakWorkingSetBytes: process.resourceUsage().maxRSS * 1024,
+    scope: 'cumulative-node-process-including-embedded-cua', processTopology: 'same-process',
+    accounting: 'Included in Node process total; do not add to Node CPU/RSS again' };
+}
 
 /**
  * Initializes and caches the @trycua/cua-driver instance if installed.
@@ -45,6 +56,7 @@ export async function getCuaDriver() {
     const sdk = await import(pathToFileURL(entryPath).href);
     if (typeof sdk.CuaDriver?.create === "function") {
       cachedCuaDriver = sdk.CuaDriver.create();
+      try { cuaDriverMode = sdk.DriverExecutionMode?.[cachedCuaDriver.executionMode()] || 'unknown'; } catch { cuaDriverMode = 'unknown'; }
       return cachedCuaDriver;
     }
   } catch {

@@ -48,6 +48,7 @@ eventLoop.enable();
 const counters = { capturesStarted: 0, capturesSucceeded: 0, capturesFailed: 0, capturesAborted: 0,
   ocrSucceeded: 0, ocrUnavailable: 0, metadataUnavailable: 0, overlapViolations: 0,
   bufferBudgetViolations: 0, rssBudgetViolations: 0, samplingGapViolations: 0 };
+const captureResources = { measuredFrames: 0, missingFrames: 0, sameProcessFrames: 0 };
 const latencyBoundsMs = [100, 250, 500, 1000, 2000, 5000, 10000, 20000, 60000];
 const latencyCounts = new Array(latencyBoundsMs.length + 1).fill(0);
 let active = 0, peakActive = 0, peakRssBytes = 0, peakRetainedBytes = 0, maxCaptureMs = 0;
@@ -59,7 +60,7 @@ let persistenceEvidence = null;
 const firstRss = [], lastRss = [];
 const localVision = options['local-vision'] === 1 ? new LocalInferenceRuntime({ enabled: true }) : null;
 const manifest = { classification: ['REAL_OS', 'INTEGRATION', 'ENDURANCE'], pid: process.pid, startedAt, outputDir,
-  localVisionEnabled: Boolean(localVision), resourceCoverage: 'PARTIAL: capture SDK accounting and whole-process-lifetime aggregation are incomplete; local model counters are sampled separately',
+  localVisionEnabled: Boolean(localVision), resourceCoverage: 'PARTIAL: per-frame capture topology/counters are recorded; whole-process-lifetime aggregation is incomplete',
   requestedDurationMs, requestedHours: requestedDurationMs / 3600000, options, node: process.version,
   platform: process.platform, host: os.hostname(), completed24Hours: false,
   notes: ['Real capture and WinRT OCR, no mocked desktop source.',
@@ -84,6 +85,8 @@ const observer = createScreenObserver({ dataDir: outputDir,
       if (signal.aborted || frame.aborted) counters.capturesAborted++;
       else if (frame.ok) {
         counters.capturesSucceeded++;
+        if (frame.resourceUsage?.capture) captureResources.measuredFrames++; else captureResources.missingFrames++;
+        if (frame.resourceUsage?.capture?.processTopology === 'same-process') captureResources.sameProcessFrames++;
         if (frame.ocr?.ok) counters.ocrSucceeded++; else counters.ocrUnavailable++;
         if (frame.metadataStatus !== 'available') counters.metadataUnavailable++;
         const now = performance.now();
@@ -116,7 +119,8 @@ function report(status = 'running') {
     requestedDurationMs, elapsedHours: elapsedMs / 3600000, durationReached, stopReason, fatalError,
     captureOcrCompleted24Hours: status === 'completed' && durationReached && elapsedMs >= 86_400_000 && healthy && pipelineHealthy && persistenceVerified,
     completed24Hours: false,
-    resourceAcceptance: 'PARTIAL', resourceGaps: ['Capture SDK subprocess accounting', 'Whole-process-lifetime aggregation and final counters'],
+    resourceAcceptance: 'PARTIAL', captureResources: { ...captureResources },
+    resourceGaps: [...(captureResources.missingFrames || !captureResources.measuredFrames ? ['Unmeasured capture process topology/counters'] : []), 'Whole-process-lifetime aggregation and final counters'],
     localVisionEnabled: Boolean(localVision),
     verdict: status === 'running' ? 'in-progress' : fatalError ? 'failed' : status !== 'completed' || !durationReached ? 'incomplete' : healthy && pipelineHealthy && persistenceVerified ? 'partial' : 'failed',
     pipelineVerdict: status === 'completed' && durationReached && healthy && pipelineHealthy && persistenceVerified ? 'passed' : 'unverified',

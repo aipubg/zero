@@ -1,0 +1,37 @@
+{
+  "classification": [
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T16:48:11.182Z",
+  "scope": "Real per-process CPU and memory counters; not a duration or whole-pipeline resource acceptance result",
+  "captureSource": "cua-driver",
+  "resourceUsage": {
+    "capture": {
+      "pid": 2908,
+      "cpuMs": 139,
+      "workingSetBytes": 70103040,
+      "peakWorkingSetBytes": 93057024,
+      "scope": "cumulative-node-process-including-embedded-cua",
+      "processTopology": "same-process",
+      "accounting": "Included in Node process total; do not add to Node CPU/RSS again"
+    },
+    "metadata": {
+      "pid": 2900,
+      "cpuMs": 296.875,
+      "workingSetBytes": 99127296,
+      "peakWorkingSetBytes": 99266560,
+      "scope": "cumulative-native-action-daemon"
+    },
+    "ocr": {
+      "pid": 8932,
+      "cpuMs": 406.25,
+      "workingSetBytes": 107175936,
+      "peakWorkingSetBytes": 127590400,
+      "scope": "whole-ocr-process-through-measurement"
+    }
+  },
+  "fullCaptureAccounting": true,
+  "remaining": [],
+  "finishedAt": "2026-11-02T16:48:12.032Z"
+}
