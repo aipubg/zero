@@ -31,15 +31,24 @@ try {
   const engine = new CapabilityEngine({ operator: {} });
   registerLocalTools(engine, { cwd: directory });
   tasks = new TaskStateMachine({ dbPath: path.join(directory, 'tasks.sqlite') });
+  const modelFabric = new ModelFabric();
+  const expectedModel = modelFabric.resolveAgentModel('zero')?.canonicalModelId;
   const result = resume ? tasks.listTasks({ status: 'COMPLETED' }).find(task => task.result?.skillName === 'frontend-design')?.result : await loader.executeSkill('frontend-design', {
     goal: `Create a polished, self-contained HTML counter as a small functional artifact. It must display an integer initially 0 in an element with id="count" and one button labelled "Increment" that increases the integer by one on each click. Save the HTML at ${output} using write_file. No remote scripts, network dependencies or frameworks. Use the installed design skill. Verify the file with read_file and return its exact path.`,
-  }, { stateMachine: tasks, capabilityEngine: engine, modelFabric: new ModelFabric(), timeoutMs: 120000 });
+  }, { stateMachine: tasks, capabilityEngine: engine, modelFabric, timeoutMs: 120000 });
   assert.ok(result, 'No completed execution found to verify');
   report.reusedPersistedExecution = Boolean(resume);
   report.execution = { ok: result.ok, status: result.status, taskId: result.taskId, error: result.error, output: result.output,
     steps: result.executedSteps.map(step => ({ capability: step.capability, status: step.status })) };
   assert.equal(result.ok, true, result.error);
   assert.equal(tasks.getTask(result.taskId).status, 'COMPLETED');
+  if (!resume) {
+    assert.equal(result.model, expectedModel);
+    const modelSteps = tasks.getTaskSteps(result.taskId).filter(step => step.toolName === 'model');
+    assert.ok(modelSteps.length > 0);
+    for (const step of modelSteps) assert.equal(step.toolArgs.model, expectedModel);
+    report.modelAssignment = { agentId: 'zero', expectedModel, recordedModel: result.model, modelRounds: modelSteps.length };
+  }
   assert.ok(result.executedSteps.some(step => step.capability === 'write_file'));
   const content = fs.readFileSync(output);
   report.artifact = { bytes: content.length, sha256: createHash('sha256').update(content).digest('hex') };

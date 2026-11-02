@@ -53,6 +53,7 @@ export async function executeLoadedSkill(loader, skillName, params = {}, supplie
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2147483647) throw new Error('timeoutMs must be a positive duration');
   if (context.signal != null && !(context.signal instanceof AbortSignal)) throw new Error('signal must be an AbortSignal');
   const agentId = context.agentId || params.agentId || 'zero';
+  const selectedModel = context.model || params.model || modelFabric?.resolveAgentModel?.(agentId)?.canonicalModelId || 'zero-lead';
   const goal = params.prompt || params.goal || `Execute skill ${skill.name} with parameters: ${JSON.stringify(params)}`;
   const task = stateMachine.createTask({ sessionId: context.sessionId || params.sessionId || params.sessionKey || 'default', agentId, goal });
   stateMachine.enqueueTask(task.id);
@@ -88,7 +89,7 @@ export async function executeLoadedSkill(loader, skillName, params = {}, supplie
     signal.throwIfAborted();
     if (output === undefined || output === null || output === '') throw new Error('Skill execution produced no output');
     const result = { ok: true, status: 'completed', completed: true, taskId: task.id, skillName: skill.name,
-      description: skill.description, params, executedSteps, output, verified: false,
+      description: skill.description, params, model: selectedModel, agentId, executedSteps, output, verified: false,
       verificationStatus: 'Task execution finished; the requested outcome requires independent verification.',
       durationMs: Date.now() - startedAt, timestamp: Date.now() };
     stateMachine.completeTask(task.id, result);
@@ -115,13 +116,13 @@ export async function executeLoadedSkill(loader, skillName, params = {}, supplie
     const seenCalls = new Set();
     for (let turn = 0; turn < maxTurns; turn++) {
       signal.throwIfAborted();
-      const response = await withSignal(modelFabric.executeChat({ model: context.model || params.model || 'zero-lead', messages,
+      const response = await withSignal(modelFabric.executeChat({ model: selectedModel, messages,
         ...(tools.length ? { tools, tool_choice: 'auto' } : {}) }, { signal, timeoutMs }), signal);
       signal.throwIfAborted();
       const choice = response?.data?.choices?.[0];
       const message = choice?.message;
       if (!message || message.role !== 'assistant') throw new Error('ModelFabric returned no assistant message');
-      record('model', { model: context.model || params.model || 'zero-lead', turn: turn + 1 }, { content: message.content, tool_calls: message.tool_calls || [] }, 'completed');
+      record('model', { model: selectedModel, turn: turn + 1 }, { content: message.content, tool_calls: message.tool_calls || [] }, 'completed');
       if (choice.finish_reason === 'length' || choice.finish_reason === 'content_filter') throw new Error(`Model output did not complete: ${choice.finish_reason}`);
       const calls = message.tool_calls || [];
       if (!Array.isArray(calls)) throw new Error('Model returned malformed tool calls');

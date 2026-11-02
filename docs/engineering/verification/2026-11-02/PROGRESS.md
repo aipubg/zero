@@ -592,3 +592,18 @@ real model/tool workflow, the changed-session-model regression, actual file
 verification, one original user message and zero upstream calls on completed
 replay. The receipt integration regression also passes. Scope is one assistant
 task on an owned isolated host; distributed multi-host locking is not certified.
+
+Skill instruction execution now resolves the selected agent's assigned canonical
+model once per task, after explicit context/parameter overrides. Previously it
+always fell back to the zero-lead alias even for a differently assigned agent.
+Every model-turn step and the completed task result now record that stable
+selection and agent ID, allowing assignment and execution to be compared.
+
+[external-skill-model-assignment.json](external-skill-model-assignment.json)
+passes a fresh real GitHub import of pinned frontend-design followed by three
+real NVIDIA model rounds, write_file/read_file effects and an independently
+opened Chrome artifact: count 0 becomes 2 after two clicks, no browser errors.
+All three persisted model steps match the assigned canonical model
+nvidia/nemotron-3.5-lightning-30b-a3b. Nine SDK regression checks also pass.
+This bounded result verifies the default agent's actual skill assignment path;
+it does not certify every specialist assignment UI or every external model.

@@ -1,0 +1,62 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "REAL_BROWSER"
+  ],
+  "startedAt": "2026-11-02T06:39:43.696Z",
+  "status": "PASS",
+  "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-skill-WAKcrf",
+  "evidence": "E:\\zero\\artifacts\\external-skill\\1793601583696",
+  "source": {
+    "type": "github",
+    "url": "https://github.com/anthropics/skills.git",
+    "ref": "ca45fc496a3436251f191354091d557da31c15b5",
+    "subpath": "skills/frontend-design",
+    "revision": "ca45fc496a3436251f191354091d557da31c15b5"
+  },
+  "reusedPersistedExecution": false,
+  "execution": {
+    "ok": true,
+    "status": "completed",
+    "taskId": "task_1793601586877_u6lhzh",
+    "output": "The counter HTML has been created and verified at:\n\n**C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-skill-WAKcrf\\community-skill-counter.html**",
+    "steps": [
+      {
+        "capability": "model",
+        "status": "completed"
+      },
+      {
+        "capability": "write_file",
+        "status": "completed"
+      },
+      {
+        "capability": "model",
+        "status": "completed"
+      },
+      {
+        "capability": "read_file",
+        "status": "completed"
+      },
+      {
+        "capability": "model",
+        "status": "completed"
+      }
+    ]
+  },
+  "modelAssignment": {
+    "agentId": "zero",
+    "expectedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "recordedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "modelRounds": 3
+  },
+  "artifact": {
+    "bytes": 2077,
+    "sha256": "9fc69c944f9291fed08843b83eaa7c15f94235bca24bbfce6b742aee897209a2"
+  },
+  "independentVerification": {
+    "initial": 0,
+    "afterTwoClicks": 2,
+    "browserErrors": []
+  },
+  "finishedAt": "2026-11-02T06:40:35.902Z"
+}
