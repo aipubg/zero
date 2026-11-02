@@ -20,6 +20,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { prepareToolBatch } from './tool-batch.mjs';
+import { LocalGgufEngineService } from '../../backend/gateway/server/local-gguf-service.ts';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -152,6 +153,7 @@ export class ZeroNativeHost {
     // Initialize persistence & state engines
     const dataDir = options.dataDir || process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data');
     this.localDesktopSessions = new DesktopSessionStore({ filePath: path.join(dataDir, 'desktop-session-metadata.json') });
+    this.localGguf = new LocalGgufEngineService({ modelsDir: options.localModelsDir || process.env.ZERO_LOCAL_MODELS_DIR || path.join(REPO_ROOT, 'models') });
     // Stable, non-secret storage namespace for the native UI's durable outbox.
     this.recoveryScope = `zero-local:${crypto.createHash('sha256').update(path.resolve(dataDir).toLowerCase()).digest('hex')}`;
     if (!fs.existsSync(dataDir)) {
@@ -724,6 +726,7 @@ export class ZeroNativeHost {
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
           'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
           'zero.gateway.config.get', 'zero.gateway.config.save',
+          'zero.gateway.localGguf',
           'zero.gateway.status', 'zero.gateway.restart',
           'zero.computer.control', 'zero.observation.status',
           'zero.integrations.cli.status', 'zero.integrations.connectors.status',
@@ -878,6 +881,7 @@ export class ZeroNativeHost {
       'zero.providers.save': ['admin', 'operator.admin'],
       'zero.providers.delete': ['admin', 'operator.admin'],
       'zero.gateway.config.save': ['admin', 'operator.admin'],
+      'zero.gateway.localGguf': ['admin', 'operator.admin'],
       'zero.computer.control': ['computer.control', 'operator.admin'],
       'chat.send': ['operator.write', 'operator.admin'],
       'agent': ['operator.write', 'operator.admin'],
@@ -1160,7 +1164,20 @@ export class ZeroNativeHost {
       }
 
       case 'zero.providers.list':
-        return { ...modelSettings(this.modelFabric), health: this.modelFabric.getHealthReport() };
+        return { ...modelSettings(this.modelFabric), offlineModels: await this.localGguf.scanModels(), localModelsStatus: 'Actual registered GGUF catalog; inference compatibility requires execution', health: this.modelFabric.getHealthReport() };
+      case 'zero.gateway.localGguf': {
+        const action = params.action || 'list';
+        if (action === 'list' || action === 'scan') return { ok: true, models: await this.localGguf.scanModels() };
+        if (action === 'status') return { ok: true, ...this.localGguf.getMemoryStatus() };
+        if (action === 'ps') return { ok: true, models: this.localGguf.getRunningProcesses(), measurement: 'Engine-reported allocations, not OS resource measurements' };
+        if (action === 'delete') { if (params.all === true) await this.localGguf.deleteAllModels(); else await this.localGguf.deleteModel(params.modelId); return { ok: true }; }
+        if (action === 'load') { await this.localGguf.loadModel(params.modelId); return { ok: true, ...this.localGguf.getMemoryStatus() }; }
+        if (action === 'unload') { await this.localGguf.unloadModel(); return { ok: true, ...this.localGguf.getMemoryStatus() }; }
+        if (action === 'self-test') { const result = await this.localGguf.runSelfTest(params.modelId); return { ok: result.passed, ...result, ...(result.passed ? {} : { error: result.message }) }; }
+        if (action === 'update') { await this.localGguf.updateModelSettings(params.modelId, params.data || {}); return { ok: true }; }
+        if (action === 'setup' || action === 'mount-zero-copy') { const result = await this.localGguf.mountZeroCopyModel(params.sourcePath, params.guideContent, params.guidePath); return { ...result, ok: result.success, ...(result.success ? {} : { error: result.model?.lastSelfTest?.message || 'GGUF setup did not pass its runtime checks' }) }; }
+        throw new Error(`Local GGUF action is not connected: ${action}`);
+      }
       case 'zero.gateway.config.get':
         return modelSettings(this.modelFabric);
       case 'zero.gateway.config.save':
@@ -2337,6 +2354,7 @@ export class ZeroNativeHost {
   }
 
   async close(options = {}) {
+    await this.localGguf?.unloadModel(true);
     await this.screenAutomation.close();
     if (this.cronInterval) {
       clearInterval(this.cronInterval);

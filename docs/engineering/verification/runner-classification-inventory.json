@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "115016c93133a974e00ba52582eec2442121e064291c518a6d97f3855fd8951e",
+      "sha256": "be145e7a5514275318855bf7d26e48b087aa9f171c19d5477dcd661d927e0c88",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -17,6 +17,7 @@
         "--models: actual UI assignment, isolated settings restart and independently observed real upstream model request; provider-reported alias retained separately",
         "--providers: actual UI provider create/edit/delete with isolated persisted files, credential preservation and process restart; no service-execution claim",
         "--provider-probe: UI-triggered real external model-list retrieval, not inference acceptance",
+        "--gguf: actual GGUF catalog, same-UI removal, restart persistence, source SHA preservation and failed mount; no inference claim",
         "--agent-models: actual specialist UI assignment with restart persistence and unchanged coordinator defaults; no inference claim",
         "--agent-execution (requires --agent-models; REAL_EXTERNAL): actual assigned specialist read_file, independent upstream model observation and parent consolidation",
         "--parallel-agents (requires --agent-execution): two UI-assigned external models, overlapping independent file subtasks and both results in consolidation",

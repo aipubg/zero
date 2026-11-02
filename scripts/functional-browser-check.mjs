@@ -9,6 +9,7 @@ import { Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
+import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '../backend/node_modules/playwright-core/index.mjs';
 import { mcpCapabilityName } from '../packages/plugin-sdk/mcp-adapter.mjs';
@@ -40,6 +41,7 @@ const workflowLabels = new Map([
   ['Provider UI creates, edits and deletes persisted settings without credential loss', []],
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
+  ['Local GGUF catalog and UI removal persist without deleting user guides', []],
   ['Specialist UI model assignment persists without changing coordinator defaults', process.argv.includes('--agent-execution') ? ['REAL_EXTERNAL'] : []],
   ['Interrupted external team resumes pinned models and preserves completed child evidence', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
@@ -95,6 +97,7 @@ async function start() {
     env: { ...process.env, ZERO_PORT: String(port), ZERO_DATA_DIR: path.join(temporary, 'data'),
       ZERO_PREFS_PATH: path.join(temporary, 'prefs.json'), ZERO_SKILLS_DIR: path.join(temporary, 'skills'),
       ZERO_PROVIDERS_PATH: path.join(temporary, 'providers.json'), ZERO_AGENT_BINDINGS_PATH: path.join(temporary, 'bindings.json'),
+      ZERO_LOCAL_MODELS_DIR: path.join(temporary, 'local-models'),
       OPENCLAW_CONFIG_PATH: path.join(temporary, 'config.json') },
   });
   child.stderr.on('data', data => errors.push(String(data)));
@@ -268,6 +271,39 @@ try {
     assert.ok(providerProbeResult.payload.count > 0); assert.equal(providerProbeResult.payload.verified, false);
     await page.getByText(/model list retrieved, inference unverified\./).waitFor();
     return { httpStatus: providerProbeResult.payload.httpStatus, retrievedModels: providerProbeResult.payload.count, inferenceVerifiedByThisProbe: false };
+  });
+  if (process.argv.includes('--gguf')) await check('Local GGUF catalog and UI removal persist without deleting user guides', async () => {
+    const modelsDir = path.join(temporary, 'local-models'); fs.mkdirSync(modelsDir, { recursive: true });
+    const source = path.join(root, 'models/SmolVLM-256M/SmolVLM-256M-Instruct-Q8_0.gguf');
+    const checksum = async file => { const hash = createHash('sha256'); for await (const chunk of fs.createReadStream(file)) hash.update(chunk); return hash.digest('hex'); };
+    const originalHash = await checksum(source);
+    fs.copyFileSync(source, path.join(modelsDir, 'ui-proof.gguf'));
+    fs.writeFileSync(path.join(modelsDir, 'ui-proof.txt'), 'PRESERVE USER GUIDE');
+    fs.writeFileSync(path.join(modelsDir, 'settings.json'), 'PRESERVE USER SETTINGS');
+    await page.goto(`${base}/settings/model-providers`);
+    const card = page.locator('.zero-provider-card--gguf'); await card.waitFor();
+    assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 1);
+    await stop(); await start(); await page.reload(); await card.waitFor();
+    let dialogs = 0; page.on('dialog', async dialog => { dialogs++; await dialog.dismiss(); });
+    await card.locator('.zero-chip-delete').click();
+    await page.getByText(/Model .* removed\./).waitFor();
+    assert.equal(dialogs, 0, 'Explicit removal click must not open a permission popup');
+    assert.equal(fs.existsSync(path.join(modelsDir, 'ui-proof.gguf')), false);
+    assert.equal(fs.readFileSync(path.join(modelsDir, 'ui-proof.txt'), 'utf8'), 'PRESERVE USER GUIDE');
+    assert.equal(fs.readFileSync(path.join(modelsDir, 'settings.json'), 'utf8'), 'PRESERVE USER SETTINGS');
+    await stop(); await start(); await page.reload();
+    assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 0);
+    assert.equal(await card.count(), 0); assert.equal(await checksum(source), originalHash);
+    await assert.rejects(rpc('zero.gateway.localGguf', { action: 'delete', modelId: '../escape' }), /Invalid local model identifier/);
+    await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
+    await page.getByRole('button', { name: 'Mount Local Model (Zero-Copy)', exact: true }).click();
+    await page.getByPlaceholder(/Downloads.*gguf/).fill(path.join(temporary, 'missing-model.gguf'));
+    await page.getByRole('button', { name: 'Mount & Run Setup Pipeline', exact: true }).click();
+    await page.getByText(/File not found at path/).last().waitFor();
+    assert.equal(await page.getByText(/28\.4 tok\/s/).count(), 0);
+    assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 0);
+    await page.goto(`${base}/settings/model-providers`);
+    return { realGgufCatalog: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: false };
   });
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');

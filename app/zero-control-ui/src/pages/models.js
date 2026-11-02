@@ -824,7 +824,7 @@ export function mountModelsPage(container, context = {}) {
       const details = element("div", "zero-provider-card__details");
       details.append(
         element("span", "zero-provider-card__meta-label", "Base URL: "),
-        element("span", "zero-provider-card__meta-val", "http://127.0.0.1:18789/api/gateway/local-gguf"),
+        element("span", "zero-provider-card__meta-val", "Local GGUF registry"),
         element("span", "zero-provider-card__meta-label", " | Models: "),
         element("span", "zero-provider-card__meta-val", String(offlineModels.length))
       );
@@ -861,7 +861,6 @@ export function mountModelsPage(container, context = {}) {
 
       const clearAllBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Clear All");
       clearAllBtn.onclick = async () => {
-        if (!confirm("Remove all offline GGUF model registrations from Zero?")) return;
         try {
           await callGateway(host, "zero.gateway.localGguf", { action: "delete", all: true });
           showNotice("All local GGUF models cleared from engine.");
@@ -921,7 +920,6 @@ export function mountModelsPage(container, context = {}) {
         delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:var(--text-subtle, #9ca3af);cursor:pointer;line-height:1;";
         delChipBtn.onclick = async (e) => {
           e.stopPropagation();
-          if (!confirm(`Remove offline model "${m.name || m.id}"?`)) return;
           try {
             await callGateway(host, "zero.gateway.localGguf", { action: "delete", modelId: m.id });
             showNotice(`Model "${m.name || m.id}" removed.`);
@@ -1069,7 +1067,6 @@ export function mountModelsPage(container, context = {}) {
           delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:var(--text-subtle, #9ca3af);cursor:pointer;line-height:1;";
           delChipBtn.onclick = async (e) => {
             e.stopPropagation();
-            if (!confirm(`Remove model "${mname}" from ${p.name || p.id}?`)) return;
             try {
               const updatedModels = pModels.filter(m => (typeof m === "string" ? m : m.id) !== mid);
               p.models = updatedModels;
@@ -1855,8 +1852,8 @@ export function mountModelsPage(container, context = {}) {
             testTokBtn.disabled = true;
             testTokBtn.textContent = "Testing...";
             const res = await callGateway(host, "zero.gateway.localGguf", { action: "self-test", modelId: m.id });
-            const tokSec = res?.tokensPerSec || res?.tokSec || "28.4";
-            showNotice(`Self-test passed! Speed: ${tokSec} tok/s`);
+            const tokSec = res?.tokensPerSec ?? res?.tokSec;
+            showNotice(Number.isFinite(tokSec) ? `Self-test passed! Speed: ${tokSec} tok/s` : res.message || 'Self-test completed.');
             await loadAllData();
             switchTab(0);
           } catch (e) {
@@ -1950,7 +1947,6 @@ export function mountModelsPage(container, context = {}) {
         // Delete Button
         const delGgufBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Delete");
         delGgufBtn.onclick = async () => {
-          if (!confirm(`Delete offline model "${m.name || m.id}" from engine? (Original file will stay safe)`)) return;
           try {
             delGgufBtn.disabled = true;
             await callGateway(host, "zero.gateway.localGguf", { action: "delete", modelId: m.id });
@@ -1991,7 +1987,7 @@ export function mountModelsPage(container, context = {}) {
 
       const stepsList = element("div", null);
       stepsList.style.cssText = "display:flex;flex-direction:column;gap:6px;font-size:12px;";
-      progressBox.append(element("h4", null, "5-Stage Setup Pipeline:"), stepsList);
+      progressBox.append(element("h4", null, "Model Setup:"), stepsList);
 
       const mountBtn = element("button", "zero-models-btn zero-btn-save-defaults", "Mount & Run Setup Pipeline");
       mountBtn.style.marginTop = "10px";
@@ -2016,9 +2012,7 @@ export function mountModelsPage(container, context = {}) {
             stepsList.append(row);
           };
 
-          addStep("Stage 1: Validating binary header & GGUF signature...", "done");
-          addStep("Stage 2: Parsing smart system guide & prompt template...", "done");
-          addStep("Stage 3: Zero-copy disk mounting & mmproj pairing...", "done");
+          addStep("Validating GGUF source and running the setup pipeline...", "pending");
 
           const res = await callGateway(host, "zero.gateway.localGguf", {
             action: "setup",
@@ -2027,8 +2021,7 @@ export function mountModelsPage(container, context = {}) {
           });
 
           if (res && res.ok !== false) {
-            addStep("Stage 4: Real engine self-test passed (28.4 tok/s)", "done");
-            addStep("Stage 5: Model marked READY in Zero Gateway!", "done");
+            addStep(res.model?.lastSelfTest?.message || 'Engine setup checks completed.', 'done');
             showNotice("Offline model mounted & ready!");
             await loadAllData();
             setTimeout(() => switchTab(0), 1200);

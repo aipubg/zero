@@ -1463,3 +1463,34 @@ That selected audibility/intelligibility gate is now user-confirmed PASS. Human
 microphone recognition, acoustic barge-in and general spoken conversation remain
 unverified, and overall Voice status remains PARTIAL. Endurance PID 16744 remains
 live with its original start time at reinspection; no 24-hour PASS is claimed.
+
+### Connect native Models GGUF registry and remove fabricated setup feedback
+
+Native host now owns an injectable LocalGgufEngineService instance and canonical
+zero.gateway.localGguf admin RPC, uses the actual scanned catalog in providers.list,
+and closes only its owned runtime instance. List/scan/status/engine ps, removal,
+load/unload, self-test, settings update and local setup dispatch to existing real
+service methods; unsupported actions fail explicitly. Browser hosts use a separate
+ZERO_LOCAL_MODELS_DIR so tests never mutate owner model registrations. Host default
+retains the existing repository models location. Engine allocation estimates are
+labelled distinct from OS measurements.
+
+Existing Models UI keeps its layout. Explicit remove clicks no longer show
+permission confirmations, matching the user's owner mode instruction. Setup no
+longer marks stages done before work or displays fabricated 28.4 tok/s. Self-test
+speed appears only if a numeric engine result exists; setup errors remain errors.
+The local card describes the local registry instead of a hard-coded owner port.
+
+[local-gguf-native-ui.json](local-gguf-native-ui.json) passes nine selected actual
+browser workflows. It copies the real pinned GGUF into an isolated registry,
+renders its card across process restart, clicks remove with zero dialogs, verifies
+physical binary absence and exact guide/settings preservation, restarts again and
+confirms persisted catalog absence. Original source SHA-256 before/after matches.
+Actual local mount form with missing path renders the real failure and creates
+no registration. Escaped delete ID is rejected. Five service/provider checks pass.
+
+These gates certify catalog/removal and failure UI, not successful arbitrary GGUF
+setup, local chat assignment/inference, model load/self-test/settings workflows,
+or HF download. Those remain open; dispatch existence is not their acceptance.
+Endurance original PID 16744 remains live at about 0.690 hours, still IN_PROGRESS
+and resources PARTIAL. No owner running backend deployment is inferred from tests.
