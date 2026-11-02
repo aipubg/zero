@@ -914,3 +914,22 @@ all nine real browser workflows, including those actual UI operations followed
 by independent handler/file effects, plus existing disable/restart/enable/uninstall
 checks. Thirty plugin/UI regressions pass. Pinned 2.0.1 is refreshed, not upgraded
 to a different version. Browser source hash was re-audited for the expanded gate.
+
+Executable plugin health is now distinct from a loaded JavaScript module.
+The MCP adapter reports its owned process availability/PID; PluginManager derives
+unavailable runtime status and an explicit restart error when an enabled child
+has exited, instead of retaining active. Disabled plugins remain disabled, and
+ordinary in-process plugins need no process-health hook. Signal-terminated child
+processes are also rejected as unavailable by the stdio transport.
+
+[external-mcp-process-crash.json](external-mcp-process-crash.json) passes actual
+external process kill, unavailable diagnostics, failed invocation with no file
+effect, new-PID restart and verified real file effect. The new reusable command
+`node scripts/verify-external-mcp.mjs` repeats actual package install, registered
+handler effects, disabled persistence, saved-source refresh, failed-preparation
+preservation, real process crash/restart and uninstall while preserving the output
+file. [external-mcp-reproducible-lifecycle.json](external-mcp-reproducible-lifecycle.json)
+passes that fresh execution. Eleven plugin regressions and catalog contract pass;
+the modern source-hash classification catalog now covers 13 entry points. This
+run tests manager/diagnostic state, not a new browser crash-status interaction or
+arbitrary post-detach rollback, distributed recovery or all plugin formats.

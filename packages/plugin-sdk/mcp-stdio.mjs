@@ -43,7 +43,7 @@ export class McpStdio {
     } catch (error) { await this.close(); throw error; }
   }
   request(method, params, { signal, timeoutMs = 30000 } = {}) {
-    if (!this.child || this.child.exitCode !== null || this.child.killed) return Promise.reject(new Error('MCP process is not running'));
+    if (!this.child || this.child.exitCode !== null || this.child.signalCode !== null || this.child.killed) return Promise.reject(new Error('MCP process is not running'));
     if (this.pending.size >= 32) return Promise.reject(new Error('Too many outstanding MCP requests'));
     if (signal?.aborted) return Promise.reject(signal.reason || new Error('MCP request aborted'));
     return new Promise((resolve, reject) => {

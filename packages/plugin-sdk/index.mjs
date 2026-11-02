@@ -185,7 +185,7 @@ export class PluginManager extends EventEmitter {
       }
       instance ||= new ZeroPlugin(manifest);
       if (typeof instance !== 'object') throw new Error('Plugin entry must export an instance, class, or factory');
-      for (const hook of ['onLoad', 'onEnable', 'onDisable', 'onDestroy']) {
+      for (const hook of ['onLoad', 'onEnable', 'onDisable', 'onDestroy', 'getRuntimeStatus']) {
         if (instance[hook] != null && typeof instance[hook] !== 'function') throw new Error(`Invalid plugin hook '${hook}'`);
       }
       await instance.onLoad?.(context);
@@ -472,14 +472,19 @@ export class PluginManager extends EventEmitter {
 
   _formatPlugin(row) {
     const runtime = this._runtimes.get(row.id);
+    let health = null;
+    try { health = runtime?.instance.getRuntimeStatus?.(); }
+    catch { health = { available: false, error: 'Plugin runtime health check failed' }; }
+    const unavailable = runtime?.accepting && health?.available === false;
     return {
       id: row.id, name: row.name, version: row.version, description: row.description, status: row.status,
       config: JSON.parse(row.config || '{}'), permissions: JSON.parse(row.permissions || '[]'),
       capabilities: JSON.parse(row.capabilities || '[]'), installedAt: row.installed_at, updatedAt: row.updated_at,
       source: row.source ? JSON.parse(row.source) : null,
       loaded: Boolean(runtime && !runtime.destroyed),
-      runtimeStatus: runtime?.destroyed ? 'unavailable' : runtime ? (runtime.accepting ? 'active' : 'disabled') : 'unavailable',
-      error: row.last_error || null,
+      runtimeStatus: runtime?.destroyed || unavailable ? 'unavailable' : runtime ? (runtime.accepting ? 'active' : 'disabled') : 'unavailable',
+      process: health ? { available: health.available === true, pid: health.pid || null } : null,
+      error: row.last_error || (unavailable ? health.error || 'Executable plugin is unavailable' : null),
     };
   }
 

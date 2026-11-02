@@ -42,6 +42,11 @@ export function createMcpPlugin(entry, source) {
       outcome: result?.isError ? 'FAILED' : 'UNVERIFIED', result };
   }]));
   return { handlers,
+    getRuntimeStatus() {
+      const child = client?.child;
+      const available = Boolean(child && child.exitCode === null && child.signalCode === null && !child.killed);
+      return { available, pid: available ? child.pid : null, error: client && !available ? 'Owned MCP executable is no longer running; restart the plugin' : null };
+    },
     async onEnable() { const next = new McpStdio(entry, source.args); await next.start(); client = next; },
     async onDisable() { const previous = client; client = null; await previous?.close(); },
     async onDestroy() { const previous = client; client = null; await previous?.close(); },

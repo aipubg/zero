@@ -1,0 +1,17 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T17:09:40.593Z",
+  "scope": "Real external MCP child process kill, honest runtime diagnostics and executable restart recovery",
+  "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-mcp-crash-w3qbSw",
+  "oldPid": 11804,
+  "newPid": 1580,
+  "unavailableReported": true,
+  "failedCallHadNoEffect": true,
+  "actualEffectAfterRestart": true,
+  "finishedAt": "2026-11-02T17:09:44.598Z"
+}

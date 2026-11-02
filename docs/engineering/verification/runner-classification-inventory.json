@@ -79,6 +79,18 @@
       "execution": "NOT_RUN_BY_INVENTORY"
     },
     {
+      "file": "scripts/verify-external-mcp.mjs",
+      "sha256": "4d797429483e6233955d4f860d5a7de5059b47435a42008a81d7edbf055751fa",
+      "labels": [
+        "REAL_EXTERNAL",
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual downloaded executable MCP plugin handlers, manager persistence, refresh, preparation-failure preservation, process kill/restart and file effects; UI covered separately.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
       "file": "scripts/verify-external-skill.mjs",
       "sha256": "6b89f6767e6e6dbc578125986c019bcea1201cf6b90260ab753a40700fed46d1",
       "labels": [

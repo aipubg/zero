@@ -1,0 +1,27 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T17:10:59.817Z",
+  "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-mcp-lifecycle-tFovBT",
+  "evidence": "E:\\zero\\artifacts\\external-mcp\\1793639459817",
+  "scope": "Actual pinned third-party MCP executable via Zero handlers, persisted manager state, refresh, preparation-failure preservation and real process crash/restart; UI is verified by a separate browser runner",
+  "execution": {
+    "spec": "@modelcontextprotocol/server-filesystem@2.0.1",
+    "tools": 14,
+    "actualRegisteredHandlerEffects": true,
+    "disabledPersistedAcrossManagerReopen": true,
+    "refreshRetainedArguments": true,
+    "failedPreparationPreservedHandler": true,
+    "oldPid": 8228,
+    "newPid": 1688,
+    "crashReportedUnavailable": true,
+    "actualEffectAfterRecovery": true,
+    "uninstallPersisted": true,
+    "outputFilePreserved": true
+  },
+  "finishedAt": "2026-11-02T17:11:10.767Z"
+}
