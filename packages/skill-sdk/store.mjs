@@ -172,17 +172,31 @@ export class SkillStore {
   uninstallSkill(name) {
     const skill = this._requireSkill(name);
     const target = this._target(skill);
-    const tomb = path.join(this.skillsDir, `.skill-remove-${randomUUID()}`);
-    this._mutate(state => {
-      fs.renameSync(target, tomb);
-      try {
-        delete state.skills[name];
-        this._saveState(state);
-      } catch (error) { fs.renameSync(tomb, target); throw error; }
-    });
-    fs.rmSync(tomb, { recursive: true, force: true });
+    const archive = fs.mkdtempSync(path.join(this.skillsDir, '.skill-removed-'));
+    const tomb = path.join(archive, 'bundle');
+    const metadata = path.join(archive, 'record.json');
+    let moved = false;
+    try {
+      this._mutate(state => {
+        fs.writeFileSync(metadata, JSON.stringify({ schemaVersion: 1, name, removedAt: Date.now(), record: this._record(state, name) }, null, 2), { flag: 'wx', mode: 0o600 });
+        fs.renameSync(target, tomb);
+        moved = true;
+        try {
+          delete state.skills[name];
+          this._saveState(state);
+        } catch (error) { fs.renameSync(tomb, target); throw error; }
+      });
+    } catch (error) {
+      // A failed state write restores the original bundle above. Retain any
+      // archive that still owns a bundle rather than deleting recoverable data.
+      if (!moved || !fs.existsSync(tomb)) {
+        if (fs.existsSync(metadata)) fs.unlinkSync(metadata);
+        fs.rmdirSync(archive);
+      }
+      throw error;
+    }
     this.loadAll();
-    return { ok: true, uninstalled: name };
+    return { ok: true, uninstalled: name, archivePath: archive };
   }
 
   readSkillBundle(name) {

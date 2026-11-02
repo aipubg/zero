@@ -607,3 +607,20 @@ All three persisted model steps match the assigned canonical model
 nvidia/nemotron-3.5-lightning-30b-a3b. Nine SDK regression checks also pass.
 This bounded result verifies the default agent's actual skill assignment path;
 it does not certify every specialist assignment UI or every external model.
+
+Skill uninstall now retains the removed bundle and original registry/config
+record in a hidden local .skill-removed-* archive instead of permanently deleting
+them. Archives are excluded from active discovery. The existing uninstall UI
+still removes the active skill immediately without another permission prompt.
+State-write failure restores the original bundle; an archive still owning data
+is retained on error. Archive metadata contains the original local configuration
+and inherits the same local trust boundary; encryption/rotation is not claimed.
+There is no restore UI or automatic archive cleanup yet.
+
+Nine SDK regressions pass, including exact asset/content/config preservation.
+[skill-uninstall-browser.json](skill-uninstall-browser.json) passes nine real UI
+workflows including actual pinned GitHub import, disable/enable, refresh,
+uninstall and process restart persistence. Separate independent inspection in
+[skill-uninstall-archive.json](skill-uninstall-archive.json) confirms the removed
+UI-installed bundle's 9,434-character SKILL.md, enabled flag and pinned source
+revision remain in its archive. Skill execution was not selected in this UI run.

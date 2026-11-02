@@ -93,7 +93,13 @@ test('local install copies an external bundle; state, update, and uninstall surv
   restarted.enableSkill('external-report');
   assert.equal(new SkillLoader({ skillsDir }).getSkill('external-report').enabled, true);
   await assert.rejects(loader.installSkill(source), /already installed/);
-  restarted.uninstallSkill('external-report');
+  const removed = restarted.uninstallSkill('external-report');
+  assert.equal(fs.readFileSync(path.join(removed.archivePath, 'bundle/scripts/helper.txt'), 'utf8'), 'updated asset');
+  assert.equal(fs.readFileSync(path.join(removed.archivePath, 'bundle/SKILL.md'), 'utf8'), fs.readFileSync(path.join(source, 'SKILL.md'), 'utf8'));
+  const archived = JSON.parse(fs.readFileSync(path.join(removed.archivePath, 'record.json')));
+  assert.equal(archived.name, 'external-report');
+  assert.equal(archived.record.config.env.EXAMPLE_TOKEN, 'secret');
+  assert.equal(archived.record.enabled, true);
   assert.equal(new SkillLoader({ skillsDir }).getSkill('external-report'), null);
   assert.ok(fs.existsSync(path.join(source, 'SKILL.md')), 'uninstall must preserve the original source');
   assert.equal(fs.existsSync(path.join(skillsDir, 'external-report')), false);
