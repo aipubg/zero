@@ -29,7 +29,7 @@ export function pluginUiRow(plugin) {
     installed: true, enabled: plugin.status === 'enabled', removable: true,
     state: plugin.runtimeStatus === 'unavailable' ? 'error' : plugin.status === 'disabled' ? 'disabled' : 'enabled',
     status: plugin.status, runtimeStatus: plugin.runtimeStatus, loaded: plugin.loaded,
-    origin: 'local', source: plugin.source?.kind === 'package' ? 'npm' : 'path',
+    origin: 'local', source: plugin.source?.kind === 'mcp' ? 'mcp' : plugin.source?.kind === 'package' ? 'npm' : 'path',
     catalogId: plugin.id, hasIcon: false, capabilities: [...plugin.capabilities],
     permissions: [...plugin.permissions], installedAt: plugin.installedAt, updatedAt: plugin.updatedAt,
     ...(plugin.error ? { error: plugin.error } : {}),
@@ -80,6 +80,7 @@ function inspect(plugin) {
 
 function sourceOf(params) {
   if (params.manifest !== undefined) return params.manifest;
+  if (params.source === 'mcp' || params.source?.kind === 'mcp') return { mcpPackage: params.spec || params.source.spec, args: params.args || params.source.args || [], bin: params.bin || params.source.bin };
   const source = params.source;
   if (source && typeof source === 'object') {
     const kind = source.kind || source.type;

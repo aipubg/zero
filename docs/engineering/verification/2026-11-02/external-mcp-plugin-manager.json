@@ -1,0 +1,16 @@
+{
+  "classification": [
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T16:59:26.549Z",
+  "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-mcp-plugin-vveQHd",
+  "scope": "Real downloaded MCP executable registered through Zero PluginManager; UI acceptance remains open",
+  "id": "mcp:@modelcontextprotocol/server-filesystem",
+  "actualRegisteredHandlerEffect": true,
+  "disabledPersistedAcrossManagerReopen": true,
+  "reenabledEffect": true,
+  "uninstalled": true,
+  "finishedAt": "2026-11-02T16:59:30.524Z"
+}

@@ -8,6 +8,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '../backend/node_modules/playwright-core/index.mjs';
+import { mcpCapabilityName } from '../packages/plugin-sdk/mcp-adapter.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (process.argv.includes('--screen-recall') && !process.argv.includes('--screen')) throw new Error('--screen-recall requires --screen');
@@ -33,6 +34,7 @@ const workflowLabels = new Map([
   ['Skills details expose persisted enable/disable controls', []],
   ['Search form executes its configured provider and reports real outcome', ['REAL_EXTERNAL']],
   ['Plugins current page exposes lifecycle controls', []],
+  ['Third-party MCP plugin installs through current UI and executes a real registered tool', ['REAL_EXTERNAL']],
   ['About controls real native capture and durable Private Mode across process restarts', ['REAL_OS']],
   ['Actual wheel input increases About scrollTop', []],
   ['Gateway reconnects after a real process stop/restart and memory remains', []],
@@ -304,6 +306,54 @@ try {
     const remaining = await rpc('plugins.list');
     assert.equal(remaining.plugins.some(plugin => plugin.id === 'system-tools'), false);
     return { installedPersisted: true, executed: executed.executed, platform: executed.platform, verified: executed.verified, disabledAcrossProcessRestart: true, reenabled: true, uninstalled: true };
+  });
+  if (process.argv.includes('--external-plugins')) await check('Third-party MCP plugin installs through current UI and executes a real registered tool', async () => {
+    await page.goto(`${base}/settings/plugins`);
+    await page.locator('select[name="sourceType"]').selectOption('mcp');
+    await page.getByPlaceholder('Local plugin directory or npm package', { exact: true }).fill('@modelcontextprotocol/server-filesystem@2.0.1');
+    await page.getByPlaceholder('MCP executable arguments as JSON', { exact: true }).fill(JSON.stringify([temporary]));
+    await page.getByRole('button', { name: 'Install plugin', exact: true }).click();
+    await page.getByText('Installed @modelcontextprotocol/server-filesystem 2.0.1. Runtime: active.', { exact: true }).waitFor({ timeout: 120000 });
+    const id = 'mcp:@modelcontextprotocol/server-filesystem';
+    const capability = mcpCapabilityName(id, 'write_file');
+    const artifact = path.join(temporary, 'actual-mcp-ui-output.txt');
+    await page.goto(`${base}/chat`);
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill(`Call the installed plugin tool named ${capability} to write exactly ZERO_MCP_UI_REAL_EFFECT to ${JSON.stringify(artifact)}. Use that specific tool, not write_file. Then give a short confirmation.`);
+    await page.locator('button.chat-send-btn--send').click();
+    const deadline = Date.now() + 60000;
+    while (!fs.existsSync(artifact) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(fs.readFileSync(artifact, 'utf8'), 'ZERO_MCP_UI_REAL_EFFECT');
+    const requestId = chatRequests.at(-1).idempotencyKey;
+    const completionDeadline = Date.now() + 60000;
+    while (!chatResponses.some(response => response.payload?.runId === requestId) && Date.now() < completionDeadline) await new Promise(resolve => setTimeout(resolve, 100));
+    const completed = chatResponses.find(response => response.payload?.runId === requestId);
+    assert.ok(completed?.ok && completed.payload.taskId, 'Real UI plugin task must complete with a durable task ID');
+    const history = await rpc('chat.history', { sessionKey: chatRequests.at(-1).sessionKey });
+    assert.ok(history.messages.some(message => message.tool_calls?.some(call => call.function?.name === capability)));
+    await page.goto(`${base}/settings/plugins`);
+    await page.getByText('@modelcontextprotocol/server-filesystem', { exact: true }).first().click();
+    await page.getByRole('button', { name: 'Disable @modelcontextprotocol/server-filesystem', exact: true }).click();
+    await page.getByRole('button', { name: 'Enable @modelcontextprotocol/server-filesystem', exact: true }).waitFor();
+    const disabledDeadline = Date.now() + 10000;
+    while ((await rpc('plugins.inspect', { id })).plugin.enabled && Date.now() < disabledDeadline) await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal((await rpc('plugins.inspect', { id })).plugin.enabled, false, 'Disable must persist after the MCP process drains before stopping the host');
+    await stop(); await start(); await page.reload();
+    assert.equal((await rpc('plugins.inspect', { id })).plugin.enabled, false, 'Disabled MCP state must survive process restart');
+    await assert.rejects(rpc('zero.computer.control', { action: capability, path: artifact, content: 'SHOULD_NOT_RUN' }), /disabled/);
+    assert.equal(fs.readFileSync(artifact, 'utf8'), 'ZERO_MCP_UI_REAL_EFFECT');
+    await page.getByRole('button', { name: 'Enable @modelcontextprotocol/server-filesystem', exact: true }).click();
+    await page.getByRole('button', { name: 'Disable @modelcontextprotocol/server-filesystem', exact: true }).waitFor();
+    assert.ok((await rpc('zero.computer.control', { action: capability, path: artifact, content: 'ZERO_MCP_REENABLED' })).ok);
+    assert.equal(fs.readFileSync(artifact, 'utf8'), 'ZERO_MCP_REENABLED');
+    await page.getByRole('button', { name: 'Uninstall @modelcontextprotocol/server-filesystem', exact: true }).click();
+    await page.getByRole('button', { name: 'Remove', exact: true }).click();
+    await page.getByRole('button', { name: 'Remove', exact: true }).waitFor({ state: 'hidden' });
+    const uninstallDeadline = Date.now() + 20000;
+    while ((await rpc('plugins.list')).plugins.some(plugin => plugin.id === id) && Date.now() < uninstallDeadline) await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal((await rpc('plugins.list')).plugins.some(plugin => plugin.id === id), false, 'Uninstall must finish before stopping the host');
+    await stop(); await start(); await page.reload();
+    assert.equal((await rpc('plugins.list')).plugins.some(plugin => plugin.id === id), false);
+    return { id, actualChatToolEffect: true, disabledAcrossProcessRestart: true, reenabledEffect: true, uninstalledAcrossProcessRestart: true };
   });
   if (process.argv.includes('--screen')) await check('About controls real native capture and durable Private Mode across process restarts', async () => {
     await page.goto(`${base}/settings/about`);

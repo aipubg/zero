@@ -48,6 +48,7 @@ function normalizeManifest(value) {
 }
 
 function sourceInput(input) {
+  if (input?.mcpPackage) return { kind: 'mcp', spec: input.mcpPackage, args: input.args || [], bin: input.bin };
   if (typeof input === 'string') return { kind: 'directory', spec: input };
   if (input?.path || input?.directory) return { kind: 'directory', spec: input.path || input.directory };
   if (input?.package) return { kind: 'package', spec: input.package };

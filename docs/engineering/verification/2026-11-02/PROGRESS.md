@@ -867,3 +867,32 @@ installed package/lockfile. No new fixture package substitutes for the external
 executable. Plugin adapter registration, enable/disable, persisted restart,
 uninstall and current-UI lifecycle remain OPEN. OpenClaw plugin-format coverage
 is not claimed by this MCP transport result.
+
+Executable MCP packages now integrate with the real PluginManager. Installation
+uses npm with install scripts disabled, resolves a contained declared bin,
+discovers actual MCP tools, registers namespaced executable handlers with their
+real schemas and persists the package snapshot/catalog/arguments. Disable drains
+handlers and closes the owned process; enable starts its real executable. Restore
+copies the installed source and respects disabled state without launching a
+disabled server. Invalid/missing tool results fail explicitly; returned successful
+tool output remains verified:false until independently checked. This adapter is
+for executable MCP packages, not arbitrary OpenClaw extension compatibility.
+
+[external-mcp-plugin-manager.json](external-mcp-plugin-manager.json) passes real
+official filesystem package registration, handler file effect, manager reopen,
+disabled no-effect, reenable and uninstall. Eleven existing plugin lifecycle
+regressions and 19 UI component checks pass. The current Plugins form adds an
+executable MCP source option/JSON arguments without new permission dialogs.
+
+[external-mcp-ui-card-failure.json](external-mcp-ui-card-failure.json) retains the
+first UI FAIL (detail card not opened). Two subsequent FAIL reports retain the
+optimistic UI/async persistence races. The final harness waits for actual durable
+disable/uninstall before killing its own host; button text alone is not evidence.
+[external-mcp-ui-real-pass.json](external-mcp-ui-real-pass.json) passes all nine
+selected workflows: real npm install through existing UI, chat-model invocation
+of the namespaced plugin write handler with a completed durable task and actual
+file verification, disabled state across real host restart, blocked disabled
+effect, reenable/real effect, UI uninstall and absence after another real restart.
+No page errors. Source catalog hash/mode audit updated for this runner change.
+This closes that bounded MCP package lifecycle workflow; third-party update/
+rollback, every plugin format and broader product acceptance remain unfinished.

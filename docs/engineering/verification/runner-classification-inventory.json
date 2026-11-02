@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "a5c8da16b1eabf5b442047fd97a95c54498f93adfb464c407ec35e42e293352c",
+      "sha256": "828a052481ccaa3043fddf8c4435cdf221428c49045c456c18f6314be74986ff",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -14,6 +14,7 @@
       "scope": "Isolated UI interactions and persisted effects; optional native devices, capture, model and external skill execution.",
       "modes": [
         "--external",
+        "--external-plugins: actual executable MCP package lifecycle and UI chat tool effect",
         "--devices",
         "--external-skills",
         "--skill-execution (requires --external-skills)",

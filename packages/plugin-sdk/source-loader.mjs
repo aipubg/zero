@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
+import { discoverMcp, createMcpPlugin, mcpCapabilityName } from './mcp-adapter.mjs';
 
 const runFile = promisify(execFile);
 const marker = '.zero-plugin-revision';
@@ -122,7 +123,8 @@ export class PluginSourceLoader {
       } else if (input.kind === 'directory') {
         await this._copy(path.resolve(input.spec), root);
         source = { kind: 'directory', spec: path.resolve(input.spec), root, packageRoot: '.', revision: path.basename(root) };
-      } else if (input.kind === 'package') {
+      } else if (input.kind === 'package' || input.kind === 'mcp') {
+        if (input.kind === 'mcp' && (!Array.isArray(input.args || []) || (input.args || []).some(value => typeof value !== 'string'))) throw new Error('MCP executable arguments must be strings');
         if (typeof input.spec !== 'string' || !input.spec.trim() || input.spec.startsWith('-')) {
           throw new Error('Plugin package requires a package specifier or local tarball path');
         }
@@ -138,9 +140,24 @@ export class PluginSourceLoader {
         packageRoot = path.resolve(root, 'node_modules', names[0]);
         if (!inside(root, packageRoot)) throw new Error('Invalid installed package name');
         await assertCopyable(root);
-        source = { kind: 'package', spec: input.spec, root, packageRoot: path.relative(root, packageRoot), revision: path.basename(root) };
+        source = { kind: input.kind, spec: input.spec, root, packageRoot: path.relative(root, packageRoot), revision: path.basename(root), ...(input.kind === 'mcp' ? { args: input.args || [], bin: input.bin } : {}) };
       } else {
         throw new Error('Unsupported plugin source');
+      }
+      if (source.kind === 'mcp') {
+        const pkg = await readJson(path.join(packageRoot, 'package.json'));
+        const binaries = typeof pkg.bin === 'string' ? { default: pkg.bin } : pkg.bin || {};
+        const bin = source.bin || (Object.keys(binaries).length === 1 ? Object.keys(binaries)[0] : null);
+        if (!bin || !binaries[bin]) throw new Error('MCP package requires one executable bin or an explicit bin name');
+        const entry = await containedFile(packageRoot, binaries[bin]);
+        source.entry = path.relative(root, entry);
+        if (!source.mcpManifest) {
+          source.mcpTools = await discoverMcp(entry, source.args);
+          const id = `mcp:${pkg.name}`;
+          source.mcpManifest = { id, name: pkg.name, version: pkg.version, description: pkg.description || 'Executable MCP plugin',
+            capabilities: source.mcpTools.map(tool => ({ name: mcpCapabilityName(id, tool.name), description: tool.description || tool.name, parameters: tool.inputSchema })) };
+        }
+        return { manifest: source.mcpManifest, source };
       }
       const { manifest, entry } = await this.describe(packageRoot);
       source.entry = path.relative(root, entry);
@@ -176,6 +193,7 @@ export class PluginSourceLoader {
 
   async import(source) {
     const entry = await containedFile(source.root, source.entry);
+    if (source.kind === 'mcp') return { createPlugin: () => createMcpPlugin(entry, source) };
     // Each staged revision has its own path, including relative dependencies.
     return import(`${pathToFileURL(entry).href}?instance=${randomUUID()}`);
   }
