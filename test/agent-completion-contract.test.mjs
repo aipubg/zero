@@ -37,3 +37,29 @@ test('[CONTRACT] actual HTTP truncated and filtered completions fail durable spe
     } finally { sm.close(); }
   }
 });
+
+test('[CONTRACT] malformed HTTP tool batches execute no earlier valid side effect', async t => {
+  let mode; let effects = 0;
+  const server = http.createServer(async (req, res) => {
+    for await (const chunk of req) void chunk;
+    const call = (id, args) => ({ id, type: 'function', function: { name: 'effect', arguments: args } });
+    const tool_calls = mode === 'shape' ? {} : mode === 'empty' ? [] : [call('first', '{}'), call(mode === 'duplicate' ? 'first' : 'second', mode === 'arguments' ? '{broken' : '{}')];
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ choices: [{ finish_reason: 'tool_calls', message: { role: 'assistant', content: null, tool_calls } }] }));
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  const fabric = new ModelFabric({ providers: [{ id: 'fixture', baseUrl: `http://127.0.0.1:${server.address().port}`, apiKey: 'local-contract-only', models: ['fixture/worker'] }] });
+  for (mode of ['shape', 'empty', 'arguments', 'duplicate']) {
+    const sm = new TaskStateMachine();
+    try {
+      const team = new AgentTeamOrchestrator({ stateMachine: sm, modelFabric: fabric, capabilityEngine: {
+        customCapabilities: new Map([['effect', { name: 'effect' }]]), execute: async () => { effects++; return { ok: true }; },
+      } });
+      const result = await team.executeTeamWorkflow({ goal: mode, subtasks: [{ id: 'child', agentId: 'coder', modelId: 'fixture/worker', goal: 'Execute batch', tools: ['effect'], dependsOn: [] }] });
+      assert.equal(result.status, 'FAILED', mode);
+      assert.equal(effects, 0, `No valid leading call may execute before invalid ${mode} is rejected`);
+      assert.equal(sm.getTask(result.masterTaskId).status, 'FAILED');
+    } finally { sm.close(); }
+  }
+});

@@ -1137,3 +1137,28 @@ evidence, not proof of external-provider behavior under those failure conditions
 passes nine real browser workflows after the implementation change, including
 actual NVIDIA specialist inference, file tool result and parent consolidation.
 This verifies successful execution still works. Overall completion remains unproven.
+
+### Validate complete tool batches before side effects
+
+Specialist tool call arrays now reject malformed shapes, declared-but-empty calls,
+missing/duplicate call IDs, unavailable names and invalid JSON/object arguments
+before executing any earlier call from that batch. This prevents the prior
+valid-first-action/invalid-second-action partial side effect. This validation is
+not a transaction across successful tools or a claim of schema-level argument
+validation for every capability. Eighteen selected contract/runtime checks pass;
+four actual loopback HTTP malformed-batch scenarios execute zero handlers.
+
+[agent-batch-validation-live.json](agent-batch-validation-live.json) preserves
+both external outcomes. The first actual NVIDIA run failed because coordinator
+finish_reason was length: durable parent FAILED, successful specialist/read_file
+retained. That failure is not converted to PASS. A subsequent independent run
+passes nine browser checks including assigned specialist tool execution and
+consolidation. Failed team RPCs now include task ID, status and recorded errors
+instead of losing the cause behind generic Operation failed.
+
+After confirming no endurance process existed, launched a fresh separate 24-hour
+capture/OCR/local-vision run at 2026-11-02T21:52:41Z, PID 16744, directory
+artifacts/screen-intelligence/endurance-combined-20261102T215241Z. Actual handle
+and start time revalidated; initial checkpoints contain actual captured/OCR frames.
+State IN_PROGRESS, completed24Hours false, resourceAcceptance PARTIAL. Previous
+interrupted evidence remains intact. This is not 24-hour acceptance evidence.

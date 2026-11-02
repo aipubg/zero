@@ -1456,7 +1456,8 @@ export class ZeroNativeHost {
 
       case 'agent.task.execute': {
         const workflowResult = await this.teamOrchestrator.executeTeamWorkflow(params);
-        return { ok: workflowResult.status === 'COMPLETED', ...workflowResult };
+        const failed = workflowResult.status !== 'COMPLETED';
+        return { ok: !failed, ...workflowResult, ...(failed ? { error: `Team ${workflowResult.masterTaskId} ${workflowResult.status}: ${JSON.stringify({ errors: workflowResult.consolidatedResult?.errors, consolidationError: workflowResult.consolidatedResult?.consolidationError })}` } : {}) };
       }
 
       // Physical Desktop Lease Management

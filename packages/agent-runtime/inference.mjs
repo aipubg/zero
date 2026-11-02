@@ -24,6 +24,8 @@ export function requireCompletedChoice(choice, label, { allowTools = false } = {
   const reason = choice.finish_reason;
   if (reason && reason !== 'stop' && !(allowTools && reason === 'tool_calls')) throw new Error(`${label} returned incomplete completion: ${reason}`);
   if (choice.message.refusal) throw new Error(`${label} refused completion`);
+  if (choice.message.tool_calls !== undefined && !Array.isArray(choice.message.tool_calls)) throw new Error(`${label} returned malformed tool calls`);
+  if (reason === 'tool_calls' && !choice.message.tool_calls?.length) throw new Error(`${label} declared tool calls without any calls`);
   if (!allowTools && choice.message.tool_calls?.length) throw new Error(`${label} returned unexecuted tool calls`);
   return choice.message;
 }
@@ -88,12 +90,18 @@ export async function executeSpecialist(orchestrator, subtask, context) {
       if (typeof message.content !== 'string' || !message.content.trim()) throw new Error('Model returned empty output');
       return { status: 'success', agentId: subtask.agentId, modelId, output: message.content, toolResults, executionKind: 'inference', verified: false };
     }
-    for (const call of message.tool_calls) {
+    const ids = new Set();
+    const preparedCalls = message.tool_calls.map(call => {
       const name = call.function?.name;
-      if (!call.id || !handlers.has(name)) throw new Error(`Model requested unavailable or unassigned tool '${name}'`);
+      if (typeof call.id !== 'string' || !call.id.trim() || ids.has(call.id)) throw new Error('Model returned missing or duplicate tool call ID');
+      ids.add(call.id);
+      if (!handlers.has(name)) throw new Error(`Model requested unavailable or unassigned tool '${name}'`);
       let args;
       try { args = JSON.parse(call.function.arguments || '{}'); } catch { throw new Error(`Invalid arguments for '${name}'`); }
       if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error(`Invalid arguments for '${name}'`);
+      return { call, name, args };
+    });
+    for (const { call, name, args } of preparedCalls) {
       let result;
       try {
         result = await abortable(() => handlers.get(name)(args), signal);
