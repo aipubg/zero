@@ -10,6 +10,9 @@
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
+import { ProtectedFields, encryptedPrefix } from './protected-fields.mjs';
+
+const protectedColumns = ['source_device', 'display_id', 'application_id', 'window_context', 'observed_text', 'semantic_summary', 'related_task_id', 'metadata_json'];
 
 export class SemanticObservationStore {
   /**
@@ -28,6 +31,13 @@ export class SemanticObservationStore {
     this.db = new DatabaseSync(this.dbPath);
     this.db.exec('PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=-4096; PRAGMA wal_autocheckpoint=100; PRAGMA journal_size_limit=16777216;');
     this.initSchema();
+    try {
+      if (options.encryption !== false) {
+        const encrypted = this.db.prepare('SELECT 1 FROM semantic_observations WHERE observed_text LIKE ? OR semantic_summary LIKE ? LIMIT 1').get(encryptedPrefix + '%', encryptedPrefix + '%');
+        this.protection = new ProtectedFields({ keyPath: this.persistent && !options.encryptionKey ? this.dbPath + '.key.dpapi' : null, key: options.encryptionKey, hasCiphertext: Boolean(encrypted) });
+        this._migrateEncryption();
+      }
+    } catch (error) { this.db.close(); throw error; }
   }
 
   initSchema() {
@@ -78,23 +88,24 @@ export class SemanticObservationStore {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
+    const seal = (column, value) => this.protection ? this.protection.seal(column, id, value) : value;
     stmt.run(
       id,
       obs.timestamp ?? Date.now(),
-      obs.source_device || 'local-windows-host',
-      obs.display_id || 'unknown',
-      obs.application_id || 'unknown',
-      obs.window_context || '',
-      String(obs.observed_text || '').slice(0, 12000),
-      String(obs.semantic_summary || '').slice(0, 16000),
+      seal('source_device', obs.source_device || 'local-windows-host'),
+      seal('display_id', obs.display_id || 'unknown'),
+      seal('application_id', obs.application_id || 'unknown'),
+      seal('window_context', obs.window_context || ''),
+      seal('observed_text', String(obs.observed_text || '').slice(0, 12000)),
+      seal('semantic_summary', String(obs.semantic_summary || '').slice(0, 16000)),
       obs.event_type || 'ui_state',
-      obs.related_task_id || null,
+      obs.related_task_id ? seal('related_task_id', obs.related_task_id) : null,
       obs.confidence ?? null,
       obs.expiry_policy || '7d',
       obs.ocr_engine ?? null,
       obs.ocr_status ?? 'unavailable',
       obs.local_vision_status ?? 'unavailable',
-      JSON.stringify(obs.metadata ?? {})
+      seal('metadata_json', JSON.stringify(obs.metadata ?? {}))
     );
     const now = Date.now();
     if (now - this._lastPruneAt >= 60_000) {
@@ -113,13 +124,23 @@ export class SemanticObservationStore {
       ORDER BY timestamp DESC, rowid DESC
       LIMIT ?
     `);
-    return stmt.all(this._limit(limit));
+    return stmt.all(this._limit(limit)).map(row => this._decode(row));
   }
 
   /**
    * Search observations by keyword or application name.
    */
   searchObservations(query, limit = 20) {
+    if (this.protection) {
+      const matches = [];
+      const needle = String(query ?? '').toLowerCase();
+      for (const encoded of this.db.prepare('SELECT * FROM semantic_observations ORDER BY timestamp DESC, rowid DESC').iterate()) {
+        const row = this._decode(encoded);
+        if (['application_id', 'window_context', 'observed_text', 'semantic_summary'].some(column => String(row[column] ?? '').toLowerCase().includes(needle))) matches.push(row);
+        if (matches.length >= this._limit(limit)) break;
+      }
+      return matches;
+    }
     const stmt = this.db.prepare(`
       SELECT * FROM semantic_observations
       WHERE application_id LIKE ? OR window_context LIKE ? OR observed_text LIKE ? OR semantic_summary LIKE ?
@@ -140,22 +161,51 @@ export class SemanticObservationStore {
       LIMIT 1
     `);
     const rows = stmt.all();
-    return rows.length > 0 ? rows[0] : null;
+    return rows.length > 0 ? this._decode(rows[0]) : null;
   }
 
   /**
    * Close database handle.
    */
   close() {
-    if (!this.closed) this.db.close();
+    if (!this.closed) { this.db.close(); this.protection?.destroy(); }
     this.closed = true;
   }
 
   _limit(limit) { return Number.isFinite(limit) ? Math.max(1, Math.min(1000, Math.floor(limit))) : 20; }
 
+  _decode(row) {
+    if (!this.protection) return row;
+    return Object.fromEntries(Object.entries(row).map(([column, value]) => [column, protectedColumns.includes(column) && value !== null ? this.protection.open(column, row.observation_id, value) : value]));
+  }
+
+  _migrateEncryption() {
+    const rows = this.db.prepare('SELECT * FROM semantic_observations');
+    // Authenticate existing ciphertext before touching any existing plaintext.
+    let needsMigration = false;
+    for (const row of rows.iterate()) {
+      this._decode(row);
+      if (protectedColumns.some(column => typeof row[column] === 'string' && !row[column].startsWith(encryptedPrefix))) needsMigration = true;
+    }
+    if (!needsMigration) return;
+    if (this.persistent) {
+      this.migrationBackup = `${this.dbPath}.before-encryption-${Date.now()}.sqlite`;
+      this.db.exec(`VACUUM INTO '${this.migrationBackup.replaceAll("'", "''")}'`);
+    }
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const update = this.db.prepare(`UPDATE semantic_observations SET ${protectedColumns.map(column => `${column}=?`).join(', ')} WHERE observation_id=?`);
+      for (const row of rows.iterate()) update.run(...protectedColumns.map(column => row[column] === null ? null : row[column].startsWith(encryptedPrefix) ? row[column] : this.protection.seal(column, row.observation_id, row[column])), row.observation_id);
+      this.db.exec('COMMIT');
+    } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+    // Remove superseded plaintext from the current DB/WAL; preserve the explicit rollback backup.
+    if (this.persistent) this.db.exec('PRAGMA wal_checkpoint(TRUNCATE); VACUUM; PRAGMA wal_checkpoint(TRUNCATE)');
+  }
+
   getStatus() {
     return { active: !this.closed, path: this.dbPath, persistent: this.persistent,
       mode: this.persistent ? 'sqlite-file' : 'sqlite-memory', retentionMs: this.retentionMs,
+      encryptedFields: Boolean(this.protection), keyStorage: this.protection?.keyStorage ?? 'none', migrationBackup: this.migrationBackup ?? null,
       observationCount: this.closed ? null : this.db.prepare('SELECT COUNT(*) AS count FROM semantic_observations').get().count };
   }
 }

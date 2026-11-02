@@ -1,5 +1,27 @@
 # Screen intelligence
 
+Observation text fields now use AES-256-GCM by default. Each field is authenticated
+against its column and observation ID. File-backed stores keep their random
+32-byte key outside SQLite, protected for the current Windows user by DPAPI.
+Retain the `.key.dpapi` file with the database when backing it up; another Windows
+account cannot automatically unlock it. Missing/unreadable keys or corrupted
+ciphertext fail explicitly. `encryptionKey` supports an explicit 32-byte key
+provider, and `encryption:false` is a visible opt-out, never an automatic fallback.
+Memory-only stores use an ephemeral key.
+
+Existing plaintext rows migrate transactionally after existing ciphertext is
+authenticated. A recoverable `.before-encryption-*.sqlite` snapshot is preserved;
+**that rollback snapshot contains the old plaintext** and must be protected with
+the owner's backups. The active database/WAL is vacuumed/checkpointed after
+migration to remove superseded plaintext pages. Historical backups are not
+silently erased. This does not claim whole-disk or backup encryption. Search
+streams and decrypts records locally instead of applying SQL LIKE to ciphertext.
+Status exposes `encryptedFields`, `keyStorage` and any `migrationBackup`.
+
+`node --test test/observation-encryption.integration.test.mjs` checks actual DPAPI
+key unlock, raw stored ciphertext, retrieval after reopening, missing-key and
+field-swapping failures, and reversible migration.
+
 ```js
 import { createScreenObserver } from './packages/screen-intelligence/index.mjs';
 const observer = createScreenObserver({ dataDir: options.dataDir });

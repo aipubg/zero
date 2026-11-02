@@ -917,7 +917,7 @@ export class ZeroNativeHost {
             skills: { implemented: true, installedCount: this.skillLoader.listSkills().length },
             plugins: { implemented: true, ...this.pluginManager.getDiagnostics() },
             voice: { status: 'PARTIAL', ...this.voiceEngine.getStatus() },
-            screen: { ...this.screenObserver.getStatus(), localVision: 'unavailable', encryptedAtRest: false, completed24Hours: false },
+            screen: { ...this.screenObserver.getStatus(), localVision: 'unavailable', encryptedAtRest: this.screenObserver.getStatus().observationStore.encryptedFields, completed24Hours: false },
           },
           timestamp: Date.now(),
         };

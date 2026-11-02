@@ -182,7 +182,7 @@ test('INTEGRATION: factory persists under dataDir across reopen, remains idle, r
   } finally {
     await first.destroy();
     // Only these explicitly created test files are removed; no recursive deletion.
-    for (const suffix of ['', '-shm', '-wal']) fs.rmSync(dbPath + suffix, { force: true });
+    for (const suffix of ['', '-shm', '-wal', '.key.dpapi']) fs.rmSync(dbPath + suffix, { force: true });
     fs.rmdirSync(dataDir);
   }
 });
@@ -202,7 +202,8 @@ test('INTEGRATION: opening an old schema preserves observations and adds provena
     assert.equal(store.getLatestContext().local_vision_status, 'unavailable');
   } finally {
     store.close();
-    for (const suffix of ['', '-shm', '-wal']) fs.rmSync(dbPath + suffix, { force: true });
+    for (const suffix of ['', '-shm', '-wal', '.key.dpapi']) fs.rmSync(dbPath + suffix, { force: true });
+    if (store.migrationBackup) fs.rmSync(store.migrationBackup);
     fs.rmdirSync(dataDir);
   }
 });

@@ -24,6 +24,11 @@ retained. Tests that mutate state use disposable directories and host processes.
 - Windows screen capture produces actual PNGs and metadata; WinRT OCR recognizes
   real text. Capture serializes, stops invalidate late work, and summaries persist.
   Native Windows speech replaces tone/transcription placeholders.
+- Persistent observation fields now default to authenticated AES-256-GCM with a
+  Windows-user DPAPI-protected key. Three actual Windows tests verify ciphertext,
+  reopen, missing-key/field-swap rejection and recoverable plaintext migration.
+  Explicit pre-migration rollback snapshots retain plaintext; backup encryption
+  and key rotation are still separate remaining work.
 - Search separates retrieved citations from independently verified claims.
   The legacy `plugins/web-tools` search/extraction placeholders were also replaced
   with actual retrieval. Health/features reports no longer invent loaded plugins,
@@ -52,8 +57,10 @@ their failures are not rewritten as past passes.
 
 ## Required remaining work — do not narrow the master scope
 
-1. Observation field encryption and key lifecycle; current summary SQLite is not
-   encrypted. Validate local vision model/runtime/projector and actual inference.
+1. Finish observation backup encryption and key-rotation recovery tests. Current
+   field encryption and user-bound key unlock pass their three Windows tests;
+   legacy rollback snapshots remain plaintext and are explicitly reported.
+   Validate local vision model/runtime/projector and actual inference.
    Complete sleep/lock/multi-monitor and full 24-hour resource gates.
 2. Connect voice speech-end/transcription to the same durable chat/task context,
    synthesize the real reply, and verify microphone, actual output and barge-in.
@@ -76,6 +83,17 @@ their failures are not rewritten as past passes.
    its NOT_RUN result is not a current product test run.
 
 ## Continuation
+
+Encryption follow-up: the new field protection passes all 13 targeted screen and
+encryption tests, and `artifacts/screen-intelligence/20261102-encrypted-real-os/report.json`
+passes actual capture/OCR/persistence after the encryption change. The eight real
+browser workflows also passed again in `artifacts/functional-browser/1793581323377/report.json`.
+The unencrypted endurance run PID 10656 was intentionally stopped through its
+STOP control after 400341 ms to test the updated encrypted implementation; it
+retains `verdict: incomplete`, 166 successful captures and no 24-hour certificate.
+The replacement run lives under
+`artifacts/screen-intelligence/endurance-encrypted-20261102/`. Its live PID and fresh
+telemetry must be revalidated before reporting continued operation or completion.
 
 Verified source milestones: `bd4607f` research/backups; `9e811aa` execution/lifecycle;
 `d3670ee` actual screen/OCR and Windows speech. See the following UI commit for
