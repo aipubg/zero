@@ -36,6 +36,7 @@ const workflowLabels = new Map([
   ['Provider UI creates, edits and deletes persisted settings without credential loss', []],
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
+  ['Specialist UI model assignment persists without changing coordinator defaults', []],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
   ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
   ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
@@ -252,6 +253,27 @@ try {
     assert.ok(providerProbeResult.payload.count > 0); assert.equal(providerProbeResult.payload.verified, false);
     await page.getByText(/model list retrieved, inference unverified\./).waitFor();
     return { httpStatus: providerProbeResult.payload.httpStatus, retrievedModels: providerProbeResult.payload.count, inferenceVerifiedByThisProbe: false };
+  });
+  if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
+    const bindingsFile = path.join(temporary, 'bindings.json');
+    const before = JSON.parse(fs.readFileSync(bindingsFile, 'utf8'));
+    const selected = 'nv/nvidia/nemotron-3.5-super-vl-120b-a12b';
+    await page.goto(`${base}/settings/model-providers`);
+    await page.getByLabel('Agent model assignment', { exact: true }).selectOption('coder');
+    const dropdown = page.locator('#zero-agent-assign-select');
+    await dropdown.locator('button').click();
+    await dropdown.locator(`[role="option"][data-value="${selected}"]`).click();
+    await page.getByRole('button', { name: 'Assign to specialist', exact: true }).click();
+    await page.getByText(`Successfully assigned "${selected}" to coder!`, { exact: true }).waitFor();
+    let saved = JSON.parse(fs.readFileSync(bindingsFile, 'utf8'));
+    assert.equal(saved.agentBindings.coder.model, selected);
+    assert.deepEqual(saved.defaults, before.defaults); assert.deepEqual(saved.agentBindings.zero, before.agentBindings.zero);
+    await stop(); await start(); await page.reload();
+    await page.getByLabel('Agent model assignment', { exact: true }).selectOption('coder');
+    await page.locator('.zero-agent-desc-box__value').first().filter({ hasText: selected }).waitFor();
+    saved = await rpc('zero.providers.list'); assert.equal(saved.agentBindings.coder.model, selected);
+    await assert.rejects(rpc('zero.providers.setActive', { agentId: 'unknown', modelId: selected }), /Unknown specialist/);
+    return { selectedAgent: 'coder', savedModel: selected, persistedAcrossProcess: true, coordinatorDefaultsUnchanged: true, unknownAgentRejected: true, inferenceVerifiedByThisCheck: false };
   });
   if (process.argv.includes('--model-import')) await check('Provider config UI import/export preserves credentials and recovers interrupted two-file updates', async () => {
     const providersFile = path.join(temporary, 'providers.json'); const bindingsFile = path.join(temporary, 'bindings.json');

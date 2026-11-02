@@ -1079,3 +1079,21 @@ zero capture failures. Original evidence remains untouched; stale running status
 does not count as live execution. This run is INTERRUPTED, never 24-hour PASS.
 The overall objective remains incomplete, including full endurance/resource,
 acoustic voice, remaining agent/model workflows and unavailable mobile/cloud gates.
+
+### Independent specialist assignments on the existing Models screen
+
+The existing agent binding card now selects Zero, researcher, coder, reviewer or
+operator. Canonical model assignment validates known specialist IDs and configured
+enabled models, atomically saves the selected binding, and preserves coordinator
+defaults and other bindings for specialist edits. Existing Zero assignment behavior
+is retained. Selection is held during save to prevent applying a completed request
+to a newly selected agent. Unknown IDs fail visibly through the real error wire.
+
+[specialist-assignment-live-ui.json](specialist-assignment-live-ui.json) records
+nine passing real browser checks. Coder was assigned through actual controls,
+persisted to the isolated file, survived an actual host restart, and rendered the
+saved model afterward; coordinator settings remained equal. Component integration
+also reopens ModelFabric and confirms coder resolves its model independently of
+Zero. Seven settings/import checks pass. This gate explicitly does not certify
+specialist inference or arbitrary planning; prior real multi-agent execution is
+separate evidence, and a combined UI-to-execution gate remains to be completed.

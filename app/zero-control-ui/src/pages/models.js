@@ -518,8 +518,19 @@ export function mountModelsPage(container, context = {}) {
   const agentBindingBox = element("div", "zero-agent-binding-box");
   const agentBindingHead = element("div", "zero-agent-binding-head");
   const agentBindingTitle = element("div", "zero-agent-binding-title", "Zero (zero)");
+  const assignmentAgent = element('select', 'zero-models-select');
+  assignmentAgent.setAttribute('aria-label', 'Agent model assignment');
+  for (const [id, name] of [['zero', 'Zero'], ['researcher', 'Research Specialist'], ['coder', 'Engineering Specialist'], ['reviewer', 'Quality Auditor'], ['operator', 'Desktop Operator']]) {
+    const option = element('option', null, name); option.value = id; assignmentAgent.append(option);
+  }
+  assignmentAgent.onchange = () => {
+    agentBindingTitle.textContent = `${assignmentAgent.selectedOptions[0].textContent} (${assignmentAgent.value})`;
+    assignBtn.textContent = assignmentAgent.value === 'zero' ? 'Assign to Zero' : 'Assign to specialist';
+    overrideLabel.textContent = `Allow unverified model override for ${assignmentAgent.value}`;
+    populateDropdowns();
+  };
   const agentBindingBadge = element("span", "zero-agent-binding-badge", "EXPLICIT BINDING");
-  agentBindingHead.append(agentBindingTitle, agentBindingBadge);
+  agentBindingHead.append(agentBindingTitle, agentBindingBadge, assignmentAgent);
   agentBindingBox.append(agentBindingHead);
 
   const agentDescBox = element("div", "zero-agent-desc-box");
@@ -687,9 +698,10 @@ export function mountModelsPage(container, context = {}) {
     fillSelect(thinkingSel.select, "(Select Thinking Model / Default)", systemDefaults.thinking);
     fillSelect(fastSel.select, "(Select Fast Mode Model / Disabled)", systemDefaults.fastMode);
 
-    fillSelect(agentModelSelect, "(Select Model for Zero Agent)", effectiveZeroModel);
+    const selectedBinding = assignmentAgent.value === 'zero' ? effectiveZeroModel : agentBindings[assignmentAgent.value]?.model || '';
+    fillSelect(agentModelSelect, "(Select Model for Agent)", selectedBinding);
 
-    activeModelVal.textContent = assignmentError ? 'Unavailable' : effectiveModel || effectiveZeroModel || "Unassigned";
+    activeModelVal.textContent = assignmentAgent.value === 'zero' ? (assignmentError ? 'Unavailable' : effectiveModel || effectiveZeroModel || "Unassigned") : selectedBinding || 'Inherited system default';
     fallbacksVal.textContent = systemDefaults.fallback || "None";
   }
 
@@ -1117,26 +1129,30 @@ export function mountModelsPage(container, context = {}) {
   // --- ASSIGN TO ZERO HANDLER ---
   assignBtn.onclick = async () => {
     const chosenModel = agentModelSelect.value;
+    const chosenAgent = assignmentAgent.value;
     if (!chosenModel) {
-      showNotice("Please select a model to assign to Zero.", true);
+      showNotice("Please select a model to assign to this agent.", true);
       return;
     }
     try {
       assignBtn.disabled = true;
+      assignmentAgent.disabled = true;
       assignBtn.textContent = "Assigning...";
       await callGateway(host, "zero.providers.setActive", {
+        agentId: chosenAgent,
         modelId: chosenModel,
         agentModel: chosenModel,
         allowUnverifiedOverride: overrideCheckbox.checked,
       });
       activeModelVal.textContent = chosenModel;
-      showNotice(`Successfully assigned "${chosenModel}" to Zero agent!`);
+      showNotice(`Successfully assigned "${chosenModel}" to ${chosenAgent === 'zero' ? 'Zero agent' : chosenAgent}!`);
       await loadAllData();
     } catch (err) {
       showNotice(`Assignment failed: ${err.message}`, true);
     } finally {
       assignBtn.disabled = false;
-      assignBtn.textContent = "Assign to Zero";
+      assignmentAgent.disabled = false;
+      assignBtn.textContent = assignmentAgent.value === 'zero' ? 'Assign to Zero' : 'Assign to specialist';
     }
   };
 

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { ModelFabric } from '../packages/model-fabric/index.mjs';
-import { assignZeroModel, modelSettings, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider } from '../services/host/model-settings.mjs';
+import { assignZeroModel, assignAgentModel, modelSettings, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider } from '../services/host/model-settings.mjs';
 import http from 'node:http';
 import { once } from 'node:events';
 
@@ -72,6 +72,14 @@ test('[INTEGRATION] model assignment persists across reopen, preserves unrelated
   assert.equal(new ModelFabric({ configPath, agentBindingsPath }).resolveAgentModel('zero').canonicalModelId, 'two');
   const saved = JSON.parse(fs.readFileSync(agentBindingsPath));
   assert.equal(saved.retained.value, 123); assert.equal(saved.agentBindings.specialist.model, 'one'); assert.equal(saved.agentBindings.zero.retained, true);
+  assignAgentModel(fabric, 'coder', { modelId: 'local/one' });
+  const specialistSaved = JSON.parse(fs.readFileSync(agentBindingsPath));
+  assert.deepEqual(specialistSaved.defaults, saved.defaults);
+  assert.deepEqual(specialistSaved.agentBindings.zero, saved.agentBindings.zero);
+  const reopened = new ModelFabric({ configPath, agentBindingsPath });
+  assert.equal(reopened.resolveAgentModel('coder').canonicalModelId, 'one');
+  assert.equal(reopened.resolveAgentModel('zero').canonicalModelId, 'two');
+  assert.throws(() => assignAgentModel(fabric, '__proto__', { modelId: 'local/one' }), /Unknown specialist/);
   assert.ok(!JSON.stringify(modelSettings(fabric)).includes('private-'));
   const before = fs.readFileSync(agentBindingsPath, 'utf8');
   assert.throws(() => assignZeroModel(fabric, { modelId: 'local/unconfigured' }), /configured catalog/);

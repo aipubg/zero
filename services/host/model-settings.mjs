@@ -138,6 +138,11 @@ export async function probeConfiguredProvider(fabric, params = {}) {
 }
 
 export function assignZeroModel(fabric, params = {}) {
+  return assignAgentModel(fabric, 'zero', params);
+}
+
+export function assignAgentModel(fabric, agentId, params = {}) {
+  if (!['zero', 'researcher', 'coder', 'reviewer', 'operator'].includes(agentId)) throw new Error('Unknown specialist agent');
   assertModelImportComplete(fabric.configPath);
   const model = params.agentModel || params.modelId || params.model || params.primary;
   const validate = value => {
@@ -150,19 +155,19 @@ export function assignZeroModel(fabric, params = {}) {
   const original = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
   const current = original ? JSON.parse(original) : {};
   if (!current || typeof current !== 'object' || Array.isArray(current)) throw new Error('Invalid model settings file');
-  const defaults = { ...current.defaults, primary: model };
+  const defaults = { ...current.defaults, ...(agentId === 'zero' ? { primary: model } : {}) };
   for (const key of ['utility', 'fallback', 'thinking', 'fast']) {
-    if (params[key] === undefined) continue;
+    if (params[key] === undefined || agentId !== 'zero') continue;
     if (typeof params[key] !== 'string' || params[key].length > 512) throw new Error(`Invalid model preference: ${key}`);
     if (['utility', 'fallback'].includes(key) && params[key]) validate(params[key]);
     defaults[key] = params[key];
   }
-  const binding = { ...current.agentBindings?.zero, model };
+  const binding = { ...current.agentBindings?.[agentId], model };
   if (params.allowUnverifiedOverride !== undefined) {
     if (typeof params.allowUnverifiedOverride !== 'boolean') throw new Error('allowUnverifiedOverride must be boolean');
     binding.allowOverride = params.allowUnverifiedOverride;
   }
-  const next = { ...current, defaults, agentBindings: { ...current.agentBindings, zero: binding } };
+  const next = { ...current, defaults, agentBindings: { ...current.agentBindings, [agentId]: binding } };
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const suffix = crypto.randomUUID(); const temporary = `${file}.${suffix}.tmp`;
   const backup = original === null ? null : `${file}.before-model-settings-${suffix}.json`;

@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { modelSettings, assignZeroModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
+import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -1163,7 +1163,7 @@ export class ZeroNativeHost {
         return importModelSettings(this.modelFabric, params);
 
       case 'zero.providers.setActive':
-        return assignZeroModel(this.modelFabric, params);
+        return params.agentId ? assignAgentModel(this.modelFabric, params.agentId, params) : assignZeroModel(this.modelFabric, params);
 
       case 'zero.providers.configure':
         return saveConfiguredProvider(this.modelFabric, params.provider);

@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "754cbc4769849074c557e5f3b025ea55af7cf8baf530889997d428d896db7774",
+      "sha256": "16c234b24318b55ebec25da20b827bbcc8c7a471792a2506e41b1cb303ea90fb",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -17,6 +17,7 @@
         "--models: actual UI assignment, isolated settings restart and independently observed real upstream model request; provider-reported alias retained separately",
         "--providers: actual UI provider create/edit/delete with isolated persisted files, credential preservation and process restart; no service-execution claim",
         "--provider-probe: UI-triggered real external model-list retrieval, not inference acceptance",
+        "--agent-models: actual specialist UI assignment with restart persistence and unchanged coordinator defaults; no inference claim",
         "--model-import: real UI import/export, private round-trip preservation, invalid batch rejection and killed-writer startup recovery",
         "--external-plugins: actual executable MCP package lifecycle and UI chat tool effect",
         "--plugin-crash (requires --external-plugins; REAL_OS): owned process kill, rendered unavailable status and actual effect after UI restart",
