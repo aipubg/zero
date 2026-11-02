@@ -144,6 +144,7 @@ export class AutomationScheduler {
 
       try {
         result = await this.executor(job.targetAction, job.params);
+          if (result?.ok === false || result?.success === false) throw new Error(result.error || result.message || 'Action reported failure');
       } catch (err) {
         status = 'failed';
         error = err.message || 'Execution error';

@@ -200,6 +200,7 @@ export class EventAutomationEngine extends EventEmitter {
       if (matched) {
         try {
           const actionRes = await this.executor(rule.targetAction, { ...rule.params, triggerEvent: eventData });
+          if (actionRes?.ok === false || actionRes?.success === false) throw new Error(actionRes.error || actionRes.message || 'Action reported failure');
           triggered.push({ ruleId: rule.id, status: 'executed', result: actionRes });
         } catch (err) {
           triggered.push({ ruleId: rule.id, status: 'failed', error: err.message });

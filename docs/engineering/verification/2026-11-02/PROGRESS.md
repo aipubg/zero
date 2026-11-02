@@ -291,3 +291,12 @@ its error message. Failure assertions match the gateway's actual error envelope.
 Both runs retain their logs in `artifacts/automation-acceptance/`. This closes
 the scoped scheduling/event/template/local-probe suite, not third-party service
 execution. The owner host and its stored jobs were not used by either run.
+
+Automation failure propagation follow-up: scheduled/event executors that resolve
+with `ok:false` or `success:false` now produce failed runs, rather than completed
+runs merely because no exception was thrown. A CONTRACT regression verifies both
+paths and the persisted scheduled error. Six component tests pass, and the four
+isolated RPC leaves pass again in
+`artifacts/automation-acceptance/1793598792402/report.json`. Positive native output
+assertions beyond execution status still require expansion; no broad workflow
+completion claim follows from this failure-propagation correction.
