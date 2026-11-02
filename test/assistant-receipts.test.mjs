@@ -24,7 +24,8 @@ test('[INTEGRATION] duplicate assistant requests share execution and persisted r
     await assert.rejects(once(failed, async () => { throw new Error('Observed failure'); }), /Observed failure/);
     await assert.rejects(once(failed, execute), /Observed failure/); assert.equal(executions, 1);
     sessions.db.prepare("UPDATE zero_assistant_receipts SET status='running',error=NULL,task_id='interrupted-task-id' WHERE run_id=?").run('failed-request');
-    await assert.rejects(createAssistantReceipts(sessions.db)(failed, execute), /interrupted.*interrupted-task-id/); assert.equal(executions, 1);
+    const recovered = createAssistantReceipts(sessions.db); recovered.recoverInterrupted();
+    await assert.rejects(recovered(failed, execute), /interrupted.*interrupted-task-id/); assert.equal(executions, 1);
     assert.equal(sessions.db.prepare('SELECT status FROM zero_assistant_receipts WHERE run_id=?').get('failed-request').status, 'interrupted');
   } finally { sessions.close(); assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir())); fs.rmSync(directory, { recursive: true, force: true }); }
 });

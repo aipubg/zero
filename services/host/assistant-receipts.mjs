@@ -2,10 +2,8 @@ import crypto from 'node:crypto';
 
 /** Durable retry identity. Interrupted execution is never silently repeated. */
 export function createAssistantReceipts(db) {
-  // Only startup initializes this coordinator. Surviving running receipts are crash evidence.
-  db.prepare("UPDATE zero_assistant_receipts SET status='interrupted',updated_at=? WHERE status='running'").run(Date.now());
   const active = new Map();
-  return function executeOnce(options, execute) {
+  const executeOnce = function(options, execute) {
     const runId = options.runId || crypto.randomUUID();
     if (typeof runId !== 'string' || !runId.trim() || runId.length > 256) return Promise.reject(new Error('Invalid assistant request id'));
     const sessionId = options.sessionKey;
@@ -32,4 +30,9 @@ export function createAssistantReceipts(db) {
     active.set(key, pending);
     return pending;
   };
+  executeOnce.recoverInterrupted = () => {
+    if (active.size) throw new Error('Cannot recover receipts while requests are active');
+    return db.prepare("UPDATE zero_assistant_receipts SET status='interrupted',updated_at=? WHERE status='running'").run(Date.now());
+  };
+  return executeOnce;
 }

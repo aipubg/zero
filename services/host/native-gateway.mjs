@@ -319,6 +319,11 @@ export class ZeroNativeHost {
     return new Promise((resolve, reject) => {
       this.server.listen(this.port, this.host, (err) => {
         if (err) return reject(err);
+        // Only the process that actually owns the listening port may recover work.
+        try {
+          this.executeAssistantOnce.recoverInterrupted();
+          this.tasks.recoverTasksOnStartup();
+        } catch (error) { this.server.close(); return reject(error); }
         console.log(`[Zero Host] Zero Native Gateway listening on http://${this.host}:${this.port}`);
         resolve(this);
       });

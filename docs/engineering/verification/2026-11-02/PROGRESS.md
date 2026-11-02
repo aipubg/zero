@@ -394,3 +394,11 @@ reference without replacing existing receipts. Four file-backed receipt/session
 regressions pass, including interrupted-state classification and task identity.
 This is component evidence, not a real mid-execution process-kill acceptance run;
 that crash/effect-reconciliation gate remains open before owner deployment.
+
+Startup recovery sequencing correction: the host now invokes the existing task
+recovery routine only after acquiring its listening port. Interrupted tasks move
+to WAITING with a recovery reason instead of appearing actively RUNNING in a new
+process. Receipt recovery is also deferred until that ownership point, avoiding
+constructor-time reclassification by another instance. Receipt integration and
+four isolated automation RPC leaves pass after this change. Actual in-flight
+process termination and effect reconciliation remain the required next gate.
