@@ -214,3 +214,36 @@ The older PID 15716 endurance run measures capture/OCR without this new local
 vision pipeline; it cannot certify the new model's resource behavior. A full
 combined resource/endurance gate is still required. Production sign-off remains
 BLOCKED and external mobile/cloud prerequisites remain unavailable.
+
+## Owner deployment and data preservation — 02:00 UTC checkpoint
+
+Verified code is running on the owner's native host at port 18789, PID 6172.
+The previous owned PID 8972 was checked for active durable tasks before restart;
+the intermediate PID 16380 was subsequently replaced after the startup settings
+correction below. No active durable task was interrupted. Health is operational;
+this is a deployment checkpoint, not a production completion declaration.
+
+[owner-data-after-upgrade.json](owner-data-after-upgrade.json) compares all 5,115
+original rows across 29 SQLite tables against the consistent owner backup at
+`.backup/functional-correction-1793584247114`. Original columns are compared by
+row-content digest, allowing added columns/rows. Scheduler `last_run`/`next_run`,
+connector `updated_at`, and worker `last_heartbeat` are explicitly checked for
+monotonic progress; definitions/configuration and message contents remain exact.
+The earlier timestamp review in
+[owner-data-runtime-timestamp-review.json](owner-data-runtime-timestamp-review.json)
+remains recorded as FAIL; review identified advancing runtime timestamps, not
+lost definitions. The subsequent audit states its narrower preservation policy.
+
+Review also found default seeding could overwrite owner-customized built-in
+connector/worker definitions on restart. Defaults now only fill missing connector
+records and preserve local worker definitions while refreshing liveness. Actual
+file-backed restart tests preserve custom names/configuration/capabilities.
+Automation/worker regressions pass 22 tests. A separate real-SQLite audit test
+accepts additive schema/data changes and rejects original message mutation and
+deletion; it does not merely compare row counts.
+
+Backup now includes paired `.key.dpapi` files, which the earlier backup glob
+omitted. [backup-encrypted-pair.json](backup-encrypted-pair.json) checks an actual
+captured observation snapshot, SQLite integrity, and authentication of seven
+encrypted fields through its copied DPAPI key. Full restore/rollback and
+cross-machine/key-rotation recovery remain separate unfinished gates.

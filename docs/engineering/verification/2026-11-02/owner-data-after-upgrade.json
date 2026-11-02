@@ -1,0 +1,280 @@
+{
+  "classification": "INTEGRATION",
+  "status": "PASS",
+  "backup": "E:\\zero\\.backup\\functional-correction-1793584247114",
+  "checkedAt": "2026-11-02T01:59:37.318Z",
+  "tables": [
+    {
+      "file": ".zero-data\\screen-observations.sqlite",
+      "table": "semantic_observations",
+      "beforeRows": 0,
+      "afterRows": 0,
+      "originalColumns": 16,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492293399.sqlite",
+      "table": "zero_tasks",
+      "beforeRows": 0,
+      "afterRows": 0,
+      "originalColumns": 12,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492293399.sqlite",
+      "table": "zero_task_steps",
+      "beforeRows": 0,
+      "afterRows": 0,
+      "originalColumns": 9,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492369804.sqlite",
+      "table": "zero_tasks",
+      "beforeRows": 1,
+      "afterRows": 1,
+      "originalColumns": 12,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492369804.sqlite",
+      "table": "zero_task_steps",
+      "beforeRows": 0,
+      "afterRows": 0,
+      "originalColumns": 9,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492461400.sqlite",
+      "table": "zero_tasks",
+      "beforeRows": 1,
+      "afterRows": 1,
+      "originalColumns": 12,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492461400.sqlite",
+      "table": "zero_task_steps",
+      "beforeRows": 1,
+      "afterRows": 1,
+      "originalColumns": 9,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-artifacts.sqlite",
+      "table": "zero_artifacts",
+      "beforeRows": 8,
+      "afterRows": 8,
+      "originalColumns": 9,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-automation.sqlite",
+      "table": "zero_cron_jobs",
+      "beforeRows": 12,
+      "afterRows": 12,
+      "originalColumns": 9,
+      "monotonicRuntimeColumns": [
+        "last_run",
+        "next_run"
+      ],
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-automation.sqlite",
+      "table": "zero_cron_runs",
+      "beforeRows": 4722,
+      "afterRows": 4794,
+      "originalColumns": 6,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-devices.sqlite",
+      "table": "zero_paired_devices",
+      "beforeRows": 1,
+      "afterRows": 1,
+      "originalColumns": 8,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-devices.sqlite",
+      "table": "zero_device_notifications",
+      "beforeRows": 3,
+      "afterRows": 3,
+      "originalColumns": 8,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-event-automation.sqlite",
+      "table": "zero_event_rules",
+      "beforeRows": 5,
+      "afterRows": 5,
+      "originalColumns": 7,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-event-automation.sqlite",
+      "table": "zero_connectors",
+      "beforeRows": 2,
+      "afterRows": 2,
+      "originalColumns": 7,
+      "monotonicRuntimeColumns": [
+        "updated_at"
+      ],
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-memory.sqlite",
+      "table": "zero_memories",
+      "beforeRows": 2,
+      "afterRows": 2,
+      "originalColumns": 9,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-plugins.sqlite",
+      "table": "zero_installed_plugins",
+      "beforeRows": 3,
+      "afterRows": 3,
+      "originalColumns": 13,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-sessions.sqlite",
+      "table": "zero_sessions",
+      "beforeRows": 22,
+      "afterRows": 22,
+      "originalColumns": 5,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-sessions.sqlite",
+      "table": "zero_messages",
+      "beforeRows": 55,
+      "afterRows": 55,
+      "originalColumns": 7,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-sessions.sqlite",
+      "table": "zero_events",
+      "beforeRows": 55,
+      "afterRows": 55,
+      "originalColumns": 5,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-tasks.sqlite",
+      "table": "zero_tasks",
+      "beforeRows": 73,
+      "afterRows": 73,
+      "originalColumns": 12,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-tasks.sqlite",
+      "table": "zero_task_steps",
+      "beforeRows": 40,
+      "afterRows": 40,
+      "originalColumns": 9,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-tasks.sqlite",
+      "table": "zero_task_checkpoints",
+      "beforeRows": 13,
+      "afterRows": 13,
+      "originalColumns": 6,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-tasks.sqlite",
+      "table": "zero_idempotency_keys",
+      "beforeRows": 0,
+      "afterRows": 0,
+      "originalColumns": 7,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-tasks.sqlite",
+      "table": "zero_agent_messages",
+      "beforeRows": 50,
+      "afterRows": 50,
+      "originalColumns": 7,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-unified-memory.sqlite",
+      "table": "zero_unified_memories",
+      "beforeRows": 21,
+      "afterRows": 21,
+      "originalColumns": 13,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-workspaces.sqlite",
+      "table": "zero_workspaces",
+      "beforeRows": 4,
+      "afterRows": 4,
+      "originalColumns": 7,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-workspaces.sqlite",
+      "table": "zero_projects",
+      "beforeRows": 8,
+      "afterRows": 8,
+      "originalColumns": 6,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-workspaces.sqlite",
+      "table": "zero_workers",
+      "beforeRows": 9,
+      "afterRows": 9,
+      "originalColumns": 7,
+      "monotonicRuntimeColumns": [
+        "last_heartbeat"
+      ],
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    },
+    {
+      "file": ".zero-data\\zero-workspaces.sqlite",
+      "table": "zero_task_handoffs",
+      "beforeRows": 4,
+      "afterRows": 4,
+      "originalColumns": 13,
+      "missingOrChangedRows": 0,
+      "status": "PASS"
+    }
+  ],
+  "scope": "Original logical data preserved across schema upgrade; allows added rows/columns and monotonic scheduler clocks; not a clean-machine full restore test"
+}

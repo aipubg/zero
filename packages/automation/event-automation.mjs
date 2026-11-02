@@ -80,13 +80,18 @@ export class EventAutomationEngine extends EventEmitter {
   }
 
   _registerDefaultConnectors() {
-    this.registerConnector({
+    const registerDefault = definition => {
+      const existing = this.getConnector(definition.id);
+      if (existing) this.connectors.set(existing.id, existing);
+      else this.registerConnector(definition);
+    };
+    registerDefault({
       id: 'webhook_system',
       name: 'System Localhost Webhook',
       type: 'webhook',
       config: { url: 'http://127.0.0.1:18789/api/webhook/events' },
     });
-    this.registerConnector({
+    registerDefault({
       id: 'cli_terminal',
       name: 'Zero Native CLI Connector',
       type: 'cli',

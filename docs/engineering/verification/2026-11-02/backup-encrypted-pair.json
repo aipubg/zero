@@ -1,0 +1,12 @@
+{
+  "classification": ["REAL_OS", "INTEGRATION"],
+  "status": "PASS",
+  "backupDirectory": "E:\\zero\\.backup\\functional-correction-1793584342204",
+  "source": "Actual controlled Windows capture/vision observations from artifacts/local-vision-screen/1793583844288",
+  "snapshotFile": ".zero-data/screen-observations.sqlite",
+  "pairedDpapiKeyCopied": true,
+  "sqliteIntegrity": "ok",
+  "authenticatedFieldsInLatestRow": 7,
+  "preservationAuditRows": 2,
+  "scope": "Consistent SQLite snapshot and paired key authenticated by the current Windows user; not full clean-machine restore or cross-user DPAPI recovery"
+}

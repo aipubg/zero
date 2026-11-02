@@ -103,6 +103,11 @@ export class WorkspaceManager extends EventEmitter {
   }
 
   _registerDefaultWorkers() {
+    if (this.getWorker('worker_local_primary')) {
+      // Restore runtime liveness without overwriting the owner's saved definition.
+      this.db.prepare("UPDATE zero_workers SET status = 'online', last_heartbeat = ? WHERE id = 'worker_local_primary'").run(Date.now());
+      return;
+    }
     this.registerWorker({
       id: 'worker_local_primary',
       name: 'Primary Local Windows Host',
