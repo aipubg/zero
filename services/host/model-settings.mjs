@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 export function modelSettings(fabric) {
-  const settings = fs.existsSync(fabric.agentBindingsPath) ? JSON.parse(fs.readFileSync(fabric.agentBindingsPath, 'utf8')) : {};
+  const settings = fabric.agentBindingsPath && fs.existsSync(fabric.agentBindingsPath) ? JSON.parse(fs.readFileSync(fabric.agentBindingsPath, 'utf8')) : {};
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new Error('Invalid model settings file');
   let effectiveModel = null; let assignmentError = null;
   try { effectiveModel = fabric.resolveAgentModel('zero')?.canonicalModelId || null; } catch (error) { assignmentError = error.message; }
@@ -25,6 +25,7 @@ function writeProviders(fabric, providers) {
 }
 
 function providerRows(fabric) {
+  if (!fabric.configPath) throw new Error('No provider configuration path');
   const rows = fs.existsSync(fabric.configPath) ? JSON.parse(fs.readFileSync(fabric.configPath, 'utf8')) : [];
   if (!Array.isArray(rows)) throw new Error('Invalid provider configuration file');
   return rows;
@@ -91,6 +92,7 @@ export function assignZeroModel(fabric, params = {}) {
   };
   validate(model);
   const file = fabric.agentBindingsPath;
+  if (!file) throw new Error('No model assignment configuration path');
   const original = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
   const current = original ? JSON.parse(original) : {};
   if (!current || typeof current !== 'object' || Array.isArray(current)) throw new Error('Invalid model settings file');
