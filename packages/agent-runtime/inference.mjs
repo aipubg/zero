@@ -19,6 +19,15 @@ export function requireExecutionResult(result) {
   return result;
 }
 
+export function requireCompletedChoice(choice, label, { allowTools = false } = {}) {
+  if (!choice?.message) throw new Error(`${label} returned no completion message`);
+  const reason = choice.finish_reason;
+  if (reason && reason !== 'stop' && !(allowTools && reason === 'tool_calls')) throw new Error(`${label} returned incomplete completion: ${reason}`);
+  if (choice.message.refusal) throw new Error(`${label} refused completion`);
+  if (!allowTools && choice.message.tool_calls?.length) throw new Error(`${label} returned unexecuted tool calls`);
+  return choice.message;
+}
+
 export async function executeSpecialist(orchestrator, subtask, context) {
   const { modelFabric, capabilityEngine, researchEngine, sm } = orchestrator;
   if (!modelFabric?.executeChat) throw new Error('Unsupported specialist execution: no model fabric configured');
@@ -66,8 +75,13 @@ export async function executeSpecialist(orchestrator, subtask, context) {
       ...(tools.length ? { tools, tool_choice: 'auto' } : {}),
     }, { signal }), signal);
     signal.throwIfAborted();
-    const message = response?.data?.choices?.[0]?.message;
-    if (!message) throw new Error('Model returned no completion message');
+    const choice = response?.data?.choices?.[0];
+    let message;
+    try { message = requireCompletedChoice(choice, 'Specialist', { allowTools: true }); }
+    catch (error) {
+      record({ toolName: 'model_inference', toolArgs: { modelId, round }, toolResult: { message: choice?.message, finishReason: choice?.finish_reason, error: error.message }, status: 'failed' });
+      throw error;
+    }
     record({ toolName: 'model_inference', toolArgs: { modelId, round }, toolResult: message, status: 'completed' });
     messages.push(message);
     if (!message.tool_calls?.length) {

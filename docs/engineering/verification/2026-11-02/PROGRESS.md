@@ -1114,3 +1114,26 @@ workflow, not multi-specialist parallel/interruption acceptance or arbitrary age
 planning. Provider-reported model alias verification remains separate from the
 actual requested model observed in outgoing requests. No owner files were used
 for assignment writes; all settings and evidence source files were isolated.
+
+### Reject explicitly incomplete specialist and coordinator completions
+
+Inspection found nonempty prose with finish_reason length/content_filter could
+complete specialist or consolidation tasks. Both paths now reject explicit
+non-success reasons before accepting prose or executing partial tool calls.
+Refusal messages and coordinator tool calls that have no executor also fail.
+Specialist failed inference records preserve partial message, finish reason and
+error. Missing finish_reason remains tolerated for existing compatible adapters;
+this change does not claim every malformed upstream response is rejected.
+
+The new [agent-completion-contract.test.mjs](../../../../test/agent-completion-contract.test.mjs)
+uses actual loopback HTTP through ModelFabric for four combinations of truncated
+or filtered specialist/coordinator responses. All persist FAILED parent state;
+specialist failures retain failed child/inference evidence and never consolidate.
+All 17 selected contract/runtime checks pass, including real subprocess lifecycle,
+cancellation and restart reconciliation. Controlled HTTP responses are CONTRACT
+evidence, not proof of external-provider behavior under those failure conditions.
+
+[specialist-terminal-validation-live-ui.json](specialist-terminal-validation-live-ui.json)
+passes nine real browser workflows after the implementation change, including
+actual NVIDIA specialist inference, file tool result and parent consolidation.
+This verifies successful execution still works. Overall completion remains unproven.

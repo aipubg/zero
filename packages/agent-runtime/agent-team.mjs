@@ -14,7 +14,7 @@ import { EventEmitter } from 'node:events';
 import { TASK_STATUS } from './index.mjs';
 import { AgentMessageBus, MESSAGE_TYPES } from './structured-messaging.mjs';
 import { DesktopLeaseManager } from './desktop-lease.mjs';
-import { abortable, executeSpecialist, requireExecutionResult } from './inference.mjs';
+import { abortable, executeSpecialist, requireExecutionResult, requireCompletedChoice } from './inference.mjs';
 
 export const CANONICAL_AGENT_PROFILES = Object.freeze({
   zero: {
@@ -521,7 +521,7 @@ export class AgentTeamOrchestrator extends EventEmitter {
             { role: 'user', content: JSON.stringify({ goal, results: sharedContext.subtaskResults, artifacts: sharedContext.artifacts }) }],
         }, { signal: workflowSignal }), workflowSignal);
         workflowSignal.throwIfAborted();
-        synthesis = response?.data?.choices?.[0]?.message?.content;
+        synthesis = requireCompletedChoice(response?.data?.choices?.[0], 'Coordinator').content;
         if (typeof synthesis !== 'string' || !synthesis.trim()) throw new Error(response?.data?.choices?.[0]?.finish_reason === 'length' ? 'Coordinator exhausted its output token budget before producing consolidation' : 'Coordinator returned empty consolidation');
         this.sm.recordStep(masterTask.id, { stepNumber: this.sm.getTaskSteps(masterTask.id).length + 1, toolName: 'team_consolidation', toolArgs: { modelId }, toolResult: synthesis, status: 'completed' });
       } catch (err) {
