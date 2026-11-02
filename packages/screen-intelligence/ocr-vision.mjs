@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const scriptPath = fileURLToPath(new URL('./winrt-ocr.ps1', import.meta.url));
+const scriptPath = fileURLToPath(new URL('./winrt-ocr-measured.ps1', import.meta.url));
 export const LOCAL_VISION_STATUS = Object.freeze({
   available: false, status: 'unavailable', reason: 'No local vision model configured', confidence: null,
 });
@@ -44,7 +44,7 @@ export class LocalVisionExtractor {
       if (result.ok !== true || typeof result.text !== 'string') return unavailable(result.reason || 'ocr-failed');
       // WinRT exposes no recognition confidence. Empty recognized text is valid.
       return { ok: true, status: 'available', text: result.text.slice(0, 12000), confidence: null,
-        engine: 'windows-winrt-ocr', language: result.language ?? null };
+        engine: 'windows-winrt-ocr', language: result.language ?? null, resourceUsage: result.resourceUsage ?? null };
     } catch (error) {
       return unavailable(signal?.aborted ? 'aborted' : error.killed ? 'ocr-timeout' : error.message);
     }

@@ -417,4 +417,13 @@ switch ($Action.ToLower()) {
   }
 }
 
+$currentProcess = [System.Diagnostics.Process]::GetCurrentProcess()
+$currentProcess.Refresh()
+$result['resourceUsage'] = [ordered]@{
+  pid = $currentProcess.Id
+  cpuMs = $currentProcess.TotalProcessorTime.TotalMilliseconds
+  workingSetBytes = $currentProcess.WorkingSet64
+  peakWorkingSetBytes = $currentProcess.PeakWorkingSet64
+  scope = 'whole-native-action-process-through-measurement'
+}
 $result | ConvertTo-Json -Compress

@@ -212,6 +212,7 @@ export class ScreenObserver extends EventEmitter {
           metadataError: frame.metadataError ?? null, ocrReason: frame.ocr?.reason ?? null,
           ocrLanguage: frame.ocr?.language ?? null, changeMethod: 'encoded-image-sha256-window-metadata-and-ocr',
           localVision: this.visionExtractor.getStatus(),
+          resourceUsage: frame.resourceUsage ?? null,
         },
       }); } catch (error) {
         // Retry an identical frame after a persistence failure instead of losing its observation.

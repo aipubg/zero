@@ -771,6 +771,15 @@ while ($null -ne ($line = $reader.ReadLine())) {
     try {
         $req = $trimmed | ConvertFrom-Json
         $res = Dispatch-Action $req
+        $currentProcess = [System.Diagnostics.Process]::GetCurrentProcess()
+        $currentProcess.Refresh()
+        $res['resourceUsage'] = [ordered]@{
+            pid = $currentProcess.Id
+            cpuMs = $currentProcess.TotalProcessorTime.TotalMilliseconds
+            workingSetBytes = $currentProcess.WorkingSet64
+            peakWorkingSetBytes = $currentProcess.PeakWorkingSet64
+            scope = 'cumulative-native-action-daemon'
+        }
         $writer.WriteLine(($res | ConvertTo-Json -Compress))
     } catch {
         $err = [ordered]@{

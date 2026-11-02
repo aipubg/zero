@@ -1,0 +1,31 @@
+{
+  "classification": [
+    "REAL_OS"
+  ],
+  "status": "PARTIAL",
+  "startedAt": "2026-11-02T05:48:41.249Z",
+  "scope": "Real per-process CPU and memory counters; not a duration or whole-pipeline resource acceptance result",
+  "captureSource": "cua-driver",
+  "resourceUsage": {
+    "capture": null,
+    "metadata": {
+      "pid": 14140,
+      "cpuMs": 296.875,
+      "workingSetBytes": 99229696,
+      "peakWorkingSetBytes": 99368960,
+      "scope": "cumulative-native-action-daemon"
+    },
+    "ocr": {
+      "pid": 5752,
+      "cpuMs": 390.625,
+      "workingSetBytes": 107094016,
+      "peakWorkingSetBytes": 128241664,
+      "scope": "whole-ocr-process-through-measurement"
+    }
+  },
+  "fullCaptureAccounting": false,
+  "remaining": [
+    "Capture SDK process resource accounting is unavailable; do not claim whole-pipeline CPU/RAM acceptance"
+  ],
+  "finishedAt": "2026-11-02T05:48:42.068Z"
+}

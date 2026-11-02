@@ -80,6 +80,7 @@ export async function captureRealDesktopFrame(options = {}) {
     signal?.throwIfAborted();
     return { ok: true, data, ...dimensions, mimeType: 'image/png', timestamp,
       captureStartedAt: startedAt, captureDurationMs: Date.now() - startedAt,
+      resourceUsage: { capture: screen.resourceUsage ?? null, metadata: win?.resourceUsage ?? null, ocr: ocr.resourceUsage ?? null },
       captureSource: screen.captureSource ?? 'injected-capture', displayId: screen.displayId ?? null,
       metadataTimestamp, metadataStatus: win ? 'available' : 'unavailable', metadataError,
       appName: win?.process ?? win?.process_name ?? null, windowTitle: win?.title ?? null,

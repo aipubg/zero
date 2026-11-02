@@ -247,3 +247,25 @@ omitted. [backup-encrypted-pair.json](backup-encrypted-pair.json) checks an actu
 captured observation snapshot, SQLite integrity, and authentication of seven
 encrypted fields through its copied DPAPI key. Full restore/rollback and
 cross-machine/key-rotation recovery remain separate unfinished gates.
+
+## Native resource instrumentation — 05:49 UTC checkpoint
+
+[native-resource-partial.json](native-resource-partial.json) records actual
+Windows process CPU and peak working-set counters for OCR and native foreground
+metadata. The OCR wrapper runs the existing OCR script in the same measured
+process, so its startup/recognition CPU is included. Native action processes
+report cumulative counters; consumers must deduplicate by PID rather than sum
+the same daemon repeatedly. Capture records retain the resource provenance.
+
+The actual capture backend was `cua-driver`, whose process accounting is not yet
+available. The runner correctly reports PARTIAL, not whole-pipeline resource
+PASS. Model process accounting and a combined capture/OCR/vision endurance run
+remain required. Fourteen scoped screen/pipeline regression tests passed after
+instrumentation. The owner host has not been restarted for this instrumentation
+alone; its existing loaded modules retain the prior OCR path until next restart.
+
+PID 15716 was independently checked alive with fresh telemetry at 05:48 UTC:
+4.759 measured hours, 7,145 successful actual captures/OCR and zero capture
+failures. It remains incomplete and covers the earlier capture/OCR pipeline,
+not the new vision model or full subprocess resource accounting. Its original
+loaded OCR path remains unchanged; no early completion certificate was issued.
