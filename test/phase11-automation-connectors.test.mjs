@@ -12,7 +12,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const PORT = 18789;
+const PORT = (() => { const port = Number(process.env.ZERO_ACCEPTANCE_PORT); if (!Number.isInteger(port) || port < 1024 || port > 65535 || port === 18789) throw new Error('ZERO_ACCEPTANCE_PORT must identify a disposable host, excluding owner port 18789'); return port; })();
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const WS_URL = `ws://127.0.0.1:${PORT}`;
 const WS = globalThis.WebSocket;
@@ -198,11 +198,25 @@ test('Phase 11: Proactive Automation & Connected Connectors Suite', async (suite
     const webhookConn = connList.connectors.find((c) => c.type === 'webhook');
     assert.ok(webhookConn);
 
-    // Test connector health
-    const testRes = await client.call('automation.connectors.test', {
-      id: webhookConn.id,
+    // Real local HTTP execution verifies this RPC contract, not an external service.
+    const { createServer } = await import('node:http');
+    const { once } = await import('node:events');
+    let requests = 0;
+    const server = createServer((request, response) => {
+      assert.equal(request.method, 'HEAD'); requests++;
+      response.writeHead(request.url === '/ready' ? 204 : 503); response.end();
     });
-    assert.ok(testRes.ok);
-    assert.equal(testRes.status, 'healthy');
+    server.listen(0, '127.0.0.1'); await once(server, 'listening');
+    const id = `phase11_probe_${Date.now()}`;
+    try {
+      const url = `http://127.0.0.1:${server.address().port}`;
+      await client.call('automation.connectors.register', { id, name: 'Disposable probe', type: 'webhook', config: { url: url + '/ready' } });
+      const reachable = await client.call('automation.connectors.test', { id });
+      assert.equal(reachable.status, 'reachable'); assert.equal(reachable.httpStatus, 204);
+      assert.equal(reachable.functionalExecutionVerified, false);
+      await client.call('automation.connectors.register', { id, name: 'Disposable probe', type: 'webhook', config: { url: url + '/failed' } });
+      const failed = await client.call('automation.connectors.test', { id });
+      assert.equal(failed.ok, false); assert.equal(failed.httpStatus, 503); assert.equal(requests, 2);
+    } finally { await new Promise(resolve => server.close(resolve)); }
   });
 });

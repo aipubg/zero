@@ -1327,7 +1327,7 @@
     {
       "id": "phase11",
       "file": "test/phase11-automation-connectors.test.mjs",
-      "sha256": "62206b97ebeeb889591bed0434d72bf424a84fe541aa34e45e50762630c7967e",
+        "sha256": "66915bf5891cd8d89380c65f3b3e5477f391cf4c4acc2e3c228490397516060d",
       "prerequisites": [
         "node24",
         "host18789"
@@ -1401,7 +1401,7 @@
             "REAL_EXTERNAL"
           ],
           "claim": "11.4 External Connected Connectors Discovery and Health Ping",
-          "proves": "Lists connectors and accepts healthy webhook status.",
+            "proves": "Exercises connector registration and actual local HTTP HEAD success/failure through RPC; functional execution remains explicitly unverified. Requires a disposable host via ZERO_ACCEPTANCE_PORT.",
           "gaps": [
             "No independent authenticated remote request or service-side outcome."
           ],
