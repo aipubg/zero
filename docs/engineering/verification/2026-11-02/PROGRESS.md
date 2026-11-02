@@ -308,3 +308,13 @@ test must return positive native screen dimensions while retaining
 `verified:false`. [automation-native-outcomes.json](automation-native-outcomes.json)
 records the passing four-leaf rerun. Events in this test are explicitly emitted
 test inputs; actual OS event-source wiring remains a separate open requirement.
+
+Screen-event wiring implementation now connects native observer change events to
+the configured automation rule engine. It dispatches only actual application/title
+transitions after a baseline, carries observation provenance and excludes raw OCR
+text. It does not create rules from observed content. Teardown removes the
+listener and drains pending dispatches. A deterministic CONTRACT test passes and
+the four existing isolated RPC leaves still pass. A real captured window change
+causing a configured action through this new bridge remains NOT_RUN; neither the
+contract test nor manually emitted RPC events close that acceptance gate. Owner
+PID 6172 does not load the new bridge until a subsequent verified restart.

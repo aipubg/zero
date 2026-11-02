@@ -43,6 +43,7 @@ import { DeviceManager } from '../../packages/device-protocol/index.mjs';
 import { VoiceEngine } from '../../packages/voice-engine/index.mjs';
 import { VoiceConversation } from '../../packages/voice-engine/conversation.mjs';
 import { createNativeObservationLifecycle } from './screen-observation.mjs';
+import { connectScreenAutomation } from './screen-automation.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
@@ -233,6 +234,7 @@ export class ZeroNativeHost {
       dbPath: path.join(dataDir, 'zero-event-automation.sqlite'),
       executor: async (action, params) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action, ...params } }),
     });
+    this.screenAutomation = connectScreenAutomation(this.screenObserver, this.eventAutomation);
 
 
     // Active human hold state
@@ -2296,6 +2298,7 @@ export class ZeroNativeHost {
   }
 
   async close(options = {}) {
+    await this.screenAutomation.close();
     if (this.cronInterval) {
       clearInterval(this.cronInterval);
       this.cronInterval = null;
