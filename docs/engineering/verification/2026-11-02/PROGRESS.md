@@ -526,3 +526,21 @@ gateway process restart/reconnect, with no page errors. Optional external chat,
 external skill, microphone and observation checks were not selected in this run.
 The historical 18-suite/137-leaf inventory integrity check also remains VALID;
 it still does not inventory every newer acceptance runner, which remains open.
+
+Screen automation now bounds outstanding dispatches to eight by default
+(configurable integer 1..128). Previously a slow executor could retain unlimited
+promises and dispatch delayed actions for every observed transition. Once full,
+new transitions are deliberately dropped and counted as droppedTransitions in
+the existing observation status; they are not counted as successful actions or
+replayed later. Capture itself continues and does not become blocked by actions.
+This is a bounded overload policy, not lossless event delivery or cancellation of
+already executing external effects.
+
+Three CONTRACT checks pass, including a stalled executor with 100 transitions:
+two dispatched at a configured limit of two, 98 explicitly dropped, capacity
+recovered after completion, and close waited for active work. The separate
+[screen-automation-bounded.json](screen-automation-bounded.json) REAL_OS /
+REAL_BROWSER / INTEGRATION run also passes: four actual captures, one native
+window transition, one real get_screen_size result (1920x1080), no dropped events
+or failures. Synthetic overload checks do not stand in for this real capture
+workflow, and this run does not certify arbitrary OS event types or 24-hour use.

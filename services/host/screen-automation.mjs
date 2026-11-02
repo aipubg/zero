@@ -1,9 +1,10 @@
 /** Forward captured window transitions without treating observed text as instructions. */
-export function connectScreenAutomation(observer, automation) {
+export function connectScreenAutomation(observer, automation, { maxPending = 8 } = {}) {
+  if (!Number.isInteger(maxPending) || maxPending < 1 || maxPending > 128) throw new RangeError('maxPending must be an integer from 1 to 128');
   let previous = null;
   let closed = false;
   const pending = new Set();
-  const status = { observedChanges: 0, windowTransitions: 0, failures: 0, lastError: null };
+  const status = { observedChanges: 0, windowTransitions: 0, droppedTransitions: 0, maxPending, failures: 0, lastError: null };
   const listener = event => {
     if (closed) return;
     status.observedChanges++;
@@ -12,6 +13,9 @@ export function connectScreenAutomation(observer, automation) {
     previous = identity;
     if (!changed) return;
     status.windowTransitions++;
+    // Do not accumulate delayed desktop actions or retain an unbounded frame queue.
+    // Overflow is visible, never reported as successful rule execution.
+    if (pending.size >= maxPending) { status.droppedTransitions++; return; }
     // Screen text cannot register rules, choose actions, or grant authority.
     const request = Promise.resolve().then(async () => {
       if (closed) return;
