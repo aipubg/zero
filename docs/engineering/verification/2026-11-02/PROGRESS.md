@@ -318,3 +318,15 @@ the four existing isolated RPC leaves still pass. A real captured window change
 causing a configured action through this new bridge remains NOT_RUN; neither the
 contract test nor manually emitted RPC events close that acceptance gate. Owner
 PID 6172 does not load the new bridge until a subsequent verified restart.
+
+The bounded real captured-transition gate subsequently passed:
+[screen-automation-real-os.json](screen-automation-real-os.json). A visible Chrome
+test window changed its native title; four real captures observed one transition,
+which matched the persisted rule and executed a native screen-size query returning
+1920×1080. Repeated captures of the same window did not retrigger. No handcrafted
+screen event was dispatched in this runner. The initial
+[screen-automation-title-race.json](screen-automation-title-race.json) remains FAIL:
+DOM title change had not yet reached the OS title at the immediate capture. The
+runner now waits for the actual captured title rather than assuming propagation.
+This proves the screen-to-rule/action seam; UI configuration, broader event types
+and sustained event execution remain separate acceptance work.

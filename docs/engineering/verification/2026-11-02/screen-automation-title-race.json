@@ -1,0 +1,12 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_BROWSER",
+    "INTEGRATION"
+  ],
+  "status": "FAIL",
+  "startedAt": "2026-11-02T05:56:22.788Z",
+  "scope": "Actual Windows captured title transition through rule matching to native screen-size output; not every OS event source or UI rule configuration",
+  "error": "Expected values to be strictly equal:\n\n0 !== 1\n",
+  "finishedAt": "2026-11-02T05:56:34.614Z"
+}

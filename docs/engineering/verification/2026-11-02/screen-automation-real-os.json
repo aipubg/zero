@@ -1,0 +1,26 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_BROWSER",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T05:56:50.002Z",
+  "scope": "Actual Windows captured title transition through rule matching to native screen-size output; not every OS event source or UI rule configuration",
+  "bridge": {
+    "observedChanges": 4,
+    "windowTransitions": 1,
+    "failures": 0,
+    "lastError": null,
+    "pending": 0
+  },
+  "action": {
+    "name": "get_screen_size",
+    "observationId": "obs_1793599012354_nk8xq",
+    "width": 1920,
+    "height": 1080,
+    "independentlyVerified": false
+  },
+  "captures": 4,
+  "finishedAt": "2026-11-02T05:56:53.001Z"
+}
