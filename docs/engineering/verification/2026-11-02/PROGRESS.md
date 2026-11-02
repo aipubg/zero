@@ -1162,3 +1162,21 @@ artifacts/screen-intelligence/endurance-combined-20261102T215241Z. Actual handle
 and start time revalidated; initial checkpoints contain actual captured/OCR frames.
 State IN_PROGRESS, completed24Hours false, resourceAcceptance PARTIAL. Previous
 interrupted evidence remains intact. This is not 24-hour acceptance evidence.
+
+### Two UI-assigned specialists execute independently in parallel
+
+[parallel-agents-ui-live.json](parallel-agents-ui-live.json) records actual UI
+assignment of coder to super-VL and researcher to lightning, another real host
+restart, and independent read_file subtasks without explicit model overrides.
+Two separate UUID file contents were absent from prompts and appeared in actual
+tool results, model outputs and parent synthesis. The independent forwarding
+proxy observed assigned upstream models and 723 ms overlap between their first
+requests. Nine selected browser workflows pass. This is functional evidence,
+not a latency benchmark or provider-internal model identity certification.
+
+An independent read-only reopen of the stopped host's task database confirms two
+COMPLETED children attached to the parent and stored TASK_ASSIGNED messages from
+Zero to each agent plus TASK_COMPLETED messages back to Zero. Real interruption
+and recovery of this combined UI parallel workflow remain a separate open gate.
+Endurance PID 16744 remained live with its original start time at reinspection,
+still early IN_PROGRESS with resourceAcceptance PARTIAL, never 24-hour PASS.

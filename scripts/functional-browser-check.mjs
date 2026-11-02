@@ -16,6 +16,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (process.argv.includes('--screen-recall') && !process.argv.includes('--screen')) throw new Error('--screen-recall requires --screen');
 if (process.argv.includes('--plugin-crash') && !process.argv.includes('--external-plugins')) throw new Error('--plugin-crash requires --external-plugins');
 if (process.argv.includes('--agent-execution') && !process.argv.includes('--agent-models')) throw new Error('--agent-execution requires --agent-models');
+if (process.argv.includes('--parallel-agents') && !process.argv.includes('--agent-execution')) throw new Error('--parallel-agents requires --agent-execution');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
 const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.now()));
 fs.mkdirSync(evidence, { recursive: true });
@@ -66,7 +67,9 @@ async function startModelProxy() {
       const chunks = []; let bytes = 0;
       for await (const chunk of request) { bytes += chunk.length; if (bytes > 1024 * 1024) throw new Error('Probe request exceeded bound'); chunks.push(chunk); }
       const body = Buffer.concat(chunks); const payload = JSON.parse(body);
-      outboundModelRequests.push({ model: payload.model, provider: provider.id });
+      const observed = { model: payload.model, provider: provider.id, startedAt: Date.now() };
+      outboundModelRequests.push(observed);
+      response.once('finish', () => { observed.finishedAt = Date.now(); });
       const result = await fetch(`${upstream}/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: request.headers.authorization }, body, signal: controller.signal });
       response.writeHead(result.status, { 'Content-Type': result.headers.get('content-type') || 'application/json' });
       Readable.fromWeb(result.body).on('error', () => response.destroy()).pipe(response);
@@ -279,9 +282,26 @@ try {
       const target = path.join(temporary, 'specialist-source.txt');
       const marker = `SPECIALIST_ACTUAL_READ_${crypto.randomUUID()}`;
       fs.writeFileSync(target, marker);
+      const parallel = process.argv.includes('--parallel-agents');
+      const secondModel = 'nv/nvidia/nemotron-3.5-lightning-30b-a3b';
+      const secondTarget = path.join(temporary, 'researcher-source.txt');
+      const secondMarker = `RESEARCHER_ACTUAL_READ_${crypto.randomUUID()}`;
+      if (parallel) {
+        await page.getByLabel('Agent model assignment', { exact: true }).selectOption('researcher');
+        await dropdown.locator('button').click();
+        await dropdown.locator(`[role="option"][data-value="${secondModel}"]`).click();
+        await page.getByRole('button', { name: 'Assign to specialist', exact: true }).click();
+        await page.getByText(`Successfully assigned "${secondModel}" to researcher!`, { exact: true }).waitFor();
+        await stop(); await start(); await page.reload();
+        const restored = await rpc('zero.providers.list');
+        assert.equal(restored.agentBindings.researcher.model, secondModel);
+        assert.equal(restored.agentBindings.coder.model, selected);
+        assert.deepEqual(restored.defaults, before.defaults);
+        fs.writeFileSync(secondTarget, secondMarker);
+      }
       const beforeRequests = outboundModelRequests.length;
       const outcome = await rpc('agent.task.execute', { goal: 'Read the actual local file and consolidate its content.', timeoutMs: 120000, maxToolRounds: 3, maxOutputTokens: 2048,
-        subtasks: [{ id: 'ui_assigned_coder', agentId: 'coder', goal: `Call read_file with path ${JSON.stringify(target)}. Report its exact content. You must actually call the tool.`, tools: ['read_file'], dependsOn: [] }] }, 130000);
+        subtasks: [{ id: 'ui_assigned_coder', agentId: 'coder', goal: `Call read_file with path ${JSON.stringify(target)}. Report its exact content. You must actually call the tool.`, tools: ['read_file'], dependsOn: [] }, ...(parallel ? [{ id: 'ui_assigned_researcher', agentId: 'researcher', goal: `Call read_file with path ${JSON.stringify(secondTarget)}. Report its exact content. You must actually call the tool.`, tools: ['read_file'], dependsOn: [] }] : [])] }, 130000);
       assert.equal(outcome.status, 'COMPLETED');
       const result = outcome.consolidatedResult.results.ui_assigned_coder;
       assert.equal(result.modelId, selected.replace(/^nv\//, ''));
@@ -289,7 +309,20 @@ try {
       assert.ok(result.output.includes(marker));
       const requests = outboundModelRequests.slice(beforeRequests);
       assert.ok(requests.some(request => request.model === result.modelId), 'Independent proxy must observe assigned model on actual upstream traffic');
-      execution = { masterTaskId: outcome.masterTaskId, status: outcome.status, modelId: result.modelId, actualRead: true, outputMatchesFile: true, upstreamModels: requests.map(request => request.model), synthesis: outcome.consolidatedResult.synthesis };
+      let parallelEvidence = null;
+      if (parallel) {
+        const second = outcome.consolidatedResult.results.ui_assigned_researcher;
+        assert.equal(second.modelId, secondModel.replace(/^nv\//, ''));
+        assert.ok(second.toolResults.some(tool => tool.toolName === 'read_file' && JSON.stringify(tool.result).includes(secondMarker)));
+        assert.ok(second.output.includes(secondMarker));
+        const a = requests.find(request => request.model === result.modelId);
+        const b = requests.find(request => request.model === second.modelId);
+        const overlapMs = Math.min(a.finishedAt, b.finishedAt) - Math.max(a.startedAt, b.startedAt);
+        assert.ok(overlapMs > 0, 'Independent actual upstream specialist requests must overlap');
+        assert.ok(outcome.consolidatedResult.synthesis.includes(marker) && outcome.consolidatedResult.synthesis.includes(secondMarker));
+        parallelEvidence = { agents: ['coder', 'researcher'], models: [result.modelId, second.modelId], overlapMs, actualIndependentFileResults: true, bothResultsInParentSynthesis: true };
+      }
+      execution = { masterTaskId: outcome.masterTaskId, status: outcome.status, modelId: result.modelId, actualRead: true, outputMatchesFile: true, upstreamModels: requests.map(request => request.model), parallelEvidence, synthesis: outcome.consolidatedResult.synthesis };
     }
     return { selectedAgent: 'coder', savedModel: selected, persistedAcrossProcess: true, coordinatorDefaultsUnchanged: true, unknownAgentRejected: true, inferenceVerifiedByThisCheck: Boolean(execution), execution };
   });

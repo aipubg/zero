@@ -1,0 +1,321 @@
+{
+  "report": {
+    "classification": [
+      "REAL_BROWSER",
+      "INTEGRATION",
+      "REAL_EXTERNAL"
+    ],
+    "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+    "startedAt": "2026-11-02T21:54:32.810Z",
+    "status": "PASS",
+    "evidence": "E:\\zero\\artifacts\\functional-browser\\1793656472798",
+    "checks": [
+      {
+        "name": "Chat connects, native plugin activates, composer accepts text",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 470,
+        "details": {
+          "pageErrors": []
+        }
+      },
+      {
+        "name": "Specialist UI model assignment persists without changing coordinator defaults",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_EXTERNAL"
+        ],
+        "status": "PASS",
+        "durationMs": 18557,
+        "details": {
+          "selectedAgent": "coder",
+          "savedModel": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+          "persistedAcrossProcess": true,
+          "coordinatorDefaultsUnchanged": true,
+          "unknownAgentRejected": true,
+          "inferenceVerifiedByThisCheck": true,
+          "execution": {
+            "masterTaskId": "task_1793656475860_k5jlx9",
+            "status": "COMPLETED",
+            "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+            "actualRead": true,
+            "outputMatchesFile": true,
+            "upstreamModels": [
+              "nvidia/nemotron-3.5-super-vl-120b-a12b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-super-vl-120b-a12b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b"
+            ],
+            "parallelEvidence": {
+              "agents": [
+                "coder",
+                "researcher"
+              ],
+              "models": [
+                "nvidia/nemotron-3.5-super-vl-120b-a12b",
+                "nvidia/nemotron-3.5-lightning-30b-a3b"
+              ],
+              "overlapMs": 723,
+              "actualIndependentFileResults": true,
+              "bothResultsInParentSynthesis": true
+            },
+            "synthesis": "### Consolidated Specialist Results\n\n**Goal:** Read and consolidate content from two local files as recorded by assigned specialists.\n\n---\n\n#### 📄 Coder Specialist\n- **Content Identifier:** `SPECIALIST_ACTUAL_READ_6bc9d741-d48d-4118-835b-c8a35631f3ad`\n- **File Path:** `C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-functional-browser-x8zH9U\\specialist-source.txt`\n- **Size:** 59 bytes\n- **SHA-256:** `668cdc5e6562ddd0aed5212ea9abe5061bdedf2577f878525a7e43d9dee36750`\n- **Tool Evidence:** `read_file` completed successfully (`outcome: COMPLETED`, `executed: true`, `completed: true`)\n\n#### 📄 Researcher Specialist\n- **Content Identifier:** `RESEARCHER_ACTUAL_READ_03891b71-6b7b-49a3-bd64-c4954b80a5e7`\n- **File Path:** `C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-functional-browser-x8zH9U\\researcher-source.txt`\n- **Size:** 59 bytes\n- **SHA-256:** `922cd4dc5396b16e7c6229e7b9c61197dc6c0817136a0c659afec4b58db1b408`\n- **Tool Evidence:** `read_file` completed successfully (`outcome: COMPLETED`, `executed: true`, `completed: true`)\n\n---\n\n### 🔍 Summary of Consolidated Content\n- Two distinct specialist readings were recorded, each producing a unique 59-byte identifier hash.\n- No overlapping or matching content between the two files (different SHA-256 hashes).\n- Both files were read, verified at the tool level, and audited within the session.\n\n### ⚠️ Limitations & Verification Notes\n- The outer metadata for both specialists marks `verified: false` and `executionKind: \"inference\"`, meaning the results are based on tool execution without broader independent verification.\n- I do not claim verification beyond the recorded tool evidence (file paths, byte counts, SHA-256 hashes, and `read_file` outcomes).\n- The actual file contents are the identifier strings shown above; no additional semantic or structural data was extracted or asserted.\n- If further independent verification of file contents or integrity is required, it must be performed outside this session's tool chain.\n\n**Consolidation complete based on recorded tool evidence only.**"
+          }
+        }
+      },
+      {
+        "name": "Memory search uses actual persisted records through the UI",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 269,
+        "details": {
+          "memoryId": "mem_semantic_1793656492774_p9lcf",
+          "marker": "Browser memory evidence 55527"
+        }
+      },
+      {
+        "name": "Skills filter changes visible results",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 262,
+        "details": {
+          "query": "web-research"
+        }
+      },
+      {
+        "name": "Skills details expose persisted enable/disable controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 935,
+        "details": {
+          "disabledPersisted": true,
+          "reenabled": true
+        }
+      },
+      {
+        "name": "Search form executes its configured provider and reports real outcome",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_EXTERNAL"
+        ],
+        "status": "PASS",
+        "durationMs": 1174,
+        "details": {
+          "sources": 5,
+          "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+          "sourceHttpStatus": 200,
+          "sourceBytes": 1030701,
+          "verifiedClaims": false
+        }
+      },
+      {
+        "name": "Plugins current page exposes lifecycle controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1602,
+        "details": {
+          "installedPersisted": true,
+          "executed": true,
+          "platform": "win32",
+          "verified": false,
+          "disabledAcrossProcessRestart": true,
+          "reenabled": true,
+          "uninstalled": true
+        }
+      },
+      {
+        "name": "Actual wheel input increases About scrollTop",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 359,
+        "details": {
+          "before": 0,
+          "scrollHeight": 1033,
+          "clientHeight": 165,
+          "after": 500
+        }
+      },
+      {
+        "name": "Gateway reconnects after a real process stop/restart and memory remains",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 2009,
+        "details": {
+          "oldPid": 19480,
+          "newPid": 18600,
+          "memoryCount": 1,
+          "closedAt": 1793656497779,
+          "reconnectedAt": 1793656498726,
+          "completedRequestReplay": null
+        }
+      }
+    ],
+    "pageErrors": [],
+    "rpcDiagnostics": [
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      }
+    ],
+    "finishedAt": "2026-11-02T21:54:59.801Z"
+  },
+  "durableAudit": {
+    "classification": [
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "databaseReopenedAfterHostStop": true,
+    "children": [
+      {
+        "agent_id": "coder",
+        "status": "COMPLETED"
+      },
+      {
+        "agent_id": "researcher",
+        "status": "COMPLETED"
+      }
+    ],
+    "messages": [
+      {
+        "from_agent_id": "zero",
+        "to_agent_id": "*",
+        "message_type": "TASK_ASSIGNED"
+      },
+      {
+        "from_agent_id": "zero",
+        "to_agent_id": "*",
+        "message_type": "TASK_COMPLETED"
+      },
+      {
+        "from_agent_id": "zero",
+        "to_agent_id": "coder",
+        "message_type": "TASK_ASSIGNED"
+      },
+      {
+        "from_agent_id": "coder",
+        "to_agent_id": "*",
+        "message_type": "STEP_PROGRESS"
+      },
+      {
+        "from_agent_id": "coder",
+        "to_agent_id": "zero",
+        "message_type": "TASK_COMPLETED"
+      },
+      {
+        "from_agent_id": "zero",
+        "to_agent_id": "researcher",
+        "message_type": "TASK_ASSIGNED"
+      },
+      {
+        "from_agent_id": "researcher",
+        "to_agent_id": "*",
+        "message_type": "STEP_PROGRESS"
+      },
+      {
+        "from_agent_id": "researcher",
+        "to_agent_id": "zero",
+        "message_type": "TASK_COMPLETED"
+      }
+    ]
+  }
+}
