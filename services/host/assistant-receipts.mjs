@@ -14,6 +14,7 @@ export function createAssistantReceipts(db) {
       if (existing.input_hash !== inputHash) return Promise.reject(new Error('Assistant request id was reused with different input'));
       if (active.has(key)) return active.get(key);
       if (existing.status === 'completed') return Promise.resolve(JSON.parse(existing.result_json));
+      if (existing.status === 'running') return Promise.reject(new Error(`Assistant execution is currently running${existing.task_id ? ` (task ${existing.task_id})` : ''}; wait for its result instead of starting it again`));
       return Promise.reject(new Error(existing.error || `Previous execution was interrupted${existing.task_id ? ` (task ${existing.task_id})` : ''}; inspect its task before explicitly retrying with a new request id`));
     }
     const now = Date.now();

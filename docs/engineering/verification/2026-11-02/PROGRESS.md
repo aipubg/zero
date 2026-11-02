@@ -581,3 +581,14 @@ selection, creates and reads the actual file, preserves one user message and
 replays the original completed request with zero additional upstream calls.
 Receipt integration and write-scope contracts pass. This is not broad provider
 failover, a clean-machine migration or proof of every model assignment UI.
+
+Concurrent retry verification now sends two real tasks.retry RPCs for the same
+FAILED task. Exactly one executes; the second fails the state precondition
+without starting another assistant turn. A concurrent original chat.send replay
+receives an explicit currently-running status rather than the misleading
+interrupted message previously used for this live receipt state.
+[assistant-retry-concurrent.json](assistant-retry-concurrent.json) passes this
+real model/tool workflow, the changed-session-model regression, actual file
+verification, one original user message and zero upstream calls on completed
+replay. The receipt integration regression also passes. Scope is one assistant
+task on an owned isolated host; distributed multi-host locking is not certified.

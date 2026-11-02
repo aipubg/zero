@@ -55,7 +55,19 @@ try {
     assert.ok(failed.model_id, 'The effective original model must be persisted before execution');
     await call('sessions.patch', { key: request.sessionKey, model: 'unavailable-model-for-retry-regression' });
     await call('zero-policy.computer-hold.release');
-    const retried = await call('tasks.retry', { taskId: failed.task_id });
+    const retryResults = Promise.allSettled([
+      call('tasks.retry', { taskId: failed.task_id }),
+      call('tasks.retry', { taskId: failed.task_id }),
+    ]);
+    const runningDeadline = Date.now() + 10000;
+    while (db.prepare('SELECT status FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey).status !== 'running' && Date.now() < runningDeadline) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(db.prepare('SELECT status FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey).status, 'running');
+    await assert.rejects(call('chat.send', request), /currently running/);
+    const attempts = await retryResults;
+    assert.equal(attempts.filter(result => result.status === 'fulfilled').length, 1);
+    assert.equal(attempts.filter(result => result.status === 'rejected').length, 1);
+    assert.match(attempts.find(result => result.status === 'rejected').reason.message, /FAILED/);
+    const retried = attempts.find(result => result.status === 'fulfilled').value;
     assert.equal(retried.taskId, failed.task_id); assert.ok(retried.content.trim());
     assert.equal(fs.readFileSync(filename, 'utf8').trim(), marker);
     const task = await call('tasks.get', { id: failed.task_id });
@@ -68,7 +80,7 @@ try {
     assert.equal((await call('chat.send', request)).taskId, failed.task_id);
     assert.equal((await call('models.status')).upstreamRequestCount, before);
     report.scope = 'Actual hold-induced FAILED assistant task explicitly retried through real model/tools; original task ID, single user message, file output and durable receipt verified';
-    report.retry = { taskId: failed.task_id, pinnedModel: failed.model_id, sessionModelChangedBeforeRetry: true, actualFileEffect: true, originalUserMessages: 1, replayModelCalls: 0 };
+    report.retry = { taskId: failed.task_id, pinnedModel: failed.model_id, sessionModelChangedBeforeRetry: true, concurrentRetryExecutions: 1, duplicateRetryRejected: true, activeReplayReportedRunning: true, actualFileEffect: true, originalUserMessages: 1, replayModelCalls: 0 };
   } else {
   const filename = path.join(output, 'actual-effect.txt'); const marker = 'ZERO_CRASH_EFFECT_ONCE';
   const request = { sessionKey: 'real-crash-task', idempotencyKey: 'real-crash-request', message: `Use write_file to create ${JSON.stringify(filename)} with exactly ${JSON.stringify(marker)}. Then read_file to verify it. Only after that, write a detailed 1000-word explanation of the verification.` };

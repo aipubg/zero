@@ -1,0 +1,21 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T06:38:42.373Z",
+  "scope": "Actual hold-induced FAILED assistant task explicitly retried through real model/tools; original task ID, single user message, file output and durable receipt verified",
+  "retry": {
+    "taskId": "task_1793601523071_fofvzy",
+    "pinnedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "sessionModelChangedBeforeRetry": true,
+    "concurrentRetryExecutions": 1,
+    "duplicateRetryRejected": true,
+    "activeReplayReportedRunning": true,
+    "actualFileEffect": true,
+    "originalUserMessages": 1,
+    "replayModelCalls": 0
+  },
+  "finishedAt": "2026-11-02T06:38:47.923Z"
+}
