@@ -1,0 +1,19 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T06:07:53.421Z",
+  "scope": "Actual model file effect and process-kill recovery without duplicate execution; not arbitrary side-effect reconciliation or automatic resumption",
+  "recovery": {
+    "firstPid": 9280,
+    "restartedPid": 4388,
+    "taskId": "task_1793599674117_kzr1u2",
+    "status": "WAITING",
+    "actualFileEffectPreserved": true,
+    "replayModelCalls": 0,
+    "originalUserMessages": 1
+  },
+  "finishedAt": "2026-11-02T06:07:58.081Z"
+}

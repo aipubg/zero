@@ -402,3 +402,15 @@ process. Receipt recovery is also deferred until that ownership point, avoiding
 constructor-time reclassification by another instance. Receipt integration and
 four isolated automation RPC leaves pass after this change. Actual in-flight
 process termination and effect reconciliation remain the required next gate.
+
+The actual bounded process-kill gate now passes in
+[assistant-real-crash-recovery.json](assistant-real-crash-recovery.json).
+A genuine model task executed write_file and created the expected test artifact.
+The owning test host was terminated while its receipt was still running, then
+replaced by a new process. The linked original task recovered to WAITING, its
+file effect remained intact, replay returned the interrupted task reference,
+zero new model calls occurred, and exactly one original user message remained.
+No fake model, manually injected task/receipt or dummy side effect was used.
+The runner retains isolated state and the actual artifact. This proves bounded
+crash evidence/replay protection, not automatic task resumption or reconciliation
+of arbitrary external side effects; those broader recovery workflows remain open.
