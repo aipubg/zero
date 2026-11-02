@@ -1257,7 +1257,7 @@ expiry and malformed-file behavior. Six reported protocol/session checks pass.
 The actual combined browser/external run passes all ten workflows: two distinct
 assigned models with real file tools, host kill/restart, same-child pinned resume,
 and final same-page reconnect with preserved operator/write scopes and editable
-composer. An additional eleven-workflow import/settings browser run also passed
+composer. An additional import/settings browser run also passed
 (artifacts/functional-browser/1793657152654/report.json). This closes the observed
 reconnect regression; it does not certify 24-hour auth expiry renewal or every
 possible interrupted tool effect. Endurance PID 16744 remains live with original
