@@ -1,0 +1,33 @@
+{
+  "classification": "REAL_EXTERNAL",
+  "status": "DOWNLOADED_AND_HASH_VERIFIED",
+  "inference": "NOT_RUN",
+  "runtime": "llama.cpp b11960",
+  "model": "ggml-org/SmolVLM-256M-Instruct-GGUF",
+  "revision": "b9e4379657e1450d04d02eec8e345667265b0a00",
+  "downloads": [
+    {
+      "filename": "artifacts\\local-runtime\\llama-b11960\\runtime.zip",
+      "size": 24407745,
+      "sha256": "73f962f82850d244db47eaacb9d913637027b82399124324298576d58c5f4287",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11960/llama-b11960-bin-win-cpu-x64.zip"
+    },
+    {
+      "filename": "models\\SmolVLM-256M\\SmolVLM-256M-Instruct-Q8_0.gguf",
+      "size": 175054528,
+      "sha256": "2a31195d3769c0b0fd0a4906201666108834848db768af11de1d2cef7cd35e65",
+      "url": "https://huggingface.co/ggml-org/SmolVLM-256M-Instruct-GGUF/resolve/b9e4379657e1450d04d02eec8e345667265b0a00/SmolVLM-256M-Instruct-Q8_0.gguf"
+    },
+    {
+      "filename": "models\\SmolVLM-256M\\mmproj-SmolVLM-256M-Instruct-Q8_0.gguf",
+      "size": 103769856,
+      "sha256": "7e943f7c53f0382a6fc41b6ee0c2def63ba4fded9ab8ed039cc9e2ab905e0edd",
+      "url": "https://huggingface.co/ggml-org/SmolVLM-256M-Instruct-GGUF/resolve/b9e4379657e1450d04d02eec8e345667265b0a00/mmproj-SmolVLM-256M-Instruct-Q8_0.gguf"
+    }
+  ],
+  "documentation": [
+    "https://github.com/ggml-org/llama.cpp/blob/master/docs/multimodal.md",
+    "https://huggingface.co/ggml-org/SmolVLM-256M-Instruct-GGUF"
+  ],
+  "downloadedAt": "2026-11-02T01:36:21.034Z"
+}

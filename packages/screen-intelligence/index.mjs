@@ -36,6 +36,14 @@ export class ScreenObserver extends EventEmitter {
     this.detector = new ChangeDetector(options);
     this.store = new SemanticObservationStore(options);
     this.visionExtractor = new LocalVisionExtractor(options);
+    this.localVisionRuntime = options.localVisionRuntime ?? null;
+    this.localVisionPrompt = options.localVisionPrompt;
+    if (this.localVisionPrompt !== undefined && (typeof this.localVisionPrompt !== 'string' || !this.localVisionPrompt.trim() || this.localVisionPrompt.length > 1000)) throw new Error('Local vision prompt must contain 1..1000 characters');
+    this.localVisionMinIntervalMs = options.localVisionMinIntervalMs ?? 30000;
+    if (!Number.isFinite(this.localVisionMinIntervalMs) || this.localVisionMinIntervalMs < 1000) throw new Error('Local vision interval must be at least 1000 ms');
+    this._visionPending = null;
+    this._visionAbort = null;
+    this.visionStats = { attempted: 0, completed: 0, failed: 0, lastStartedAt: 0, lastCompletedAt: null, lastError: null, retainedImageBytes: 0 };
     this._capture = options.captureFrame ?? (args => captureRealDesktopFrame({ ...options, ...args, visionExtractor: this.visionExtractor }));
     this.running = false;
     this._captureTimer = null;
@@ -144,7 +152,11 @@ export class ScreenObserver extends EventEmitter {
     ++this._generation;
     this._abort?.abort();
     if (wasRunning) this.emit('stopped', { timestamp: Date.now() });
-    return this._inFlight ?? Promise.resolve();
+    this._visionAbort?.abort();
+    const generation = this._generation;
+    return Promise.allSettled([this._inFlight, this._visionPending]).then(async () => {
+      if (generation === this._generation) await this.localVisionRuntime?.stop();
+    });
   }
 
   /**
@@ -190,7 +202,7 @@ export class ScreenObserver extends EventEmitter {
         confidence: null,
         ocr_engine: frame.ocr?.engine ?? null,
         ocr_status: frame.ocr?.status ?? 'unavailable',
-        local_vision_status: 'unavailable',
+        local_vision_status: this.localVisionRuntime?.enabled ? 'not-sampled' : 'unavailable',
         metadata: {
           width: frame.width ?? null, height: frame.height ?? null, pid: frame.pid ?? null,
           hwnd: frame.hwnd ?? null, bounds: frame.bounds ?? null,
@@ -228,6 +240,7 @@ export class ScreenObserver extends EventEmitter {
     this.stats.lastFrameTimestamp = timestamp;
     this.stats.totalFramesIngested++;
     if (changeEvent) this.emit('change', changeEvent);
+    if (changeEvent && generation === this._generation) this._scheduleVision(changeEvent.observationId, frame);
     if (generation === this._generation) this.emit('frame', {
       timestamp,
       hasChanged: change.hasChanged,
@@ -241,6 +254,29 @@ export class ScreenObserver extends EventEmitter {
       reason: change.reason,
       bufferStats: this.buffer.getStats(),
     };
+  }
+
+  _scheduleVision(observationId, frame) {
+    if (!this.running || !this.localVisionRuntime?.enabled || this._visionPending || Date.now() - this.visionStats.lastStartedAt < this.localVisionMinIntervalMs) return;
+    const generation = this._generation;
+    const controller = this._visionAbort = new AbortController();
+    const pixels = Buffer.from(frame.data);
+    const capturedAt = frame.timestamp;
+    this.visionStats.lastStartedAt = Date.now(); this.visionStats.attempted++;
+    this.visionStats.retainedImageBytes = pixels.length;
+    this._visionPending = (async () => {
+      try {
+        const result = await this.localVisionRuntime.describe(pixels, { signal: controller.signal, ...(this.localVisionPrompt ? { prompt: this.localVisionPrompt } : {}) });
+        if (!this.running || this._destroyed || generation !== this._generation || controller.signal.aborted) return;
+        const inferredAt = Date.now();
+        if (this.store.attachVision(observationId, { ...result, inferredAt, imageSha256: this.visionExtractor.computeImageHash(pixels) })) {
+          this.visionStats.completed++; this.visionStats.lastCompletedAt = inferredAt; this.visionStats.lastError = null;
+          this.emit('vision-observation', { observationId, capturedAt, inferredAt, model: result.model });
+        }
+      } catch (error) {
+        if (!controller.signal.aborted && generation === this._generation) { this.visionStats.failed++; this.visionStats.lastError = error.message; }
+      } finally { this._visionPending = null; this._visionAbort = null; this.visionStats.retainedImageBytes = 0; }
+    })();
   }
 
   /**
@@ -275,6 +311,7 @@ export class ScreenObserver extends EventEmitter {
       ...this._contextStatus(),
       observationStore: this.store.getStatus(),
       localVision: this.visionExtractor.getStatus(),
+      visionInference: { ...this.visionStats, pending: Boolean(this._visionPending), minIntervalMs: this.localVisionMinIntervalMs },
       latestObservation: latest,
       recentObservations: recent,
       bufferFrames: this.buffer.getStats().frameCount,
@@ -291,6 +328,7 @@ export class ScreenObserver extends EventEmitter {
       ...this._contextStatus(),
       captureInFlight: this._inFlight !== null,
       localVision: this.visionExtractor.getStatus(),
+      visionInference: { ...this.visionStats, pending: Boolean(this._visionPending), minIntervalMs: this.localVisionMinIntervalMs },
       stats: { ...this.stats },
       buffer: this.buffer.getStats(),
       observationStore: this.store.getStatus(),
@@ -301,8 +339,7 @@ export class ScreenObserver extends EventEmitter {
     const pending = this.stop();
     this._destroyed = true;
     this.buffer.clear();
-    this.store.close();
-    return pending;
+    return Promise.resolve(pending).finally(async () => { this.store.close(); await this.localVisionRuntime?.close(); });
   }
 
   _contextStatus() {

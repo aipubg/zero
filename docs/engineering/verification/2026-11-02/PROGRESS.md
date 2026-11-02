@@ -60,7 +60,8 @@ their failures are not rewritten as past passes.
 1. Finish observation backup encryption and key-rotation recovery tests. Current
    field encryption and user-bound key unlock pass their three Windows tests;
    legacy rollback snapshots remain plaintext and are explicitly reported.
-   Validate local vision model/runtime/projector and actual inference.
+   Extend the bounded local vision validation below to wider screen accuracy,
+   model selection/routing and longer resource measurements.
    Complete sleep/lock/multi-monitor and full 24-hour resource gates.
 2. Complete acoustic voice reliability and genuine spoken barge-in. Speech-end,
    transcription, shared durable chat/task execution and reply synthesis now pass
@@ -161,5 +162,55 @@ exercise file-backed reopen, original settings preservation, private buffer
 clearing and capture/storage failures; all 21 native/legacy lifecycle tests pass.
 These deterministic adapter tests are not counted as real screen capture.
 The standalone encrypted 24-hour run is separate, remains incomplete, and was
-not restarted by these isolated browser process tests. Local vision remains
-unavailable until a real model/runtime has been installed and validated.
+not restarted by these isolated browser process tests. Local vision installation
+and bounded validation followed at the checkpoint below.
+
+## Local GGUF vision — 01:47 UTC checkpoint
+
+- [local-vision-provisioning.json](local-vision-provisioning.json) records official
+  llama.cpp `b11960` Windows CPU runtime and `ggml-org/SmolVLM-256M-Instruct-GGUF`
+  revision `b9e4379657e1450d04d02eec8e345667265b0a00`, including exact sizes,
+  download URLs and verified SHA-256 values for runtime/model/projector.
+  `node scripts/install-local-vision.mjs` reproduces installation; weights and
+  binaries remain ignored local dependencies, not committed project source.
+- [local-vision-inference.json](local-vision-inference.json) passes actual local
+  text generation and red/blue/green pixel recognition, followed by cancellation
+  of a real in-flight request, termination of its owned process and successful
+  fresh-process inference. Child CPU threads are bounded to two. Provider
+  credentials are excluded from the native child environment. Inference uses
+  local model files and loopback HTTP; no cloud image fallback is present.
+- [local-vision-screen-memory.json](local-vision-screen-memory.json) passes two
+  actual visible Windows desktop changes. Native capture and Windows OCR see the
+  controlled Chrome window, the local model identifies blue then green, and
+  image SHA/model/timestamps accompany the encrypted observation. Reopen retains
+  both retrievable results. No dummy frames/buffers or manually inserted model
+  answers were used. The test explicitly asks the model for the dominant page
+  background color; the production description prompt remains general.
+- [local-vision-unrequested-color-failure.json](local-vision-unrequested-color-failure.json)
+  retains an earlier failed expectation: the general prompt accurately described
+  the browser/marker but did not mention an unrequested color. A separate earlier
+  OCR exact-match failure is retained under `artifacts/local-vision-screen/`;
+  marker matching now tolerates intervening recognition artifacts while requiring
+  all marker words in real OCR. These runs remain failures, not rewritten passes.
+- Native observation now schedules at most one background vision request, while
+  capture/OCR continue. Model results update their original observation with an
+  image hash and `verified:false`; no confidence is invented. Failure preserves
+  OCR context and never creates a successful vision result. Stop/Private Mode
+  cancel work and unload model/KV buffers. Generation checks discard late work.
+  Four additional UNIT/CONTRACT/INTEGRATION tests pass; 17 scoped screen tests
+  pass in total. They are not substituted for the real inference runners.
+- `models/local-vision.json` configures the installed small model, two CPU threads
+  and at most one sampled changed frame per minute. Loading is lazy; enabling
+  this model does not start screen capture. Existing observation preference and
+  Private Mode remain authoritative. Missing binaries/weights report unavailable.
+- [browser-with-local-vision.json](browser-with-local-vision.json) passes all
+  eleven browser workflows after integration, including real NVIDIA chat,
+  microphone, observation and actual restart cases. Its labels now also include
+  REAL_EXTERNAL/REAL_OS; older reports used narrower runner labels.
+
+This proves bounded local execution and controlled color recognition, not broad
+vision accuracy, general local chat/tool routing, or 24-hour vision endurance.
+The older PID 15716 endurance run measures capture/OCR without this new local
+vision pipeline; it cannot certify the new model's resource behavior. A full
+combined resource/endurance gate is still required. Production sign-off remains
+BLOCKED and external mobile/cloud prerequisites remain unavailable.

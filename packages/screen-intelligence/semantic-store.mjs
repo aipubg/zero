@@ -76,7 +76,7 @@ export class SemanticObservationStore {
   }
 
   /**
-   * Insert a verified semantic observation record.
+   * Persist a captured observation with explicit provenance.
    */
   insertObservation(obs) {
     const id = obs.observation_id || `obs_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -162,6 +162,21 @@ export class SemanticObservationStore {
     `);
     const rows = stmt.all();
     return rows.length > 0 ? this._decode(rows[0]) : null;
+  }
+
+  /** Add an actual model result to its original observation, preserving encrypted fields. */
+  attachVision(observationId, result) {
+    const stored = this.db.prepare('SELECT * FROM semantic_observations WHERE observation_id = ?').get(observationId);
+    if (!stored) return false;
+    const row = this._decode(stored);
+    const metadata = JSON.parse(row.metadata_json || '{}');
+    metadata.localVision = { status: 'inferred', model: result.model, source: result.source,
+      imageSha256: result.imageSha256, capturedAt: row.timestamp, inferredAt: result.inferredAt, verified: false, confidence: null };
+    const summary = `${row.semantic_summary}; Local vision (unverified model inference): ${String(result.text).slice(0, 2000)}`;
+    const seal = (column, value) => this.protection ? this.protection.seal(column, observationId, value) : value;
+    this.db.prepare('UPDATE semantic_observations SET semantic_summary = ?, metadata_json = ?, local_vision_status = ? WHERE observation_id = ?')
+      .run(seal('semantic_summary', summary), seal('metadata_json', JSON.stringify(metadata)), 'inferred', observationId);
+    return true;
   }
 
   /**

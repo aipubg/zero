@@ -1,0 +1,31 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_BROWSER",
+    "INTEGRATION"
+  ],
+  "status": "FAIL",
+  "startedAt": "2026-11-02T01:42:41.931Z",
+  "checks": [
+    {
+      "expectedDominantColor": "blue",
+      "summary": "Application: chrome; window: \"Zero Local Vision Acceptance - Google Chrome\"; event: initial_frame; OCR: Zero Local '\"ion Accepta nce C about:blank ZERO LOCAL VISION [11 CHECK File Explorer • WhatsApp Google Chrome • WhatsApp Beta GreatWaII chatGPT untitled - Google C 9 AM 11/2/2026; local vision not yet sampled for this observation.; Local vision (unverified model inference):  Screen of a web browser displaying a zero local vision check.",
+      "inference": {
+        "status": "inferred",
+        "model": "zero-local-vision",
+        "source": "local-gguf-inference",
+        "imageSha256": "17dd0a4c6d446f5b9b401bf5011f307014707bd59d345c0d9980f9cc8816e7bd",
+        "capturedAt": 1793583762596,
+        "inferredAt": 1793583773061,
+        "verified": false,
+        "confidence": null
+      },
+      "source": "actual-desktop-capture",
+      "captureSucceeded": 1,
+      "modelCompleted": 1
+    }
+  ],
+  "scope": "Controlled visible desktop changes, actual GDI/CUA capture, local model inference and encrypted observation retrieval; no general accuracy/endurance sign-off",
+  "error": "The input did not match the regular expression /\\bblue\\b/i. Input:\n\n'  Screen of a web browser displaying a zero local vision check.'\n",
+  "finishedAt": "2026-11-02T01:42:53.212Z"
+}

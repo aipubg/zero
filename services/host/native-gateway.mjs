@@ -46,6 +46,7 @@ import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
+import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
 import { createScreenObserver } from '../../packages/screen-intelligence/index.mjs';
 import { handleZeroGatewayRequest } from '../../backend/gateway/server.mjs';
 import {
@@ -152,7 +153,12 @@ export class ZeroNativeHost {
     }
 
     const sessionDb = path.join(dataDir, 'zero-sessions.sqlite');
-    this.screenObserver = createScreenObserver({ dataDir });
+    const visionConfigPath = path.join(REPO_ROOT, 'models/local-vision.json');
+    const visionConfig = options.localVision === false ? {} : options.localVision || (fs.existsSync(visionConfigPath) ? JSON.parse(fs.readFileSync(visionConfigPath, 'utf8')) : {});
+    this.screenObserver = createScreenObserver({ dataDir,
+      localVisionRuntime: visionConfig.enabled ? new LocalInferenceRuntime(visionConfig) : null,
+      localVisionMinIntervalMs: visionConfig.minIntervalMs ?? 30000,
+    });
     this.observationLifecycle = createNativeObservationLifecycle({ observer: this.screenObserver, prefsPath: this.prefsPath });
     this.modelFabric = new ModelFabric({
       configPath: path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
@@ -941,7 +947,7 @@ export class ZeroNativeHost {
             skills: { implemented: true, installedCount: this.skillLoader.listSkills().length },
             plugins: { implemented: true, ...this.pluginManager.getDiagnostics() },
             voice: { status: 'PARTIAL', ...this.voiceEngine.getStatus() },
-            screen: { ...this.screenObserver.getStatus(), localVision: 'unavailable', encryptedAtRest: this.screenObserver.getStatus().observationStore.encryptedFields, completed24Hours: false },
+            screen: { ...this.screenObserver.getStatus(), encryptedAtRest: this.screenObserver.getStatus().observationStore.encryptedFields, completed24Hours: false },
           },
           timestamp: Date.now(),
         };

@@ -84,7 +84,7 @@ export async function captureRealDesktopFrame(options = {}) {
       metadataTimestamp, metadataStatus: win ? 'available' : 'unavailable', metadataError,
       appName: win?.process ?? win?.process_name ?? null, windowTitle: win?.title ?? null,
       pid: win?.pid ?? null, hwnd: win?.hwnd ?? null, bounds: win?.bounds ?? null,
-      ocrText: ocr.ok === true ? ocr.text : '', ocr, localVision: { ...LOCAL_VISION_STATUS } };
+      ocrText: ocr.ok === true ? ocr.text : '', ocr, localVision: { ...((options.visionExtractor ?? extractor).getStatus?.() ?? LOCAL_VISION_STATUS), frameInference: 'not-sampled' } };
   } catch (error) {
     return { ok: false, error: error.message, aborted: signal?.aborted === true,
       timestamp: Date.now(), captureDurationMs: Date.now() - startedAt };

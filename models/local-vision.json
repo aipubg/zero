@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "executable": "artifacts/local-runtime/llama-b11960/llama-server.exe",
+  "model": "models/SmolVLM-256M/SmolVLM-256M-Instruct-Q8_0.gguf",
+  "projector": "models/SmolVLM-256M/mmproj-SmolVLM-256M-Instruct-Q8_0.gguf",
+  "modelId": "zero-local-vision",
+  "threads": 2,
+  "minIntervalMs": 60000
+}

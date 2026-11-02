@@ -1,0 +1,145 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_BROWSER",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T01:46:03.174Z",
+  "checks": [
+    {
+      "name": "Local GGUF text generation",
+      "status": "PASS",
+      "text": " 4",
+      "model": "zero-local-vision",
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 17,
+        "total_tokens": 20,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finishReason": "stop",
+      "source": "local-gguf-inference",
+      "verified": false
+    },
+    {
+      "name": "Actual red pixel recognition",
+      "status": "PASS",
+      "expectedColor": "red",
+      "imageSha256": "5a9def24fa5c62b4982e9f269de4d852188fee411602a6ec5c8a9134bc8631b2",
+      "durationMs": 2286,
+      "text": " Red.",
+      "model": "zero-local-vision",
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 158,
+        "total_tokens": 161,
+        "prompt_tokens_details": {
+          "cached_tokens": 3
+        }
+      },
+      "finishReason": "stop",
+      "source": "local-gguf-inference",
+      "verified": false
+    },
+    {
+      "name": "Actual blue pixel recognition",
+      "status": "PASS",
+      "expectedColor": "blue",
+      "imageSha256": "58fd44140aedcae3b2444c6bc3273d154103bd5cc651b8fdf4f3a490a2e2284d",
+      "durationMs": 2194,
+      "text": " Blue.",
+      "model": "zero-local-vision",
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 158,
+        "total_tokens": 161,
+        "prompt_tokens_details": {
+          "cached_tokens": 6
+        }
+      },
+      "finishReason": "stop",
+      "source": "local-gguf-inference",
+      "verified": false
+    },
+    {
+      "name": "Actual green pixel recognition",
+      "status": "PASS",
+      "expectedColor": "green",
+      "imageSha256": "33b73688732859fbeb8ce945cc5849797e107c93ed8b5a60e42e4cf6ccd1e6fb",
+      "durationMs": 2198,
+      "text": " Green.",
+      "model": "zero-local-vision",
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 158,
+        "total_tokens": 161,
+        "prompt_tokens_details": {
+          "cached_tokens": 6
+        }
+      },
+      "finishReason": "stop",
+      "source": "local-gguf-inference",
+      "verified": false
+    }
+  ],
+  "scope": "Actual local model execution and controlled dominant-color recognition; not general visual understanding accuracy or 24-hour endurance",
+  "runtime": {
+    "enabled": true,
+    "available": true,
+    "status": "ready",
+    "reason": null,
+    "confidence": null,
+    "model": "zero-local-vision",
+    "runtime": "llama.cpp b11960",
+    "transport": "loopback-http",
+    "threads": 2,
+    "pid": 18692,
+    "requests": 0,
+    "completed": 0,
+    "failures": 0,
+    "active": 0
+  },
+  "afterInference": {
+    "enabled": true,
+    "available": true,
+    "status": "ready",
+    "reason": null,
+    "confidence": null,
+    "model": "zero-local-vision",
+    "runtime": "llama.cpp b11960",
+    "transport": "loopback-http",
+    "threads": 2,
+    "pid": 18692,
+    "requests": 4,
+    "completed": 4,
+    "failures": 0,
+    "active": 0
+  },
+  "interruptionRecovery": {
+    "actualPendingRequestCancelled": true,
+    "childStopped": true,
+    "completedBeforeAbort": 4,
+    "completedAfterRecovery": 5,
+    "reply": " 4"
+  },
+  "afterClose": {
+    "enabled": true,
+    "available": false,
+    "status": "stopped",
+    "reason": null,
+    "confidence": null,
+    "model": "zero-local-vision",
+    "runtime": "llama.cpp b11960",
+    "transport": "loopback-http",
+    "threads": 2,
+    "pid": null,
+    "requests": 6,
+    "completed": 5,
+    "failures": 1,
+    "active": 0
+  },
+  "finishedAt": "2026-11-02T01:46:11.021Z"
+}

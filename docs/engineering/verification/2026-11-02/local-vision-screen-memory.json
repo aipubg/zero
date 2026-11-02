@@ -1,0 +1,49 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_BROWSER",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T01:44:04.288Z",
+  "checks": [
+    {
+      "expectedDominantColor": "blue",
+      "summary": "Application: chrome; window: \"Zero Local Vision Acceptance - Google Chrome\"; event: initial_frame; OCR: Zero Local Vesion Acceptance C about:blank ZERO LOCAL VISION [11 CHECK File Explorer • WhatsApp Google Chrome • WhatsApp Beta GreatWaII chatGPT untitled - Google C 9 AM 11/2/2026; local vision results are appended separately when available.; Local vision (unverified model inference):  Blue.",
+      "inference": {
+        "status": "inferred",
+        "model": "zero-local-vision",
+        "source": "local-gguf-inference",
+        "imageSha256": "f3e5436cfa17be356a655a7c79117687cab050871550a26cbaaaf7687c2bc299",
+        "capturedAt": 1793583844963,
+        "inferredAt": 1793583855458,
+        "verified": false,
+        "confidence": null
+      },
+      "source": "actual-desktop-capture",
+      "captureSucceeded": 1,
+      "modelCompleted": 1
+    },
+    {
+      "expectedDominantColor": "green",
+      "summary": "Application: chrome; window: \"Zero Local Vision Acceptance - Google Chrome\"; event: visual_delta; OCR: e Zero Local Vision Accepta nce C about:blank ZERO LOCAL VISION CHECK File Explorer • WhatsApp Google Chrome • WhatsApp Beta GreatWaII chatGPT Zero Local Vision A 9 AM 11/2/2026; local vision results are appended separately when available.; Local vision (unverified model inference):  Green.",
+      "inference": {
+        "status": "inferred",
+        "model": "zero-local-vision",
+        "source": "local-gguf-inference",
+        "imageSha256": "1e96434628babc989498af84a6b5e381e9a3ef808ef831b1343be79a8de76b2b",
+        "capturedAt": 1793583855528,
+        "inferredAt": 1793583865302,
+        "verified": false,
+        "confidence": null
+      },
+      "source": "actual-desktop-capture",
+      "captureSucceeded": 2,
+      "modelCompleted": 2
+    }
+  ],
+  "scope": "Controlled visible desktop changes, actual GDI/CUA capture, local model inference and encrypted observation retrieval; no general accuracy/endurance sign-off",
+  "persistedAfterReopen": true,
+  "encryptedFields": true,
+  "finishedAt": "2026-11-02T01:44:25.664Z"
+}

@@ -21,7 +21,7 @@ await once(listener, 'listening');
 const port = listener.address().port;
 await new Promise(resolve => listener.close(resolve));
 const base = `http://127.0.0.1:${port}`;
-const report = { classification: ['REAL_BROWSER', 'INTEGRATION'], startedAt: new Date().toISOString(), status: 'RUNNING', evidence, checks: [] };
+const report = { classification: ['REAL_BROWSER', 'INTEGRATION', 'REAL_EXTERNAL', ...(process.argv.some(arg => ['--devices', '--screen'].includes(arg)) ? ['REAL_OS'] : [])], startedAt: new Date().toISOString(), status: 'RUNNING', evidence, checks: [] };
 let child, browser, page;
 const errors = [];
 
