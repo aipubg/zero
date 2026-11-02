@@ -1348,3 +1348,27 @@ human intelligibility/acoustic barge-in sign-off. No raw mic audio was saved.
 Asked the user asynchronously whether the phrase was audible; until an answer,
 human audibility stays UNVERIFIED. Voice remains PARTIAL. The long endurance PID
 16744 remained live at reinspection; its original run is not upgraded by this work.
+
+### Persist assistant tool outcomes as task steps
+
+Assistant tools previously persisted observations in session transcripts and
+capability audits but the durable task step list contained only assistant_input.
+The owning task ID now reaches the model/tool executor, which records every tool
+result with its original arguments and outcome. Failed/blocked/errors are failed;
+verified successes are completed; other successes remain unverified. Malformed
+arguments also retain a failed step. Exact recovery does not erase the original
+failed observation or rewrite history.
+
+[durable-assistant-tool-steps.json](durable-assistant-tool-steps.json) records
+actual NVIDIA cases and independent read-only task DB assertions. A missing read
+followed by unrelated successful write/read remains FAILED while task history
+shows failed, completed, completed. An intentional missing read followed by a
+write and identical-argument verified read reaches COMPLETED with the same three
+step outcomes retained. File content is independently checked. The first edit
+incorrectly referenced an out-of-scope task variable and the real test failed;
+that failed attempt is retained, and the explicit taskId fix is verified by both
+subsequent external runs. Two receipt/scope regression checks also pass.
+
+Endurance PID 16744 remains present with its original start time at this audit;
+its checkpoint is still IN_PROGRESS, completed24Hours false and resources PARTIAL.
+No current source edit is claimed to have hot-loaded into that long-running process.

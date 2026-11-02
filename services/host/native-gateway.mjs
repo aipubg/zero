@@ -1932,7 +1932,7 @@ export class ZeroNativeHost {
         combinedSignal.throwIfAborted();
         this.sessions.appendMessage(sessionKey, options.resumeTaskId ? { role: 'system', content: `Resume interrupted task ${task.id}. Original goal: ${userContent}. Existing effects may already have happened. Inspect prior tool results and actual files/state before repeating any action. Continue remaining work and report unresolved effects honestly.` } : { role: 'user', content: userContent });
         this.tasks.recordStep(task.id, { stepNumber: this.tasks.getTaskSteps(task.id).length + 1, toolName: options.resumeTaskId ? 'assistant_resume' : 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
-        const result = await this._executeAgentTurn({ ...options, signal: combinedSignal });
+        const result = await this._executeAgentTurn({ ...options, taskId: task.id, signal: combinedSignal });
         combinedSignal.throwIfAborted();
         if (!result?.ok) throw new Error(result?.error || 'Assistant turn failed');
         const complete = { ...result, taskId: task.id, sessionKey, runId: options.runId };
@@ -1953,7 +1953,7 @@ export class ZeroNativeHost {
     return request.finally(() => this.pendingRequests.delete(request));
   }
 
-  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId }) {
+  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId }) {
     if (this.computerHold.held) {
       return {
         ok: false,
@@ -2049,6 +2049,12 @@ export class ZeroNativeHost {
       let observedProviderModel = null;
       let mediaResult = null;
       const executedActions = [];
+      const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
+      const recordTool = (name, args, result) => this.tasks.recordStep(taskId, {
+        stepNumber: this.tasks.getTaskSteps(taskId).length + 1,
+        toolName: name, toolArgs: args, toolResult: result,
+        status: actionFailed({ execRes: result }) ? 'failed' : result.verified === true ? 'completed' : 'unverified',
+      });
       const turnStartTime = Date.now();
       let firstTokenTime = null;
       let sequence = 0;
@@ -2192,6 +2198,7 @@ export class ZeroNativeHost {
             console.warn(`[Zero Host] Tool call argument parse failure for '${fnName}':`, parseError);
             const errObservation = { ok: false, error: parseError, raw: call.function?.arguments };
             executedActions.push({ action: fnName, args: {}, execRes: errObservation });
+            recordTool(fnName, { malformedArguments: call.function?.arguments }, errObservation);
             const toolMsg = {
               role: 'tool',
               tool_call_id: call.id,
@@ -2227,6 +2234,7 @@ export class ZeroNativeHost {
           });
 
           executedActions.push({ action, args, execRes });
+          recordTool(fnName, args, execRes);
 
           if (action === 'play') {
             mediaResult = execRes.data || execRes;
@@ -2242,7 +2250,6 @@ export class ZeroNativeHost {
         }
       }
 
-      const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
       const failedActions = executedActions.filter((action, index) => actionFailed(action) && !executedActions.slice(index + 1).some(later =>
         !actionFailed(later) && later.execRes?.verified === true && later.action === action.action && isDeepStrictEqual(later.args, action.args)));
       // Truthful media widget card

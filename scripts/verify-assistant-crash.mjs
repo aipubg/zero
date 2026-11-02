@@ -42,6 +42,11 @@ function call(method, params = {}) {
   });
 }
 async function stop() { socket?.close(); if (child?.exitCode === null) { const closed = once(child, 'close'); child.kill(); await closed; } }
+function durableToolSteps(taskId) {
+  const db = new DatabaseSync(path.join(state, 'data/zero-tasks.sqlite'), { readOnly: true });
+  try { return db.prepare('SELECT tool_name,status,tool_result FROM zero_task_steps WHERE task_id=? ORDER BY step_number').all(taskId).filter(row => row.tool_name === 'read_file' || row.tool_name === 'write_file').map(row => ({ name: row.tool_name, status: row.status, result: JSON.parse(row.tool_result) })); }
+  finally { db.close(); }
+}
 try {
   await start(); const firstPid = child.pid;
   if (process.argv.includes('--tool-recovery-only')) {
@@ -57,6 +62,10 @@ try {
     assert.ok(toolResults.some(value => value.ok === false && value.capability === 'read_file'));
     assert.ok(toolResults.some(value => value.ok === true && value.verified === true && value.capability === 'read_file'));
     const task = await call('tasks.get', { id: result.taskId }); assert.equal((task.task || task).status, 'COMPLETED');
+    const steps = durableToolSteps(result.taskId);
+    assert.ok(steps.some(step => step.name === 'read_file' && step.status === 'failed' && step.result.ok === false));
+    assert.ok(steps.some(step => step.name === 'read_file' && step.status === 'completed' && step.result.verified === true));
+    report.durableToolSteps = steps.map(({ name, status }) => ({ name, status }));
     report.scope = 'Actual model missing-file read followed by write and identical-argument verified read recovery; original error retained';
     report.toolRecovery = { taskId: result.taskId, failedReadPreserved: true, laterVerifiedRead: true, matchingReadArguments: true, actualContentVerified: true, status: 'COMPLETED' };
   } else if (process.argv.includes('--tool-failure-only') || process.argv.includes('--tool-unrelated-only')) {
@@ -74,6 +83,9 @@ try {
     assert.ok(history.messages.some(message => message.role === 'tool' && JSON.parse(message.content).ok === false));
     assert.equal(fs.existsSync(missing), false);
     if (unrelated) assert.equal(fs.readFileSync(unrelated, 'utf8').trim(), 'UNRELATED_SUCCESS');
+    const steps = durableToolSteps(receipt.task_id);
+    assert.ok(steps.some(step => step.name === 'read_file' && step.status === 'failed' && step.result.ok === false));
+    report.durableToolSteps = steps.map(({ name, status }) => ({ name, status }));
     report.scope = 'Real model read_file failure cannot become a completed task even when the model gives a final explanation';
     report.toolFailure = { taskId: receipt.task_id, receiptStatus: receipt.status, taskStatus: 'FAILED', actualToolErrorPreserved: true, originalFileStillAbsent: true, unrelatedSuccessfulEffect: Boolean(unrelated) };
   } else if (process.argv.includes('--retry-only')) {

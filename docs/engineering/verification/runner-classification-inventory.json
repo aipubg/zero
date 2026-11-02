@@ -61,7 +61,7 @@
     },
     {
       "file": "scripts/verify-assistant-crash.mjs",
-      "sha256": "a160c0f9de79c2c96120e803b1eafc54d999750b3450a48a2aee7472c07d7030",
+      "sha256": "02f3f807cf8da97106f749dad640f2b7f3438e39397105a975274b18bf9e6ebf",
       "labels": [
         "REAL_EXTERNAL",
         "INTEGRATION"

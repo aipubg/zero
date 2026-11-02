@@ -1,0 +1,84 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "scope": "Durable assistant tool outcomes and exact-read recovery; earlier failed implementation attempt retained",
+  "runs": [
+    {
+      "classification": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "FAIL",
+      "startedAt": "2026-11-02T22:17:55.620Z",
+      "scope": "Actual model file effect and process-kill recovery without duplicate execution; not arbitrary side-effect reconciliation or automatic resumption",
+      "error": "The input did not match the regular expression /tool action.*failed or were blocked/. Input:\n\n'Error: task is not defined'\n",
+      "finishedAt": "2026-11-02T22:18:03.833Z"
+    },
+    {
+      "classification": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "startedAt": "2026-11-02T22:18:19.725Z",
+      "scope": "Real model read_file failure cannot become a completed task even when the model gives a final explanation",
+      "durableToolSteps": [
+        {
+          "name": "read_file",
+          "status": "failed"
+        },
+        {
+          "name": "write_file",
+          "status": "completed"
+        },
+        {
+          "name": "read_file",
+          "status": "completed"
+        }
+      ],
+      "toolFailure": {
+        "taskId": "task_1793657900438_7psaop",
+        "receiptStatus": "failed",
+        "taskStatus": "FAILED",
+        "actualToolErrorPreserved": true,
+        "originalFileStillAbsent": true,
+        "unrelatedSuccessfulEffect": true
+      },
+      "finishedAt": "2026-11-02T22:18:28.139Z"
+    },
+    {
+      "classification": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "startedAt": "2026-11-02T22:18:28.186Z",
+      "scope": "Actual model missing-file read followed by write and identical-argument verified read recovery; original error retained",
+      "durableToolSteps": [
+        {
+          "name": "read_file",
+          "status": "failed"
+        },
+        {
+          "name": "write_file",
+          "status": "completed"
+        },
+        {
+          "name": "read_file",
+          "status": "completed"
+        }
+      ],
+      "toolRecovery": {
+        "taskId": "task_1793657908894_vnptn3",
+        "failedReadPreserved": true,
+        "laterVerifiedRead": true,
+        "matchingReadArguments": true,
+        "actualContentVerified": true,
+        "status": "COMPLETED"
+      },
+      "finishedAt": "2026-11-02T22:18:35.145Z"
+    }
+  ]
+}
