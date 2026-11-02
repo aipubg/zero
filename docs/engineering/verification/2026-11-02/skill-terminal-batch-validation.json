@@ -1,0 +1,84 @@
+{
+  "contract": {
+    "classification": [
+      "CONTRACT",
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "command": "node --test test/skill-sdk-integration.test.mjs",
+    "reportedChecks": 10,
+    "negativeHTTPScenarios": [
+      "length",
+      "content_filter",
+      "unknown finish reason",
+      "missing finish reason",
+      "empty declared tool batch",
+      "refusal",
+      "malformed second arguments",
+      "duplicate call IDs"
+    ],
+    "assertions": "FAILED durable model step and task; zero leading file effects"
+  },
+  "externalRegression": {
+    "classification": [
+      "REAL_EXTERNAL",
+      "REAL_BROWSER"
+    ],
+    "startedAt": "2026-11-02T22:22:42.752Z",
+    "status": "PASS",
+    "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-skill-kmaQb0",
+    "evidence": "E:\\zero\\artifacts\\external-skill\\1793658162752",
+    "source": {
+      "type": "github",
+      "url": "https://github.com/anthropics/skills.git",
+      "ref": "ca45fc496a3436251f191354091d557da31c15b5",
+      "subpath": "skills/frontend-design",
+      "revision": "ca45fc496a3436251f191354091d557da31c15b5"
+    },
+    "reusedPersistedExecution": false,
+    "execution": {
+      "ok": true,
+      "status": "completed",
+      "taskId": "task_1793658167931_nm1cyp",
+      "output": "The polished counter HTML has been created and verified. The file is saved at:\n\n**C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-skill-kmaQb0\\community-skill-counter.html**\n\nThe document contains:\n\n- A centered counter display with initial value `0` in an element `id=\"count\"`\n- An \"Increment\" button that increases the integer by one on each click\n- A minimal dark palette with a teal accent (`#00d4aa`), subtle typography using the `Inter` system font, and responsive styling\n- No external scripts, frameworks, or network dependencies\n- Visible focus-visible state for accessibility\n- Reduced‑motion‑safe transitions\n\nThe file was written via `write_file` and confirmed with a subsequent `read_file` call, matching the specified path and content.",
+      "steps": [
+        {
+          "capability": "model",
+          "status": "completed"
+        },
+        {
+          "capability": "write_file",
+          "status": "completed"
+        },
+        {
+          "capability": "model",
+          "status": "completed"
+        },
+        {
+          "capability": "read_file",
+          "status": "completed"
+        },
+        {
+          "capability": "model",
+          "status": "completed"
+        }
+      ]
+    },
+    "modelAssignment": {
+      "agentId": "zero",
+      "expectedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "recordedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "modelRounds": 3
+    },
+    "artifact": {
+      "bytes": 2175,
+      "sha256": "b115712a5ea9ac7a8fe6a002d5be4d7cd371524be68a05e325ab5378dd76779e"
+    },
+    "independentVerification": {
+      "initial": 0,
+      "afterTwoClicks": 2,
+      "browserErrors": []
+    },
+    "finishedAt": "2026-11-02T22:23:12.290Z"
+  }
+}

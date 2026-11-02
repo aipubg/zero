@@ -44,7 +44,7 @@ function runtime(t, root) {
   return { stateMachine, capabilityEngine };
 }
 
-async function modelServer(t, handler) {
+async function modelServer(t, handler, options = {}) {
   const requests = [];
   const server = http.createServer(async (request, response) => {
     try {
@@ -54,7 +54,7 @@ async function modelServer(t, handler) {
       requests.push(payload);
       const message = await handler(payload, requests.length);
       response.writeHead(200, { 'content-type': 'application/json' });
-      response.end(JSON.stringify({ choices: [{ message: { role: 'assistant', ...message }, finish_reason: message.tool_calls?.length ? 'tool_calls' : 'stop' }] }));
+      response.end(JSON.stringify({ choices: [{ message: { role: 'assistant', ...message }, finish_reason: Object.hasOwn(options, 'finishReason') ? options.finishReason : message.tool_calls?.length ? 'tool_calls' : 'stop' }] }));
     } catch (error) { response.writeHead(500); response.end(JSON.stringify({ error: { message: error.message } })); }
   });
   server.listen(0, '127.0.0.1');
@@ -217,6 +217,23 @@ test('actual ModelFabric HTTP loop dispatches a registered capability, produces 
   const reopened = new TaskStateMachine({ dbPath: context.stateMachine.dbPath });
   assert.equal(reopened.getTask(result.taskId).result.output, result.output);
   reopened.close();
+});
+
+test('[CONTRACT] actual HTTP incomplete skill responses and malformed full batches persist failure without leading file effects', async t => {
+  const root = temporary(t); const loader = new SkillLoader({ skillsDir: path.join(root, 'library') });
+  await loader.installSkill(sourceAt(root)); const context = runtime(t, root);
+  const artifact = path.join(root, 'must-not-exist.txt');
+  context.capabilityEngine.registerCapability({ name: 'write_report', handler: async () => { fs.writeFileSync(artifact, 'UNEXPECTED'); return { ok: true, verified: true }; } });
+  for (const mode of ['length', 'content_filter', 'unknown', 'missing', 'empty-calls', 'refusal', 'bad-batch', 'duplicate']) {
+    const calls = mode === 'bad-batch' || mode === 'duplicate' ? [call('first', 'write_report', {}), { ...call(mode === 'duplicate' ? 'first' : 'second', 'write_report', {}), function: { name: 'write_report', arguments: mode === 'bad-batch' ? '{broken' : '{}' } }] : [];
+    const finishReason = mode === 'missing' ? undefined : ['length', 'content_filter', 'unknown'].includes(mode) ? mode : mode === 'empty-calls' || calls.length ? 'tool_calls' : 'stop';
+    const server = await modelServer(t, () => ({ content: 'Plausible completion prose', tool_calls: calls, ...(mode === 'refusal' ? { refusal: 'Refused' } : {}) }), { finishReason });
+    const result = await loader.executeSkill('external-report', { prompt: mode }, { ...context, modelFabric: server.modelFabric });
+    assert.equal(result.ok, false, mode); assert.equal(fs.existsSync(artifact), false, mode);
+    assert.equal(context.stateMachine.getTask(result.taskId).status, 'FAILED');
+    const steps = context.stateMachine.getTaskSteps(result.taskId);
+    assert.equal(steps.length, 1); assert.equal(steps[0].toolName, 'model'); assert.equal(steps[0].status, 'failed');
+  }
 });
 
 test('execution propagates tool refusal, missing model, malformed arguments, and no-output failures', async t => {

@@ -1393,3 +1393,29 @@ tasks and non-executed validation evidence. This is CONTRACT evidence. Two repor
 checks, including scope isolation, pass. Actual external NVIDIA missing-file,
 write and identical-read recovery also PASS after the final edit, independently
 verifies file contents, and preserves failed/completed/completed durable steps.
+
+### Skills reject incomplete model responses and validate the complete batch
+
+Skill execution previously marked its model step completed before checking
+length/content_filter, accepted other unsupported/missing finish reasons, and
+could execute a valid leading call before discovering a malformed second call.
+It now validates terminal reason, assistant role, refusal, declared tool batch,
+permission, IDs and all argument objects before executing any call. Failed
+validation records the original response/reason/error as a failed model step;
+no completed model step is substituted. Existing per-tool cancellation and
+verified/unverified outcome handling remains in place.
+
+[skill-terminal-batch-validation.json](skill-terminal-batch-validation.json)
+records ten passing integration checks, including eight controlled actual HTTP
+negative scenarios through ModelFabric. All retain FAILED task/model state and
+no leading file artifact. These negative responses are CONTRACT evidence, not
+external-provider failure behavior. Actual pinned anthropics/frontend-design
+skill ca45fc496a3436251f191354091d557da31c15b5 also installs and executes through
+the real NVIDIA assigned model. Actual write_file/read_file steps create the
+2,175-byte HTML deliverable; independent Chrome clicks change count 0 to 2 with
+zero browser errors. Model/task records and artifact SHA are preserved.
+
+Validation is structural, not comprehensive JSON Schema validation or rollback
+of effects after valid tool execution begins. This does not certify every skill
+format or all deterministic operations batches. Endurance PID 16744 remains
+live with its original start time, still not a completed 24-hour gate.

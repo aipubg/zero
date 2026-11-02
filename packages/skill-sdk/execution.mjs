@@ -121,21 +121,36 @@ export async function executeLoadedSkill(loader, skillName, params = {}, supplie
       signal.throwIfAborted();
       const choice = response?.data?.choices?.[0];
       const message = choice?.message;
-      if (!message || message.role !== 'assistant') throw new Error('ModelFabric returned no assistant message');
-      record('model', { model: selectedModel, turn: turn + 1 }, { content: message.content, tool_calls: message.tool_calls || [] }, 'completed');
-      if (choice.finish_reason === 'length' || choice.finish_reason === 'content_filter') throw new Error(`Model output did not complete: ${choice.finish_reason}`);
-      const calls = message.tool_calls || [];
-      if (!Array.isArray(calls)) throw new Error('Model returned malformed tool calls');
+      let calls, prepared;
+      try {
+        if (!message || message.role !== 'assistant') throw new Error('ModelFabric returned no assistant message');
+        if (!['stop', 'tool_calls'].includes(choice.finish_reason)) throw new Error(`Model output did not complete: ${choice.finish_reason || 'missing finish reason'}`);
+        if (message.refusal) throw new Error('Model refused skill completion');
+        calls = message.tool_calls || [];
+        if (!Array.isArray(calls)) throw new Error('Model returned malformed tool calls');
+        if (choice.finish_reason === 'tool_calls' && !calls.length) throw new Error('Model declared tool calls without calls');
+        const batchIds = new Set(seenCalls);
+        prepared = calls.map(call => {
+          if (!call || typeof call.id !== 'string' || !call.id.trim() || batchIds.has(call.id)) throw new Error('Model returned a missing or repeated tool call ID');
+          batchIds.add(call.id);
+          if (!permitted.has(call.function?.name)) throw new Error(`Capability '${call.function?.name}' is not available to this skill`);
+          let args;
+          try { args = typeof call.function.arguments === 'string' ? JSON.parse(call.function.arguments) : call.function.arguments; } catch { throw new Error('Model returned malformed tool arguments JSON'); }
+          if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Tool arguments must be a JSON object');
+          return { call, args };
+        });
+      } catch (error) {
+        record('model', { model: selectedModel, turn: turn + 1 }, { message, finishReason: choice?.finish_reason, error: error.message }, 'failed');
+        throw error;
+      }
+      record('model', { model: selectedModel, turn: turn + 1 }, { content: message.content, tool_calls: calls, finishReason: choice.finish_reason }, 'completed');
       if (!calls.length) {
         if (typeof message.content !== 'string' || !message.content.trim() || message.content.trim() === skill.content.trim()) throw new Error('Model returned no deliverable');
         return finish(message.content);
       }
       messages.push({ role: 'assistant', content: message.content || null, tool_calls: calls });
-      for (const call of calls) {
-        if (!call.id || seenCalls.has(call.id)) throw new Error('Model returned a missing or repeated tool call ID');
+      for (const { call, args } of prepared) {
         seenCalls.add(call.id);
-        let args;
-        try { args = typeof call.function?.arguments === 'string' ? JSON.parse(call.function.arguments) : call.function?.arguments; } catch { throw new Error('Model returned malformed tool arguments JSON'); }
         const result = await executeTool(call.function?.name, args);
         messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
       }
