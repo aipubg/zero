@@ -8,6 +8,7 @@
 
 import { DatabaseSync } from 'node:sqlite';
 import { EventEmitter } from 'node:events';
+import { abortable, requireExecutionResult } from './inference.mjs';
 
 export const TASK_STATUS = Object.freeze({
   PENDING: 'PENDING',
@@ -112,15 +113,6 @@ export class TaskStateMachine {
       INSERT INTO zero_tasks (
         id, session_id, agent_id, parent_task_id, status, goal, result, error, wait_reason, created_at, updated_at, completed_at
       ) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, NULL)
-      ON CONFLICT(id) DO UPDATE SET
-        session_id = excluded.session_id,
-        agent_id = excluded.agent_id,
-        goal = excluded.goal,
-        status = 'PENDING',
-        result = NULL,
-        error = NULL,
-        wait_reason = NULL,
-        updated_at = excluded.updated_at
     `);
     stmt.run(taskId, sessionId, agentId, parentTaskId, TASK_STATUS.PENDING, goal, now, now);
 
@@ -187,7 +179,8 @@ export class TaskStateMachine {
       this._abortControllers.delete(taskId);
     }
 
-    const result = metadata.result !== undefined ? (typeof metadata.result === 'string' ? metadata.result : JSON.stringify(metadata.result)) : task.result;
+    const resultValue = metadata.result !== undefined ? metadata.result : task.result;
+    const result = typeof resultValue === 'string' ? resultValue : JSON.stringify(resultValue);
     const error = metadata.error !== undefined ? (typeof metadata.error === 'string' ? metadata.error : JSON.stringify(metadata.error)) : task.error;
     const waitReason = metadata.waitReason !== undefined ? String(metadata.waitReason) : (targetStatus === TASK_STATUS.WAITING ? 'Awaiting tool result or human input' : null);
 
@@ -229,16 +222,28 @@ export class TaskStateMachine {
 
   cancelTask(taskId, reason = 'Task cancelled by operator') {
     const controller = this._abortControllers.get(taskId);
-    if (controller && !controller.signal.aborted) {
-      controller.abort();
+    const cancelled = this.transition(taskId, TASK_STATUS.CANCELLED, { error: reason });
+    for (const child of this.getChildTasks(taskId)) {
+      if (!child.completedAt) this.cancelTask(child.id, reason);
     }
-    return this.transition(taskId, TASK_STATUS.CANCELLED, { error: reason });
+    if (controller && !controller.signal.aborted) {
+      controller.abort(new Error(reason));
+    }
+    return cancelled;
+  }
+
+  getChildTasks(parentTaskId) {
+    return this.db.prepare('SELECT * FROM zero_tasks WHERE parent_task_id = ? ORDER BY rowid')
+      .all(parentTaskId).map((row) => this._formatTask(row));
   }
 
   delegateTask({ parentTaskId, childAgentId = 'subagent', goal, permissions = [] }) {
     const parent = this.getTask(parentTaskId);
     if (!parent) {
       throw new Error(`Cannot delegate from non-existent parent task '${parentTaskId}'`);
+    }
+    if (![TASK_STATUS.RUNNING, TASK_STATUS.WAITING].includes(parent.status)) {
+      throw new Error(`Cannot delegate from task in '${parent.status}' status`);
     }
 
     // Record delegation thought and step in parent
@@ -252,7 +257,9 @@ export class TaskStateMachine {
     });
 
     // Pause parent while waiting for child
-    this.pauseTask(parentTaskId, `Awaiting sub-agent [${childAgentId}]`);
+    if (parent.status === TASK_STATUS.RUNNING) {
+      this.pauseTask(parentTaskId, `Awaiting sub-agent [${childAgentId}]`);
+    }
 
     // Create and start child task
     const childTask = this.createTask({
@@ -289,9 +296,14 @@ export class TaskStateMachine {
 
     let executionResult;
     try {
-      executionResult = typeof executorFn === 'function' ? await executorFn(child) : { status: 'success', executedGoal: child.goal };
+      if (typeof executorFn !== 'function') throw new Error('Child execution requires an executor');
+      executionResult = await abortable(() => executorFn(child, { signal: this.getSignal(childTaskId) }), this.getSignal(childTaskId));
+      requireExecutionResult(executionResult);
+      if (this.getSignal(childTaskId)?.aborted || this.getTask(childTaskId).status === TASK_STATUS.CANCELLED) {
+        throw new Error('Child execution cancelled');
+      }
     } catch (err) {
-      this.failChildTask(childTaskId, err.message);
+      if (this.getTask(childTaskId).status === TASK_STATUS.RUNNING) this.failChildTask(childTaskId, err.message);
       throw err;
     }
 
@@ -302,7 +314,7 @@ export class TaskStateMachine {
     const child = this.completeTask(childTaskId, result);
     if (child.parentTaskId) {
       const parent = this.getTask(child.parentTaskId);
-      if (parent && parent.status === TASK_STATUS.WAITING) {
+      if (parent && [TASK_STATUS.RUNNING, TASK_STATUS.WAITING].includes(parent.status)) {
         // Record child completion in parent step history
         const steps = this.getTaskSteps(parent.id);
         this.recordStep(parent.id, {
@@ -313,7 +325,11 @@ export class TaskStateMachine {
           status: 'completed',
         });
         // Resume parent
-        this.resumeTask(parent.id);
+        const siblings = this.getChildTasks(parent.id);
+        if (parent.status === TASK_STATUS.WAITING && siblings.every((task) => task.status === TASK_STATUS.COMPLETED)
+          && !parent.waitReason?.startsWith('HUMAN_ESCALATION') && !parent.waitReason?.startsWith('RESTART_RECOVERY')) {
+          this.resumeTask(parent.id);
+        }
       }
     }
     return child;
@@ -323,7 +339,7 @@ export class TaskStateMachine {
     const child = this.failTask(childTaskId, error);
     if (child.parentTaskId) {
       const parent = this.getTask(child.parentTaskId);
-      if (parent) {
+      if (parent && [TASK_STATUS.RUNNING, TASK_STATUS.WAITING].includes(parent.status)) {
         const steps = this.getTaskSteps(parent.id);
         this.recordStep(parent.id, {
           stepNumber: steps.length + 1,
@@ -350,7 +366,7 @@ export class TaskStateMachine {
   recoverTasksOnStartup() {
     const stmt = this.db.prepare(`
       SELECT * FROM zero_tasks
-      WHERE status IN ('RUNNING', 'QUEUED')
+      WHERE status IN ('RUNNING', 'QUEUED') OR (status = 'WAITING' AND wait_reason LIKE 'Awaiting sub-agent%')
     `);
     const interrupted = stmt.all();
     const recovered = [];
@@ -382,7 +398,14 @@ export class TaskStateMachine {
   }
 
   getSignal(taskId) {
-    const controller = this._abortControllers.get(taskId);
+    let controller = this._abortControllers.get(taskId);
+    if (!controller) {
+      const task = this.getTask(taskId);
+      if (task && !task.completedAt) {
+        controller = new AbortController();
+        this._abortControllers.set(taskId, controller);
+      }
+    }
     return controller ? controller.signal : null;
   }
 
@@ -397,8 +420,8 @@ export class TaskStateMachine {
     const stepNumber = typeof stepData.stepNumber === 'number' ? stepData.stepNumber : 1;
     const thought = stepData.thought || '';
     const toolName = stepData.toolName || '';
-    const toolArgs = stepData.toolArgs ? (typeof stepData.toolArgs === 'string' ? stepData.toolArgs : JSON.stringify(stepData.toolArgs)) : null;
-    const toolResult = stepData.toolResult ? (typeof stepData.toolResult === 'string' ? stepData.toolResult : JSON.stringify(stepData.toolResult)) : null;
+    const toolArgs = stepData.toolArgs === undefined ? null : JSON.stringify(stepData.toolArgs);
+    const toolResult = stepData.toolResult === undefined ? null : JSON.stringify(stepData.toolResult);
     const status = stepData.status || 'completed';
 
     const stmt = this.db.prepare(`

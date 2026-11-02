@@ -61,6 +61,20 @@ export class CapabilityEngine {
     if (!manifest || !manifest.id) {
       throw new Error('Plugin manifest requires a valid id');
     }
+    // Validate the entire registration before publishing any capabilities or metadata.
+    // RPC JSON cannot carry functions; a source loader must supply real handlers.
+    const capabilities = Array.isArray(manifest.capabilities) ? manifest.capabilities : [];
+    const names = new Set();
+    for (const cap of capabilities) {
+      const name = typeof cap === 'string' ? cap : cap?.name;
+      if (typeof name !== 'string' || !name.trim() || names.has(name)) {
+        throw new Error('Plugin capabilities require unique, non-empty names');
+      }
+      if (!Object.hasOwn(handlers ?? {}, name) || typeof handlers[name] !== 'function') {
+        throw new Error(`Plugin '${manifest.id}' capability '${name}' is unavailable: missing executable handler`);
+      }
+      names.add(name);
+    }
     if (!this.loadedPlugins) {
       this.loadedPlugins = new Map();
     }
@@ -70,16 +84,16 @@ export class CapabilityEngine {
       version: manifest.version || '1.0.0',
       description: manifest.description || '',
       permissions: Array.isArray(manifest.permissions) ? manifest.permissions : [],
-      capabilities: Array.isArray(manifest.capabilities) ? manifest.capabilities.map(c => c.name || c) : [],
+      capabilities: [...names],
       loadedAt: Date.now(),
       status: 'active',
     };
     this.loadedPlugins.set(manifest.id, pluginRecord);
 
-    if (Array.isArray(manifest.capabilities)) {
-      for (const cap of manifest.capabilities) {
+    if (capabilities.length) {
+      for (const cap of capabilities) {
         const capDef = typeof cap === 'string' ? { name: cap } : cap;
-        const handler = handlers[capDef.name] || (async (p) => ({ status: 'executed', pluginId: manifest.id, ...p }));
+        const handler = handlers[capDef.name];
         this.registerCapability({
           name: capDef.name,
           description: capDef.description || `Plugin capability from ${manifest.id}`,
@@ -194,19 +208,29 @@ export class CapabilityEngine {
       try {
         const customRes = await customDef.handler(params, signal);
         const durationMs = Date.now() - startedAt;
+        const returned = typeof customRes === 'object' && customRes !== null ? customRes : {};
+        const ok = returned.ok !== false;
+        const executed = returned.executed ?? (returned.outcome !== 'BLOCKED');
+        const hasEvidence = (returned.evidence != null && returned.evidence !== '')
+          || (returned.verification != null && returned.verification !== false)
+          || (typeof returned.verifiedText === 'string' && returned.verifiedText.length > 0);
+        const verified = ok && executed && returned.verified === true && Boolean(hasEvidence);
+        const outcome = !ok
+          ? (['BLOCKED', 'CANCELLED', 'FAILED'].includes(returned.outcome) ? returned.outcome : 'FAILED')
+          : (verified ? 'COMPLETED' : 'UNVERIFIED');
         const res = {
-          ok: true,
-          executed: true,
-          verified: true,
-          completed: true,
-          outcome: 'COMPLETED',
+          ...returned,
+          ok,
+          executed: Boolean(executed),
+          verified,
+          completed: verified,
+          outcome,
           capability: toolName,
           data: customRes,
-          ...(typeof customRes === 'object' && customRes !== null ? customRes : {}),
           durationMs,
           auditId,
         };
-        this._recordAudit(agentId, toolName, args, 'COMPLETED', res);
+        this._recordAudit(agentId, toolName, args, outcome, res);
         return res;
       } catch (err) {
         const durationMs = Date.now() - startedAt;

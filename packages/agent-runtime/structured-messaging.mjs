@@ -19,6 +19,7 @@ export const MESSAGE_TYPES = Object.freeze({
   ARTIFACT_CREATED: 'ARTIFACT_CREATED',
   TASK_COMPLETED: 'TASK_COMPLETED',
   TASK_FAILED: 'TASK_FAILED',
+  TASK_CANCELLED: 'TASK_CANCELLED',
   BLOCKED: 'BLOCKED',
   HANDOFF: 'HANDOFF',
 });
@@ -38,7 +39,6 @@ export class AgentMessageBus {
 
   _initPersistence() {
     if (this.db) {
-      try {
         this.db.exec(`
           CREATE TABLE IF NOT EXISTS zero_agent_messages (
             id TEXT PRIMARY KEY,
@@ -52,9 +52,6 @@ export class AgentMessageBus {
           CREATE INDEX IF NOT EXISTS idx_agent_messages_task ON zero_agent_messages(task_id);
           CREATE INDEX IF NOT EXISTS idx_agent_messages_recipient ON zero_agent_messages(to_agent_id);
         `);
-      } catch (err) {
-        console.warn('[AgentMessageBus] Failed to initialize SQLite message table:', err.message);
-      }
     }
   }
 
@@ -79,7 +76,6 @@ export class AgentMessageBus {
     };
 
     if (this.db) {
-      try {
         const stmt = this.db.prepare(`
           INSERT INTO zero_agent_messages (id, task_id, from_agent_id, to_agent_id, message_type, payload, timestamp)
           VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -93,9 +89,6 @@ export class AgentMessageBus {
           JSON.stringify(message.payload),
           message.timestamp
         );
-      } catch (err) {
-        console.warn('[AgentMessageBus] Failed to persist message to SQLite:', err.message);
-      }
     }
 
     this._inMemoryLog.push(message);
@@ -131,9 +124,8 @@ export class AgentMessageBus {
 
   getMessageHistory(taskId) {
     if (this.db) {
-      try {
         const stmt = this.db.prepare(`
-          SELECT * FROM zero_agent_messages WHERE task_id = ? ORDER BY timestamp ASC
+          SELECT * FROM zero_agent_messages WHERE task_id = ? ORDER BY timestamp ASC, rowid ASC
         `);
         const rows = stmt.all(taskId);
         return rows.map((r) => ({
@@ -145,7 +137,6 @@ export class AgentMessageBus {
           payload: JSON.parse(r.payload),
           timestamp: r.timestamp,
         }));
-      } catch (_) {}
     }
     return this._inMemoryLog.filter((m) => m.taskId === taskId);
   }

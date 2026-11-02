@@ -1,0 +1,8 @@
+{
+  "id": "system-tools",
+  "name": "System Tools",
+  "version": "1.0.0",
+  "description": "Read the actual local operating system and process resource counters.",
+  "entry": "index.mjs",
+  "capabilities": [{ "name": "system_info", "description": "Read local OS, architecture, uptime and process memory counters.", "parameters": { "type": "object", "additionalProperties": false } }]
+}

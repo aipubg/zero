@@ -2,6 +2,12 @@
  * System Tools Plugin for Project Zero (Hermes-compatible)
  */
 
+export const handlers = {
+  async system_info() {
+    return { ok: true, platform: process.platform, arch: process.arch, uptime: process.uptime(), memoryUsage: process.memoryUsage() };
+  },
+};
+
 export default {
   name: "system-tools",
   description: "Windows system process and shell automation tools",
@@ -19,15 +25,7 @@ export default {
         properties: {},
         additionalProperties: false,
       },
-      async execute() {
-        return {
-          ok: true,
-          platform: "win32",
-          arch: process.arch,
-          uptime: process.uptime(),
-          memoryUsage: process.memoryUsage(),
-        };
-      },
+      execute: handlers.system_info,
     });
   },
 };

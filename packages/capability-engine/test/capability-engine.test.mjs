@@ -56,6 +56,8 @@ describe('Zero Capability Execution Engine', () => {
     const last = log[log.length - 1];
     assert.equal(last.agentId, 'zero');
     assert.equal(last.toolName, 'zero_computer_action');
-    assert.equal(last.decision, 'ALLOWED');
+    assert.equal(last.decision, res.outcome);
+    assert.equal(res.verified, false, 'A returned screen geometry has no independent verification');
+    assert.equal(last.decision, 'UNVERIFIED');
   });
 });

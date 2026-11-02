@@ -14,6 +14,7 @@ import { EventEmitter } from 'node:events';
 import { TASK_STATUS } from './index.mjs';
 import { AgentMessageBus, MESSAGE_TYPES } from './structured-messaging.mjs';
 import { DesktopLeaseManager } from './desktop-lease.mjs';
+import { abortable, executeSpecialist, requireExecutionResult } from './inference.mjs';
 
 export const CANONICAL_AGENT_PROFILES = Object.freeze({
   zero: {
@@ -65,14 +66,20 @@ export class AgentTeamOrchestrator extends EventEmitter {
    * @param {import('./index.mjs').TaskStateMachine} options.stateMachine
    * @param {AgentMessageBus} [options.messageBus]
    * @param {DesktopLeaseManager} [options.leaseManager]
+   * @param {Object} [options.modelFabric]
+   * @param {Object} [options.capabilityEngine]
+   * @param {Object} [options.researchEngine]
    * @param {Object} [options.logger=console]
    */
-  constructor({ stateMachine, messageBus = null, leaseManager = null, logger = console }) {
+  constructor({ stateMachine, messageBus = null, leaseManager = null, modelFabric = null, capabilityEngine = null, researchEngine = null, logger = console }) {
     super();
     if (!stateMachine) throw new Error('AgentTeamOrchestrator requires stateMachine instance');
     this.sm = stateMachine;
-    this.bus = messageBus || new AgentMessageBus();
+    this.bus = messageBus || new AgentMessageBus({ db: stateMachine.db });
     this.leaseManager = leaseManager || new DesktopLeaseManager();
+    this.modelFabric = modelFabric || null;
+    this.capabilityEngine = capabilityEngine || null;
+    this.researchEngine = researchEngine || null;
     this.logger = logger;
 
     this.profiles = new Map(Object.entries(CANONICAL_AGENT_PROFILES));
@@ -231,13 +238,41 @@ export class AgentTeamOrchestrator extends EventEmitter {
     sessionId = 'team-session',
     taskExecutors = {},
     timeoutMs = 60000,
+    signal = null,
+    maxToolRounds = 8,
+    maxOutputTokens = 2048,
   }) {
     const startTime = Date.now();
-    const team = this.getTeam(teamId) || this.getTeam('team_alpha_core');
+    const team = this.getTeam(teamId);
+    if (!team) throw new Error(`Team '${teamId}' not registered`);
+    if (subtasks !== null && !Array.isArray(subtasks)) throw new Error('subtasks must be an array');
 
     // 1. Generate plan if not provided
     const plan = subtasks && subtasks.length > 0 ? { goal, teamId, subtasks } : this.planGoal(goal, { teamId });
     const taskPlan = plan.subtasks;
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error('timeoutMs must be positive');
+    if (!Number.isInteger(maxToolRounds) || maxToolRounds < 1) throw new Error('maxToolRounds must be a positive integer');
+    if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 8192) throw new Error('maxOutputTokens must be between 1 and 8192');
+    const ids = new Set();
+    for (const st of taskPlan) {
+      if (typeof st.id !== 'string' || !st.id || ids.has(st.id) || !this.getAgentProfile(st.agentId)
+        || typeof st.goal !== 'string' || !st.goal.trim()) throw new Error('Invalid subtask id, agent or goal');
+      if (st.dependsOn !== undefined && !Array.isArray(st.dependsOn)) throw new Error('dependsOn must be an array');
+      if (st.tools !== undefined && (!Array.isArray(st.tools) || st.tools.some((tool) => typeof tool !== 'string'))) throw new Error('tools must be an array of names');
+      ids.add(st.id);
+    }
+    const visited = new Set();
+    const visit = (st, path = new Set()) => {
+      if (path.has(st.id)) throw new Error('Cyclic subtask dependencies');
+      if (visited.has(st.id)) return;
+      for (const dep of st.dependsOn || []) {
+        if (!ids.has(dep)) throw new Error(`Unknown dependency '${dep}'`);
+        visit(taskPlan.find((item) => item.id === dep), new Set([...path, st.id]));
+      }
+      visited.add(st.id);
+    };
+    taskPlan.forEach((st) => visit(st));
+    signal?.throwIfAborted();
 
     // 2. Create Master Coordinator Task
     const masterTask = this.sm.createTask({
@@ -247,6 +282,9 @@ export class AgentTeamOrchestrator extends EventEmitter {
     });
     this.sm.enqueueTask(masterTask.id);
     this.sm.startTask(masterTask.id);
+    const deadlineController = new AbortController();
+    const timer = setTimeout(() => deadlineController.abort(new Error(`Team execution timed out after ${timeoutMs}ms`)), timeoutMs);
+    const workflowSignal = AbortSignal.any([this.sm.getSignal(masterTask.id), deadlineController.signal, ...(signal ? [signal] : [])]);
 
     // Shared team blackboard
     const sharedContext = {
@@ -254,15 +292,18 @@ export class AgentTeamOrchestrator extends EventEmitter {
       teamId,
       masterTaskId: masterTask.id,
       artifacts: [],
-      subtaskResults: {},
-      subtaskStatuses: {},
-      errors: {},
+      subtaskResults: Object.create(null),
+      subtaskStatuses: Object.create(null),
+      errors: Object.create(null),
     };
+    let checkpointIndex = 0;
+    const checkpoint = (extra = {}) => this.sm.saveCheckpoint(masterTask.id, checkpointIndex++, { plan: taskPlan, ...sharedContext, ...extra }, sharedContext.artifacts);
 
     // Initialize subtask states
     for (const st of taskPlan) {
       sharedContext.subtaskStatuses[st.id] = 'PENDING';
     }
+    checkpoint();
 
     this.bus.send({
       taskId: masterTask.id,
@@ -273,7 +314,6 @@ export class AgentTeamOrchestrator extends EventEmitter {
     });
 
     const activePromises = new Map();
-    let isTerminated = false;
 
     // Helper to check if task prerequisites are completed
     const canRun = (st) => {
@@ -300,10 +340,11 @@ export class AgentTeamOrchestrator extends EventEmitter {
         fromAgentId: team.leadAgentId,
         toAgentId: st.agentId,
         type: MESSAGE_TYPES.TASK_ASSIGNED,
-        payload: { subtaskId: st.id, goal: st.goal, tools: st.tools },
+        payload: { parentTaskId: masterTask.id, subtaskId: st.id, goal: st.goal, tools: st.tools },
       });
 
       let leaseAcquired = false;
+      const childSignal = AbortSignal.any([workflowSignal, this.sm.getSignal(childTaskId)]);
 
       try {
         // Desktop lease acquisition if required
@@ -314,6 +355,7 @@ export class AgentTeamOrchestrator extends EventEmitter {
             reason: `Subtask execution: ${st.id}`,
             timeoutMs: 30000,
             waitMs: 15000,
+            signal: childSignal,
           });
           if (!leaseRes.acquired) {
             throw new Error(`Failed to acquire desktop lease for [${st.agentId}]: Lease held by [${leaseRes.holder}]`);
@@ -330,16 +372,20 @@ export class AgentTeamOrchestrator extends EventEmitter {
           payload: { subtaskId: st.id, progressPct: 30, step: `Executing ${st.agentId} subtask` },
         });
 
-        // Run specialist executor
-        const executor = taskExecutors[st.agentId] || taskExecutors[st.id] || (async (subtask, context) => {
-          return {
-            status: 'success',
-            output: `Specialist [${subtask.agentId}] successfully completed objective: "${subtask.goal}"`,
-            verifiedAt: Date.now(),
-          };
-        });
+        // Run specialist executor with real tool execution & assigned model
+        let executor = Object.hasOwn(taskExecutors, st.id) ? taskExecutors[st.id]
+          : Object.hasOwn(taskExecutors, st.agentId) ? taskExecutors[st.agentId] : null;
+        if (!executor) {
+          executor = (subtask, context) => executeSpecialist(this, subtask, context);
+        }
 
-        const result = await executor(st, sharedContext);
+        const dependencyResults = Object.fromEntries((st.dependsOn || []).map((id) => [id, sharedContext.subtaskResults[id]]));
+        const result = await abortable(() => executor(st, {
+          goal, teamId, masterTaskId: masterTask.id, childTaskId, signal: childSignal, maxToolRounds, maxOutputTokens,
+          subtaskResults: structuredClone(dependencyResults),
+        }), childSignal);
+        childSignal.throwIfAborted();
+        requireExecutionResult(result);
 
         // Record any artifact
         if (result?.artifact) {
@@ -354,7 +400,7 @@ export class AgentTeamOrchestrator extends EventEmitter {
         }
 
         // Complete child task
-        this.sm.completeChildTask(childTaskId, result);
+        if (this.sm.getTask(childTaskId).status !== TASK_STATUS.COMPLETED) this.sm.completeChildTask(childTaskId, result);
 
         sharedContext.subtaskStatuses[st.id] = 'COMPLETED';
         sharedContext.subtaskResults[st.id] = result;
@@ -364,21 +410,25 @@ export class AgentTeamOrchestrator extends EventEmitter {
           fromAgentId: st.agentId,
           toAgentId: team.leadAgentId,
           type: MESSAGE_TYPES.TASK_COMPLETED,
-          payload: { subtaskId: st.id, result },
+          payload: { parentTaskId: masterTask.id, subtaskId: st.id, result },
         });
 
       } catch (err) {
-        sharedContext.subtaskStatuses[st.id] = 'FAILED';
+        sharedContext.subtaskStatuses[st.id] = childSignal.aborted ? 'CANCELLED' : 'FAILED';
         sharedContext.errors[st.id] = err.message;
 
-        this.sm.failChildTask(childTaskId, err.message);
+        const child = this.sm.getTask(childTaskId);
+        if (!child.completedAt) {
+          if (childSignal.aborted) this.sm.cancelTask(childTaskId, err.message);
+          else this.sm.failChildTask(childTaskId, err.message);
+        }
 
         this.bus.send({
           taskId: childTaskId,
           fromAgentId: st.agentId,
           toAgentId: team.leadAgentId,
-          type: MESSAGE_TYPES.TASK_FAILED,
-          payload: { subtaskId: st.id, error: err.message },
+          type: childSignal.aborted ? MESSAGE_TYPES.TASK_CANCELLED : MESSAGE_TYPES.TASK_FAILED,
+          payload: { parentTaskId: masterTask.id, subtaskId: st.id, error: err.message },
         });
 
         // Mark all dependent subtasks as BLOCKED
@@ -398,21 +448,25 @@ export class AgentTeamOrchestrator extends EventEmitter {
         if (leaseAcquired) {
           this.leaseManager.releaseLease(st.agentId);
         }
+        checkpoint();
       }
     };
 
     // Execution loop: kick off eligible tasks until all are settled or timeout
-    const deadline = startTime + timeoutMs;
-
-    while (!isTerminated) {
-      if (Date.now() > deadline) {
-        throw new Error(`Team execution timed out after ${timeoutMs}ms`);
+    try {
+    while (true) {
+      if (workflowSignal.aborted) break;
+      for (const st of taskPlan) {
+        if (sharedContext.subtaskStatuses[st.id] === 'PENDING' && (st.dependsOn || []).some((id) => ['FAILED', 'BLOCKED', 'CANCELLED'].includes(sharedContext.subtaskStatuses[id]))) {
+          sharedContext.subtaskStatuses[st.id] = 'BLOCKED';
+          sharedContext.errors[st.id] = 'Prerequisite did not complete';
+        }
       }
 
       // Check if all subtasks are finished or blocked
       const allSettled = taskPlan.every((st) => {
         const status = sharedContext.subtaskStatuses[st.id];
-        return status === 'COMPLETED' || status === 'FAILED' || status === 'BLOCKED';
+        return status === 'COMPLETED' || status === 'FAILED' || status === 'BLOCKED' || status === 'CANCELLED';
       });
 
       if (allSettled && activePromises.size === 0) {
@@ -422,6 +476,8 @@ export class AgentTeamOrchestrator extends EventEmitter {
       // Find tasks ready to run
       const readyTasks = taskPlan.filter(canRun);
       for (const st of readyTasks) {
+        const desktop = st.requiresDesktopLease || this.getAgentProfile(st.agentId)?.requiresDesktopLease;
+        if (desktop && taskPlan.some((other) => other.agentId === st.agentId && activePromises.has(other.id))) continue;
         sharedContext.subtaskStatuses[st.id] = 'STARTING';
         const p = executeSubtask(st).finally(() => {
           activePromises.delete(st.id);
@@ -439,10 +495,41 @@ export class AgentTeamOrchestrator extends EventEmitter {
         await Promise.race(Array.from(activePromises.values()));
       }
     }
+    await Promise.all(activePromises.values());
+    } finally {
+      clearTimeout(timer);
+    }
+    if (workflowSignal.aborted) {
+      for (const st of taskPlan) {
+        if (['PENDING', 'STARTING'].includes(sharedContext.subtaskStatuses[st.id])) sharedContext.subtaskStatuses[st.id] = 'CANCELLED';
+      }
+    }
 
     // Consolidate final output by ZERO
     const completedCount = Object.values(sharedContext.subtaskStatuses).filter((s) => s === 'COMPLETED').length;
-    const failedCount = Object.values(sharedContext.subtaskStatuses).filter((s) => s === 'FAILED' || s === 'BLOCKED').length;
+    const failedCount = taskPlan.length - completedCount;
+    let synthesis = null;
+    let consolidationError = null;
+    if (this.modelFabric && failedCount === 0 && !workflowSignal.aborted) {
+      const synthesisTimer = setTimeout(() => deadlineController.abort(new Error('Team consolidation timed out')), Math.max(1, timeoutMs - (Date.now() - startTime)));
+      try {
+        const modelId = this.modelFabric.resolveAgentModel(team.leadAgentId)?.canonicalModelId;
+        if (!modelId) throw new Error('No coordinator model available');
+        const response = await abortable(() => this.modelFabric.executeChat({
+          model: modelId, stream: false, max_tokens: maxOutputTokens,
+          messages: [{ role: 'system', content: 'Consolidate specialist results for the user. Preserve failures and limitations. Do not claim verification beyond recorded tool evidence.' },
+            { role: 'user', content: JSON.stringify({ goal, results: sharedContext.subtaskResults, artifacts: sharedContext.artifacts }) }],
+        }, { signal: workflowSignal }), workflowSignal);
+        workflowSignal.throwIfAborted();
+        synthesis = response?.data?.choices?.[0]?.message?.content;
+        if (typeof synthesis !== 'string' || !synthesis.trim()) throw new Error(response?.data?.choices?.[0]?.finish_reason === 'length' ? 'Coordinator exhausted its output token budget before producing consolidation' : 'Coordinator returned empty consolidation');
+        this.sm.recordStep(masterTask.id, { stepNumber: this.sm.getTaskSteps(masterTask.id).length + 1, toolName: 'team_consolidation', toolArgs: { modelId }, toolResult: synthesis, status: 'completed' });
+      } catch (err) {
+        consolidationError = err.message;
+      } finally {
+        clearTimeout(synthesisTimer);
+      }
+    }
 
     const consolidatedResult = {
       summary: `Autonomous team [${team.name}] processed goal with ${completedCount} subtasks succeeded, ${failedCount} failed/blocked.`,
@@ -450,26 +537,37 @@ export class AgentTeamOrchestrator extends EventEmitter {
       totalSubtasks: taskPlan.length,
       completedSubtasks: completedCount,
       failedSubtasks: failedCount,
-      results: sharedContext.subtaskResults,
+      results: { ...sharedContext.subtaskResults },
       artifacts: sharedContext.artifacts,
-      errors: sharedContext.errors,
+      errors: { ...sharedContext.errors },
+      synthesis,
+      consolidationError,
       completedAt: Date.now(),
     };
 
-    if (failedCount === 0) {
+    const status = workflowSignal.aborted ? 'CANCELLED' : failedCount === 0 && !consolidationError ? 'COMPLETED' : 'FAILED';
+    checkpoint({ consolidatedResult, status });
+    if (workflowSignal.aborted) {
+      if (this.sm.getTask(masterTask.id).status !== TASK_STATUS.CANCELLED) this.sm.cancelTask(masterTask.id, workflowSignal.reason?.message || 'Team cancelled');
+    } else if (failedCount === 0 && !consolidationError) {
+      if (this.sm.getTask(masterTask.id).status === TASK_STATUS.WAITING) this.sm.resumeTask(masterTask.id);
       this.sm.completeTask(masterTask.id, consolidatedResult);
     } else {
       this.sm.failTask(masterTask.id, JSON.stringify(consolidatedResult));
     }
+    this.bus.send({ taskId: masterTask.id, fromAgentId: team.leadAgentId, toAgentId: '*',
+      type: status === 'COMPLETED' ? MESSAGE_TYPES.TASK_COMPLETED : status === 'CANCELLED' ? MESSAGE_TYPES.TASK_CANCELLED : MESSAGE_TYPES.TASK_FAILED,
+      payload: { status, consolidatedResult },
+    });
 
     return {
-      status: failedCount === 0 ? 'COMPLETED' : 'FAILED',
+      status,
       masterTaskId: masterTask.id,
       goal,
       teamId,
       plan: taskPlan,
       consolidatedResult,
-      subtaskStatuses: sharedContext.subtaskStatuses,
+      subtaskStatuses: { ...sharedContext.subtaskStatuses },
       durationMs: Date.now() - startTime,
     };
   }

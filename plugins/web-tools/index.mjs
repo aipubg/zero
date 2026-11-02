@@ -1,3 +1,7 @@
+import { SearchEngine } from '../../packages/research-engine/search.mjs';
+
+const search = new SearchEngine();
+
 /**
  * Web Tools Plugin for Project Zero (Hermes-compatible)
  */
@@ -24,17 +28,8 @@ export default {
         additionalProperties: false,
       },
       async execute({ query, maxResults = 5 }) {
-        return {
-          ok: true,
-          query,
-          results: [
-            {
-              title: `Search results for: ${query}`,
-              url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
-              snippet: `Verified search query processed for: ${query}. Use browser automation or HTTP request for deep extraction.`,
-            },
-          ],
-        };
+        const result = await search.search(query, { limit: maxResults });
+        return { ...result, ok: result.status === 'ok', results: result.citations };
       },
     });
 
@@ -50,11 +45,25 @@ export default {
         additionalProperties: false,
       },
       async execute({ url }) {
-        return {
-          ok: true,
-          url,
-          content: `Content extracted from ${url}.`,
-        };
+        const parsed = new URL(url);
+        if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Expected an HTTP(S) URL without credentials');
+        const response = await fetch(parsed, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return { ok: false, status: 'failed', url: parsed.href, httpStatus: response.status, content: '' };
+        const reader = response.body.getReader();
+        const chunks = []; let bytes = 0; let truncated = false;
+        try {
+          while (true) {
+            const next = await reader.read();
+            if (next.done) break;
+            const remaining = 1024 * 1024 - bytes;
+            chunks.push(next.value.subarray(0, remaining));
+            bytes += Math.min(next.value.length, remaining);
+            if (bytes >= 1024 * 1024) { truncated = true; await reader.cancel(); break; }
+          }
+        } finally { reader.releaseLock(); }
+        return { ok: true, status: 'retrieved', url: response.url, httpStatus: response.status,
+          contentType: response.headers.get('content-type'), content: Buffer.concat(chunks).toString('utf8'),
+          bytes, truncated, verified: false, untrustedContent: true, retrievedAt: new Date().toISOString() };
       },
     });
   },

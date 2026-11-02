@@ -7,16 +7,19 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createSkill } from '../../skills/self-learning-creator.mjs';
+import { parseSkillMarkdown } from './frontmatter.mjs';
+import { SkillStore } from './store.mjs';
+import { executeLoadedSkill } from './execution.mjs';
 
-export class SkillLoader {
+export class SkillLoader extends SkillStore {
   /**
    * @param {Object} [options]
    * @param {string} [options.skillsDir] - Directory where skills are stored
    */
   constructor(options = {}) {
-    this.skillsDir = options.skillsDir || path.resolve(process.cwd(), 'skills');
+    super(options);
     this._cache = new Map();
+    this.diagnostics = [];
     this.loadAll();
   }
 
@@ -25,57 +28,7 @@ export class SkillLoader {
    */
   parseSkillFile(filePath) {
     if (!fs.existsSync(filePath)) return null;
-    const raw = fs.readFileSync(filePath, 'utf8');
-
-    const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
-    if (!match) {
-      // Basic fallback without frontmatter
-      const dirName = path.basename(path.dirname(filePath));
-      return {
-        name: dirName,
-        description: 'Autonomous skill package',
-        triggers: [dirName],
-        content: raw,
-        filePath,
-      };
-    }
-
-    const frontmatterRaw = match[1];
-    const body = match[2];
-
-    const parsed = {
-      name: path.basename(path.dirname(filePath)),
-      description: '',
-      triggers: [],
-      content: body.trim(),
-      filePath,
-    };
-
-    // Parse simple YAML fields
-    for (const line of frontmatterRaw.split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('name:')) {
-        parsed.name = trimmed.slice(5).trim();
-      } else if (trimmed.startsWith('description:')) {
-        parsed.description = trimmed.slice(12).trim();
-      } else if (trimmed.startsWith('- "') || trimmed.startsWith("- '") || trimmed.startsWith('- ')) {
-        const trigger = trimmed.replace(/^-\s*["']?/, '').replace(/["']?$/, '').trim();
-        if (trigger) parsed.triggers.push(trigger);
-      }
-    }
-
-    // Extract capabilities from markdown bullet points
-    parsed.capabilities = [];
-    const capSection = body.match(/## Capabilities\r?\n([\s\S]*?)(?=\r?\n##|$)/i);
-    if (capSection) {
-      const lines = capSection[1].split(/\r?\n/);
-      for (const l of lines) {
-        const clean = l.replace(/^\d+\.\s*\*\*?/, '').replace(/\*\*?$/, '').trim();
-        if (clean) parsed.capabilities.push(clean);
-      }
-    }
-
-    return parsed;
+    return parseSkillMarkdown(fs.readFileSync(filePath, 'utf8'), path.basename(path.dirname(filePath)), filePath);
   }
 
   /**
@@ -83,46 +36,47 @@ export class SkillLoader {
    */
   loadAll() {
     this._cache.clear();
+    this.diagnostics = [];
+    const state = this._readState();
     if (!fs.existsSync(this.skillsDir)) return [];
 
     try {
       const entries = fs.readdirSync(this.skillsDir, { withFileTypes: true });
       for (const entry of entries) {
-        if (entry.isDirectory()) {
+        if (entry.isDirectory() && !entry.name.startsWith('.')) {
           const skillFile = path.join(this.skillsDir, entry.name, 'SKILL.md');
           if (fs.existsSync(skillFile)) {
-            const skill = this.parseSkillFile(skillFile);
-            if (skill && skill.name) {
-              this._cache.set(skill.name, skill);
-            }
+            try {
+              if (fs.lstatSync(skillFile).isSymbolicLink()) throw new Error('SKILL.md cannot be a symbolic link');
+              const skill = this.parseSkillFile(skillFile);
+              if (this._cache.has(skill.name)) throw new Error(`Duplicate skill name '${skill.name}'`);
+              this._cache.set(skill.name, this._decorate(skill, state));
+            } catch (error) { this.diagnostics.push({ filePath: skillFile, error: error.message }); }
           }
         }
       }
     } catch (err) {
-      console.warn('[SkillLoader] Error loading skills directory:', err.message);
+      this.diagnostics.push({ filePath: this.skillsDir, error: err.message });
     }
 
     return Array.from(this._cache.values());
   }
 
   getSkill(name) {
-    if (!this._cache.has(name)) {
-      this.loadAll();
-    }
+    this.loadAll();
     return this._cache.get(name) || null;
   }
 
   listSkills() {
-    if (this._cache.size === 0) {
-      this.loadAll();
-    }
-    return Array.from(this._cache.values()).map((s) => ({
-      name: s.name,
-      description: s.description,
-      triggers: s.triggers,
-      capabilities: s.capabilities || [],
-      filePath: s.filePath,
-    }));
+    this.loadAll();
+    return Array.from(this._cache.values()).map(({ content, ...skill }) => skill);
+  }
+
+  getStatus() {
+    const skills = this.listSkills();
+    return { ok: true, skillsDir: this.skillsDir, total: skills.length,
+      enabled: skills.filter(skill => skill.enabled).length, disabled: skills.filter(skill => !skill.enabled).length,
+      skills, diagnostics: this.diagnostics };
   }
 
   /**
@@ -137,6 +91,7 @@ export class SkillLoader {
     let highestScore = 0;
 
     for (const skill of all) {
+      if (!skill.enabled) continue;
       let score = 0;
       if (lower.includes(skill.name.toLowerCase())) {
         score += 10;
@@ -156,13 +111,13 @@ export class SkillLoader {
   }
 
   /**
-   * Programmatically create a new skill package
+   * Execute a skill through the ZERO capability and task execution engine
+   * @param {string} skillName
+   * @param {Object} [params]
+   * @param {Object} [context]
+   * @returns {Promise<Object>}
    */
-  createCustomSkill(params) {
-    const res = createSkill(params);
-    if (res.ok) {
-      this.loadAll();
-    }
-    return res;
+  async executeSkill(skillName, params = {}, context = {}) {
+    return executeLoadedSkill(this, skillName, params, context);
   }
 }

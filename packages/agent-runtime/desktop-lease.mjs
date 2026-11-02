@@ -67,6 +67,8 @@ export class DesktopLeaseManager extends EventEmitter {
    */
   async acquireLease(agentId, options = {}) {
     if (!agentId) throw new Error('acquireLease requires a valid agentId');
+    const signal = options.signal;
+    signal?.throwIfAborted();
     const reason = options.reason || 'desktop_automation';
     const timeoutMs = options.timeoutMs || this.defaultTimeoutMs;
     const waitMs = options.waitMs !== undefined ? options.waitMs : 10000;
@@ -114,15 +116,26 @@ export class DesktopLeaseManager extends EventEmitter {
           if (settled) return;
           settled = true;
           if (timer) clearTimeout(timer);
+          signal?.removeEventListener('abort', onAbort);
           resolve(this._grantLease(agentId, reason, timeoutMs));
         },
       };
 
       this._queue.push(queueEntry);
+      const onAbort = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        const idx = this._queue.indexOf(queueEntry);
+        if (idx !== -1) this._queue.splice(idx, 1);
+        reject(signal.reason || new Error('Lease acquisition cancelled'));
+      };
+      signal?.addEventListener('abort', onAbort, { once: true });
 
       timer = setTimeout(() => {
         if (settled) return;
         settled = true;
+        signal?.removeEventListener('abort', onAbort);
         // Remove from queue
         const idx = this._queue.indexOf(queueEntry);
         if (idx !== -1) this._queue.splice(idx, 1);

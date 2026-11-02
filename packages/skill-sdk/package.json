@@ -1,0 +1,7 @@
+{
+  "name": "@zero/skill-sdk",
+  "private": true,
+  "type": "module",
+  "exports": "./index.mjs",
+  "dependencies": { "yaml": "2.9.1" }
+}
