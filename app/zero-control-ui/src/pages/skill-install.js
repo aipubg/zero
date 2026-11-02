@@ -30,4 +30,23 @@ export function mountSkillInstall(container, host) {
     } catch (error) { status.textContent = `Import failed: ${error.message}`; }
     finally { submit.disabled = false; }
   });
+  const manage = document.createElement('form');
+  const nameLabel = document.createElement('label'); nameLabel.textContent = 'Installed skill name';
+  const name = document.createElement('input'); name.className = 'input'; name.placeholder = 'Installed skill name'; name.required = true; nameLabel.append(name);
+  const update = document.createElement('button'); update.type = 'submit'; update.className = 'btn'; update.textContent = 'Refresh skill from saved source';
+  const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'btn'; remove.textContent = 'Uninstall skill bundle';
+  const manageStatus = document.createElement('p'); manageStatus.setAttribute('role', 'status');
+  manage.append(nameLabel, update, remove); section.append(manage, manageStatus);
+  const mutate = async method => {
+    if (update.disabled || !name.value.trim()) return;
+    update.disabled = true; remove.disabled = true; manageStatus.textContent = 'Applying skill change…';
+    try {
+      const response = await host.request(method, { name: name.value.trim() }); const result = response?.result ?? response;
+      if (result.ok === false) throw new Error(result.error || 'Skill change failed');
+      manageStatus.textContent = `${method === 'skills.update' ? 'Refreshed' : 'Uninstalled'} skill: ${name.value.trim()}. Reload to refresh the installed list.`;
+    } catch (error) { manageStatus.textContent = `Skill change failed: ${error.message}`; }
+    finally { update.disabled = false; remove.disabled = false; }
+  };
+  manage.addEventListener('submit', event => { event.preventDefault(); void mutate('skills.update'); });
+  remove.addEventListener('click', () => { void mutate('skills.uninstall'); });
 }

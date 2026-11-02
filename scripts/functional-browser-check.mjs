@@ -180,7 +180,20 @@ try {
     await page.locator('wa-switch').last().click();
     await page.getByText('Enabled', { exact: true }).last().waitFor();
     assert.equal((await rpc('skills.get', { name: 'frontend-design' })).skill.enabled, true);
-    return { repository: 'anthropics/skills', revision: 'ca45fc496a3436251f191354091d557da31c15b5', name: 'frontend-design', actualBundleCharacters: content.length, persistedAfterProcessRestart: true, disabledPersistedAfterReload: true, reenabled: true, execution: 'NOT_TESTED_BY_THIS_UI_IMPORT_GATE' };
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    assert.ok(!path.relative(temporary, installed.skill.filePath).startsWith('..'), 'Only the isolated installed bundle may be edited by this test');
+    fs.appendFileSync(installed.skill.filePath, '\nDISPOSABLE_LOCAL_EDIT_FOR_REFRESH_CHECK\n');
+    await page.getByPlaceholder('Installed skill name', { exact: true }).fill('frontend-design');
+    await page.getByRole('button', { name: 'Refresh skill from saved source', exact: true }).click();
+    await page.getByText('Refreshed skill: frontend-design. Reload to refresh the installed list.', { exact: true }).waitFor({ timeout: 60000 });
+    assert.equal(fs.readFileSync(installed.skill.filePath, 'utf8'), content, 'Actual external source refresh must replace the disposable edit');
+    assert.equal((await rpc('skills.get', { name: 'frontend-design' })).skill.enabled, true);
+    await page.getByRole('button', { name: 'Uninstall skill bundle', exact: true }).click();
+    await page.getByText('Uninstalled skill: frontend-design. Reload to refresh the installed list.', { exact: true }).waitFor();
+    assert.equal(fs.existsSync(installed.skill.filePath), false);
+    await stop(); await start(); await page.reload();
+    assert.equal((await rpc('skills.status')).skills.some(skill => skill.name === 'frontend-design'), false);
+    return { repository: 'anthropics/skills', revision: 'ca45fc496a3436251f191354091d557da31c15b5', name: 'frontend-design', actualBundleCharacters: content.length, persistedAfterProcessRestart: true, disabledPersistedAfterReload: true, reenabled: true, refreshedFromActualSource: true, uninstalledAcrossProcessRestart: true, execution: 'NOT_TESTED_BY_THIS_UI_IMPORT_GATE' };
   });
   await check('Skills filter changes visible results', async () => {
     await page.goto(`${base}/settings/skills`);

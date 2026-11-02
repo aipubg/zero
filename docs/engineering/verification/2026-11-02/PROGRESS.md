@@ -469,3 +469,16 @@ verify SDK state, reload and confirm disabled state, then re-enable through UI
 and independently confirm SDK enabled state. Nine selected workflows pass.
 Inspection found no native uninstall action in that detail view; removal/update
 and execution UI acceptance remain open rather than inferred from the toggle.
+
+The existing Skills page now exposes named-bundle refresh/uninstall controls,
+using the real SDK handlers without a new permission popup. Refresh explicitly
+uses the saved source/revision; it does not claim to upgrade a pinned revision.
+[skills-external-ui-refresh-remove.json](skills-external-ui-refresh-remove.json)
+passes actual GitHub import, native disable/enable persistence, real source
+refresh and uninstall across process restart. The test modifies only its isolated
+installed bundle, refreshes from the pinned remote source, and independently
+checks the original 9,434-character content is restored while enabled state stays
+enabled. UI uninstall removes that isolated file and the skill remains absent
+after restarting the process. Nine selected browser workflows and 19 UI
+component regressions pass. Execution through the imported skill's UI/task flow
+is still a separate unfinished gate; these lifecycle checks do not replace it.
