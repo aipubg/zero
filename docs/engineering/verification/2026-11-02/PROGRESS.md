@@ -829,3 +829,24 @@ lifetimes for eight real successful frames, zero invalid resource samples and
 zero counter regressions. Capture/OCR/vision/persistence pass for this short
 duration; final process-lifetime tails and simultaneous resource acceptance remain
 incomplete, so overall verdict stays PARTIAL and completed24Hours remains false.
+
+A fresh combined 24-hour measured run is now active, launched independently of
+the interrupted prior run: PID 724, process start 2026-11-02T16:52:16Z, evidence
+artifacts/screen-intelligence/endurance-combined-20261102T165216Z. It captures/OCRs
+every two seconds, samples resources every ten seconds and attempts changed-frame
+local vision at most once per minute. The real PID/start time was revalidated
+after launch and after approximately 100 seconds. It is IN_PROGRESS, not PASS;
+its current implementation still reports resource acceptance PARTIAL and cannot
+certify final lifetime counters. The initial launch/summary snapshot is retained
+in [endurance-combined-24h-launch.json](endurance-combined-24h-launch.json).
+
+New runner classification coverage now complements the historical inventory:
+runner-classification-inventory.json audits all 12 matching modern acceptance
+entry points with exact source hashes, implemented mode labels and explicit
+limitations. --check validates both catalogs and reports execution NOT_RUN and
+release BLOCKED. Labels describe the union of possible modes; actual selected
+per-check reports take precedence. It does not silently execute hardware/provider
+tests or turn catalog integrity into product acceptance. The CONTRACT test proves
+source changes, new unclassified runners and invalid labels fail closed. The
+historical inventory still covers 18 suites / 137 leaves; new component-test
+leaves are not all independently inventoried by this runner-entry-point catalog.

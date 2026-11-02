@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { validateInventory, emptyResults, reconcile, summarize } from './verification/classification-core.mjs';
+import { validateRunnerCatalog } from './verification/runner-catalog.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const inventoryPath = path.join(root, 'docs/engineering/verification/test-classification-inventory.json');
@@ -82,9 +83,11 @@ export async function main(args = process.argv.slice(2)) {
   if (check && (execute || output || requested.length)) throw new Error('--check is a separate inventory-integrity operation');
   if (execute && (!disposable || !requested.length)) throw new Error('Execution requires explicit --suite IDs and --disposable-environment; no owner-state execution');
   const inventory = validateInventory(JSON.parse(fs.readFileSync(inventoryPath, 'utf8')), root);
+  const runnerCatalog = validateRunnerCatalog(root);
   for (const id of requested) if (!inventory.suites.some(suite => suite.id === id)) throw new Error(`Unknown suite: ${id}`);
   if (check) {
     console.log(JSON.stringify({ inventoryIntegrity: 'VALID', suites: inventory.suites.length,
+      additionalRunnerCatalog: 'VALID', additionalRunnerCount: runnerCatalog.runners.length,
       leaves: inventory.suites.reduce((total, suite) => total + suite.tests.length, 0),
       execution: 'NOT_RUN', releaseStatus: 'BLOCKED' }, null, 2));
     return 0;

@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "scope": "New acceptance runner entry points only; complements historical leaf audit. Integrity is not execution or production acceptance. Labels are the union of implemented modes; actual selected per-check reports take precedence.",
+  "runners": [
+    {
+      "file": "scripts/functional-browser-check.mjs",
+      "sha256": "a5c8da16b1eabf5b442047fd97a95c54498f93adfb464c407ec35e42e293352c",
+      "labels": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL",
+        "REAL_OS"
+      ],
+      "scope": "Isolated UI interactions and persisted effects; optional native devices, capture, model and external skill execution.",
+      "modes": [
+        "--external",
+        "--devices",
+        "--external-skills",
+        "--skill-execution (requires --external-skills)",
+        "--screen",
+        "--screen-recall (requires --screen; REAL_OS + REAL_EXTERNAL)"
+      ],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/screen-intelligence-endurance.mjs",
+      "sha256": "993ec73e2fbfddca0d29ff86619aec9c079f907d5a60990025989d9a29a6f205",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION",
+        "ENDURANCE"
+      ],
+      "scope": "Actual duration/capture/OCR/resource measurements; optional local GGUF. Short runs never prove 24 hours; overall resource coverage remains partial.",
+      "modes": [
+        "--hours N",
+        "--duration-seconds N",
+        "--local-vision 1"
+      ],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/screen-intelligence-real-os.mjs",
+      "sha256": "6f19620faf77ac7ca0c6fde9035eab318bba26078fa6c5385f40620c44fe6dcb",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Native desktop fixture capture, OCR, change detection and reopened observation memory; not continuous endurance.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-assistant-crash.mjs",
+      "sha256": "a160c0f9de79c2c96120e803b1eafc54d999750b3450a48a2aee7472c07d7030",
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "scope": "Owned host real-model/tool crash recovery, retries and failure outcomes; not arbitrary side-effect compensation.",
+      "modes": [
+        "default: actual process kill/restart/resume",
+        "--retry-only",
+        "--tool-recovery-only",
+        "--tool-failure-only",
+        "--tool-unrelated-only"
+      ],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-automation-isolated.mjs",
+      "sha256": "53ff12213f0245e4a542c5d170bdbae32037ef2c79939a58aff9bc5fdf97b2a0",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Owned isolated host and historical phase11 assertions; controlled connector fixtures are not external service execution.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-external-skill.mjs",
+      "sha256": "6b89f6767e6e6dbc578125986c019bcea1201cf6b90260ab753a40700fed46d1",
+      "labels": [
+        "REAL_EXTERNAL",
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "scope": "Pinned GitHub skill executes actual model/tools and independent Chrome artifact interactions.",
+      "modes": [
+        "default: new execution",
+        "--resume-directory DIR: existing artifact recheck only, not new execution"
+      ],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-local-vision-screen.mjs",
+      "sha256": "b46ad06950d7d35b7f22b72fbccbec4b9f3fec892e93b4414b9db4920e405627",
+      "labels": [
+        "REAL_OS",
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "scope": "Controlled visible native screen changes and local GGUF inference persisted in encrypted observations.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-local-vision.mjs",
+      "sha256": "9ebe2de92252d3d41fcded87a03dc8246faa7fd24147d01f49ee1fd0c01d8761",
+      "labels": [
+        "REAL_OS",
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "scope": "Actual local GGUF generation, rendered color recognition, owned-process resources, cancellation and restart.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-screen-automation.mjs",
+      "sha256": "492927c89b6c7a978dc2adcfdb8a1fdb579d340e4d984c04cb76deaecd5596ed",
+      "labels": [
+        "REAL_OS",
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "scope": "Actual observed title transition through configured rule to native screen-size action; not every OS event source.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-screen-resource-usage.mjs",
+      "sha256": "d300a6a59ba0633ce5db861f691474ceecba2713e3ba707c066b40ea751d194c",
+      "labels": [
+        "REAL_OS"
+      ],
+      "scope": "Real point-in-time capture/native/OCR process counters; not whole-duration resource acceptance.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-user-data-preservation.mjs",
+      "sha256": "6aa4e9fd26342cfb996b9f57c2959af468a132db2212c8a650ea2787ba7a0183",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Read-only original row-content comparison against a specified actual backup; clock fields explicitly scoped.",
+      "modes": [
+        "--backup DIR"
+      ],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-voice-conversation.mjs",
+      "sha256": "87860705cebfb67d9226fcc53e995e38a8525031c942bb70b8a1ac1ecb3cd9a8",
+      "labels": [
+        "REAL_OS",
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "scope": "Windows synthesized prompt to actual STT, configured model and TTS; not human spoken conversation.",
+      "modes": [
+        "--devices: actual microphone frames and output playback; audibility/barge-in remain unverified"
+      ],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    }
+  ]
+}
