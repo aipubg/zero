@@ -16,6 +16,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -2181,10 +2182,12 @@ export class ZeroNativeHost {
           } catch (err) {
             parseError = `Malformed tool arguments JSON: ${err.message}`;
           }
+          if (!parseError && (!args || typeof args !== 'object' || Array.isArray(args))) parseError = 'Tool arguments must be a JSON object';
 
           if (parseError) {
             console.warn(`[Zero Host] Tool call argument parse failure for '${fnName}':`, parseError);
             const errObservation = { ok: false, error: parseError, raw: call.function?.arguments };
+            executedActions.push({ action: fnName, args: {}, execRes: errObservation });
             const toolMsg = {
               role: 'tool',
               tool_call_id: call.id,
@@ -2235,6 +2238,9 @@ export class ZeroNativeHost {
         }
       }
 
+      const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
+      const failedActions = executedActions.filter((action, index) => actionFailed(action) && !executedActions.slice(index + 1).some(later =>
+        !actionFailed(later) && later.execRes?.verified === true && later.action === action.action && isDeepStrictEqual(later.args, action.args)));
       // Truthful media widget card
       if (mediaResult && !finalContent.includes('zero-ui:media')) {
         const isPlaying = mediaResult.playbackState === 'PLAYING';
@@ -2255,7 +2261,7 @@ export class ZeroNativeHost {
       // Truthful progress card
       if (executedActions.length > 0 && !finalContent.includes('zero-ui:progress')) {
         let overallOutcome = 'COMPLETED';
-        if (executedActions.some((a) => a.execRes?.outcome === 'FAILED' || a.execRes?.ok === false)) {
+        if (failedActions.length) {
           overallOutcome = 'FAILED';
         } else if (executedActions.some((a) => a.execRes?.outcome === 'BLOCKED')) {
           overallOutcome = 'BLOCKED';
@@ -2327,7 +2333,8 @@ export class ZeroNativeHost {
       }
 
       return {
-        ok: true,
+        ok: failedActions.length === 0,
+        ...(failedActions.length ? { error: `${failedActions.length} tool action(s) failed or were blocked; inspect the persisted tool results before retrying` } : {}),
         role: 'assistant',
         content: finalContent,
         messages: this.sessions.getTranscript(sessionKey),

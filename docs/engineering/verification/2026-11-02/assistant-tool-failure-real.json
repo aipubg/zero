@@ -1,0 +1,17 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T06:53:18.693Z",
+  "scope": "Real model read_file failure cannot become a completed task even when the model gives a final explanation",
+  "toolFailure": {
+    "taskId": "task_1793602399392_7tj92c",
+    "receiptStatus": "failed",
+    "taskStatus": "FAILED",
+    "actualToolErrorPreserved": true,
+    "noFileCreated": true
+  },
+  "finishedAt": "2026-11-02T06:53:23.252Z"
+}

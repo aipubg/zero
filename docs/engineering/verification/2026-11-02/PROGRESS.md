@@ -695,3 +695,26 @@ claims; they are not used to substitute for the other actual interaction tests.
 Endurance checkpoint 2026-11-02T06:48:58Z: PID 15716 confirmed live, 5.77 hours,
 8,663 completed actual captures/OCR, zero capture failures. Still IN_PROGRESS;
 not 24 hours and not the newer combined vision/subprocess resource gate.
+
+Assistant task completion now checks actual tool outcomes. Previously the chat
+could record FAILED tool output and a failed progress card yet still complete its
+durable task/receipt because the final model explanation was nonempty. Explicit
+ok:false, success:false, executed:false and failed/blocked/cancelled outcomes now
+prevent completion. Malformed/non-object tool arguments are recorded as failures.
+The model explanation and original tool results remain in the transcript.
+
+An initial conservative implementation rejected a real retry which first read a
+missing file, then created and verified it; that failed regression is preserved
+in [assistant-tool-recovery-conservative-failure.json](assistant-tool-recovery-conservative-failure.json).
+The final rule permits recovery only when a later action with the same action
+name and deeply equal arguments returns verified:true and no failure outcome.
+It preserves earlier failure records, and does not treat arbitrary subsequent
+successes or prose as evidence that a failure was repaired.
+
+[assistant-tool-failure-real.json](assistant-tool-failure-real.json) verifies a
+fresh real model read_file failure: the file stays absent, actual tool error is
+persisted and both task and receipt are FAILED despite a final model response.
+[assistant-retry-after-tool-outcome-fix.json](assistant-retry-after-tool-outcome-fix.json)
+passes the real successful task retry/concurrency/model-pinning/file workflow.
+Two receipt/write-scope regressions pass. This is not proof of arbitrary external
+effect recovery or independent verification of every assistant deliverable.

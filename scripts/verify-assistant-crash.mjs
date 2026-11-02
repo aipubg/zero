@@ -44,7 +44,22 @@ function call(method, params = {}) {
 async function stop() { socket?.close(); if (child?.exitCode === null) { const closed = once(child, 'close'); child.kill(); await closed; } }
 try {
   await start(); const firstPid = child.pid;
-  if (process.argv.includes('--retry-only')) {
+  if (process.argv.includes('--tool-failure-only')) {
+    const missing = path.join(output, 'deliberately-missing.txt');
+    const request = { sessionKey: 'real-tool-failure', idempotencyKey: 'real-tool-failure-request', message: `Use read_file on exactly ${JSON.stringify(missing)}. Do not create or modify any file. Report its actual error honestly.` };
+    await assert.rejects(call('chat.send', request), /tool action.*failed or were blocked/);
+    const db = new DatabaseSync(path.join(state, 'data/zero-sessions.sqlite'), { readOnly: true });
+    const receipt = db.prepare('SELECT status,task_id FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey); db.close();
+    assert.equal(receipt.status, 'failed');
+    const task = await call('tasks.get', { id: receipt.task_id });
+    assert.equal((task.task || task).status, 'FAILED');
+    const history = await call('chat.history', { sessionKey: request.sessionKey });
+    assert.ok(history.messages.some(message => message.tool_calls?.some(item => item.function?.name === 'read_file')));
+    assert.ok(history.messages.some(message => message.role === 'tool' && JSON.parse(message.content).ok === false));
+    assert.equal(fs.existsSync(missing), false);
+    report.scope = 'Real model read_file failure cannot become a completed task even when the model gives a final explanation';
+    report.toolFailure = { taskId: receipt.task_id, receiptStatus: receipt.status, taskStatus: 'FAILED', actualToolErrorPreserved: true, noFileCreated: true };
+  } else if (process.argv.includes('--retry-only')) {
     const filename = path.join(output, 'retried-effect.txt'); const marker = 'ZERO_REAL_RETRY_EFFECT';
     const request = { sessionKey: 'real-retry-task', idempotencyKey: 'real-retry-request', message: `Use write_file to create ${JSON.stringify(filename)} containing exactly ${marker}. Use read_file to verify it and give a short confirmation.` };
     await call('zero-policy.computer-hold.take');
