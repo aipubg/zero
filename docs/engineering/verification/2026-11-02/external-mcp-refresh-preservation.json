@@ -1,0 +1,14 @@
+{
+  "classification": [
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T17:07:01.850Z",
+  "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-mcp-update-KV8AnS",
+  "scope": "Actual pinned external MCP source refresh/restart and failed replacement preserves working handler; no version upgrade or UI claim",
+  "argumentsPreserved": true,
+  "actualEffectAfterRefreshAndRestart": true,
+  "failedUpdatePreservedSourceAndHandler": true,
+  "finishedAt": "2026-11-02T17:07:08.776Z"
+}

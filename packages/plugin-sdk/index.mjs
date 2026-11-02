@@ -401,7 +401,8 @@ export class PluginManager extends EventEmitter {
     const previousSource = row.source ? JSON.parse(row.source) : null;
     if (input === undefined) {
       if (!previousSource) throw new Error(`Plugin '${id}' has no persistent source; supply a directory or package`);
-      input = restart ? previousSource : { kind: previousSource.kind, spec: previousSource.spec };
+      input = restart ? previousSource : { kind: previousSource.kind, spec: previousSource.spec,
+        ...(previousSource.kind === 'mcp' ? { args: previousSource.args || [], bin: previousSource.bin } : {}) };
     }
     const config = options.config ?? input?.config ?? JSON.parse(row.config || '{}');
     const prepared = await this._prepare(input, {}, null, config);

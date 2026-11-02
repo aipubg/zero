@@ -331,6 +331,13 @@ try {
     const history = await rpc('chat.history', { sessionKey: chatRequests.at(-1).sessionKey });
     assert.ok(history.messages.some(message => message.tool_calls?.some(call => call.function?.name === capability)));
     await page.goto(`${base}/settings/plugins`);
+    await page.getByPlaceholder('Installed plugin ID', { exact: true }).fill(id);
+    await page.getByRole('button', { name: 'Refresh plugin from saved source', exact: true }).click();
+    await page.getByText(`Refreshed plugin: ${id}.`, { exact: true }).waitFor({ timeout: 120000 });
+    await page.getByRole('button', { name: 'Restart executable plugin', exact: true }).click();
+    await page.getByText(`Restarted plugin: ${id}.`, { exact: true }).waitFor({ timeout: 30000 });
+    assert.ok((await rpc('zero.computer.control', { action: capability, path: artifact, content: 'ZERO_MCP_UI_REAL_EFFECT' })).ok);
+    assert.equal(fs.readFileSync(artifact, 'utf8'), 'ZERO_MCP_UI_REAL_EFFECT');
     await page.getByText('@modelcontextprotocol/server-filesystem', { exact: true }).first().click();
     await page.getByRole('button', { name: 'Disable @modelcontextprotocol/server-filesystem', exact: true }).click();
     await page.getByRole('button', { name: 'Enable @modelcontextprotocol/server-filesystem', exact: true }).waitFor();
@@ -353,7 +360,7 @@ try {
     assert.equal((await rpc('plugins.list')).plugins.some(plugin => plugin.id === id), false, 'Uninstall must finish before stopping the host');
     await stop(); await start(); await page.reload();
     assert.equal((await rpc('plugins.list')).plugins.some(plugin => plugin.id === id), false);
-    return { id, actualChatToolEffect: true, disabledAcrossProcessRestart: true, reenabledEffect: true, uninstalledAcrossProcessRestart: true };
+    return { id, actualChatToolEffect: true, refreshedFromSavedSourceThroughUI: true, restartedThroughUI: true, actualEffectAfterRefreshAndRestart: true, disabledAcrossProcessRestart: true, reenabledEffect: true, uninstalledAcrossProcessRestart: true };
   });
   if (process.argv.includes('--screen')) await check('About controls real native capture and durable Private Mode across process restarts', async () => {
     await page.goto(`${base}/settings/about`);

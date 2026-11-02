@@ -1,0 +1,368 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+  "startedAt": "2026-11-02T17:07:45.429Z",
+  "status": "PASS",
+  "evidence": "E:\\zero\\artifacts\\functional-browser\\1793639265419",
+  "checks": [
+    {
+      "name": "Chat connects, native plugin activates, composer accepts text",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 447,
+      "details": {
+        "pageErrors": []
+      }
+    },
+    {
+      "name": "Memory search uses actual persisted records through the UI",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 265,
+      "details": {
+        "memoryId": "mem_semantic_1793639266777_7q8g5",
+        "marker": "Browser memory evidence 54573"
+      }
+    },
+    {
+      "name": "Skills filter changes visible results",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 182,
+      "details": {
+        "query": "web-research"
+      }
+    },
+    {
+      "name": "Skills details expose persisted enable/disable controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 903,
+      "details": {
+        "disabledPersisted": true,
+        "reenabled": true
+      }
+    },
+    {
+      "name": "Search form executes its configured provider and reports real outcome",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "status": "PASS",
+      "durationMs": 1088,
+      "details": {
+        "sources": 5,
+        "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+        "sourceHttpStatus": 200,
+        "sourceBytes": 1030701,
+        "verifiedClaims": false
+      }
+    },
+    {
+      "name": "Plugins current page exposes lifecycle controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1670,
+      "details": {
+        "installedPersisted": true,
+        "executed": true,
+        "platform": "win32",
+        "verified": false,
+        "disabledAcrossProcessRestart": true,
+        "reenabled": true,
+        "uninstalled": true
+      }
+    },
+    {
+      "name": "Third-party MCP plugin installs through current UI and executes a real registered tool",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "status": "PASS",
+      "durationMs": 15621,
+      "details": {
+        "id": "mcp:@modelcontextprotocol/server-filesystem",
+        "actualChatToolEffect": true,
+        "refreshedFromSavedSourceThroughUI": true,
+        "restartedThroughUI": true,
+        "actualEffectAfterRefreshAndRestart": true,
+        "disabledAcrossProcessRestart": true,
+        "reenabledEffect": true,
+        "uninstalledAcrossProcessRestart": true
+      }
+    },
+    {
+      "name": "Actual wheel input increases About scrollTop",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 351,
+      "details": {
+        "before": 0,
+        "scrollHeight": 1033,
+        "clientHeight": 165,
+        "after": 500
+      }
+    },
+    {
+      "name": "Gateway reconnects after a real process stop/restart and memory remains",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1974,
+      "details": {
+        "oldPid": 5476,
+        "newPid": 19856,
+        "memoryCount": 1,
+        "closedAt": 1793639287447,
+        "reconnectedAt": 1793639288352,
+        "completedRequestReplay": null
+      }
+    }
+  ],
+  "pageErrors": [],
+  "rpcDiagnostics": [
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.send",
+      "fields": [
+        "sessionKey",
+        "sessionId",
+        "message",
+        "deliver",
+        "idempotencyKey"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.send",
+      "ok": true,
+      "fields": [
+        "ok",
+        "role",
+        "content",
+        "messages",
+        "taskId",
+        "sessionKey",
+        "runId"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.history",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "inputRunIds",
+        "limit"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.history",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "inputRunIds",
+        "limit"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.history",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.history",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "inputRunIds",
+        "limit"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes",
+        "inputRunIds"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.history",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.history",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "inputRunIds",
+        "limit"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-02T17:08:09.404Z"
+}

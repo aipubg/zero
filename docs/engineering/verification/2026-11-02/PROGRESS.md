@@ -896,3 +896,21 @@ effect, reenable/real effect, UI uninstall and absence after another real restar
 No page errors. Source catalog hash/mode audit updated for this runner change.
 This closes that bounded MCP package lifecycle workflow; third-party update/
 rollback, every plugin format and broader product acceptance remain unfinished.
+
+MCP saved-source refresh now preserves executable arguments/bin selection.
+Previously generic update reconstruction kept only kind/spec, so filesystem
+packages lost their allowed-directory arguments and failed initialization.
+[external-mcp-refresh-preservation.json](external-mcp-refresh-preservation.json)
+passes a real pinned source refresh, executable restart and actual handler effect;
+an invalid replacement fails during preparation and preserves the original source
+revision and executable handler, which successfully writes afterward. This is
+preservation on preparation failure, not a new proof of every post-detach rollback.
+
+The existing Plugins surface now exposes named-plugin saved-source refresh and
+executable restart controls. MCP arguments are shown only for MCP installation;
+new installations populate the managed ID. No extra permission popup was added.
+[external-mcp-ui-refresh-restart.json](external-mcp-ui-refresh-restart.json) passes
+all nine real browser workflows, including those actual UI operations followed
+by independent handler/file effects, plus existing disable/restart/enable/uninstall
+checks. Thirty plugin/UI regressions pass. Pinned 2.0.1 is refreshed, not upgraded
+to a different version. Browser source hash was re-audited for the expanded gate.
