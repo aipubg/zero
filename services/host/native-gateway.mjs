@@ -2146,6 +2146,9 @@ export class ZeroNativeHost {
           throw streamErr;
         }
 
+        if (!['stop', 'tool_calls', 'function_call'].includes(finishReason)) {
+          throw new Error(`Model response did not complete: ${finishReason || 'missing terminal finish reason'}`);
+        }
         // If no tool calls were requested, complete with the accumulated content from this single request
         if (toolCallsMap.size === 0) {
           finalContent = accumulatedContent;

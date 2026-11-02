@@ -4,6 +4,25 @@ import http from 'node:http';
 import { once } from 'node:events';
 import { ModelFabric } from '../packages/model-fabric/index.mjs';
 
+test('[CONTRACT] actual SSE preserves token-limit termination and rejects an unterminated response', async () => {
+  const server = http.createServer((request, response) => {
+    request.resume(); response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    response.write(`data: ${JSON.stringify({ choices: [{ delta: { content: 'partial' } }] })}\n\n`);
+    if (request.url.includes('/truncated/')) { response.end(); return; }
+    response.write(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: 'length' }] })}\n\n`);
+    response.end('data: [DONE]\n\n');
+  });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  try {
+    for (const truncated of [false, true]) {
+      const fabric = new ModelFabric({ providers: [{ id: 'terminal-contract', baseUrl: `http://127.0.0.1:${server.address().port}/${truncated ? 'truncated' : 'limited'}/v1`, apiKey: 'contract', models: ['terminal'] }] });
+      const consume = async () => { const chunks = []; for await (const chunk of fabric.streamChat({ model: 'terminal', messages: [] })) chunks.push(chunk); return chunks; };
+      if (truncated) await assert.rejects(consume(), /without a terminal/);
+      else assert.equal((await consume()).at(-1).finish_reason, 'length');
+    }
+  } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+});
+
 test('[CONTRACT] real SSE transport separates reasoning from reply tokens', async () => {
   const server = http.createServer((request, response) => {
     request.resume();

@@ -382,7 +382,7 @@ export class ModelFabric {
     const res = await this.executeChat({ ...payload, stream: true }, options);
     if (!res.stream) {
       if (res.data?.choices?.[0]?.message?.content) {
-        yield { delta: res.data.choices[0].message.content, finish_reason: 'stop', done: true };
+        yield { delta: res.data.choices[0].message.content, finish_reason: res.data.choices[0].finish_reason || null, done: true };
       }
       return;
     }
@@ -390,6 +390,7 @@ export class ModelFabric {
     const reader = res.stream.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let terminalReason = null;
 
     try {
       while (true) {
@@ -408,13 +409,14 @@ export class ModelFabric {
           const trimmed = line.trim();
           if (!trimmed || trimmed.startsWith(':')) continue;
           if (trimmed === 'data: [DONE]') {
-            yield { done: true, finish_reason: 'stop' };
+            yield { done: true, finish_reason: terminalReason || 'stop' };
             return;
           }
           if (trimmed.startsWith('data: ')) {
             try {
               const json = JSON.parse(trimmed.slice(6));
               const choice = json.choices?.[0];
+              if (choice?.finish_reason) terminalReason = choice.finish_reason;
               // Reasoning is a separate channel, never assistant prose or speech.
               const deltaContent = typeof choice?.delta?.content === 'string' ? choice.delta.content : null;
               if (json.usage) {
@@ -433,6 +435,7 @@ export class ModelFabric {
           }
         }
       }
+      if (!terminalReason) throw new Error('Model stream ended without a terminal finish reason or DONE marker');
     } finally {
       try { await reader.cancel(); } catch (_) {}
       try { reader.releaseLock(); } catch (_) {}

@@ -731,3 +731,26 @@ and task/receipt stay FAILED. Unrelated success cannot erase the earlier failure
 Both are new executions through an owned isolated host and the real configured
 model/capability engine; no substituted model/tool responses. These bounded file
 cases do not establish general compensation for arbitrary external side effects.
+
+Streaming completion integrity: ModelFabric now preserves an explicit length /
+content-filter finish reason when a later DONE marker arrives; previously DONE
+overwrote it with stop. A stream that closes without a terminal reason or DONE
+throws, and the host rejects non-completing finish reasons before executing
+partial tool calls or completing a task. Non-stream fallback preserves the
+provider's actual finish reason rather than inventing stop.
+
+Three actual-loopback SSE CONTRACT checks pass (length then DONE, truncated
+socket, reasoning separation and progress/idle deadlines).
+[assistant-retry-stream-terminal-regression.json](assistant-retry-stream-terminal-regression.json)
+passes a fresh real NVIDIA model/tool retry, actual file verification, assignment
+pinning, duplicate retry exclusion and durable replay. Transport contract checks
+are not claimed as real external token-limit acceptance.
+
+Endurance terminal revalidation at 2026-11-02T16:41Z: Get-Process confirms PID
+15716 is missing. Its last persisted summary is 2026-11-02T07:26:30Z, 6.391 hours,
+9,550 actual successful captures/OCR and completed24Hours:false. The on-disk
+running label is stale; the run is INTERRUPTED / INCOMPLETE, not a verified wait
+or PASS. The reason/time of process loss is unknown. Original summary is retained
+unchanged; a separate audit records the missing live handle. Combined vision and
+all subprocess resource endurance remain outstanding, so the old capture-only
+run is not silently restarted or counted toward those gates.

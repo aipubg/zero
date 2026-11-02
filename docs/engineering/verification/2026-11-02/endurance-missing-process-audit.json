@@ -1,0 +1,14 @@
+{
+  "classification": [
+    "ENDURANCE"
+  ],
+  "auditedAt": "2026-11-02T16:42:09.217Z",
+  "pid": 15716,
+  "handlePresent": false,
+  "lastCheckpoint": "2026-11-02T07:26:30.391Z",
+  "elapsedHours": 6.391132702361111,
+  "capturesSucceeded": 9550,
+  "status": "INTERRUPTED",
+  "completed24Hours": false,
+  "reason": "Original process handle missing; stale running summary is not completion evidence"
+}
