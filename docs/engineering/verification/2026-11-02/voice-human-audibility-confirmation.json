@@ -1,0 +1,11 @@
+{
+  "classification": ["REAL_OS"],
+  "verificationMethod": "Explicit user confirmation in the current conversation",
+  "testPhrase": "Zero voice audio test",
+  "userResponse": "हाँ, साफ सुनाई दिया",
+  "result": "PASS for audibility and intelligibility of the selected phrase",
+  "relatedCanonicalDeviceEvidence": "artifacts/voice-conversation/1793657741881/report.json",
+  "scope": "Actual speaker playback was clearly heard by the user",
+  "remainingUnverified": ["Human microphone speech recognition", "Acoustic barge-in", "Echo cancellation", "General conversational acoustic reliability"],
+  "overallVoiceStatus": "PARTIAL"
+}

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
 import { parseGuideOrModelfile, type ParsedGuideConfig } from './local-gguf-parser.ts';
@@ -111,7 +112,7 @@ export interface PipelineProgressEvent {
 }
 
 // In-Memory State for Active Inference & Downloads
-class LocalGgufEngineService {
+export class LocalGgufEngineService {
   private modelsDir: string;
   private activeLlama: any = null;
   private activeModel: any = null;
@@ -141,7 +142,7 @@ class LocalGgufEngineService {
   }> = [];
   private isProcessingQueue = false;
 
-  constructor() {
+  constructor(options: { modelsDir?: string } = {}) {
     // Standard models directory in project root
     const rootCandidates = [
       process.cwd(),
@@ -155,7 +156,7 @@ class LocalGgufEngineService {
         break;
       }
     }
-    this.modelsDir = path.resolve(resolvedRoot, 'models');
+    this.modelsDir = options.modelsDir ? path.resolve(options.modelsDir) : path.resolve(resolvedRoot, 'models');
     if (!fs.existsSync(this.modelsDir)) {
       try {
         fs.mkdirSync(this.modelsDir, { recursive: true });
@@ -416,6 +417,7 @@ class LocalGgufEngineService {
    * Manifest Path helper
    */
   public getManifestPath(modelId: string): string {
+    if (typeof modelId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(modelId) || modelId.includes('..')) throw new Error('Invalid local model identifier');
     const cleanId = modelId.replace(/\.gguf$/i, '').replace(/\.manifest\.json$/i, '');
     return path.join(this.modelsDir, `${cleanId}.manifest.json`);
   }
@@ -1447,6 +1449,7 @@ class LocalGgufEngineService {
    * Delete a GGUF file and its manifest permanently from disk
    */
   public async deleteModel(identifier: string): Promise<void> {
+    this.getManifestPath(identifier); // Validate before unloading or touching any path.
     const cleanId = identifier.trim().replace(/\.gguf$/i, '').replace(/\.manifest\.json$/i, '');
     
     // 1. Unload from RAM/VRAM first so Windows file locks are released
@@ -1459,13 +1462,15 @@ class LocalGgufEngineService {
     const target = models.find((m) => m.id === cleanId || m.filename === identifier || m.filename === `${cleanId}.gguf`);
 
     // 3. Delete binary file (unlink physical file from disk only if stored in modelsDir or not zero-copy external)
-    const isZeroCopy = target?.zeroCopy || (target?.fullPath && !target.fullPath.toLowerCase().startsWith(this.modelsDir.toLowerCase()));
+    if (!target) throw new Error('Local model not found; files were preserved');
+    const ownedRoot = fs.realpathSync(this.modelsDir);
+    const relative = path.relative(ownedRoot, fs.realpathSync(target.fullPath));
+    const isOwned = relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+    const isZeroCopy = target.zeroCopy || !isOwned;
     const pathsToTry = new Set<string>();
     if (!isZeroCopy && target?.fullPath) {
       pathsToTry.add(target.fullPath);
     }
-    pathsToTry.add(path.join(this.modelsDir, `${cleanId}.gguf`));
-    pathsToTry.add(path.join(this.modelsDir, identifier));
 
     for (const p of pathsToTry) {
       try {
@@ -1475,6 +1480,7 @@ class LocalGgufEngineService {
         }
       } catch (err: any) {
         console.warn(`[LocalGguf] Failed to unlink binary ${p}:`, err.message);
+        throw err;
       }
     }
 
@@ -1487,42 +1493,10 @@ class LocalGgufEngineService {
       }
     } catch (err: any) {
       console.warn(`[LocalGguf] Failed to unlink manifest ${manifestPath}:`, err.message);
+      throw err;
     }
 
-    const siblingTxt = path.join(this.modelsDir, `${cleanId}.txt`);
-    const siblingJson = path.join(this.modelsDir, `${cleanId}.json`);
-    for (const sib of [siblingTxt, siblingJson]) {
-      try {
-        if (fs.existsSync(sib)) {
-          await fs.promises.unlink(sib);
-          console.log(`[LocalGguf] Permanently deleted sibling guide file: ${sib}`);
-        }
-      } catch {}
-    }
-
-    // 5. Sweep models directory to remove any matching manifests or guide files
-    if (fs.existsSync(this.modelsDir)) {
-      try {
-        const files = await fs.promises.readdir(this.modelsDir);
-        for (const f of files) {
-          if (f.startsWith('gateway-') || f === 'gateway-providers.json' || f === 'providers.json') continue;
-          const fLower = f.toLowerCase();
-          const cleanLower = cleanId.toLowerCase();
-          const idLower = identifier.toLowerCase();
-          if (
-            fLower === `${cleanLower}.manifest.json` ||
-            fLower === `${idLower}.manifest.json` ||
-            fLower.startsWith(`${cleanLower}.`) ||
-            fLower.startsWith(`${idLower}.`)
-          ) {
-            try {
-              await fs.promises.unlink(path.join(this.modelsDir, f));
-              console.log(`[LocalGguf] Permanently deleted matched model file: ${f}`);
-            } catch {}
-          }
-        }
-      } catch {}
-    }
+    // Guides and arbitrary same-prefix files are user data, not owned binaries.
 
     // Auto-clean local-gguf-engine card from gateway-providers.json if 0 offline models remain
     try {
@@ -1535,6 +1509,7 @@ class LocalGgufEngineService {
           if (Array.isArray(provs)) {
             const filtered = provs.filter((p: any) => p.id !== 'local-gguf-engine' && p.id !== 'gguf');
             if (filtered.length !== provs.length) {
+              await fs.promises.writeFile(`${provFile}.before-gguf-removal-${crypto.randomUUID()}.json`, provRaw, { flag: 'wx', mode: 0o600 });
               await fs.promises.writeFile(provFile, JSON.stringify(filtered, null, 2), 'utf-8');
             }
           }
@@ -1544,36 +1519,11 @@ class LocalGgufEngineService {
   }
 
   /**
-   * Permanently delete all local models, manifests, and guide files from disk
+   * Remove discovered local models and exact manifests, preserving guides/user files.
    */
   public async deleteAllModels(): Promise<void> {
-    await this.unloadModel(true);
-    await new Promise((r) => setTimeout(r, 120));
-
-    if (fs.existsSync(this.modelsDir)) {
-      const files = await fs.promises.readdir(this.modelsDir);
-      for (const f of files) {
-        // Protect persistent gateway configuration & provider registry
-        if (f.startsWith('gateway-') || f === 'gateway-providers.json' || f === 'providers.json') {
-          continue;
-        }
-
-        if (
-          f.endsWith('.gguf') ||
-          f.endsWith('.manifest.json') ||
-          f.endsWith('.txt') ||
-          f.endsWith('.json') ||
-          f.endsWith('.download')
-        ) {
-          try {
-            await fs.promises.unlink(path.join(this.modelsDir, f));
-            console.log(`[LocalGguf] Permanently deleted from /models: ${f}`);
-          } catch (e: any) {
-            console.warn(`[LocalGguf] Failed to unlink ${f}:`, e.message);
-          }
-        }
-      }
-    }
+    const models = await this.scanModels();
+    for (const model of models) await this.deleteModel(model.id);
 
     // Prune local-gguf-engine from gateway-providers.json
     try {
@@ -1583,7 +1533,10 @@ class LocalGgufEngineService {
         const provs = JSON.parse(provRaw);
         if (Array.isArray(provs)) {
           const filtered = provs.filter((p: any) => p.id !== 'local-gguf-engine' && p.id !== 'gguf');
-          await fs.promises.writeFile(provFile, JSON.stringify(filtered, null, 2), 'utf-8');
+          if (filtered.length !== provs.length) {
+            await fs.promises.writeFile(`${provFile}.before-gguf-removal-${crypto.randomUUID()}.json`, provRaw, { flag: 'wx', mode: 0o600 });
+            await fs.promises.writeFile(provFile, JSON.stringify(filtered, null, 2), 'utf-8');
+          }
         }
       }
     } catch {}

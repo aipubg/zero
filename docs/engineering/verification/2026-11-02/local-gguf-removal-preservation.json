@@ -1,0 +1,9 @@
+{
+  "classification": ["INTEGRATION"],
+  "status": "PASS",
+  "command": "node --test test/local-gguf-delete-preservation.test.mjs",
+  "scope": "Actual local GGUF service removal in an isolated models directory; not canonical Models UI or GGUF inference acceptance",
+  "actualModelSource": "Existing pinned SmolVLM GGUF copied into isolated registry; original only read",
+  "verified": ["Owned binary removed", "Zero-copy manifest removed without deleting external source", "Traversal/absolute identifiers rejected before file access", "Escaped manifest write rejected", "Same-prefix guides and unrelated JSON/TXT preserved", "Provider cleanup retains byte-identical backup and unrelated provider", "Missing model identifier cannot delete unrelated settings file"],
+  "notClaimed": ["Canonical local-GGUF RPC/UI integration", "All GGUF architectures can run", "Transactional provider prune", "Backup encryption"]
+}

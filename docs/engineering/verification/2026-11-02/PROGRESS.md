@@ -1436,3 +1436,30 @@ independently reads FINAL, and persists two successful tool steps. Structural
 validation does not promise rollback after valid operations begin or comprehensive
 per-capability schema validation. Endurance PID 16744 remains live with its original
 start time; its ongoing run still does not establish 24-hour acceptance.
+
+### Protect user files before connecting native GGUF UI controls
+
+Inspection of the existing GGUF service found delete identifiers joined directly
+to paths, prefix sweeps removing unrelated sibling files, and deleteAll deleting
+almost every JSON/TXT in modelsDir. These are corrected before exposing more native
+RPC operations. Model identifiers are validated before path operations; owned
+binary deletion uses realpath containment rather than string-prefix containment.
+Unknown IDs fail without deleting guessed paths. Delete-all iterates discovered
+models; guides, arbitrary same-prefix files and unrelated JSON/TXT are preserved.
+Binary/manifest unlink errors now propagate. Provider pruning retains an exact
+original-byte backup before changing entries. The service accepts an isolated
+models directory for actual tests while retaining its existing default behavior.
+
+[local-gguf-removal-preservation.json](local-gguf-removal-preservation.json) records
+actual GGUF copy/removal and zero-copy registration using the existing pinned
+SmolVLM source, with the external source untouched. Real filesystem tests verify
+traversal rejection, unrelated file preservation and provider backup bytes.
+This is service/data-preservation evidence, not completion of the still-missing
+canonical Models local-GGUF RPC bridge or arbitrary GGUF inference compatibility.
+
+The user explicitly confirmed the real speaker phrase was clearly audible:
+[voice-human-audibility-confirmation.json](voice-human-audibility-confirmation.json).
+That selected audibility/intelligibility gate is now user-confirmed PASS. Human
+microphone recognition, acoustic barge-in and general spoken conversation remain
+unverified, and overall Voice status remains PARTIAL. Endurance PID 16744 remains
+live with its original start time at reinspection; no 24-hour PASS is claimed.
