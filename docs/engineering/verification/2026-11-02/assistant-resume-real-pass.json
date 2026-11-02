@@ -1,0 +1,25 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T06:13:23.968Z",
+  "scope": "Actual model file effect and process-kill recovery without duplicate execution; not arbitrary side-effect reconciliation or automatic resumption",
+  "resumption": {
+    "taskId": "task_1793600004663_2jpozz",
+    "completed": true,
+    "actualAssistantOutput": true,
+    "fileEffectPreserved": true
+  },
+  "recovery": {
+    "firstPid": 16292,
+    "restartedPid": 3004,
+    "taskId": "task_1793600004663_2jpozz",
+    "status": "WAITING",
+    "actualFileEffectPreserved": true,
+    "replayModelCalls": 0,
+    "originalUserMessages": 1
+  },
+  "finishedAt": "2026-11-02T06:14:35.996Z"
+}

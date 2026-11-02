@@ -425,3 +425,18 @@ an upstream timeout, retained in
 [assistant-resume-timeout.json](assistant-resume-timeout.json). Four receipt/session
 regressions pass, but they do not substitute for the failed real resumption gate.
 The change remains undeployed to owner PID 15384 pending successful verification.
+
+Streaming deadline correction separates the bounded connection timeout from
+per-read inactivity timeout. A progressing stream may exceed the initial
+connection deadline; a stalled stream still fails, and reader cancellation
+releases its transport. Two real local SSE transport CONTRACT tests pass, plus
+the receipt regression. This removes the previous hard cutoff on long responses
+without extending a stalled request indefinitely.
+
+[assistant-resume-real-pass.json](assistant-resume-real-pass.json) records the
+subsequent successful actual crash/resume run (about 72 seconds). The model/tool
+executor continued the original task to COMPLETED, preserving its file effect.
+Independent SQLite inspection found 1,800 words / 13,515 characters in the final
+persisted assistant reply; this verifies substantial generated output, not exact
+word-count compliance. The earlier timeout remains FAIL. Broader side-effect
+reconciliation and owner deployment remain separate unfinished work.

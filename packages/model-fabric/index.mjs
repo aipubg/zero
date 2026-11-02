@@ -323,7 +323,9 @@ export class ModelFabric {
     const startTime = Date.now();
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const timeoutSignal = AbortSignal.timeout(timeoutMs);
+      const connectionDeadline = new AbortController();
+      const connectionTimer = setTimeout(() => connectionDeadline.abort(new DOMException('Model connection timed out', 'TimeoutError')), timeoutMs);
+      const timeoutSignal = connectionDeadline.signal;
       const combinedSignal = signal
         ? (AbortSignal.any ? AbortSignal.any([signal, timeoutSignal]) : signal)
         : timeoutSignal;
@@ -367,6 +369,8 @@ export class ModelFabric {
         if (signal?.aborted) throw err;
         if (attempt >= maxRetries) break;
         await new Promise((resolve) => setTimeout(resolve, 400));
+      } finally {
+        clearTimeout(connectionTimer);
       }
     }
 
@@ -389,7 +393,12 @@ export class ModelFabric {
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
+        let expired = false;
+        const idleTimer = setTimeout(() => { expired = true; void reader.cancel().catch(() => {}); }, options.idleTimeoutMs ?? options.timeoutMs ?? 60000);
+        let next;
+        try { next = await reader.read(); } finally { clearTimeout(idleTimer); }
+        if (expired) throw new DOMException('Model stream became inactive', 'TimeoutError');
+        const { done, value } = next;
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
@@ -425,6 +434,7 @@ export class ModelFabric {
         }
       }
     } finally {
+      try { await reader.cancel(); } catch (_) {}
       try { reader.releaseLock(); } catch (_) {}
     }
   }
