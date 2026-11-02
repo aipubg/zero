@@ -440,3 +440,12 @@ Independent SQLite inspection found 1,800 words / 13,515 characters in the final
 persisted assistant reply; this verifies substantial generated output, not exact
 word-count compliance. The earlier timeout remains FAIL. Broader side-effect
 reconciliation and owner deployment remain separate unfinished work.
+
+Shared assistant write-scope follow-up: `agent`/`gateway.agent` aliases and
+`tasks.retry` now enforce the same existing operator write/admin scopes as
+chat/resume. An authenticated read-only session cannot invoke the guarded
+executors through these routes. The contract test confirms zero execution for
+read-only calls and successful existing owner/admin calls. No approval dialog,
+new owner permission requirement or change to full-access owner mode was added.
+This is dispatch-contract evidence, not a complete authentication/security audit.
+Receipt regression and the four isolated automation leaves also pass.
