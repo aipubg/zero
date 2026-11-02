@@ -373,3 +373,16 @@ same run also passes actual Windows STT/TTS and shared chat/voice continuity.
 This uses genuinely synthesized speech, not a human microphone utterance.
 Fresh-process receipt replay, UI reconnect replay and interrupted-task recovery
 still require their own gates; no owner host reload was performed for this test.
+
+Fresh-process completed receipt replay subsequently passes in
+[browser-restart-request-replay.json](browser-restart-request-replay.json).
+All eleven browser workflows pass; after actual process stop/restart and the
+same page's new WebSocket handshake, replaying its recorded UI request through
+RPC returns the same task/content, makes zero additional model calls and keeps
+one original user message. The original reply remains visible in the browser.
+This verifies completed replay across process restart, not a retry-button click,
+unsent outbox recovery or interrupted in-flight side-effect recovery.
+Four receipt/session regression tests pass. The separate live capture/OCR
+endurance PID 15716 remains running with fresh telemetry: 5.012 hours, 7,527
+successful captures and no capture failures at 06:03 UTC. It is not a 24-hour
+certificate and still excludes the newer local vision/resource pipeline.

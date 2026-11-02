@@ -82,6 +82,7 @@ try {
   let searchResult = null;
   const voiceRequests = [];
   const chatResponses = [];
+  const chatRequests = [];
   const rpcDiagnostics = [];
   page.on('websocket', socket => {
     const connection = { openedAt: Date.now(), closedAt: null, connectedAt: null, methods: new Map() };
@@ -89,7 +90,7 @@ try {
     socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); if (frame.method?.startsWith('voice.microphone.')) voiceRequests.push({ method: frame.method, sessionId: frame.params?.sessionId }); } catch {} });
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) connection.connectedAt = Date.now(); if (method === 'webSearch.test') searchResult = frame; if (method === 'chat.send') chatResponses.push(frame); } catch {} });
     socket.on('close', () => { connection.closedAt = Date.now(); });
-    socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (/^chat\./.test(frame.method)) rpcDiagnostics.push({ direction: 'request', method: frame.method, fields: Object.keys(frame.params || {}) }); } catch {} });
+    socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.method === 'chat.send') chatRequests.push(frame.params); if (/^chat\./.test(frame.method)) rpcDiagnostics.push({ direction: 'request', method: frame.method, fields: Object.keys(frame.params || {}) }); } catch {} });
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (/^chat\./.test(method)) rpcDiagnostics.push({ direction: 'response', method, ok: frame.ok, fields: Object.keys(frame.payload || {}), error: frame.error }); } catch {} });
   });
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
@@ -294,8 +295,21 @@ try {
     await page.waitForFunction(() => document.body.innerText.includes('Connected') && !document.body.innerText.includes('Reconnecting'), null, { timeout: 25000 });
     const records = await rpc('memory.recall', { query: `Browser memory evidence ${port}` });
     assert.ok(records.some(record => record.content === `Browser memory evidence ${port}`));
+    let replayEvidence = null;
+    if (process.argv.includes('--external')) {
+      const original = chatResponses.find(response => response.ok && response.payload?.taskId)?.payload;
+      assert.ok(original && chatRequests[0]?.idempotencyKey, 'Original UI request identity must be recorded');
+      const before = (await rpc('models.status')).upstreamRequestCount;
+      const replay = await rpc('chat.send', chatRequests[0]);
+      assert.equal(replay.taskId, original.taskId); assert.equal(replay.content, original.content);
+      assert.equal((await rpc('models.status')).upstreamRequestCount, before);
+      const history = await rpc('chat.history', { sessionKey: original.sessionKey });
+      assert.equal(history.messages.filter(message => message.role === 'user' && message.content === chatRequests[0].message).length, 1);
+      await page.getByText(original.content, { exact: true }).last().waitFor();
+      replayEvidence = { taskId: replay.taskId, additionalModelCalls: 0, originalUserMessageCount: 1, replyVisibleAfterReconnect: true };
+    }
     await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('Connected after real restart');
-    return { oldPid, newPid: child.pid, memoryCount: records.length, closedAt: previousConnection.closedAt, reconnectedAt: recovered.connectedAt };
+    return { oldPid, newPid: child.pid, memoryCount: records.length, closedAt: previousConnection.closedAt, reconnectedAt: recovered.connectedAt, completedRequestReplay: replayEvidence };
   });
   report.pageErrors = pageErrors;
   report.rpcDiagnostics = rpcDiagnostics;
