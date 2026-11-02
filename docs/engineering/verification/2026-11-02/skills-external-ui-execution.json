@@ -1,0 +1,204 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "startedAt": "2026-11-02T06:25:40.136Z",
+  "status": "PASS",
+  "evidence": "E:\\zero\\artifacts\\functional-browser\\1793600740126",
+  "checks": [
+    {
+      "name": "Chat connects, native plugin activates, composer accepts text",
+      "status": "PASS",
+      "durationMs": 455,
+      "details": {
+        "pageErrors": []
+      }
+    },
+    {
+      "name": "Memory search uses actual persisted records through the UI",
+      "status": "PASS",
+      "durationMs": 252,
+      "details": {
+        "memoryId": "mem_semantic_1793600741491_zc8qt",
+        "marker": "Browser memory evidence 58751"
+      }
+    },
+    {
+      "name": "Existing Skills page imports an actual pinned external GitHub bundle and persists it",
+      "status": "PASS",
+      "durationMs": 29825,
+      "details": {
+        "repository": "anthropics/skills",
+        "revision": "ca45fc496a3436251f191354091d557da31c15b5",
+        "name": "frontend-design",
+        "actualBundleCharacters": 9434,
+        "persistedAfterProcessRestart": true,
+        "disabledPersistedAfterReload": true,
+        "reenabled": true,
+        "refreshedFromActualSource": true,
+        "uninstalledAcrossProcessRestart": true,
+        "execution": {
+          "taskId": "task_1793600748753_llsa8b",
+          "actualArtifact": true,
+          "independentlyClickedCounter": [
+            0,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "name": "Skills filter changes visible results",
+      "status": "PASS",
+      "durationMs": 285,
+      "details": {
+        "query": "web-research"
+      }
+    },
+    {
+      "name": "Skills details expose persisted enable/disable controls",
+      "status": "PASS",
+      "durationMs": 998,
+      "details": {
+        "disabledPersisted": true,
+        "reenabled": true
+      }
+    },
+    {
+      "name": "Search form executes its configured provider and reports real outcome",
+      "status": "PASS",
+      "durationMs": 1378,
+      "details": {
+        "sources": 5,
+        "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+        "sourceHttpStatus": 200,
+        "sourceBytes": 1030701,
+        "verifiedClaims": false
+      }
+    },
+    {
+      "name": "Plugins current page exposes lifecycle controls",
+      "status": "PASS",
+      "durationMs": 1735,
+      "details": {
+        "installedPersisted": true,
+        "executed": true,
+        "platform": "win32",
+        "verified": false,
+        "disabledAcrossProcessRestart": true,
+        "reenabled": true,
+        "uninstalled": true
+      }
+    },
+    {
+      "name": "Actual wheel input increases About scrollTop",
+      "status": "PASS",
+      "durationMs": 215,
+      "details": {
+        "before": 0,
+        "scrollHeight": 1033,
+        "clientHeight": 165,
+        "after": 500
+      }
+    },
+    {
+      "name": "Gateway reconnects after a real process stop/restart and memory remains",
+      "status": "PASS",
+      "durationMs": 1325,
+      "details": {
+        "oldPid": 6888,
+        "newPid": 1860,
+        "memoryCount": 1,
+        "closedAt": 1793600776724,
+        "reconnectedAt": 1793600777609,
+        "completedRequestReplay": null
+      }
+    }
+  ],
+  "pageErrors": [],
+  "rpcDiagnostics": [
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-02T06:26:18.065Z"
+}

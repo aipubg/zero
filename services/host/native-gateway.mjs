@@ -1504,7 +1504,7 @@ export class ZeroNativeHost {
         return { ok: true, match: this.skillLoader.matchSkill(params.prompt) };
 
       case 'skills.execute':
-        return await this.skillLoader.executeSkill(params.name || params.skillName, params, { capabilityEngine: this.capabilityEngine });
+        return await this.skillLoader.executeSkill(params.name || params.skillName, params, { capabilityEngine: canonicalCapabilityEngine });
 
       // Plugins SDK RPCs
       case 'plugins.list':

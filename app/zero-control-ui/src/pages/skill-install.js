@@ -49,4 +49,22 @@ export function mountSkillInstall(container, host) {
   };
   manage.addEventListener('submit', event => { event.preventDefault(); void mutate('skills.update'); });
   remove.addEventListener('click', () => { void mutate('skills.uninstall'); });
+  const taskForm = document.createElement('form');
+  const goalLabel = document.createElement('label'); goalLabel.textContent = 'Skill task goal';
+  const goal = document.createElement('textarea'); goal.className = 'input'; goal.placeholder = 'Describe the task for this installed skill'; goal.required = true; goalLabel.append(goal);
+  const run = document.createElement('button'); run.type = 'submit'; run.className = 'btn primary'; run.textContent = 'Run skill task';
+  const taskStatus = document.createElement('pre'); taskStatus.setAttribute('role', 'status');
+  taskForm.append(goalLabel, run); section.append(taskForm, taskStatus);
+  taskForm.addEventListener('submit', async event => {
+    event.preventDefault(); if (run.disabled || !name.value.trim()) return;
+    run.disabled = true; update.disabled = true; remove.disabled = true; taskStatus.textContent = 'Executing skill task…';
+    try {
+      const response = await host.request('skills.execute', { name: name.value.trim(), goal: goal.value.trim() });
+      const result = response?.result ?? response;
+      if (result.ok === false || !result.taskId) throw new Error(result.error || 'Skill returned no durable execution result');
+      taskStatus.textContent = `Task ${result.taskId}: ${result.status}\n${typeof result.output === 'string' ? result.output : JSON.stringify(result.output)}`;
+      taskStatus.dataset.taskId = result.taskId;
+    } catch (error) { taskStatus.textContent = `Skill task failed: ${error.message}`; }
+    finally { run.disabled = false; update.disabled = false; remove.disabled = false; }
+  });
 }

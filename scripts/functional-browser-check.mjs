@@ -181,6 +181,27 @@ try {
     await page.getByText('Enabled', { exact: true }).last().waitFor();
     assert.equal((await rpc('skills.get', { name: 'frontend-design' })).skill.enabled, true);
     await page.getByRole('button', { name: 'Close', exact: true }).click();
+    let execution = 'NOT_TESTED_BY_THIS_UI_IMPORT_GATE';
+    if (process.argv.includes('--skill-execution')) {
+      const artifact = path.join(temporary, 'external-ui-counter.html');
+      await page.getByPlaceholder('Installed skill name', { exact: true }).fill('frontend-design');
+      await page.getByPlaceholder('Describe the task for this installed skill', { exact: true }).fill(`Use this installed design skill to create a self-contained HTML counter at ${JSON.stringify(artifact)} using write_file. Show integer 0 in an element id="count" and a button labelled Increment that increases it by 1. No network dependencies. Verify the file using read_file and return its path.`);
+      await page.getByRole('button', { name: 'Run skill task', exact: true }).click();
+      const status = page.locator('.zero-skill-install pre[data-task-id]');
+      await status.waitFor({ timeout: 120000 });
+      const taskId = await status.getAttribute('data-task-id');
+      const task = await rpc('tasks.get', { id: taskId });
+      assert.equal((task.task || task).status, 'COMPLETED');
+      assert.ok(fs.readFileSync(artifact, 'utf8').length > 100);
+      const artifactPage = await browser.newPage();
+      try {
+        await artifactPage.goto(new URL(`file:///${artifact.replaceAll('\\', '/')}`).href);
+        assert.equal((await artifactPage.locator('#count').innerText()).trim(), '0');
+        await artifactPage.locator('button').filter({ hasText: /^Increment$/ }).click();
+        assert.equal((await artifactPage.locator('#count').innerText()).trim(), '1');
+      } finally { await artifactPage.close(); }
+      execution = { taskId, actualArtifact: true, independentlyClickedCounter: [0, 1] };
+    }
     assert.ok(!path.relative(temporary, installed.skill.filePath).startsWith('..'), 'Only the isolated installed bundle may be edited by this test');
     fs.appendFileSync(installed.skill.filePath, '\nDISPOSABLE_LOCAL_EDIT_FOR_REFRESH_CHECK\n');
     await page.getByPlaceholder('Installed skill name', { exact: true }).fill('frontend-design');
@@ -193,7 +214,7 @@ try {
     assert.equal(fs.existsSync(installed.skill.filePath), false);
     await stop(); await start(); await page.reload();
     assert.equal((await rpc('skills.status')).skills.some(skill => skill.name === 'frontend-design'), false);
-    return { repository: 'anthropics/skills', revision: 'ca45fc496a3436251f191354091d557da31c15b5', name: 'frontend-design', actualBundleCharacters: content.length, persistedAfterProcessRestart: true, disabledPersistedAfterReload: true, reenabled: true, refreshedFromActualSource: true, uninstalledAcrossProcessRestart: true, execution: 'NOT_TESTED_BY_THIS_UI_IMPORT_GATE' };
+    return { repository: 'anthropics/skills', revision: 'ca45fc496a3436251f191354091d557da31c15b5', name: 'frontend-design', actualBundleCharacters: content.length, persistedAfterProcessRestart: true, disabledPersistedAfterReload: true, reenabled: true, refreshedFromActualSource: true, uninstalledAcrossProcessRestart: true, execution };
   });
   await check('Skills filter changes visible results', async () => {
     await page.goto(`${base}/settings/skills`);

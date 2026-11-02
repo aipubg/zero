@@ -482,3 +482,19 @@ enabled. UI uninstall removes that isolated file and the skill remains absent
 after restarting the process. Nine selected browser workflows and 19 UI
 component regressions pass. Execution through the imported skill's UI/task flow
 is still a separate unfinished gate; these lifecycle checks do not replace it.
+
+The bounded external skill UI/task gate now passes in
+[skills-external-ui-execution.json](skills-external-ui-execution.json). The same
+actual imported pinned frontend-design bundle was launched from the existing
+Skills page with a real goal. Its durable model/tool task created a self-contained
+HTML counter; an independent Chrome page opened that file and verified a real
+click changed count 0→1. The task was independently read as COMPLETED. The same
+run also verifies import/restart, disable/reload/enable, saved-source refresh and
+uninstall/restart persistence; nine selected browser workflows passed.
+
+Implementation fixed the native skills.execute adapter passing an undefined
+capability engine instead of the actual registered canonical engine. The UI now
+shows the real durable task ID/status/output, renders errors as failures, and
+adds no owner permission dialog. Nineteen UI regressions plus write-scope
+contract pass. This scoped result does not certify every community skill,
+external prerequisite, long-running execution interruption or marketplace format.
