@@ -156,6 +156,22 @@ try {
     assert.equal((await rpc('voice.status')).sessions.some(session => session.microphoneActive), false);
     return { sessionId: start.sessionId, actualCaptureStarted: true, explicitStop: true, disconnectedCaptureStopped: true };
   });
+  if (process.argv.includes('--external-skills')) await check('Existing Skills page imports an actual pinned external GitHub bundle and persists it', async () => {
+    await page.goto(`${base}/settings/skills`);
+    await page.getByPlaceholder('Local skill directory or GitHub repository URL', { exact: true }).fill('https://github.com/anthropics/skills.git');
+    await page.getByPlaceholder('Pinned Git revision (optional)', { exact: true }).fill('ca45fc496a3436251f191354091d557da31c15b5');
+    await page.getByPlaceholder('Skill directory within repository (optional)', { exact: true }).fill('skills/frontend-design');
+    await page.getByRole('button', { name: 'Import skill bundle', exact: true }).click();
+    await page.getByText('Installed skill: frontend-design. Reload to refresh the installed list.', { exact: true }).waitFor({ timeout: 60000 });
+    const installed = await rpc('skills.get', { name: 'frontend-design' });
+    assert.equal(installed.skill.name, 'frontend-design');
+    const content = fs.readFileSync(installed.skill.filePath, 'utf8');
+    assert.ok(content.length > 100); assert.match(content, /frontend-design/);
+    await stop(); await start(); await page.reload();
+    await page.getByText('frontend-design', { exact: true }).first().waitFor();
+    assert.equal((await rpc('skills.get', { name: 'frontend-design' })).skill.name, 'frontend-design');
+    return { repository: 'anthropics/skills', revision: 'ca45fc496a3436251f191354091d557da31c15b5', name: 'frontend-design', actualBundleCharacters: content.length, persistedAfterProcessRestart: true, execution: 'NOT_TESTED_BY_THIS_UI_IMPORT_GATE' };
+  });
   await check('Skills filter changes visible results', async () => {
     await page.goto(`${base}/settings/skills`);
     await page.getByText('web-research', { exact: true }).first().waitFor();

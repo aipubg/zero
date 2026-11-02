@@ -4,6 +4,7 @@ import { mountComputerHold } from "./computer/hold.js";
 import { agentRole } from "./shared/sessions.js";
 import { renderGenerativeWidgets } from "./spaces/generative-widgets.js";
 import { mountPluginInstall } from "./pages/plugin-install.js";
+import { mountSkillInstall } from "./pages/skill-install.js";
 import { mountVoiceControl } from "./voice-control.js";
 import {
   SPECIALIST_AGENT_IDS,
@@ -45,6 +46,7 @@ const COMMUNITY_SELECTOR = ".sidebar-shell__invite, .community-invite-card";
 const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"]';
 const CHROME_SELECTOR = [
   'openclaw-plugins-page',
+  'openclaw-skills-page',
   COMMUNITY_SELECTOR,
   STALE_PLUGIN_NAV_SELECTOR,
   ".sidebar-agent-card",
@@ -951,6 +953,7 @@ function installNativeSurfaces(host) {
     try {
       syncComputerSurface();
       if (routePath(currentLocation()) === '/settings/plugins') mountPluginInstall(document.querySelector('openclaw-plugins-page'), host);
+      if (routePath(currentLocation()) === '/settings/skills') mountSkillInstall(document.querySelector('openclaw-skills-page'), host);
       const currentPath = routePath(currentLocation());
       const kind = currentSurface(host);
       if (!kind) {
@@ -1020,7 +1023,7 @@ function installNativeSurfaces(host) {
   const isInsideZeroTree = (node) => {
     if (!node || node.nodeType !== 1) return false;
     return Boolean(
-      node.closest?.(".zero-native-surface, .zero-plugin-install, .zero-computer-hold-host, .zero-chat-control-pill, .zero-gen-widget, .zero-admin-config")
+      node.closest?.(".zero-native-surface, .zero-plugin-install, .zero-skill-install, .zero-computer-hold-host, .zero-chat-control-pill, .zero-gen-widget, .zero-admin-config")
     );
   };
 

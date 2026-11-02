@@ -449,3 +449,16 @@ read-only calls and successful existing owner/admin calls. No approval dialog,
 new owner permission requirement or change to full-access owner mode was added.
 This is dispatch-contract evidence, not a complete authentication/security audit.
 Receipt regression and the four isolated automation leaves also pass.
+
+The existing Skills page now has an SDK-backed import form for real local or
+GitHub bundles, including explicit revision/subdirectory fields. Its actual
+Chrome gate passes in
+[skills-external-ui-import.json](skills-external-ui-import.json): imported
+`anthropics/skills` frontend-design at pinned revision
+`ca45fc496a3436251f191354091d557da31c15b5`, independently read the installed
+9,434-character bundle, restarted the isolated host, and verified the skill in
+the native installed list. Nine selected browser workflows passed in that run
+and 19 UI component regressions passed after rebuilding the native bundle.
+This gate does not certify execution/update/uninstall of that imported skill;
+earlier real SDK execution evidence is separate. No replacement Skills page or
+owner permission dialog was added.
