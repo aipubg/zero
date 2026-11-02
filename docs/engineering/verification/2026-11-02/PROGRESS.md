@@ -47,7 +47,7 @@ retained. Tests that mutate state use disposable directories and host processes.
 | Native speech | PASS: 4 native tests | Real Windows synthesis produced 100320 PCM bytes using Microsoft David; real dictation recognized “The boys engine can now speak real words”. This proves synthesis/STT in memory, not microphone recording, audible speaker output or acoustic barge-in. |
 | Native capture/OCR | PASS, bounded integration | `artifacts/screen-intelligence/20261102-real-os/report.json`: known rendered text OCR, actual desktop PNG/OCR/foreground metadata and SQLite reopen. Does not prove local vision or 24-hour operation. |
 | Prior endurance | INCOMPLETE | Previous PID 13732 absent when rechecked; final sample only 170173 ms. Stale `running` file is not live-process evidence and does not pass endurance. |
-| New endurance | IN_PROGRESS at checkpoint | PID 10656, `artifacts/screen-intelligence/endurance-20261102/summary.json`, started 2026-11-02 00:55:28 UTC (06:25 IST), requested 86400000 ms. Recheck process and fresh telemetry before any later claim. Earliest completion November 3 around 06:25 IST if uninterrupted. |
+| Encrypted endurance | IN_PROGRESS at checkpoint | PID 15716, `artifacts/screen-intelligence/endurance-encrypted-20261102/summary.json`, started 2026-11-02 01:03:02 UTC (06:33 IST), requested 86400000 ms. Recheck process and fresh telemetry before any later claim. Earliest completion November 3 around 06:33 IST if uninterrupted. The older PID 10656 run was intentionally stopped and remains incomplete. |
 | External mobile/cloud | BLOCKED | Owner confirmed no actual devices/remote or cloud worker. Local registration/protocol tests do not close these gates. |
 
 Initial browser runs retained in `artifacts/functional-browser/` caught an invalid
@@ -62,9 +62,10 @@ their failures are not rewritten as past passes.
    legacy rollback snapshots remain plaintext and are explicitly reported.
    Validate local vision model/runtime/projector and actual inference.
    Complete sleep/lock/multi-monitor and full 24-hour resource gates.
-2. Connect voice speech-end/transcription to the same durable chat/task context,
-   synthesize the real reply, and verify microphone, actual output and barge-in.
-   Voice stays PARTIAL. No new owner permission popups are required by this design.
+2. Complete acoustic voice reliability and genuine spoken barge-in. Speech-end,
+   transcription, shared durable chat/task execution and reply synthesis now pass
+   their real OS/external gate; microphone/device playback pass a separate native
+   gate. Voice stays PARTIAL. No new owner permission popups were added.
 3. Complete real Models/Providers and Agents editing/assignment UI tests, novel
    planning, all retained important screens and settings. Current planning is
    explicitly heuristic-partial; one configured chat identity is not a full
@@ -74,7 +75,7 @@ their failures are not rewritten as past passes.
    the existing Zero System Tools package, not an external marketplace plugin.
 5. Verify genuine multi-provider and local offline inference, cancellation,
    contextual memory use, durable restart recovery and general desktop actions
-   through chat. Current browser composer gate tests draft entry, not chat reply.
+   through chat. Browser chat sending/reply/reload now pass the scoped gate below.
 6. Complete connected service workflows, distributed/mobile supported clients,
    release packaging, clean-machine install, restore/rollback and full regression.
    Preserve prerequisites as BLOCKED where unavailable, not PASS.
@@ -105,3 +106,40 @@ Run the scoped browser runner with `node scripts/functional-browser-check.mjs`.
 It launches/stops only its own isolated hosts and preserves disposable state for
 inspection. External skill verification is `node scripts/verify-external-skill.mjs`;
 `--resume-directory DIR` only rechecks a recorded completed task/artifact.
+
+## Chat and voice correction — 01:30 UTC checkpoint
+
+- [browser-chat-voice-ten-flows.json](browser-chat-voice-ten-flows.json): ten actual
+  Chrome workflows pass, including sending a message through the existing
+  composer, a real NVIDIA reply rendered in chat, persisted reply after reload,
+  actual Windows microphone start/stop, and automatic microphone cleanup when
+  its owning browser connection closes. Eight existing flows remain passing.
+- [browser-chat-startup-failure.json](browser-chat-startup-failure.json) retains
+  the real missing `chat.startup` failure. Other attempts under
+  `artifacts/functional-browser/` preserve missing session defaults, outbox
+  recovery scope, locator failures, an upstream 60-second timeout, and missing
+  native `chat` stream events. Fixed contracts now carry actual session IDs,
+  pagination, a stable recovery namespace, and native delta/final events.
+- [voice-shared-chat.json](voice-shared-chat.json): real Windows speech PCM enters
+  the actual authenticated WebSocket/VAD/STT path; the same durable executor
+  answers from the preceding chat context and synthesizes its real reply.
+  Input speech was Windows synthesized speech, not a human microphone utterance.
+- [voice-real-devices.json](voice-real-devices.json): real default microphone
+  returned 99 frames / 95040 bytes; actual output playback consumed 77600 PCM
+  bytes. Human audibility and acoustic barge-in remain UNVERIFIED. No raw
+  microphone audio was saved. Voice remains PARTIAL.
+- Model SSE reasoning tokens are now separated from assistant content and speech.
+  A transport contract test checks the two channels directly. One live rerun
+  failed an over-restrictive 200-character answer assertion; answer length is
+  not evidence of channel separation, so that assertion was removed rather than
+  misreporting the failed run as a pass. Later success is a separate execution.
+- Session compaction now archives only from model context instead of deleting
+  history. File-backed reopen checks preserve every original message, complete
+  tool exchanges and their tool-call IDs. Incomplete/orphan tool chains are
+  excluded from provider context without inventing results or changing history.
+- Combined voice/session/model/UI regression: 64 tests passed, comprising
+  UNIT/CONTRACT/INTEGRATION checks; this is not 64 real-world acceptance gates.
+- Remaining native chat work includes durable idempotency receipts and interrupted
+  request recovery. Successful ordinary sends do not certify those scenarios.
+- The new `services/host/screen-observation.mjs` adapter is work in progress and
+  is not yet connected or included in this verified chat/voice milestone.

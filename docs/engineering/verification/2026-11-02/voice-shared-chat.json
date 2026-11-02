@@ -1,0 +1,24 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_EXTERNAL"
+  ],
+  "startedAt": "2026-11-02T01:29:49.541Z",
+  "status": "PASS",
+  "output": "E:\\zero\\artifacts\\voice-conversation\\1793582989541",
+  "inputSource": "Actual Windows speech synthesis uploaded as PCM; not human microphone speech",
+  "acousticConversation": "UNVERIFIED",
+  "sharedConversation": {
+    "chatTaskId": "task_1793582990008_3batx0",
+    "voiceTaskId": "task_1793582995494_n1amuk",
+    "transcript": "What is the code word",
+    "reply": "The code word is **BLUEBIRD**.",
+    "pcmByteLength": 71840,
+    "persistedTaskStatus": "COMPLETED",
+    "messages": 8
+  },
+  "devices": {
+    "tested": false
+  },
+  "finishedAt": "2026-11-02T01:29:57.766Z"
+}

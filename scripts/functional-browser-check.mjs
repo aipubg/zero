@@ -66,6 +66,7 @@ async function rpc(method, params = {}) {
 }
 async function check(name, action) {
   const began = Date.now();
+  console.log(`Checking: ${name}`);
   try { const details = await action(); report.checks.push({ name, status: 'PASS', durationMs: Date.now() - began, details }); }
   catch (error) { report.checks.push({ name, status: 'FAIL', durationMs: Date.now() - began, error: error.message }); }
   if (page && !page.isClosed()) await page.screenshot({ path: path.join(evidence, `${report.checks.length}.png`), fullPage: true });
@@ -79,19 +80,25 @@ try {
   const pageErrors = [];
   const connections = [];
   let searchResult = null;
+  const voiceRequests = [];
+  const chatResponses = [];
+  const rpcDiagnostics = [];
   page.on('websocket', socket => {
     const connection = { openedAt: Date.now(), closedAt: null, connectedAt: null, methods: new Map() };
     connections.push(connection);
-    socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); } catch {} });
-    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) connection.connectedAt = Date.now(); if (method === 'webSearch.test') searchResult = frame; } catch {} });
+    socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); if (frame.method?.startsWith('voice.microphone.')) voiceRequests.push({ method: frame.method, sessionId: frame.params?.sessionId }); } catch {} });
+    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) connection.connectedAt = Date.now(); if (method === 'webSearch.test') searchResult = frame; if (method === 'chat.send') chatResponses.push(frame); } catch {} });
     socket.on('close', () => { connection.closedAt = Date.now(); });
+    socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (/^chat\./.test(frame.method)) rpcDiagnostics.push({ direction: 'request', method: frame.method, fields: Object.keys(frame.params || {}) }); } catch {} });
+    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (/^chat\./.test(method)) rpcDiagnostics.push({ direction: 'response', method, ok: frame.ok, fields: Object.keys(frame.payload || {}), error: frame.error }); } catch {} });
   });
-  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
   await check('Chat connects, native plugin activates, composer accepts text', async () => {
     await page.goto(`${base}/chat/zero`);
-    await page.locator('textarea').waitFor({ state: 'visible' });
-    await page.locator('textarea').fill('A draft retained during functional checks');
-    assert.equal(await page.locator('textarea').inputValue(), 'A draft retained during functional checks');
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).waitFor({ state: 'visible' });
+    await page.locator('.zero-voice-toggle-btn').filter({ hasText: 'Voice: PARTIAL' }).waitFor();
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('A draft retained during functional checks');
+    assert.equal(await page.getByRole('textbox', { name: 'Chat composer', exact: true }).inputValue(), 'A draft retained during functional checks');
     assert.deepEqual(pageErrors, []);
     return { pageErrors: [...pageErrors] };
   });
@@ -105,6 +112,48 @@ try {
     await input.press('Enter');
     await page.getByText(marker, { exact: false }).last().waitFor({ state: 'visible' });
     return { memoryId: stored.id, marker };
+  });
+  if (process.argv.includes('--external')) await check('Chat sends through the UI, displays actual model reply and persists it', async () => {
+    await page.goto(`${base}/chat/zero`);
+    const marker = `UI_PROOF_${port}`;
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill(`Reply exactly ${marker} with no other text. Do not use tools.`);
+    await page.locator('.zero-voice-toggle-btn').filter({ hasText: 'Voice: PARTIAL' }).waitFor();
+    await page.locator('button.chat-send-btn--send').click();
+    const deadline = Date.now() + 60000;
+    while (!chatResponses.length && Date.now() < deadline) {
+      if ((await page.locator('body').innerText()).includes('Chat history request timed out')) break;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert.ok(chatResponses.length, `Actual chat.send RPC must settle. UI: ${(await page.locator('body').innerText()).slice(-1800)}`);
+    const response = chatResponses.at(-1);
+    assert.equal(response.ok, true, JSON.stringify(response.error));
+    assert.equal(response.payload.content.trim(), marker);
+    await page.getByText(marker, { exact: true }).last().waitFor();
+    const history = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
+    assert.equal(history.messages.at(-1).content.trim(), marker);
+    await page.reload();
+    await page.getByText(marker, { exact: true }).last().waitFor();
+    return { taskId: response.payload.taskId, sessionKey: response.payload.sessionKey, reply: marker, persistedAfterReload: true };
+  });
+  if (process.argv.includes('--devices')) await check('Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', async () => {
+    await page.goto(`${base}/chat/zero`);
+    const button = page.locator('.zero-voice-toggle-btn');
+    await button.filter({ hasText: 'Voice: PARTIAL' }).waitFor();
+    await button.click();
+    await button.filter({ hasText: 'Voice: Listening' }).waitFor();
+    const start = voiceRequests.at(-1);
+    assert.equal(start.method, 'voice.microphone.start');
+    assert.ok(start.sessionId);
+    assert.equal((await rpc('voice.status')).sessions.find(session => session.sessionId === start.sessionId)?.microphoneActive, true);
+    await button.click();
+    await button.filter({ hasText: 'Voice: PARTIAL' }).waitFor();
+    assert.equal((await rpc('voice.status')).sessions.some(session => session.microphoneActive), false);
+    await button.click();
+    await button.filter({ hasText: 'Voice: Listening' }).waitFor();
+    await page.reload();
+    await page.locator('.zero-voice-toggle-btn').filter({ hasText: 'Voice: PARTIAL' }).waitFor();
+    assert.equal((await rpc('voice.status')).sessions.some(session => session.microphoneActive), false);
+    return { sessionId: start.sessionId, actualCaptureStarted: true, explicitStop: true, disconnectedCaptureStopped: true };
   });
   await check('Skills filter changes visible results', async () => {
     await page.goto(`${base}/settings/skills`);
@@ -195,7 +244,7 @@ try {
   });
   await check('Gateway reconnects after a real process stop/restart and memory remains', async () => {
     await page.goto(`${base}/chat/zero`);
-    await page.locator('textarea').waitFor({ state: 'visible' });
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).waitFor({ state: 'visible' });
     const oldPid = child.pid;
     const previousConnection = connections.at(-1);
     await stop();
@@ -210,10 +259,11 @@ try {
     await page.waitForFunction(() => document.body.innerText.includes('Connected') && !document.body.innerText.includes('Reconnecting'), null, { timeout: 25000 });
     const records = await rpc('memory.recall', { query: `Browser memory evidence ${port}` });
     assert.ok(records.some(record => record.content === `Browser memory evidence ${port}`));
-    await page.locator('textarea').fill('Connected after real restart');
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('Connected after real restart');
     return { oldPid, newPid: child.pid, memoryCount: records.length, closedAt: previousConnection.closedAt, reconnectedAt: recovered.connectedAt };
   });
   report.pageErrors = pageErrors;
+  report.rpcDiagnostics = rpcDiagnostics;
   report.status = report.checks.every(check => check.status === 'PASS') && pageErrors.length === 0 ? 'PASS' : 'FAIL';
 } catch (error) { report.status = 'FAIL'; report.error = error.stack; }
 finally {

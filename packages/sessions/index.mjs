@@ -51,6 +51,9 @@ export class SessionManager {
         FOREIGN KEY (session_id) REFERENCES zero_sessions(id) ON DELETE CASCADE
       );
     `);
+    const columns = new Set(this.db.prepare('PRAGMA table_info(zero_messages)').all().map(column => column.name));
+    if (!columns.has('tool_call_id')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN tool_call_id TEXT');
+    if (!columns.has('context_archived')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN context_archived INTEGER NOT NULL DEFAULT 0');
   }
 
   createSession(id, title = 'New Conversation', metadata = {}) {
@@ -141,14 +144,14 @@ export class SessionManager {
 
     const now = Date.now();
     const msgId = message.id || `msg_${now}_${Math.random().toString(36).slice(2, 8)}`;
-    const content = typeof message.content === 'string' ? message.content : JSON.stringify(message.content || '');
+    const content = typeof message.content === 'string' ? message.content : message.content == null ? null : JSON.stringify(message.content);
     const toolCalls = message.tool_calls ? JSON.stringify(message.tool_calls) : null;
 
     const insertStmt = this.db.prepare(`
-      INSERT INTO zero_messages (id, session_id, role, content, tool_calls, created_at, seq)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO zero_messages (id, session_id, role, content, tool_calls, created_at, seq, tool_call_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    insertStmt.run(msgId, sessionId, message.role || 'user', content, toolCalls, now, nextSeq);
+    insertStmt.run(msgId, sessionId, message.role || 'user', content, toolCalls, now, nextSeq, message.tool_call_id || null);
 
     // Update session updated_at
     const updateStmt = this.db.prepare(`UPDATE zero_sessions SET updated_at = ? WHERE id = ?`);
@@ -160,6 +163,7 @@ export class SessionManager {
       role: message.role || 'user',
       content,
       toolCalls: message.tool_calls || null,
+      tool_call_id: message.tool_call_id || undefined,
       createdAt: now,
       seq: nextSeq,
     };
@@ -170,21 +174,62 @@ export class SessionManager {
 
   getTranscript(sessionId, options = {}) {
     const limit = options.limit || 100;
+    const offset = options.offset ?? 0;
+    if (!Number.isInteger(limit) || limit < 1 || !Number.isInteger(offset) || offset < 0) throw new Error('Transcript limit and offset must be nonnegative integers with a positive limit');
     const stmt = this.db.prepare(`
       SELECT * FROM zero_messages
-      WHERE session_id = ?
-      ORDER BY seq ASC
-      LIMIT ?
+      WHERE session_id = ? ${options.activeContext ? 'AND context_archived = 0' : ''}
+      ORDER BY seq DESC
+      LIMIT ? OFFSET ?
     `);
-    const rows = stmt.all(sessionId, limit);
+    const rows = stmt.all(sessionId, limit, offset).reverse();
     return rows.map((r) => ({
       id: r.id,
       role: r.role,
       content: r.content,
       tool_calls: r.tool_calls ? JSON.parse(r.tool_calls) : undefined,
+      tool_call_id: r.tool_call_id || undefined,
       createdAt: r.created_at,
       seq: r.seq,
     }));
+  }
+
+  countMessages(sessionId) {
+    return Number(this.db.prepare('SELECT COUNT(*) AS count FROM zero_messages WHERE session_id = ?').get(sessionId).count);
+  }
+
+  /** Provider context is a projection; incomplete/cancelled tool chains stay in history. */
+  getModelContext(sessionId, options = {}) {
+    const messages = this.getTranscript(sessionId, { ...options, activeContext: true });
+    const context = [];
+    for (let index = 0; index < messages.length; index++) {
+      const message = messages[index];
+      if (message.role === 'tool') continue; // Orphaned by an old schema or a context boundary.
+      const projected = { role: message.role, content: message.content };
+      if (message.role === 'assistant' && message.tool_calls?.length) {
+        const outputs = new Map();
+        let end = index + 1;
+        while (messages[end]?.role === 'tool') {
+          const output = messages[end++];
+          if (output.tool_call_id) outputs.set(output.tool_call_id, output);
+        }
+        const seen = new Set();
+        const completed = message.tool_calls.filter(call => {
+          if (!call.id || seen.has(call.id) || !outputs.has(call.id)) return false;
+          seen.add(call.id);
+          return true;
+        });
+        if (completed.length) {
+          context.push({ ...projected, tool_calls: completed });
+          for (const call of completed) {
+            const output = outputs.get(call.id);
+            context.push({ role: 'tool', content: output.content, tool_call_id: call.id });
+          }
+        } else if (message.content) context.push(projected);
+        index = end - 1;
+      } else context.push(projected);
+    }
+    return context;
   }
 
   emitEvent(sessionId, type, payload) {
@@ -212,34 +257,43 @@ export class SessionManager {
    * summarizing or archiving older turns to prevent token window overflow.
    */
   compactContext(sessionId, retainCount = 10) {
-    const messages = this.getTranscript(sessionId, { limit: 1000 });
+    if (!Number.isInteger(retainCount) || retainCount < 1) throw new Error('retainCount must be a positive integer');
+    const messages = this.getTranscript(sessionId, { limit: 2147483647, activeContext: true });
     if (messages.length <= retainCount) {
       return { compacted: false, count: messages.length };
     }
 
-    const systemMsgs = messages.filter((m) => m.role === 'system');
+    const previousMarkerId = this.getSession(sessionId)?.metadata?.contextCompaction?.markerId;
+    const systemMsgs = messages.filter((m) => m.role === 'system' && m.id !== previousMarkerId);
     const nonSystem = messages.filter((m) => m.role !== 'system');
 
     if (nonSystem.length <= retainCount) {
       return { compacted: false, count: messages.length };
     }
 
-    const pruneCount = nonSystem.length - retainCount;
+    let pruneCount = nonSystem.length - retainCount;
+    // Never split an assistant/tool exchange at the context boundary.
+    while (pruneCount > 0 && nonSystem[pruneCount]?.role === 'tool') pruneCount--;
+    if (!pruneCount) return { compacted: false, count: messages.length };
     const pruned = nonSystem.slice(0, pruneCount);
     const retained = nonSystem.slice(pruneCount);
 
-    // Delete pruned messages from database
-    const deleteStmt = this.db.prepare(`DELETE FROM zero_messages WHERE id = ?`);
-    for (const msg of pruned) {
-      deleteStmt.run(msg.id);
+    // Archive only from provider context. Original messages remain readable/exportable.
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const archive = this.db.prepare('UPDATE zero_messages SET context_archived = 1 WHERE id = ? AND session_id = ?');
+      for (const msg of pruned) archive.run(msg.id, sessionId);
+      if (previousMarkerId) archive.run(previousMarkerId, sessionId);
+      const marker = this.appendMessage(sessionId, {
+        role: 'system',
+        content: `[Zero System: Context compacted. ${pruneCount} older messages excluded from model context; originals remain in chat history. This marker is not a summary of their contents.]`,
+      });
+      this.patchSession(sessionId, { metadata: { contextCompaction: { markerId: marker.id, archivedAt: Date.now() } } });
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
     }
-
-    // Insert a compact summary marker
-    const summaryText = `[Zero System: Context compacted. ${pruneCount} older turns archived.]`;
-    this.appendMessage(sessionId, {
-      role: 'system',
-      content: summaryText,
-    });
 
     return {
       compacted: true,

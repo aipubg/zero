@@ -406,7 +406,8 @@ export class ModelFabric {
             try {
               const json = JSON.parse(trimmed.slice(6));
               const choice = json.choices?.[0];
-              const deltaContent = choice?.delta?.content || choice?.delta?.reasoning_content || null;
+              // Reasoning is a separate channel, never assistant prose or speech.
+              const deltaContent = typeof choice?.delta?.content === 'string' ? choice.delta.content : null;
               if (json.usage) {
                 this.recordUsage(json.model || 'streamed-model', json.usage.prompt_tokens, json.usage.completion_tokens);
               }

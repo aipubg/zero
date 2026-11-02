@@ -76,8 +76,10 @@ test('Zero Session Store & Transcript Persistence Engine', async (t) => {
     assert.equal(result.prunedCount, 10);
 
     const after = sm.getTranscript(sessId);
-    // 5 retained + 1 compaction summary marker
-    assert.equal(after.length, 6);
+    // Original history survives; only the provider context is compacted.
+    assert.equal(after.length, 16);
+    assert.deepEqual(after.slice(0, 15), before);
+    assert.equal(sm.getModelContext(sessId).length, 6);
     assert.match(after[after.length - 1].content, /Context compacted/);
   });
 

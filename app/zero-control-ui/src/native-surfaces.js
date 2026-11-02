@@ -4,6 +4,7 @@ import { mountComputerHold } from "./computer/hold.js";
 import { agentRole } from "./shared/sessions.js";
 import { renderGenerativeWidgets } from "./spaces/generative-widgets.js";
 import { mountPluginInstall } from "./pages/plugin-install.js";
+import { mountVoiceControl } from "./voice-control.js";
 import {
   SPECIALIST_AGENT_IDS,
   isAboutRoute,
@@ -276,6 +277,7 @@ function installNativeSurfaces(host) {
   let mountedComputer = null; // { hostEl, handle }
   let syncScheduled = false;
   let chromeTimer = null;
+  let disposeVoiceControl = null;
 
   const unmount = () => {
     if (!mounted) return;
@@ -805,30 +807,7 @@ function installNativeSurfaces(host) {
       finally { toggleBtn.disabled = false; }
     });
 
-    let voiceActive = false;
     const voiceBtn = pill.querySelector(".zero-voice-toggle-btn");
-    voiceBtn?.addEventListener("click", async () => {
-      voiceBtn.disabled = true;
-      try {
-        const sessionId = "agent:zero:main";
-        const response = await host.request(voiceActive ? "voice.microphone.stop" : "voice.microphone.start", { sessionId });
-        const result = response?.result ?? response;
-        if (result.ok === false) throw new Error(result.error || "Microphone unavailable");
-        voiceActive = !voiceActive;
-      if (voiceActive) {
-        voiceBtn.style.background = "#14253d";
-        voiceBtn.style.borderColor = "#0ea5e9";
-        voiceBtn.style.color = "#7dd3fc";
-        voiceBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span> Voice: Listening';
-      } else {
-        voiceBtn.style.background = "#0c1a2e";
-        voiceBtn.style.borderColor = "#0284c7";
-        voiceBtn.style.color = "#38bdf8";
-        voiceBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span> Voice: Ready';
-      }
-      } catch (error) { voiceBtn.textContent = `Voice: ${error.message}`; }
-      finally { voiceBtn.disabled = false; }
-    });
 
     let reasoningActive = true;
     const reasoningBtn = pill.querySelector(".zero-reasoning-toggle-btn");
@@ -858,13 +837,14 @@ function installNativeSurfaces(host) {
     });
 
     permContainer.appendChild(pill);
+    disposeVoiceControl?.();
+    disposeVoiceControl = voiceBtn ? mountVoiceControl(voiceBtn, host) : null;
     const show = async (method, selector, format) => {
       try {
         const response = await host.request(method, {});
         if (!disposed && pill.isConnected) pill.querySelector(selector).textContent = format(response?.result ?? response);
       } catch { if (pill.isConnected) pill.querySelector(selector).textContent = "Status unavailable"; }
     };
-    void show("voice.status", ".zero-voice-toggle-btn", state => `Voice: ${state.status || "PARTIAL"}`);
     void show("agents.list", ".zero-workforce-indicator", state => `Workforce: ${state.agents?.length ?? 0} configured`);
     void show("zero.observation.status", ".zero-screen-intel-indicator", state => `Screen Intel: ${state.observer?.running ? "Capturing" : "Stopped"}`);
   };
@@ -1212,6 +1192,7 @@ function installNativeSurfaces(host) {
 
   return () => {
     disposed = true;
+    disposeVoiceControl?.();
     observer.disconnect();
     titleObserver.disconnect();
     // A plugin teardown removes the only visible hand-back control; do not

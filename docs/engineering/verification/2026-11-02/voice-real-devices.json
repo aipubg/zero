@@ -1,0 +1,35 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_EXTERNAL"
+  ],
+  "startedAt": "2026-11-02T01:14:55.500Z",
+  "status": "PASS",
+  "output": "E:\\zero\\artifacts\\voice-conversation\\1793582095500",
+  "inputSource": "Actual Windows speech synthesis uploaded as PCM; not human microphone speech",
+  "acousticConversation": "UNVERIFIED",
+  "sharedConversation": {
+    "chatTaskId": "task_1793582095973_kse0fq",
+    "voiceTaskId": "task_1793582102096_pyodsi",
+    "transcript": "What is the code word",
+    "reply": "BLUEBIRD",
+    "pcmByteLength": 45600,
+    "persistedTaskStatus": "COMPLETED",
+    "messages": 8
+  },
+  "devices": {
+    "tested": true,
+    "microphoneFrames": 99,
+    "microphoneBytes": 95040,
+    "microphoneMaxRms": 0.006186321422597521,
+    "playbackResult": {
+      "pcmByteLength": 77600,
+      "played": true,
+      "type": "result"
+    },
+    "audibleToHuman": "UNVERIFIED",
+    "acousticBargeIn": "UNVERIFIED",
+    "rawAudioSaved": false
+  },
+  "finishedAt": "2026-11-02T01:15:07.765Z"
+}

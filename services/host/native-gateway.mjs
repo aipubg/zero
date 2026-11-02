@@ -41,6 +41,7 @@ import { ResearchEngine } from '../../packages/research-engine/index.mjs';
 import { WorkspaceManager } from '../../packages/workspaces/index.mjs';
 import { DeviceManager } from '../../packages/device-protocol/index.mjs';
 import { VoiceEngine } from '../../packages/voice-engine/index.mjs';
+import { VoiceConversation } from '../../packages/voice-engine/conversation.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
@@ -105,6 +106,7 @@ export class ZeroNativeHost {
     this.bootId = `zero_boot_${Date.now()}`;
     this.bootedAt = Date.now();
     this.activeTurns = new Map();
+    this.pendingRequests = new Set();
     this.clients = new Set();
 
     // Resolve expectedToken respecting gateway.auth.mode from config
@@ -142,6 +144,8 @@ export class ZeroNativeHost {
 
     // Initialize persistence & state engines
     const dataDir = options.dataDir || process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data');
+    // Stable, non-secret storage namespace for the native UI's durable outbox.
+    this.recoveryScope = `zero-local:${crypto.createHash('sha256').update(path.resolve(dataDir).toLowerCase()).digest('hex')}`;
     if (!fs.existsSync(dataDir)) {
       try { fs.mkdirSync(dataDir, { recursive: true }); } catch (_) {}
     }
@@ -192,6 +196,15 @@ export class ZeroNativeHost {
     this.voiceEngine = new VoiceEngine({
       modelFabric: this.modelFabric,
     });
+    this.voiceConversation = new VoiceConversation({ engine: this.voiceEngine,
+      executeTurn: ({ sessionId, text, signal, context }) => this._runAssistantRequest({ sessionKey: sessionId, userContent: text, source: 'voice', signal, ...context }),
+    });
+    for (const event of ['transcript', 'turn-complete', 'turn-error', 'interrupted']) {
+      this.voiceConversation.on(event, payload => {
+        const frame = JSON.stringify({ type: 'event', event: `voice.${event}`, payload });
+        for (const client of this.clients) if (client.readyState === 1 && client.subscribedSessions?.has(payload.sessionId)) client.send(frame);
+      });
+    }
 
     const tool = (name, description, parameters, handler) => canonicalCapabilityEngine.registerCapability({ name, description, parameters, handler });
     registerLocalTools(canonicalCapabilityEngine, { cwd: REPO_ROOT });
@@ -641,6 +654,12 @@ export class ZeroNativeHost {
 
     ws.on('close', () => {
       this.clients.delete(ws);
+      for (const [sessionId, binding] of this.voiceConversation.bindings) {
+        if (binding.context.ownerId === ws) {
+          void this.voiceConversation.detach(sessionId);
+          this.voiceEngine.stopSession(sessionId);
+        }
+      }
     });
 
     ws.on('message', async (raw) => {
@@ -674,7 +693,7 @@ export class ZeroNativeHost {
           'agents.list', 'gateway.agents.list',
           'sessions.list', 'gateway.sessions.list',
           'sessions.create', 'sessions.get', 'sessions.describe', 'sessions.patch', 'sessions.delete',
-          'chat.history', 'gateway.chat.history',
+          'chat.history', 'gateway.chat.history', 'chat.startup', 'chat.metadata',
           'chat.send', 'chat.abort', 'agent', 'gateway.agent',
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
@@ -708,6 +727,7 @@ export class ZeroNativeHost {
           'devices.notify', 'devices.notifications.list', 'devices.notifications.markRead',
           'voice.session.start', 'voice.session.stop', 'voice.chunk', 'voice.synthesize', 'voice.transcribe', 'voice.status',
           'voice.microphone.start', 'voice.microphone.stop',
+          'voice.turn', 'voice.conversation.status',
           'sessions.messages.subscribe', 'sessions.messages.unsubscribe', 'sessions.observer.visibility',
           'sessions.subscribe', 'config.get', 'config.patch', 'config.schema', 'config.schema.lookup',
           'users.self', 'users.prefs.get', 'users.prefs.set', 'models.authStatus',
@@ -734,6 +754,7 @@ export class ZeroNativeHost {
               auth: {
                 role: clientSession.role,
                 scopes: clientSession.scopes,
+                recoveryScope: `${this.recoveryScope}:${clientSession.role}`,
               },
               policy: { tickIntervalMs: 30000 },
               session: clientSession,
@@ -844,7 +865,7 @@ export class ZeroNativeHost {
       'sessions.delete': ['operator.write', 'operator.admin'],
     };
 
-    if (!METHOD_SCOPES[method] && /^(skills\.(install|import|update|uninstall|enable|disable|config|create|execute|library\.(save|mutate|import))|plugins\.(install|update|enable|disable|uninstall|execute|setEnabled|restart|remove)|voice\.microphone\.|zero\.observation\.control)/.test(method)) METHOD_SCOPES[method] = ['operator.admin', 'operator.write'];
+    if (!METHOD_SCOPES[method] && /^(skills\.(install|import|update|uninstall|enable|disable|config|create|execute|library\.(save|mutate|import))|plugins\.(install|update|enable|disable|uninstall|execute|setEnabled|restart|remove)|voice\.(session\.|microphone\.|turn|chunk|transcribe|synthesize)|zero\.observation\.control)/.test(method)) METHOD_SCOPES[method] = ['operator.admin', 'operator.write'];
     if (METHOD_SCOPES[method]) {
       const required = METHOD_SCOPES[method];
       const hasScope = Boolean(
@@ -942,8 +963,10 @@ export class ZeroNativeHost {
         const limit = Number(params.limit || 50);
         const offset = Number(params.offset || 0);
         const sessions = this.sessions.listSessions(limit, offset);
+        const defaultModel = this.modelFabric.resolveAgentModel('zero');
         return {
           ts: Date.now(),
+          defaults: { model: defaultModel?.canonicalModelId || null, modelProvider: defaultModel?.provider?.id || null },
           sessions,
           total: sessions.length,
         };
@@ -1011,11 +1034,20 @@ export class ZeroNativeHost {
         return { ok: true, deleted: true, key };
       }
 
+      case 'chat.metadata':
+        return { commands: [], ...(params.includeModels === false ? {} : { models: this.modelFabric.listModels() }) };
+
+      case 'chat.startup':
       case 'chat.history':
       case 'gateway.chat.history': {
         const sessionKey = params.sessionKey || params.sessionId || 'default';
-        const messages = this.sessions.getTranscript(sessionKey);
-        return { ok: true, sessionKey, messages };
+        if (method === 'chat.startup' && !this.sessions.getSession(sessionKey)) this.sessions.createSession(sessionKey, 'New Conversation', { agentId: params.agentId || 'zero' });
+        const limit = Math.min(1000, Math.max(1, Number(params.limit ?? 100)));
+        const offset = Number(params.offset ?? 0);
+        const messages = this.sessions.getTranscript(sessionKey, { limit, offset }).map(message => ({ ...message, timestamp: message.createdAt }));
+        const totalMessages = this.sessions.countMessages(sessionKey);
+        const hasMore = offset + messages.length < totalMessages;
+        return { ok: true, sessionKey, sessionId: sessionKey, sessionInfo: { sessionId: sessionKey }, messages, totalMessages, hasMore, ...(hasMore ? { nextOffset: offset + messages.length } : {}) };
       }
 
       case 'agent':
@@ -1025,9 +1057,7 @@ export class ZeroNativeHost {
         const message = params.message || '';
         const userContent = typeof message === 'string' ? message : message.content || '';
 
-        // Record user message
-        this.sessions.appendMessage(sessionKey, { role: 'user', content: userContent });
-        return await this._executeAgentTurn({ sessionKey, userContent, model: params.model, ws, isReferenceWire, clientSession });
+        return await this._runAssistantRequest({ sessionKey, userContent, model: params.model, ws, isReferenceWire, clientSession, source: 'chat', runId: params.idempotencyKey });
       }
 
       case 'chat.abort': {
@@ -1571,9 +1601,11 @@ export class ZeroNativeHost {
 
       // Real-Time Voice Engine RPCs (Phase 15)
       case 'voice.session.start':
-        return this.voiceEngine.startSession(params.sessionId);
+        await this._attachVoice(params, clientSession, ws, isReferenceWire);
+        return { ...this.voiceEngine.startSession(params.sessionId), conversation: this.voiceConversation.status(params.sessionId) };
 
       case 'voice.session.stop':
+        await this.voiceConversation.detach(params.sessionId);
         return this.voiceEngine.stopSession(params.sessionId);
 
       case 'voice.chunk':
@@ -1588,11 +1620,20 @@ export class ZeroNativeHost {
       case 'voice.status':
         return { ok: true, status: 'PARTIAL', ...this.voiceEngine.getStatus() };
 
+      case 'voice.conversation.status':
+        return this.voiceConversation.status(params.sessionId);
+
+      case 'voice.turn':
+        await this._attachVoice(params, clientSession, ws, isReferenceWire);
+        return await this.voiceConversation.process(params.sessionId);
+
       case 'voice.microphone.start':
+        await this._attachVoice(params, clientSession, ws, isReferenceWire);
         this.voiceEngine.startSession(params.sessionId);
         return await this.voiceEngine.startMicrophone(params.sessionId);
 
       case 'voice.microphone.stop':
+        await this.voiceConversation.detach(params.sessionId);
         return await this.voiceEngine.stopMicrophone(params.sessionId);
 
 
@@ -1807,9 +1848,6 @@ export class ZeroNativeHost {
       case 'themes.list':
         return { themes: ['claw', 'dark', 'light'] };
 
-      case 'voice.status':
-        return { active: false, status: 'idle' };
-
       default: {
         const err = new Error(`Method '${method}' not found on Zero Native Gateway`);
         err.code = RPC_ERROR_CODES.METHOD_NOT_FOUND;
@@ -1818,7 +1856,53 @@ export class ZeroNativeHost {
     }
   }
 
-  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession }) {
+  async _attachVoice(params, clientSession, ws, isReferenceWire) {
+    if (typeof params.sessionId !== 'string' || !params.sessionId.trim()) throw new Error('Voice sessionId is required');
+    const previous = this.voiceConversation.bindings.get(params.sessionId);
+    const ownerId = ws || clientSession;
+    if (previous && previous.context.ownerId !== ownerId) {
+      if (clientSession?.role !== 'admin') throw new Error('Voice conversation belongs to another client');
+      await this.voiceConversation.detach(params.sessionId);
+    }
+    this.voiceConversation.attach(params.sessionId, { ownerId, clientSession, ws, isReferenceWire,
+      model: params.model, language: params.language, ...(params.playback !== undefined ? { playback: params.playback } : {}) });
+  }
+
+  _runAssistantRequest(options) {
+    options = { ...options, runId: options.runId || crypto.randomUUID() };
+    const request = (async () => {
+      const { sessionKey, userContent, signal, source = 'chat' } = options;
+      if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
+      if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
+      const task = this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
+      this.tasks.enqueueTask(task.id); this.tasks.startTask(task.id);
+      const combinedSignal = AbortSignal.any([this.tasks.getSignal(task.id), ...(signal ? [signal] : [])]);
+      try {
+        combinedSignal.throwIfAborted();
+        this.sessions.appendMessage(sessionKey, { role: 'user', content: userContent });
+        this.tasks.recordStep(task.id, { stepNumber: 1, toolName: 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
+        const result = await this._executeAgentTurn({ ...options, signal: combinedSignal });
+        combinedSignal.throwIfAborted();
+        if (!result?.ok) throw new Error(result?.error || 'Assistant turn failed');
+        const complete = { ...result, taskId: task.id, sessionKey, runId: options.runId };
+        this.tasks.completeTask(task.id, { content: result.content, source, sessionKey, verified: false });
+        return complete;
+      } catch (error) {
+        if (options.isReferenceWire && options.ws?.readyState === 1) options.ws.send(JSON.stringify({ type: 'event', event: 'chat', payload: {
+          runId: options.runId, sessionKey, state: combinedSignal.aborted || error.name === 'AbortError' ? 'aborted' : 'error', errorMessage: error.message,
+        } }));
+        if (!['CANCELLED', 'COMPLETED', 'FAILED'].includes(this.tasks.getTask(task.id)?.status)) {
+          if (combinedSignal.aborted || error.name === 'AbortError') this.tasks.cancelTask(task.id, error.message);
+          else this.tasks.failTask(task.id, error.message);
+        }
+        throw error;
+      }
+    })();
+    this.pendingRequests.add(request);
+    return request.finally(() => this.pendingRequests.delete(request));
+  }
+
+  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId }) {
     if (this.computerHold.held) {
       return {
         ok: false,
@@ -1828,6 +1912,10 @@ export class ZeroNativeHost {
     }
 
     const abortController = new AbortController();
+    const onAbort = () => abortController.abort(signal.reason);
+    if (signal?.aborted) onAbort();
+    else signal?.addEventListener('abort', onAbort, { once: true });
+    this.activeTurns.get(sessionKey)?.abort(new DOMException('Superseded by a newer assistant request', 'AbortError'));
     this.activeTurns.set(sessionKey, abortController);
     const turnId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -1892,10 +1980,11 @@ export class ZeroNativeHost {
       if (!definition.disabled) DESKTOP_TOOLS.push({ type: 'function', function: { name: definition.name, description: definition.description, parameters: definition.parameters || { type: 'object' } } });
     }
     try {
-      let currentMessages = this.sessions.getTranscript(sessionKey).map((m) => ({
+      let currentMessages = this.sessions.getModelContext(sessionKey).map((m) => ({
         role: m.role,
         content: m.content,
         ...(m.tool_calls ? { tool_calls: m.tool_calls } : {}),
+        ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
       }));
 
       if (currentMessages.length === 0 && userContent) {
@@ -1910,11 +1999,17 @@ export class ZeroNativeHost {
       const executedActions = [];
       const turnStartTime = Date.now();
       let firstTokenTime = null;
+      let sequence = 0;
+      const publishChat = payload => {
+        if (!isReferenceWire) return;
+        const frame = JSON.stringify({ type: 'event', event: 'chat', payload: { runId: runId || turnId, sessionKey, seq: ++sequence, ...payload } });
+        for (const client of this.clients) if (client.readyState === 1 && (client === ws || client.subscribedSessions?.has(sessionKey))) client.send(frame);
+      };
 
       while (turns < maxTurns) {
         turns++;
         if (abortController.signal.aborted) {
-          throw new Error('Agent turn was aborted by client');
+          throw abortController.signal.reason;
         }
 
         const modelPayload = {
@@ -1932,6 +2027,7 @@ export class ZeroNativeHost {
           for await (const chunk of this.modelFabric.streamChat(modelPayload, { signal: abortController.signal })) {
             if (chunk.delta) {
               accumulatedContent += chunk.delta;
+              publishChat({ state: 'delta', message: { role: 'assistant', content: [{ type: 'text', text: accumulatedContent }] } });
               if (!firstTokenTime) firstTokenTime = Date.now();
               if (ws && ws.readyState === 1) {
                 const deltaPayload = {
@@ -1993,7 +2089,7 @@ export class ZeroNativeHost {
                 ? { type: 'event', event: 'chat.interrupted', payload: interruptedPayload }
                 : createNotification('zero.stream.interrupted', interruptedPayload)));
             }
-            throw new Error('Agent turn was aborted by client');
+            throw abortController.signal.reason;
           }
           throw streamErr;
         }
@@ -2137,7 +2233,10 @@ export class ZeroNativeHost {
         throw new Error('Model provider returned no text response; no completion was recorded.');
       }
 
-      this.sessions.appendMessage(sessionKey, { role: 'assistant', content: finalContent });
+      abortController.signal.throwIfAborted();
+      if (!finalContent.trim()) throw new Error('Assistant turn ended without a final response');
+      const persistedReply = this.sessions.appendMessage(sessionKey, { role: 'assistant', content: finalContent });
+      publishChat({ state: 'final', message: { id: persistedReply.id, role: 'assistant', content: [{ type: 'text', text: finalContent }], timestamp: persistedReply.createdAt } });
 
       if (ws && ws.readyState === 1) {
         const ttftMs = (firstTokenTime || Date.now()) - turnStartTime;
@@ -2183,7 +2282,8 @@ export class ZeroNativeHost {
         messages: this.sessions.getTranscript(sessionKey),
       };
     } finally {
-      this.activeTurns.delete(sessionKey);
+      signal?.removeEventListener('abort', onAbort);
+      if (this.activeTurns.get(sessionKey) === abortController) this.activeTurns.delete(sessionKey);
     }
   }
 
@@ -2196,6 +2296,8 @@ export class ZeroNativeHost {
       controller.abort();
     }
     this.activeTurns.clear();
+    await this.voiceConversation.close();
+    await Promise.allSettled([...this.pendingRequests]);
 
     if (this.wss) {
       for (const client of this.clients) {
