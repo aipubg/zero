@@ -1289,3 +1289,34 @@ The original 24-hour PID 16744 was independently confirmed live and was not
 restarted to load these edits; that running process still uses its original code.
 Whole-lifetime process teardown counters and simultaneous system-wide RAM bounds
 remain unverified; full resource acceptance is still PARTIAL.
+
+### Measure owned process tree within a bounded RAM sampling window
+
+New Windows process-tree sampler selects only the current live Node root and
+observed descendants, excludes its own PowerShell branch, validates process start
+identity against the inventory, and rejects parent/PID reuse by creation order.
+It records per-process timestamps, working sets, private committed memory and
+cumulative CPU; observed vanished identities are explicit missingPids/partial.
+Execution is bounded to five seconds, 256 processes and 256 KiB output. No command
+lines, credentials or unrelated process details are returned. Endurance sampling
+is single-flight and keeps only the latest tree plus peak sampled working-set sum.
+
+[owned-tree-resource-window.json](owned-tree-resource-window.json) contains the
+actual 20-second capture/OCR/local-model run and its sample windows. The live
+model window includes Node, Windows metadata daemon, llama-server and console
+helpers, with sampled working-set sum 634,912,768 bytes. Eight captures/OCR and
+stored vision results persist; final local-model pre-close counters are measured.
+Overall exit remains 1, resources PARTIAL and completed24Hours false.
+
+test/owned-process-resources.test.mjs creates an actual 64 MiB allocated Node
+child, confirms its measured RAM and exact aggregation, sampler exclusion, then
+confirms the terminated child disappears. It and two accounting checks pass.
+First harness attempt timed out because cleanup waited again after a signalled
+exit; this failed attempt is recorded and the cleanup guard corrected. Creation
+order hardening was subsequently checked by rerunning the real allocation test.
+
+Working sets may count shared pages and samples have bounded time skew; these
+are sampled sums, not unique physical RAM or continuous maximum. Short-lived
+processes between windows and final process teardown CPU remain uncovered. The
+existing 24-hour run was not stopped/reloaded for these changes and still runs
+its original source; the newer sampler's short run cannot certify that run.

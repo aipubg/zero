@@ -1,0 +1,791 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "ENDURANCE"
+  ],
+  "scope": "Sampled owned process working sets, not continuous physical-memory peak or 24-hour acceptance",
+  "summary": {
+    "status": "completed",
+    "pid": 11852,
+    "startedAt": "2026-11-02T22:12:20.139Z",
+    "updatedAt": "2026-11-02T22:12:41.396Z",
+    "elapsedMs": 21257.1011,
+    "requestedDurationMs": 20000,
+    "elapsedHours": 0.005904750305555555,
+    "durationReached": true,
+    "stopReason": "duration-reached",
+    "fatalError": null,
+    "captureOcrCompleted24Hours": false,
+    "completed24Hours": false,
+    "resourceAcceptance": "PARTIAL",
+    "finalVisionSample": {
+      "status": "measured",
+      "pid": 7664,
+      "processName": "llama-server",
+      "startedAt": "2026-11-02T22:12:21.4646223Z",
+      "measuredAt": "2026-11-02T22:12:40.8761852Z",
+      "cpuMs": 21968.75,
+      "workingSetBytes": 398749696,
+      "peakWorkingSetBytes": 411787264,
+      "privateMemoryBytes": 476459008,
+      "cpuAccounting": "cumulative-per-process; do not sum repeated samples",
+      "requestedAt": "2026-11-02T22:12:40.741Z",
+      "completedAt": "2026-11-02T22:12:40.922Z",
+      "scope": "pre-close; excludes process teardown CPU"
+    },
+    "processTree": {
+      "samples": 4,
+      "peakSampledTreeWorkingSetBytes": 634912768,
+      "latest": {
+        "status": "measured",
+        "rootPid": 11852,
+        "excludedSamplerPid": 20564,
+        "startedAt": "2026-11-02T22:12:41.0596936Z",
+        "completedAt": "2026-11-02T22:12:41.1840335Z",
+        "processes": [
+          {
+            "pid": 11852,
+            "processName": "node",
+            "startedAt": "2026-11-02T22:12:20.1020185Z",
+            "measuredAt": "2026-11-02T22:12:41.1683859Z",
+            "cpuMs": 828.125,
+            "workingSetBytes": 106024960,
+            "privateMemoryBytes": 56025088
+          },
+          {
+            "pid": 20932,
+            "processName": "powershell",
+            "startedAt": "2026-11-02T22:12:20.6558069Z",
+            "measuredAt": "2026-11-02T22:12:41.1775283Z",
+            "cpuMs": 453.125,
+            "workingSetBytes": 103743488,
+            "privateMemoryBytes": 85307392
+          },
+          {
+            "pid": 9356,
+            "processName": "conhost",
+            "startedAt": "2026-11-02T22:12:20.6613620Z",
+            "measuredAt": "2026-11-02T22:12:41.1795282Z",
+            "cpuMs": 15.625,
+            "workingSetBytes": 8048640,
+            "privateMemoryBytes": 1257472
+          }
+        ],
+        "missingPids": [],
+        "sampledWorkingSetBytes": 217817088,
+        "sampledPrivateMemoryBytes": 142589952,
+        "scope": "Observed owned process tree during bounded sampling window; working sets may share pages; not continuous peak or lifetime CPU"
+      }
+    },
+    "captureResources": {
+      "measuredFrames": 8,
+      "missingFrames": 0,
+      "sameProcessFrames": 8
+    },
+    "resourceGaps": [
+      "Whole-process-lifetime aggregation and final counters"
+    ],
+    "localVisionEnabled": true,
+    "verdict": "partial",
+    "pipelineVerdict": "passed",
+    "counters": {
+      "capturesStarted": 9,
+      "capturesSucceeded": 8,
+      "capturesFailed": 0,
+      "capturesAborted": 1,
+      "ocrSucceeded": 8,
+      "ocrUnavailable": 0,
+      "metadataUnavailable": 0,
+      "overlapViolations": 0,
+      "bufferBudgetViolations": 0,
+      "rssBudgetViolations": 0,
+      "samplingGapViolations": 0
+    },
+    "resourceTotals": {
+      "accounting": "Measured subprocess cumulative CPU deltas; embedded capture is already in Node totals. RAM peaks are per role, not additive concurrent RAM.",
+      "finalLifetimeCountersVerified": false,
+      "invalidSamples": 0,
+      "counterRegressions": 0,
+      "subprocessCpuMs": 25703.125,
+      "roles": {
+        "metadata": {
+          "cpuMs": 390.625,
+          "lastCpuMs": 390.625,
+          "key": "20932:2026-11-02T22:12:20.6558069Z",
+          "startedAt": "2026-11-02T22:12:20.6558069Z",
+          "processes": 1,
+          "samples": 8,
+          "peakWorkingSetBytes": 103813120
+        },
+        "ocr": {
+          "cpuMs": 3343.75,
+          "lastCpuMs": 421.875,
+          "key": "4404:2026-11-02T22:12:38.2285953Z",
+          "startedAt": "2026-11-02T22:12:38.2285953Z",
+          "processes": 8,
+          "samples": 8,
+          "peakWorkingSetBytes": 141889536
+        },
+        "vision": {
+          "cpuMs": 21968.75,
+          "lastCpuMs": 21968.75,
+          "key": "7664:2026-11-02T22:12:21.4646223Z",
+          "startedAt": "2026-11-02T22:12:21.4646223Z",
+          "processes": 1,
+          "samples": 3,
+          "peakWorkingSetBytes": 411787264
+        }
+      }
+    },
+    "peakActiveCaptures": 1,
+    "sampleCount": 4,
+    "peakRssBytes": 106024960,
+    "peakRetainedBytes": 8652447,
+    "maxSampleGapMs": 10016.8622,
+    "maxSuccessGapMs": 2599.593399999998,
+    "maxCaptureMs": 932.7634,
+    "latencyHistogram": {
+      "upperBoundsMs": [
+        100,
+        250,
+        500,
+        1000,
+        2000,
+        5000,
+        10000,
+        20000,
+        60000,
+        "above-60000"
+      ],
+      "counts": [
+        1,
+        0,
+        7,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "cpu": {
+      "user": 500000,
+      "system": 281000
+    },
+    "firstWindowMeanRssBytes": 91389952,
+    "lastWindowMeanRssBytes": 91389952,
+    "persistenceVerified": true,
+    "persistenceEvidence": {
+      "beforeCloseCount": 8,
+      "afterReopenCount": 8,
+      "latestObservationId": "obs_1793657558612_qyhh0",
+      "visionPersisted": true,
+      "path": "E:\\zero\\artifacts\\screen-intelligence\\tree-counter-check-20261102T2212Z\\screen-observations.sqlite",
+      "dbBytes": 57344
+    },
+    "observer": {
+      "running": false,
+      "state": "destroyed",
+      "current": false,
+      "ageMs": 3178,
+      "activeApplication": null,
+      "activeWindowTitle": null,
+      "contextSource": "historical-or-unavailable",
+      "captureInFlight": false,
+      "localVision": {
+        "enabled": true,
+        "available": false,
+        "status": "stopped",
+        "reason": null,
+        "confidence": null,
+        "model": "zero-local-vision",
+        "runtime": "llama.cpp b11960",
+        "transport": "loopback-http",
+        "threads": 2,
+        "pid": null,
+        "resources": {
+          "status": "measured",
+          "pid": 7664,
+          "processName": "llama-server",
+          "startedAt": "2026-11-02T22:12:21.4646223Z",
+          "measuredAt": "2026-11-02T22:12:40.8761852Z",
+          "cpuMs": 21968.75,
+          "workingSetBytes": 398749696,
+          "peakWorkingSetBytes": 411787264,
+          "privateMemoryBytes": 476459008,
+          "cpuAccounting": "cumulative-per-process; do not sum repeated samples",
+          "currentProcess": false
+        },
+        "lastStopResources": {
+          "status": "measured",
+          "pid": 7664,
+          "processName": "llama-server",
+          "startedAt": "2026-11-02T22:12:21.4646223Z",
+          "measuredAt": "2026-11-02T22:12:40.8761852Z",
+          "cpuMs": 21968.75,
+          "workingSetBytes": 398749696,
+          "peakWorkingSetBytes": 411787264,
+          "privateMemoryBytes": 476459008,
+          "cpuAccounting": "cumulative-per-process; do not sum repeated samples",
+          "requestedAt": "2026-11-02T22:12:40.741Z",
+          "completedAt": "2026-11-02T22:12:40.922Z",
+          "scope": "pre-close; excludes process teardown CPU"
+        },
+        "requests": 1,
+        "completed": 1,
+        "failures": 0,
+        "active": 0
+      },
+      "visionInference": {
+        "attempted": 1,
+        "completed": 1,
+        "failed": 0,
+        "lastStartedAt": 1793657541455,
+        "lastCompletedAt": 1793657552599,
+        "lastError": null,
+        "retainedImageBytes": 0,
+        "pending": false,
+        "minIntervalMs": 60000
+      },
+      "stats": {
+        "totalCaptureAttempts": 9,
+        "totalCaptureFailures": 0,
+        "totalCapturesDiscarded": 1,
+        "lastCaptureError": null,
+        "lastCaptureTimestamp": 1793657558218,
+        "lastOcrStatus": "available",
+        "lastMetadataStatus": "available",
+        "lastFrameTimestamp": 1793657558218,
+        "totalFramesIngested": 8,
+        "totalChangesDetected": 8,
+        "totalObservationsStored": 8,
+        "lastChangeTimestamp": 1793657558218,
+        "activeApplication": "vlc",
+        "activeWindowTitle": "HDHub4u.Ag - VLC media player"
+      },
+      "buffer": {
+        "frameCount": 0,
+        "currentMemoryBytes": 0,
+        "retainedMemoryBytes": 0,
+        "accounting": "owned-image-bytes-plus-conservative-metadata-estimate; excludes process/driver/OCR working memory",
+        "maxFrames": 4096,
+        "maxMemoryBytes": 262144000,
+        "memoryUtilizationPercent": 0,
+        "oldestTimestamp": null,
+        "newestTimestamp": null,
+        "maxWindowMs": 300000
+      },
+      "observationStore": {
+        "active": false,
+        "path": "E:\\zero\\artifacts\\screen-intelligence\\tree-counter-check-20261102T2212Z\\screen-observations.sqlite",
+        "persistent": true,
+        "mode": "sqlite-file",
+        "retentionMs": 604800000,
+        "encryptedFields": true,
+        "keyStorage": "windows-user-dpapi",
+        "migrationBackup": null,
+        "observationCount": null
+      }
+    },
+    "outputDir": "E:\\zero\\artifacts\\screen-intelligence\\tree-counter-check-20261102T2212Z"
+  },
+  "samples": [
+    {
+      "at": "2026-11-02T22:12:20.512Z",
+      "elapsedMs": 372.96479999999997,
+      "gapMs": 372.96479999999997,
+      "memory": {
+        "rss": 62435328,
+        "heapTotal": 11845632,
+        "heapUsed": 7349464,
+        "external": 2825628,
+        "arrayBuffers": 146131
+      },
+      "localVision": {
+        "enabled": true,
+        "available": false,
+        "status": "configured",
+        "reason": null,
+        "confidence": null,
+        "model": "zero-local-vision",
+        "runtime": "llama.cpp b11960",
+        "transport": "loopback-http",
+        "threads": 2,
+        "pid": null,
+        "resources": {
+          "status": "not-measured",
+          "currentProcess": true
+        },
+        "lastStopResources": null,
+        "requests": 0,
+        "completed": 0,
+        "failures": 0,
+        "active": 0
+      },
+      "processTree": {
+        "status": "not-measured"
+      },
+      "systemFreeMemoryBytes": 22490849280,
+      "buffer": {
+        "frameCount": 0,
+        "currentMemoryBytes": 0,
+        "retainedMemoryBytes": 0,
+        "accounting": "owned-image-bytes-plus-conservative-metadata-estimate; excludes process/driver/OCR working memory",
+        "maxFrames": 4096,
+        "maxMemoryBytes": 262144000,
+        "memoryUtilizationPercent": 0,
+        "oldestTimestamp": null,
+        "newestTimestamp": null,
+        "maxWindowMs": 300000
+      },
+      "counters": {
+        "capturesStarted": 0,
+        "capturesSucceeded": 0,
+        "capturesFailed": 0,
+        "capturesAborted": 0,
+        "ocrSucceeded": 0,
+        "ocrUnavailable": 0,
+        "metadataUnavailable": 0,
+        "overlapViolations": 0,
+        "bufferBudgetViolations": 0,
+        "rssBudgetViolations": 0,
+        "samplingGapViolations": 0
+      },
+      "activeCaptures": 0,
+      "eventLoopDelayMs": {
+        "mean": null,
+        "max": 0
+      },
+      "cpu": {
+        "user": 16000,
+        "system": 0
+      },
+      "store": {
+        "active": true,
+        "path": "E:\\zero\\artifacts\\screen-intelligence\\tree-counter-check-20261102T2212Z\\screen-observations.sqlite",
+        "persistent": true,
+        "mode": "sqlite-file",
+        "retentionMs": 604800000,
+        "encryptedFields": true,
+        "keyStorage": "windows-user-dpapi",
+        "migrationBackup": null,
+        "observationCount": 0
+      }
+    },
+    {
+      "at": "2026-11-02T22:12:30.529Z",
+      "elapsedMs": 10389.827,
+      "gapMs": 10016.8622,
+      "memory": {
+        "rss": 92110848,
+        "heapTotal": 18296832,
+        "heapUsed": 16562848,
+        "external": 10238401,
+        "arrayBuffers": 5930902
+      },
+      "localVision": {
+        "enabled": true,
+        "available": true,
+        "status": "ready",
+        "reason": null,
+        "confidence": null,
+        "model": "zero-local-vision",
+        "runtime": "llama.cpp b11960",
+        "transport": "loopback-http",
+        "threads": 2,
+        "pid": 7664,
+        "resources": {
+          "status": "not-measured",
+          "currentProcess": false
+        },
+        "lastStopResources": null,
+        "requests": 1,
+        "completed": 0,
+        "failures": 0,
+        "active": 1
+      },
+      "processTree": {
+        "status": "measured",
+        "rootPid": 11852,
+        "excludedSamplerPid": 15096,
+        "startedAt": "2026-11-02T22:12:20.6393994Z",
+        "completedAt": "2026-11-02T22:12:20.8071813Z",
+        "processes": [
+          {
+            "pid": 11852,
+            "processName": "node",
+            "startedAt": "2026-11-02T22:12:20.1020185Z",
+            "measuredAt": "2026-11-02T22:12:20.7921571Z",
+            "cpuMs": 187.5,
+            "workingSetBytes": 90828800,
+            "privateMemoryBytes": 44531712
+          },
+          {
+            "pid": 20932,
+            "processName": "powershell",
+            "startedAt": "2026-11-02T22:12:20.6558069Z",
+            "measuredAt": "2026-11-02T22:12:20.8011697Z",
+            "cpuMs": 171.875,
+            "workingSetBytes": 78999552,
+            "privateMemoryBytes": 66453504
+          },
+          {
+            "pid": 9356,
+            "processName": "conhost",
+            "startedAt": "2026-11-02T22:12:20.6613620Z",
+            "measuredAt": "2026-11-02T22:12:20.8036731Z",
+            "cpuMs": 15.625,
+            "workingSetBytes": 8048640,
+            "privateMemoryBytes": 1257472
+          }
+        ],
+        "missingPids": [],
+        "sampledWorkingSetBytes": 177876992,
+        "sampledPrivateMemoryBytes": 112242688,
+        "scope": "Observed owned process tree during bounded sampling window; working sets may share pages; not continuous peak or lifetime CPU"
+      },
+      "systemFreeMemoryBytes": 22175838208,
+      "buffer": {
+        "frameCount": 4,
+        "currentMemoryBytes": 3963581,
+        "retainedMemoryBytes": 3966661,
+        "accounting": "owned-image-bytes-plus-conservative-metadata-estimate; excludes process/driver/OCR working memory",
+        "maxFrames": 4096,
+        "maxMemoryBytes": 262144000,
+        "memoryUtilizationPercent": 1.51,
+        "oldestTimestamp": 1793657540653,
+        "newestTimestamp": 1793657548379,
+        "maxWindowMs": 300000
+      },
+      "counters": {
+        "capturesStarted": 4,
+        "capturesSucceeded": 4,
+        "capturesFailed": 0,
+        "capturesAborted": 0,
+        "ocrSucceeded": 4,
+        "ocrUnavailable": 0,
+        "metadataUnavailable": 0,
+        "overlapViolations": 0,
+        "bufferBudgetViolations": 0,
+        "rssBudgetViolations": 0,
+        "samplingGapViolations": 0
+      },
+      "activeCaptures": 0,
+      "eventLoopDelayMs": {
+        "mean": 31.06668442236025,
+        "max": 89.063423
+      },
+      "cpu": {
+        "user": 266000,
+        "system": 125000
+      },
+      "store": {
+        "active": true,
+        "path": "E:\\zero\\artifacts\\screen-intelligence\\tree-counter-check-20261102T2212Z\\screen-observations.sqlite",
+        "persistent": true,
+        "mode": "sqlite-file",
+        "retentionMs": 604800000,
+        "encryptedFields": true,
+        "keyStorage": "windows-user-dpapi",
+        "migrationBackup": null,
+        "observationCount": 4
+      }
+    },
+    {
+      "at": "2026-11-02T22:12:40.541Z",
+      "elapsedMs": 20401.8704,
+      "gapMs": 10012.043399999999,
+      "memory": {
+        "rss": 104988672,
+        "heapTotal": 16187392,
+        "heapUsed": 12433344,
+        "external": 18803700,
+        "arrayBuffers": 11385010
+      },
+      "localVision": {
+        "enabled": true,
+        "available": true,
+        "status": "ready",
+        "reason": null,
+        "confidence": null,
+        "model": "zero-local-vision",
+        "runtime": "llama.cpp b11960",
+        "transport": "loopback-http",
+        "threads": 2,
+        "pid": 7664,
+        "resources": {
+          "status": "measured",
+          "pid": 7664,
+          "processName": "llama-server",
+          "startedAt": "2026-11-02T22:12:21.4646223Z",
+          "measuredAt": "2026-11-02T22:12:30.6586945Z",
+          "cpuMs": 17906.25,
+          "workingSetBytes": 405487616,
+          "peakWorkingSetBytes": 411717632,
+          "privateMemoryBytes": 483758080,
+          "cpuAccounting": "cumulative-per-process; do not sum repeated samples",
+          "currentProcess": true
+        },
+        "lastStopResources": null,
+        "requests": 1,
+        "completed": 1,
+        "failures": 0,
+        "active": 0
+      },
+      "processTree": {
+        "status": "measured",
+        "rootPid": 11852,
+        "excludedSamplerPid": 5828,
+        "startedAt": "2026-11-02T22:12:30.6546913Z",
+        "completedAt": "2026-11-02T22:12:30.8081651Z",
+        "processes": [
+          {
+            "pid": 11852,
+            "processName": "node",
+            "startedAt": "2026-11-02T22:12:20.1020185Z",
+            "measuredAt": "2026-11-02T22:12:30.7861333Z",
+            "cpuMs": 468.75,
+            "workingSetBytes": 107986944,
+            "privateMemoryBytes": 57528320
+          },
+          {
+            "pid": 20932,
+            "processName": "powershell",
+            "startedAt": "2026-11-02T22:12:20.6558069Z",
+            "measuredAt": "2026-11-02T22:12:30.7951500Z",
+            "cpuMs": 375,
+            "workingSetBytes": 102416384,
+            "privateMemoryBytes": 84164608
+          },
+          {
+            "pid": 9356,
+            "processName": "conhost",
+            "startedAt": "2026-11-02T22:12:20.6613620Z",
+            "measuredAt": "2026-11-02T22:12:30.7981536Z",
+            "cpuMs": 15.625,
+            "workingSetBytes": 8048640,
+            "privateMemoryBytes": 1257472
+          },
+          {
+            "pid": 7664,
+            "processName": "llama-server",
+            "startedAt": "2026-11-02T22:12:21.4646223Z",
+            "measuredAt": "2026-11-02T22:12:30.8011529Z",
+            "cpuMs": 18187.5,
+            "workingSetBytes": 408637440,
+            "privateMemoryBytes": 486907904
+          },
+          {
+            "pid": 8576,
+            "processName": "conhost",
+            "startedAt": "2026-11-02T22:12:21.4680074Z",
+            "measuredAt": "2026-11-02T22:12:30.8041600Z",
+            "cpuMs": 0,
+            "workingSetBytes": 7823360,
+            "privateMemoryBytes": 1228800
+          }
+        ],
+        "missingPids": [],
+        "sampledWorkingSetBytes": 634912768,
+        "sampledPrivateMemoryBytes": 631087104,
+        "scope": "Observed owned process tree during bounded sampling window; working sets may share pages; not continuous peak or lifetime CPU"
+      },
+      "systemFreeMemoryBytes": 22144106496,
+      "buffer": {
+        "frameCount": 8,
+        "currentMemoryBytes": 8646287,
+        "retainedMemoryBytes": 8652447,
+        "accounting": "owned-image-bytes-plus-conservative-metadata-estimate; excludes process/driver/OCR working memory",
+        "maxFrames": 4096,
+        "maxMemoryBytes": 262144000,
+        "memoryUtilizationPercent": 3.3,
+        "oldestTimestamp": 1793657540653,
+        "newestTimestamp": 1793657558218,
+        "maxWindowMs": 300000
+      },
+      "counters": {
+        "capturesStarted": 8,
+        "capturesSucceeded": 8,
+        "capturesFailed": 0,
+        "capturesAborted": 0,
+        "ocrSucceeded": 8,
+        "ocrUnavailable": 0,
+        "metadataUnavailable": 0,
+        "overlapViolations": 0,
+        "bufferBudgetViolations": 0,
+        "rssBudgetViolations": 0,
+        "samplingGapViolations": 0
+      },
+      "activeCaptures": 0,
+      "eventLoopDelayMs": {
+        "mean": 30.929633788819874,
+        "max": 36.995071
+      },
+      "cpu": {
+        "user": 453000,
+        "system": 265000
+      },
+      "store": {
+        "active": true,
+        "path": "E:\\zero\\artifacts\\screen-intelligence\\tree-counter-check-20261102T2212Z\\screen-observations.sqlite",
+        "persistent": true,
+        "mode": "sqlite-file",
+        "retentionMs": 604800000,
+        "encryptedFields": true,
+        "keyStorage": "windows-user-dpapi",
+        "migrationBackup": null,
+        "observationCount": 8
+      }
+    },
+    {
+      "at": "2026-11-02T22:12:41.211Z",
+      "elapsedMs": 21072.0959,
+      "gapMs": 670.2255000000005,
+      "memory": {
+        "rss": 106024960,
+        "heapTotal": 14626816,
+        "heapUsed": 10856472,
+        "external": 13347166,
+        "arrayBuffers": 9046564
+      },
+      "localVision": {
+        "enabled": true,
+        "available": false,
+        "status": "configured",
+        "reason": null,
+        "confidence": null,
+        "model": "zero-local-vision",
+        "runtime": "llama.cpp b11960",
+        "transport": "loopback-http",
+        "threads": 2,
+        "pid": null,
+        "resources": {
+          "status": "measured",
+          "pid": 7664,
+          "processName": "llama-server",
+          "startedAt": "2026-11-02T22:12:21.4646223Z",
+          "measuredAt": "2026-11-02T22:12:40.8761852Z",
+          "cpuMs": 21968.75,
+          "workingSetBytes": 398749696,
+          "peakWorkingSetBytes": 411787264,
+          "privateMemoryBytes": 476459008,
+          "cpuAccounting": "cumulative-per-process; do not sum repeated samples",
+          "currentProcess": false
+        },
+        "lastStopResources": {
+          "status": "measured",
+          "pid": 7664,
+          "processName": "llama-server",
+          "startedAt": "2026-11-02T22:12:21.4646223Z",
+          "measuredAt": "2026-11-02T22:12:40.8761852Z",
+          "cpuMs": 21968.75,
+          "workingSetBytes": 398749696,
+          "peakWorkingSetBytes": 411787264,
+          "privateMemoryBytes": 476459008,
+          "cpuAccounting": "cumulative-per-process; do not sum repeated samples",
+          "requestedAt": "2026-11-02T22:12:40.741Z",
+          "completedAt": "2026-11-02T22:12:40.922Z",
+          "scope": "pre-close; excludes process teardown CPU"
+        },
+        "requests": 1,
+        "completed": 1,
+        "failures": 0,
+        "active": 0
+      },
+      "processTree": {
+        "status": "measured",
+        "rootPid": 11852,
+        "excludedSamplerPid": 20564,
+        "startedAt": "2026-11-02T22:12:41.0596936Z",
+        "completedAt": "2026-11-02T22:12:41.1840335Z",
+        "processes": [
+          {
+            "pid": 11852,
+            "processName": "node",
+            "startedAt": "2026-11-02T22:12:20.1020185Z",
+            "measuredAt": "2026-11-02T22:12:41.1683859Z",
+            "cpuMs": 828.125,
+            "workingSetBytes": 106024960,
+            "privateMemoryBytes": 56025088
+          },
+          {
+            "pid": 20932,
+            "processName": "powershell",
+            "startedAt": "2026-11-02T22:12:20.6558069Z",
+            "measuredAt": "2026-11-02T22:12:41.1775283Z",
+            "cpuMs": 453.125,
+            "workingSetBytes": 103743488,
+            "privateMemoryBytes": 85307392
+          },
+          {
+            "pid": 9356,
+            "processName": "conhost",
+            "startedAt": "2026-11-02T22:12:20.6613620Z",
+            "measuredAt": "2026-11-02T22:12:41.1795282Z",
+            "cpuMs": 15.625,
+            "workingSetBytes": 8048640,
+            "privateMemoryBytes": 1257472
+          }
+        ],
+        "missingPids": [],
+        "sampledWorkingSetBytes": 217817088,
+        "sampledPrivateMemoryBytes": 142589952,
+        "scope": "Observed owned process tree during bounded sampling window; working sets may share pages; not continuous peak or lifetime CPU"
+      },
+      "systemFreeMemoryBytes": 22377132032,
+      "buffer": {
+        "frameCount": 8,
+        "currentMemoryBytes": 8646287,
+        "retainedMemoryBytes": 8652447,
+        "accounting": "owned-image-bytes-plus-conservative-metadata-estimate; excludes process/driver/OCR working memory",
+        "maxFrames": 4096,
+        "maxMemoryBytes": 262144000,
+        "memoryUtilizationPercent": 3.3,
+        "oldestTimestamp": 1793657540653,
+        "newestTimestamp": 1793657558218,
+        "maxWindowMs": 300000
+      },
+      "counters": {
+        "capturesStarted": 9,
+        "capturesSucceeded": 8,
+        "capturesFailed": 0,
+        "capturesAborted": 1,
+        "ocrSucceeded": 8,
+        "ocrUnavailable": 0,
+        "metadataUnavailable": 0,
+        "overlapViolations": 0,
+        "bufferBudgetViolations": 0,
+        "rssBudgetViolations": 0,
+        "samplingGapViolations": 0
+      },
+      "activeCaptures": 0,
+      "eventLoopDelayMs": {
+        "mean": 28.570134260869565,
+        "max": 33.816575
+      },
+      "cpu": {
+        "user": 500000,
+        "system": 281000
+      },
+      "store": {
+        "active": true,
+        "path": "E:\\zero\\artifacts\\screen-intelligence\\tree-counter-check-20261102T2212Z\\screen-observations.sqlite",
+        "persistent": true,
+        "mode": "sqlite-file",
+        "retentionMs": 604800000,
+        "encryptedFields": true,
+        "keyStorage": "windows-user-dpapi",
+        "migrationBackup": null,
+        "observationCount": 8
+      }
+    }
+  ],
+  "allocationTest": {
+    "status": "PASS",
+    "checks": 3,
+    "firstAttempt": "FAIL: test cleanup waited twice for already signalled child exit; corrected signalCode guard; not a sampler acceptance PASS"
+  }
+}

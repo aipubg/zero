@@ -8,6 +8,7 @@ import { captureRealDesktopFrame } from '../packages/screen-intelligence/windows
 import { stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
 import { LocalInferenceRuntime } from '../packages/model-fabric/local-runtime.mjs';
 import { ResourceTotals } from '../packages/screen-intelligence/resource-totals.mjs';
+import { sampleOwnedProcessTree } from '../packages/screen-intelligence/process-tree-resources.mjs';
 
 function parseArgs(args) {
   const result = { hours: 24, 'interval-ms': 2000, 'sample-ms': 10_000, 'max-memory-mib': 250,
@@ -59,6 +60,17 @@ let sampleCount = 0, stopping = false, shutdownPromise, stopReason = null, fatal
 let persistenceVerified = false;
 let persistenceEvidence = null;
 let finalVisionSample = { status: 'not-requested' };
+let treeRequest = null, treeSamples = 0, peakSampledTreeWorkingSetBytes = 0;
+let latestProcessTree = { status: 'not-measured' };
+function measureTree() {
+  if (treeRequest) return treeRequest;
+  const pending = sampleOwnedProcessTree().then(value => {
+    latestProcessTree = value; treeSamples++;
+    if (Number.isFinite(value.sampledWorkingSetBytes)) peakSampledTreeWorkingSetBytes = Math.max(peakSampledTreeWorkingSetBytes, value.sampledWorkingSetBytes);
+    return value;
+  }).finally(() => { if (treeRequest === pending) treeRequest = null; });
+  treeRequest = pending; return pending;
+}
 // Fixed windows allow a first/last RSS comparison without retaining 24h of samples in RAM.
 const firstRss = [], lastRss = [];
 const localVision = options['local-vision'] === 1 ? new LocalInferenceRuntime({ enabled: true }) : null;
@@ -124,7 +136,7 @@ function report(status = 'running') {
     requestedDurationMs, elapsedHours: elapsedMs / 3600000, durationReached, stopReason, fatalError,
     captureOcrCompleted24Hours: status === 'completed' && durationReached && elapsedMs >= 86_400_000 && healthy && pipelineHealthy && persistenceVerified,
     completed24Hours: false,
-    resourceAcceptance: 'PARTIAL', finalVisionSample, captureResources: { ...captureResources },
+    resourceAcceptance: 'PARTIAL', finalVisionSample, processTree: { samples: treeSamples, peakSampledTreeWorkingSetBytes, latest: latestProcessTree }, captureResources: { ...captureResources },
     resourceGaps: [...(captureResources.missingFrames || !captureResources.measuredFrames ? ['Unmeasured capture process topology/counters'] : []), 'Whole-process-lifetime aggregation and final counters'],
     localVisionEnabled: Boolean(localVision),
     verdict: status === 'running' ? 'in-progress' : fatalError ? 'failed' : status !== 'completed' || !durationReached ? 'incomplete' : healthy && pipelineHealthy && persistenceVerified ? 'partial' : 'failed',
@@ -135,10 +147,11 @@ function report(status = 'running') {
     persistenceVerified, persistenceEvidence, observer: observer.getStatus(), outputDir };
 }
 
-function sample({ measureVision = true } = {}) {
+function sample({ measureVision = true, measureProcessTree = true } = {}) {
   // Single-flight sampler reads the owned model PID; the next sample includes
   // its timestamped cumulative counters. It does not sum repeated CPU totals.
   if (measureVision) void localVision?.sampleResources();
+  if (measureProcessTree) void measureTree();
   const modelResources = localVision?.getStatus().resources;
   if (modelResources?.status === 'measured') resources.observe('vision', modelResources);
   const now = performance.now(), gapMs = now - lastSampleAt;
@@ -154,7 +167,7 @@ function sample({ measureVision = true } = {}) {
   if (firstRss.length < 60) firstRss.push(memory.rss);
   lastRss.push(memory.rss); if (lastRss.length > 60) lastRss.shift();
   const metric = { at: new Date().toISOString(), elapsedMs: now - began, gapMs, memory,
-    localVision: localVision?.getStatus() ?? null,
+    localVision: localVision?.getStatus() ?? null, processTree: latestProcessTree,
     systemFreeMemoryBytes: os.freemem(), buffer, counters: { ...counters }, activeCaptures: active,
     eventLoopDelayMs: { mean: Number.isFinite(eventLoop.mean) ? eventLoop.mean / 1e6 : null, max: eventLoop.max / 1e6 },
     cpu: process.cpuUsage(cpuBegan), store: observer.store.getStatus() };
@@ -182,7 +195,8 @@ async function shutdown(reason) {
         finalVisionSample = localVision.getStatus().lastStopResources || { status: 'unavailable', reason: 'No owned model process reached pre-close sampling' };
         if (finalVisionSample.status === 'measured') resources.observe('vision', finalVisionSample);
       } else finalVisionSample = { status: 'not-applicable', reason: 'Local vision disabled' };
-      sample({ measureVision: false });
+      await treeRequest; await measureTree();
+      sample({ measureVision: false, measureProcessTree: false });
       const expectedCount = observer.store.getStatus().observationCount;
       await observer.destroy();
       const reopened = new SemanticObservationStore({ dataDir: outputDir });
