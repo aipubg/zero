@@ -219,6 +219,26 @@ test('actual ModelFabric HTTP loop dispatches a registered capability, produces 
   reopened.close();
 });
 
+test('[INTEGRATION] deterministic skill operation batches validate entirely before real file effects', async t => {
+  const root = temporary(t); const loader = new SkillLoader({ skillsDir: path.join(root, 'library') });
+  await loader.installSkill(sourceAt(root)); const context = runtime(t, root);
+  const artifact = path.join(root, 'operation-output.txt');
+  context.capabilityEngine.registerCapability({ name: 'write_report', handler: async ({ text }) => { fs.writeFileSync(artifact, text); return { ok: true, verified: fs.readFileSync(artifact, 'utf8') === text }; } });
+  const first = { toolName: 'write_report', args: { text: 'MUST_NOT_EXECUTE' } };
+  for (const operations of [[first, { toolName: 'unregistered' }], [first, { toolName: 'write_report', args: [] }], [first, null], null, []]) {
+    const failed = await loader.executeSkill('external-report', { operations }, context);
+    assert.equal(failed.ok, false); assert.equal(fs.existsSync(artifact), false);
+    const steps = context.stateMachine.getTaskSteps(failed.taskId);
+    assert.equal(steps.length, 1); assert.equal(steps[0].toolName, 'operations_validation');
+    assert.equal(steps[0].status, 'failed'); assert.equal(steps[0].toolResult.executed, false);
+  }
+  const malformedShortcut = await loader.executeSkill('external-report', { toolName: 'write_report', args: '' }, context);
+  assert.equal(malformedShortcut.ok, false); assert.equal(fs.existsSync(artifact), false);
+  const result = await loader.executeSkill('external-report', { operations: [{ toolName: 'write_report', args: { text: 'FIRST' } }, { toolName: 'write_report', args: { text: 'FINAL' } }] }, context);
+  assert.equal(result.ok, true); assert.equal(fs.readFileSync(artifact, 'utf8'), 'FINAL');
+  assert.equal(context.stateMachine.getTaskSteps(result.taskId).length, 2);
+});
+
 test('[CONTRACT] actual HTTP incomplete skill responses and malformed full batches persist failure without leading file effects', async t => {
   const root = temporary(t); const loader = new SkillLoader({ skillsDir: path.join(root, 'library') });
   await loader.installSkill(sourceAt(root)); const context = runtime(t, root);

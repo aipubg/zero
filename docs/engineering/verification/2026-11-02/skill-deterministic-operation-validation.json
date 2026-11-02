@@ -1,0 +1,11 @@
+{
+  "classification": ["INTEGRATION"],
+  "status": "PASS",
+  "command": "node --test test/skill-sdk-integration.test.mjs",
+  "reportedChecks": 11,
+  "scope": "Explicit deterministic skill operations, actual registered capability/file effects and durable task steps; not external model or rollback acceptance",
+  "invalidScenarios": ["unregistered second operation", "array arguments in second operation", "null second operation", "explicit null operations", "empty operations", "malformed shortcut arguments"],
+  "negativeOutcome": "Zero leading file effects; one failed operations_validation step with executed:false",
+  "positiveOutcome": "Two actual file operations execute in order; independent file readback is FINAL; two durable tool steps; task completed",
+  "limitations": ["Structural validation, not full capability JSON Schema validation", "Valid actions may still have effects before a later execution failure", "No transactional rollback or exactly-once claim"]
+}

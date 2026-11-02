@@ -1419,3 +1419,20 @@ Validation is structural, not comprehensive JSON Schema validation or rollback
 of effects after valid tool execution begins. This does not certify every skill
 format or all deterministic operations batches. Endurance PID 16744 remains
 live with its original start time, still not a completed 24-hour gate.
+
+### Validate explicit deterministic skill operations before side effects
+
+The explicit operations path now validates the entire array, permitted capability
+names and argument objects before running any action. Explicit null/empty arrays
+or malformed shortcut arguments no longer silently fall through to model execution
+or become empty argument objects. Invalid batches persist one failed
+operations_validation step with executed:false and preserve FAILED task state.
+
+[skill-deterministic-operation-validation.json](skill-deterministic-operation-validation.json)
+records eleven passing skill integration checks. Six invalid operation scenarios
+produce no real file artifact, including a valid leading write followed by an
+invalid operation. The valid two-operation path actually writes FIRST then FINAL,
+independently reads FINAL, and persists two successful tool steps. Structural
+validation does not promise rollback after valid operations begin or comprehensive
+per-capability schema validation. Endurance PID 16744 remains live with its original
+start time; its ongoing run still does not establish 24-hour acceptance.

@@ -100,11 +100,21 @@ export async function executeLoadedSkill(loader, skillName, params = {}, supplie
     const status = skillStatusRow(skill);
     if (!status.eligible) throw new Error(`Skill requirements are not satisfied: ${JSON.stringify(status.missing)}`);
     // Explicit operations are useful for deterministic host tasks. Markdown prose is never a tool identifier.
-    const operations = params.operations || (params.toolName ? [{ toolName: params.toolName, args: params.args || {} }] : null);
-    if (operations) {
-      if (!Array.isArray(operations) || !operations.length) throw new Error('Skill operations must be a non-empty array');
+    const explicitOperations = Object.hasOwn(params, 'operations');
+    const operations = explicitOperations ? params.operations : (params.toolName ? [{ toolName: params.toolName, args: params.args === undefined ? {} : params.args }] : null);
+    if (explicitOperations || operations !== null) {
+      let prepared;
+      try {
+        if (!Array.isArray(operations) || !operations.length) throw new Error('Skill operations must be a non-empty array');
+        prepared = operations.map(operation => {
+          if (!operation || typeof operation !== 'object' || Array.isArray(operation) || !permitted.has(operation.toolName)) throw new Error('Skill operation requires an available permitted capability');
+          const args = operation.args === undefined ? {} : operation.args;
+          if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Skill operation arguments must be a JSON object');
+          return { toolName: operation.toolName, args };
+        });
+      } catch (error) { record('operations_validation', { operations }, { ok: false, executed: false, error: error.message }, 'failed'); throw error; }
       let output;
-      for (const operation of operations) output = await executeTool(operation.toolName, operation.args || {});
+      for (const operation of prepared) output = await executeTool(operation.toolName, operation.args);
       return finish(output);
     }
     if (!modelFabric?.executeChat) throw new Error('Instruction skills require the host ModelFabric; no executable operation was supplied');
