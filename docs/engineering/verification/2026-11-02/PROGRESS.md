@@ -657,3 +657,21 @@ external search results. Separate actual UI/live-provider search in
 alongside the eight selected browser workflows, checking retrieved provenance,
 verified=false and fetching the real returned source URL. Source reachability
 does not independently verify the factual contents of a citation.
+
+New --screen --screen-recall browser gate verifies retrieval through ZERO's actual
+assistant/tool loop, not only direct store queries. A unique visible Chrome title
+is captured through native observation and persisted; the assistant is asked for
+the last recorded title without receiving the marker in its prompt. It must call
+screen_context, the real tool result must contain the captured title, and the
+assistant answer must return it. Transcript tool call/result checks are required.
+
+[screen-recall-title-not-observed.json](screen-recall-title-not-observed.json)
+retains the first FAIL: changing the SPA page title before clicking Enable did
+not produce the required actual native capture. The corrected harness uses its
+own separate visible page and waits for the native observation instead of
+assuming DOM updates prove desktop capture.
+[screen-recall-through-zero.json](screen-recall-through-zero.json) then passes
+all nine selected workflows, including real captured-title retrieval via the
+configured external model, Private Mode clearing, preference restart recovery,
+scrolling and gateway reconnect. This does not certify general scene reasoning,
+human voice interaction, every UI screen or a completed 24-hour endurance gate.

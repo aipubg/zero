@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from '../backend/node_modules/playwright-core/index.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+if (process.argv.includes('--screen-recall') && !process.argv.includes('--screen')) throw new Error('--screen-recall requires --screen');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
 const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.now()));
 fs.mkdirSync(evidence, { recursive: true });
@@ -80,7 +81,7 @@ async function rpc(method, params = {}) {
 }
 async function check(name, action) {
   assert.ok(workflowLabels.has(name), `Unclassified browser workflow: ${name}`);
-  const classification = ['REAL_BROWSER', 'INTEGRATION', ...workflowLabels.get(name)];
+  const classification = ['REAL_BROWSER', 'INTEGRATION', ...workflowLabels.get(name), ...(process.argv.includes('--screen-recall') && name.startsWith('About controls real native capture') ? ['REAL_EXTERNAL'] : [])];
   report.classification = [...new Set([...report.classification, ...classification])];
   const began = Date.now();
   console.log(`Checking: ${name}`);
@@ -91,7 +92,7 @@ async function check(name, action) {
 
 try {
   await start();
-  browser = await chromium.launch({ channel: 'chrome', headless: true });
+  browser = await chromium.launch({ channel: 'chrome', headless: !process.argv.includes('--screen-recall') });
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   page.setDefaultTimeout(8000);
   const pageErrors = [];
@@ -306,6 +307,12 @@ try {
   });
   if (process.argv.includes('--screen')) await check('About controls real native capture and durable Private Mode across process restarts', async () => {
     await page.goto(`${base}/settings/about`);
+    const titleMarker = `ZeroRecallEvidence${Date.now()}`;
+    if (process.argv.includes('--screen-recall')) {
+      await page.evaluate(title => { document.title = title; }, titleMarker);
+      await page.bringToFront();
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
     await page.getByRole('button', { name: 'Enable observation', exact: true }).click();
     await page.getByText(/^Capturing locally:/).waitFor();
     const capturing = await rpc('zero.observation.status');
@@ -314,6 +321,27 @@ try {
     assert.ok(capturing.counters.processed > 0);
     const recent = await rpc('zero.observation.recent');
     assert.equal(recent.ok, true); assert.ok(recent.observations[0].summary);
+    let recall = null;
+    if (process.argv.includes('--screen-recall')) {
+      const visible = await browser.newPage();
+      await visible.setContent(`<title>${titleMarker}</title><h1>Controlled observation recall window</h1>`);
+      await visible.bringToFront();
+      let observed;
+      const deadline = Date.now() + 15000;
+      do {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        observed = await rpc('zero.observation.query', { query: 'current window' });
+      } while (!observed.latestObservation?.window_context.includes(titleMarker) && Date.now() < deadline);
+      assert.ok(observed.latestObservation.window_context.includes(titleMarker), 'Actual native capture must observe our unique visible title');
+      const sessionKey = 'actual-screen-recall';
+      const result = await rpc('chat.send', { sessionKey, message: 'Call screen_context with query "current window". Return the last recorded window title exactly as the tool reports it. Do not guess.' });
+      assert.ok(result.content.includes(titleMarker), 'The model was not given the title and must retrieve it from actual observation memory');
+      const history = await rpc('chat.history', { sessionKey });
+      assert.ok(history.messages.some(message => message.tool_calls?.some(call => call.function?.name === 'screen_context')));
+      assert.ok(history.messages.some(message => message.role === 'tool' && message.content.includes(titleMarker)));
+      recall = { taskId: result.taskId, actualNativeTitleRetrieved: true, toolCallAndResultRecorded: true };
+      await visible.close(); await page.bringToFront();
+    }
     await page.getByRole('button', { name: 'Private Mode', exact: true }).click();
     await page.getByText(/^Private Mode is on\./).waitFor();
     const privateState = await rpc('zero.observation.status');
@@ -337,7 +365,7 @@ try {
     assert.equal(stopped.preferenceEnabled, false); assert.equal(stopped.captureRunning, false);
     return { actualFrames: capturing.observer.buffer.frameCount, persistedSummaries: capturing.counters.processed,
       privateClearedFrames: true, privatePersistedAcrossProcess: true, enabledResumedAfterProcessRestart: true,
-      disabledPersisted: true, encryptedFields: resumed.observer.observationStore.encryptedFields, localVision: 'UNVERIFIED', completed24Hours: false };
+      disabledPersisted: true, encryptedFields: resumed.observer.observationStore.encryptedFields, modelRecall: recall, localVision: 'UNVERIFIED', completed24Hours: false };
   });
   await check('Actual wheel input increases About scrollTop', async () => {
     await page.setViewportSize({ width: 1000, height: 400 });

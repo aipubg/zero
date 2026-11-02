@@ -1,0 +1,227 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL",
+    "REAL_OS"
+  ],
+  "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+  "startedAt": "2026-11-02T06:47:14.916Z",
+  "status": "FAIL",
+  "evidence": "E:\\zero\\artifacts\\functional-browser\\1793602034906",
+  "checks": [
+    {
+      "name": "Chat connects, native plugin activates, composer accepts text",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 475,
+      "details": {
+        "pageErrors": []
+      }
+    },
+    {
+      "name": "Memory search uses actual persisted records through the UI",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 271,
+      "details": {
+        "memoryId": "mem_semantic_1793602036321_7xg03",
+        "marker": "Browser memory evidence 65091"
+      }
+    },
+    {
+      "name": "Skills filter changes visible results",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 187,
+      "details": {
+        "query": "web-research"
+      }
+    },
+    {
+      "name": "Skills details expose persisted enable/disable controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 937,
+      "details": {
+        "disabledPersisted": true,
+        "reenabled": true
+      }
+    },
+    {
+      "name": "Search form executes its configured provider and reports real outcome",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "status": "PASS",
+      "durationMs": 1369,
+      "details": {
+        "sources": 5,
+        "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+        "sourceHttpStatus": 200,
+        "sourceBytes": 1030701,
+        "verifiedClaims": false
+      }
+    },
+    {
+      "name": "Plugins current page exposes lifecycle controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1676,
+      "details": {
+        "installedPersisted": true,
+        "executed": true,
+        "platform": "win32",
+        "verified": false,
+        "disabledAcrossProcessRestart": true,
+        "reenabled": true,
+        "uninstalled": true
+      }
+    },
+    {
+      "name": "About controls real native capture and durable Private Mode across process restarts",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_OS",
+        "REAL_EXTERNAL"
+      ],
+      "status": "FAIL",
+      "durationMs": 1433,
+      "error": "Actual native capture must observe our unique visible title"
+    },
+    {
+      "name": "Actual wheel input increases About scrollTop",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 191,
+      "details": {
+        "before": 0,
+        "scrollHeight": 1033,
+        "clientHeight": 165,
+        "after": 500
+      }
+    },
+    {
+      "name": "Gateway reconnects after a real process stop/restart and memory remains",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 4557,
+      "details": {
+        "oldPid": 13272,
+        "newPid": 9656,
+        "memoryCount": 1,
+        "closedAt": 1793602042924,
+        "reconnectedAt": 1793602045256,
+        "completedRequestReplay": null
+      }
+    }
+  ],
+  "pageErrors": [],
+  "rpcDiagnostics": [
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-02T06:47:27.500Z"
+}
