@@ -34,14 +34,17 @@ import { TaskStateMachine, AgentMessageBus, DesktopLeaseManager, AgentTeamOrches
 import { AutomationScheduler, EventAutomationEngine, AUTOMATION_TEMPLATES } from '../../packages/automation/index.mjs';
 import { PersistentMemoryStore, UnifiedMemoryEngine, MEMORY_LAYERS } from '../../packages/memory/index.mjs';
 import { SkillLoader } from '../../packages/skill-sdk/index.mjs';
+import { handleSkillsUi, SKILLS_UI_METHODS } from './skills-ui.mjs';
+import { handlePluginsUi, PLUGINS_UI_METHODS } from './plugins-ui.mjs';
 import { PluginManager } from '../../packages/plugin-sdk/index.mjs';
 import { ResearchEngine } from '../../packages/research-engine/index.mjs';
 import { WorkspaceManager } from '../../packages/workspaces/index.mjs';
 import { DeviceManager } from '../../packages/device-protocol/index.mjs';
 import { VoiceEngine } from '../../packages/voice-engine/index.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
+import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
-import { canonicalScreenObserver } from '../../packages/screen-intelligence/index.mjs';
+import { createScreenObserver } from '../../packages/screen-intelligence/index.mjs';
 import { handleZeroGatewayRequest } from '../../backend/gateway/server.mjs';
 import {
   isValidLoopbackHost,
@@ -97,6 +100,8 @@ export class ZeroNativeHost {
   constructor(options = {}) {
     this.port = options.port || Number(process.env.ZERO_PORT || process.env.PORT || 18789);
     this.host = options.host || '127.0.0.1';
+    this.configPath = options.configPath || process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+    this.prefsPath = options.prefsPath || process.env.ZERO_PREFS_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'user-prefs.json');
     this.bootId = `zero_boot_${Date.now()}`;
     this.bootedAt = Date.now();
     this.activeTurns = new Map();
@@ -136,12 +141,13 @@ export class ZeroNativeHost {
     this.expectedToken = resolvedToken || this.loopbackUiToken;
 
     // Initialize persistence & state engines
-    const dataDir = path.join(REPO_ROOT, '.zero-data');
+    const dataDir = options.dataDir || process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data');
     if (!fs.existsSync(dataDir)) {
       try { fs.mkdirSync(dataDir, { recursive: true }); } catch (_) {}
     }
 
     const sessionDb = path.join(dataDir, 'zero-sessions.sqlite');
+    this.screenObserver = createScreenObserver({ dataDir });
     this.modelFabric = new ModelFabric({
       configPath: path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
       aliases: { 'zero-lead': 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
@@ -150,14 +156,8 @@ export class ZeroNativeHost {
     this.tasks = new TaskStateMachine({ dbPath: path.join(dataDir, 'zero-tasks.sqlite') });
     this.messageBus = new AgentMessageBus({ db: this.tasks.db });
     this.leaseManager = new DesktopLeaseManager();
-    this.teamOrchestrator = new AgentTeamOrchestrator({
-      stateMachine: this.tasks,
-      messageBus: this.messageBus,
-      leaseManager: this.leaseManager,
-      logger: this.logger || console,
-    });
     canonicalCapabilityEngine.leaseManager = this.leaseManager;
-    this.skillLoader = new SkillLoader({ skillsDir: path.join(REPO_ROOT, 'skills') });
+    this.skillLoader = new SkillLoader({ skillsDir: options.skillsDir || process.env.ZERO_SKILLS_DIR || path.join(REPO_ROOT, 'skills') });
     this.pluginManager = new PluginManager({
       dbPath: path.join(dataDir, 'zero-plugins.sqlite'),
       capabilityEngine: canonicalCapabilityEngine,
@@ -172,9 +172,19 @@ export class ZeroNativeHost {
       baseDir: REPO_ROOT,
       storageDir: path.join(REPO_ROOT, 'artifacts'),
     });
+    this.teamOrchestrator = new AgentTeamOrchestrator({
+      stateMachine: this.tasks,
+      messageBus: this.messageBus,
+      leaseManager: this.leaseManager,
+      modelFabric: this.modelFabric,
+      capabilityEngine: canonicalCapabilityEngine,
+      researchEngine: this.researchEngine,
+      logger: this.logger || console,
+    });
     this.workspaceManager = new WorkspaceManager({
       dbPath: path.join(dataDir, 'zero-workspaces.sqlite'),
       baseStorageDir: path.join(REPO_ROOT, 'workspaces'),
+      stateMachine: this.tasks,
     });
     this.deviceManager = new DeviceManager({
       dbPath: path.join(dataDir, 'zero-devices.sqlite'),
@@ -182,6 +192,16 @@ export class ZeroNativeHost {
     this.voiceEngine = new VoiceEngine({
       modelFabric: this.modelFabric,
     });
+
+    const tool = (name, description, parameters, handler) => canonicalCapabilityEngine.registerCapability({ name, description, parameters, handler });
+    registerLocalTools(canonicalCapabilityEngine, { cwd: REPO_ROOT });
+    tool('research_search', 'Retrieve real search results and provenance. Retrieved sources are not independently verified.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => this.researchEngine.searchEngine.search(args.query, args));
+    tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
+    tool('memory_remember', 'Persist a fact with provenance for later retrieval.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
+    tool('screen_context', 'Retrieve real local screen observations; may be empty when observation is stopped.', { type: 'object', properties: { query: { type: 'string' } } }, args => this.screenObserver.queryContext(args.query));
+    this.skillLoader.executionContext = { stateMachine: this.tasks, modelFabric: this.modelFabric, capabilityEngine: canonicalCapabilityEngine };
+    tool('skills_list', 'Discover installed skills and their descriptions.', { type: 'object' }, () => ({ skills: this.skillLoader.listSkills() }));
+    tool('skill_execute', 'Execute an enabled installed skill through a durable task and the model/tool loop.', { type: 'object', properties: { name: { type: 'string' }, goal: { type: 'string' } }, required: ['name', 'goal'] }, (args, signal) => this.skillLoader.executeSkill(args.name, args, { signal }));
 
 
     this.automation = new AutomationScheduler({
@@ -244,6 +264,7 @@ export class ZeroNativeHost {
   }
 
   async start() {
+    await this.pluginManager.initialize();
     const wsModule = await loadWs();
     const WebSocketServer = wsModule.WebSocketServer;
 
@@ -675,7 +696,7 @@ export class ZeroNativeHost {
           'agent.task.plan', 'agent.task.execute',
           'agent.lease.status', 'agent.lease.acquire', 'agent.lease.release', 'agent.lease.force_release',
           'tasks.checkpoint.save', 'tasks.checkpoint.get', 'tasks.checkpoint.list', 'tasks.retry',
-'skills.list', 'skills.get', 'skills.create', 'skills.match',
+          'skills.list', 'skills.get', 'skills.create', 'skills.match', 'skills.execute',
           'plugins.list', 'plugins.install', 'plugins.enable', 'plugins.disable', 'plugins.uninstall', 'plugins.diagnostics',
 'research.search', 'research.file.read', 'research.file.write', 'research.file.list',
           'research.artifact.create', 'research.artifact.get', 'research.artifact.list', 'research.artifact.verify',
@@ -686,6 +707,14 @@ export class ZeroNativeHost {
           'devices.pair.generateCode', 'devices.pair.claim', 'devices.list', 'devices.get', 'devices.unpair',
           'devices.notify', 'devices.notifications.list', 'devices.notifications.markRead',
           'voice.session.start', 'voice.session.stop', 'voice.chunk', 'voice.synthesize', 'voice.transcribe', 'voice.status',
+          'voice.microphone.start', 'voice.microphone.stop',
+          'sessions.messages.subscribe', 'sessions.messages.unsubscribe', 'sessions.observer.visibility',
+          'sessions.subscribe', 'config.get', 'config.patch', 'config.schema', 'config.schema.lookup',
+          'users.self', 'users.prefs.get', 'users.prefs.set', 'models.authStatus',
+          'memory.search', 'agents.workspace.get', 'doctor.memory.status', 'webSearch.status', 'webSearch.test',
+          'zero.observation.query', 'zero.observation.control',
+          ...SKILLS_UI_METHODS,
+          ...PLUGINS_UI_METHODS,
         ];
 
         if (parsed.isReferenceWire) {
@@ -815,6 +844,7 @@ export class ZeroNativeHost {
       'sessions.delete': ['operator.write', 'operator.admin'],
     };
 
+    if (!METHOD_SCOPES[method] && /^(skills\.(install|import|update|uninstall|enable|disable|config|create|execute|library\.(save|mutate|import))|plugins\.(install|update|enable|disable|uninstall|execute|setEnabled|restart|remove)|voice\.microphone\.|zero\.observation\.control)/.test(method)) METHOD_SCOPES[method] = ['operator.admin', 'operator.write'];
     if (METHOD_SCOPES[method]) {
       const required = METHOD_SCOPES[method];
       const hasScope = Boolean(
@@ -830,6 +860,8 @@ export class ZeroNativeHost {
       }
     }
 
+    if (SKILLS_UI_METHODS.includes(method)) return await handleSkillsUi(method, params, this.skillLoader);
+    if (PLUGINS_UI_METHODS.includes(method)) return await handlePluginsUi(method, params, this.pluginManager);
     switch (method) {
       case 'health':
       case 'gateway.health':
@@ -840,8 +872,8 @@ export class ZeroNativeHost {
           version: '1.0.0',
           runtime: 'zero-native',
           plugins: {
-            loaded: ['zero-policy', 'zero-system', 'browser', 'computer', 'zero-control-ui'],
-            errors: [],
+            loaded: this.pluginManager.listPlugins().filter(plugin => plugin.loaded).map(plugin => plugin.id),
+            errors: this.pluginManager.getDiagnostics().plugins.filter(plugin => plugin.error).map(plugin => ({ id: plugin.id, error: plugin.error })),
           },
         };
 
@@ -877,15 +909,15 @@ export class ZeroNativeHost {
           ok: true,
           status: 'ok',
           features: {
-            models: { active: true, streaming: true, localGguf: true, cloudProviders: true },
-            agents: { active: true, delegation: true, teams: true, leaseLock: true },
-            computer: { active: true, platform: 'win32', automation: ['uia', 'dom', 'user32'] },
+            models: { implemented: true, configuredModels: this.modelFabric.listModels().length, configuredProviders: this.modelFabric.getProviders().length, providerReachability: 'untested' },
+            agents: { implemented: true, delegation: true, teams: this.teamOrchestrator.listTeams().length, planning: 'heuristic-partial' },
+            computer: { available: process.platform === 'win32', platform: process.platform, verification: 'per-action' },
             memory: { active: true, store: 'sqlite-wal' },
             automation: { active: true, scheduler: 'durable-cron' },
-            skills: { active: true, nativeCount: 11 },
-            plugins: { active: true, nativeSdk: true },
-            voice: { active: false, plannedPhase: 15 },
-            screen: { active: true, rollingBuffer: true, changeDetection: true, persistentMemory: true },
+            skills: { implemented: true, installedCount: this.skillLoader.listSkills().length },
+            plugins: { implemented: true, ...this.pluginManager.getDiagnostics() },
+            voice: { status: 'PARTIAL', ...this.voiceEngine.getStatus() },
+            screen: { ...this.screenObserver.getStatus(), localVision: 'unavailable', encryptedAtRest: false, completed24Hours: false },
           },
           timestamp: Date.now(),
         };
@@ -898,9 +930,9 @@ export class ZeroNativeHost {
             {
               id: 'zero',
               name: 'Zero',
-              identity: 'personal-commander',
+              identity: { name: 'Zero' },
               description: 'Zero Autonomous Personal AI Commander',
-              model: 'nvidia/nemotron-3.5-lightning-30b-a3b',
+              model: { primary: this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || null },
             },
           ],
         };
@@ -957,7 +989,7 @@ export class ZeroNativeHost {
       case 'sessions.patch': {
         const key = params.key || params.id || params.sessionKey;
         if (!key) throw new Error('Session key is required');
-        const patched = this.sessions.patchSession(key, params);
+        const patched = this.sessions.patchSession(key, { ...params, metadata: { ...params.metadata, ...(params.model ? { model: params.model } : {}) } });
         if (!patched) throw new Error(`Session '${key}' not found`);
         return {
           ok: true,
@@ -995,7 +1027,7 @@ export class ZeroNativeHost {
 
         // Record user message
         this.sessions.appendMessage(sessionKey, { role: 'user', content: userContent });
-        return await this._executeAgentTurn({ sessionKey, userContent, ws, isReferenceWire, clientSession });
+        return await this._executeAgentTurn({ sessionKey, userContent, model: params.model, ws, isReferenceWire, clientSession });
       }
 
       case 'chat.abort': {
@@ -1029,7 +1061,8 @@ export class ZeroNativeHost {
       }
 
       case 'plugins.controlUi.list': {
-        const rev = '36a42defcd8df5b5112abb20e7ac5632ac511b36de5e755644122d0182bd5e46';
+        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
+        const rev = manifest.controlUi.entry.split('/').at(-2);
         return {
           revision: rev,
           plugins: [
@@ -1037,8 +1070,8 @@ export class ZeroNativeHost {
               pluginId: 'zero-control-ui',
               name: 'Zero Control UI',
               revision: rev,
-              entryUrl: `/plugins/control-ui/zero-control-ui/${rev}/index.js`,
-              styles: [`/plugins/control-ui/zero-control-ui/${rev}/index.css`],
+              entryUrl: `/__openclaw__/plugins/control-ui/zero-control-ui/${rev}/index.js`,
+              styles: [`/__openclaw__/plugins/control-ui/zero-control-ui/${rev}/index.css`],
             },
           ],
           diagnostics: [],
@@ -1139,6 +1172,10 @@ export class ZeroNativeHost {
 
       case 'zero.computer.control': {
         const requestedAction = params.action || params.capability || params.toolName;
+        if (['status', 'take', 'release'].includes(requestedAction)) {
+          const result = await this._dispatchRpc(`zero-policy.computer-hold.${requestedAction}`, params, clientSession, ws, isReferenceWire);
+          return { ...result, held: this.computerHold.held, owned: this.computerHold.heldBy === clientSession?.clientId, scope: 'global', resumeSnapshotRequired: false };
+        }
         const isObservation = ['screenshot', 'get_screen_size', 'get_cursor', 'get_cursor_position', 'get_window_state', 'list_windows', 'list_apps', 'get_elements', 'get_uia_elements', 'clipboard_get', 'wait'].includes(requestedAction);
         if (this.computerHold.held && !isObservation) {
           return { ok: false, error: 'Action refused: Human takeover hold is currently active.' };
@@ -1156,22 +1193,31 @@ export class ZeroNativeHost {
         try {
           windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {});
         } catch {}
-        const observerTelemetry = canonicalScreenObserver.getStatus();
+        const observerTelemetry = this.screenObserver.getStatus();
         return {
           ok: true,
-          screen: { available: true, active: true },
-          accessibility: { available: true, active: true, engine: 'UIAutomation' },
+          screen: { available: process.platform === 'win32', active: observerTelemetry.running },
+          accessibility: { available: Boolean(windowState?.ok), engine: 'UIAutomation' },
           activeWindow: windowState?.window || null,
           observer: observerTelemetry,
         };
       }
 
       case 'zero.observation.query': {
-        const queryRes = canonicalScreenObserver.queryContext(params.query || '');
+        const queryRes = this.screenObserver.queryContext(params.query || '');
         return {
           ok: true,
           ...queryRes,
         };
+      }
+
+      case 'zero.observation.control': {
+        if (params.action === 'start') await this.screenObserver.start();
+        else if (['stop', 'private-on'].includes(params.action)) {
+          await this.screenObserver.stop();
+          if (params.action === 'private-on') this.screenObserver.buffer.clear();
+        } else throw new Error('Observation action must be start, stop or private-on');
+        return { ok: true, observer: this.screenObserver.getStatus() };
       }
 
       case 'zero.integrations.cli.status':
@@ -1244,6 +1290,31 @@ export class ZeroNativeHost {
 
       case 'memory.recall':
         return this.unifiedMemory.recall(params.query || '', params.options || params);
+
+      case 'memory.search': {
+        const memories = this.unifiedMemory.recall(params.query || '', { agentId: params.agentId, limit: params.limit || 20 });
+        return { results: memories.map(record => ({ path: `zero-memory:${record.id}`, startLine: 1, endLine: record.content.split('\n').length, score: record.score ?? 1, snippet: record.content, source: 'memory' })) };
+      }
+
+      case 'agents.workspace.get': {
+        if (!params.path?.startsWith('zero-memory:')) throw new Error('Unsupported workspace path');
+        const record = this.unifiedMemory.getMemory(params.path.slice('zero-memory:'.length));
+        if (!record || (record.agentId !== '*' && record.agentId !== (params.agentId || 'zero'))) throw new Error('Memory not found');
+        return { file: { path: params.path, encoding: 'utf8', content: record.content } };
+      }
+
+      case 'doctor.memory.status':
+        return { agentId: params.agentId || 'zero', provider: 'zero-sqlite', searchRuntimeRegistered: true, embedding: { ok: false, error: 'Keyword retrieval is available; no vector embedding runtime configured.' } };
+
+      case 'webSearch.status': {
+        const selected = this.modelFabric.resolveAgentModel(params.agentId || 'zero');
+        return { enabled: true, provider: 'multi-source', agentId: params.agentId || 'zero', model: { provider: selected?.provider.id || '', id: selected?.canonicalModelId || '', runtime: 'zero', runtimeLabel: 'Zero Model Fabric' }, providers: [{ id: 'multi-source', pluginId: 'zero-research', label: 'DuckDuckGo + Wikipedia', configured: true, installed: true, available: true, requiresCredential: false, credentialSource: 'none', configPath: [] }], route: { kind: 'managed', label: 'Live search providers (reachability untested)', provider: 'multi-source', testable: true } };
+      }
+
+      case 'webSearch.test': {
+        const result = await this.researchEngine.searchEngine.search(params.query, params);
+        return { ...result, ok: result.status === 'ok', latencyMs: result.durationMs, provider: 'multi-source', results: result.citations.map(c => ({ title: c.title, url: c.url, snippet: c.snippet })), error: result.notice };
+      }
 
       case 'memory.forget':
         return this.unifiedMemory.forget(params.id);
@@ -1381,12 +1452,15 @@ export class ZeroNativeHost {
       case 'skills.match':
         return { ok: true, match: this.skillLoader.matchSkill(params.prompt) };
 
+      case 'skills.execute':
+        return await this.skillLoader.executeSkill(params.name || params.skillName, params, { capabilityEngine: this.capabilityEngine });
+
       // Plugins SDK RPCs
       case 'plugins.list':
         return { ok: true, plugins: this.pluginManager.listPlugins(params) };
 
       case 'plugins.install':
-        return { ok: true, plugin: await this.pluginManager.installPlugin(params.manifest, params.handlers) };
+        return { ok: true, plugin: await this.pluginManager.installPlugin(params.source || params.path || params.package ? params : params.manifest) };
 
       case 'plugins.enable':
         return { ok: true, plugin: await this.pluginManager.enablePlugin(params.id || params.pluginId) };
@@ -1447,7 +1521,7 @@ export class ZeroNativeHost {
         return { ok: true, project: this.workspaceManager.createProject(params) };
 
       case 'projects.list':
-        return { ok: true, projects: this.workspaceManager.listProjects() };
+        return { ok: true, projects: this.workspaceManager.listProjects().map(project => ({ ...project, displayName: project.name, aliases: [], repositories: [] })) };
 
       case 'projects.get':
         return { ok: true, project: this.workspaceManager.getProject(params.id) };
@@ -1512,7 +1586,14 @@ export class ZeroNativeHost {
         return await this.voiceEngine.transcribe(params.sessionId);
 
       case 'voice.status':
-        return { ok: true, ...this.voiceEngine.getStatus() };
+        return { ok: true, status: 'PARTIAL', ...this.voiceEngine.getStatus() };
+
+      case 'voice.microphone.start':
+        this.voiceEngine.startSession(params.sessionId);
+        return await this.voiceEngine.startMicrophone(params.sessionId);
+
+      case 'voice.microphone.stop':
+        return await this.voiceEngine.stopMicrophone(params.sessionId);
 
 
 
@@ -1520,6 +1601,7 @@ export class ZeroNativeHost {
 
       // Control UI Lifecycle & Capability Handlers
       case 'sessions.subscribe':
+      case 'sessions.messages.subscribe':
       case 'sessions.subscribeMessages': {
         const sessionKey = params.key || params.sessionKey || params.id || 'agent:zero:main';
         if (!ws.subscribedSessions) ws.subscribedSessions = new Set();
@@ -1533,6 +1615,16 @@ export class ZeroNativeHost {
         return { ok: true, subscribed: false, sessionKey };
       }
 
+      case 'sessions.messages.unsubscribe': {
+        const sessionKey = params.key || params.sessionKey;
+        ws?.subscribedSessions?.delete(sessionKey);
+        return { ok: true, subscribed: false, sessionKey };
+      }
+
+      case 'sessions.observer.visibility':
+        if (ws) ws.observerVisibility = { ...params, updatedAt: Date.now() };
+        return { ok: true };
+
       case 'sessions.active':
         return { sessionKey: 'agent:zero:main' };
 
@@ -1540,7 +1632,7 @@ export class ZeroNativeHost {
         return { ok: true, involvement: params.involvement || 'active' };
 
       case 'config.get': {
-        const configPath = path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+        const configPath = this.configPath;
         let cfg = { gateway: { port: this.port, bind: this.host }, models: { default: 'zero-lead' } };
         try {
           if (fs.existsSync(configPath)) {
@@ -1548,13 +1640,26 @@ export class ZeroNativeHost {
           }
         } catch {}
         const hash = crypto.createHash('sha256').update(JSON.stringify(cfg)).digest('hex').slice(0, 16);
-        return { config: cfg, hash };
+        const config = this._redactSecrets(cfg);
+        return { config, parsed: config, raw: JSON.stringify(config, null, 2), hash, valid: true, exists: true, path: configPath };
+      }
+
+      case 'config.schema':
+      case 'config.schema.lookup': {
+        const current = await this._dispatchRpc('config.get', {}, clientSession, ws, isReferenceWire);
+        const infer = value => Array.isArray(value) ? { type: 'array', items: value.length ? infer(value[0]) : {} } : value && typeof value === 'object' ? { type: 'object', additionalProperties: true, properties: Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, infer(entry)])) } : { type: value === null ? 'null' : typeof value };
+        let schema = infer(current.config);
+        if (method === 'config.schema.lookup') {
+          const parts = Array.isArray(params.path) ? params.path : String(params.path || '').split('.').filter(Boolean);
+          for (const part of parts) schema = schema?.properties?.[part] ?? {};
+        }
+        return { schema, uiHints: {}, version: 'zero-native-1', generatedAt: new Date().toISOString(), path: params.path };
       }
 
       case 'config.set':
       case 'config.patch':
       case 'config.apply': {
-        const configPath = path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+        const configPath = this.configPath;
         let currentCfg = {};
         try {
           if (fs.existsSync(configPath)) {
@@ -1562,7 +1667,8 @@ export class ZeroNativeHost {
           }
         } catch {}
 
-        const updates = params.updates || params.config || params;
+        if (params.baseHash && params.baseHash !== crypto.createHash('sha256').update(JSON.stringify(currentCfg)).digest('hex').slice(0, 16)) throw new Error('Configuration changed; reload before saving.');
+        const updates = typeof params.raw === 'string' ? JSON.parse(params.raw) : params.updates || params.config || params;
         if (typeof updates !== 'object' || updates === null) {
           throw new Error('Config payload must be a valid JSON object');
         }
@@ -1576,6 +1682,8 @@ export class ZeroNativeHost {
 
         const deepMerge = (target, source) => {
           for (const key of Object.keys(source)) {
+            if (['__proto__', 'constructor', 'prototype'].includes(key) || key.split('.').some(part => ['__proto__', 'constructor', 'prototype'].includes(part))) throw new Error('Invalid configuration key');
+            if (source[key] === '[REDACTED]') continue;
             if (key.includes('.')) {
               const parts = key.split('.');
               let curr = target;
@@ -1634,7 +1742,7 @@ export class ZeroNativeHost {
         };
 
       case 'users.prefs.get': {
-        const prefsPath = path.join(REPO_ROOT, 'zero-system', 'config', 'user-prefs.json');
+        const prefsPath = this.prefsPath;
         let prefs = {};
         try {
           if (fs.existsSync(prefsPath)) {
@@ -1645,7 +1753,7 @@ export class ZeroNativeHost {
       }
 
       case 'users.prefs.set': {
-        const prefsPath = path.join(REPO_ROOT, 'zero-system', 'config', 'user-prefs.json');
+        const prefsPath = this.prefsPath;
         let currentPrefs = {};
         try {
           if (fs.existsSync(prefsPath)) {
@@ -1669,12 +1777,13 @@ export class ZeroNativeHost {
             provider: p.id,
             configured: hasKey,
             authenticated: hasKey,
-            tested: hasKey,
+            tested: false,
             keyState: hasKey ? 'configured' : 'missing',
+            apiKey: hasKey ? { source: 'configured', status: 'static' } : undefined,
             baseUrl: p.baseUrl,
           };
         });
-        return { ok: true, providers };
+        return { ok: true, ts: Date.now(), providers: providers.map(p => ({ ...p, profiles: [], status: p.configured ? 'static' : 'missing' })) };
       }
 
       case 'agent.identity.get':
@@ -1709,7 +1818,7 @@ export class ZeroNativeHost {
     }
   }
 
-  async _executeAgentTurn({ sessionKey, userContent, ws, isReferenceWire, clientSession }) {
+  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession }) {
     if (this.computerHold.held) {
       return {
         ok: false,
@@ -1779,6 +1888,9 @@ export class ZeroNativeHost {
       },
     ];
 
+    for (const definition of canonicalCapabilityEngine.customCapabilities.values()) {
+      if (!definition.disabled) DESKTOP_TOOLS.push({ type: 'function', function: { name: definition.name, description: definition.description, parameters: definition.parameters || { type: 'object' } } });
+    }
     try {
       let currentMessages = this.sessions.getTranscript(sessionKey).map((m) => ({
         role: m.role,
@@ -1806,7 +1918,7 @@ export class ZeroNativeHost {
         }
 
         const modelPayload = {
-          model: 'zero-lead',
+          model: model || this.sessions.getSession(sessionKey)?.metadata?.model || this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || 'zero-lead',
           messages: currentMessages,
           tools: DESKTOP_TOOLS,
         };
@@ -1942,7 +2054,7 @@ export class ZeroNativeHost {
             action = args.action || (args.query ? 'play' : 'open_url');
           }
 
-          console.log(`[Zero Host] Model tool call '${fnName}' -> executing action '${action}' with args:`, args);
+          console.log(`[Zero Host] Model tool call '${fnName}' -> action '${action}', argument fields: ${Object.keys(args).join(', ')}`);
 
           if (ws && ws.readyState === 1) {
             const toolEventPayload = { sessionKey, tool: fnName, action, args };
@@ -1955,7 +2067,7 @@ export class ZeroNativeHost {
 
           const execRes = await canonicalCapabilityEngine.execute({
             agentId: clientSession?.clientId || 'zero',
-            toolName: fnName === 'browser' ? 'browser' : (fnName === 'open_app' ? 'open_app' : 'zero_computer_action'),
+            toolName: canonicalCapabilityEngine.customCapabilities.has(fnName) ? fnName : fnName === 'browser' ? 'browser' : (fnName === 'open_app' ? 'open_app' : 'zero_computer_action'),
             args: { action, ...args },
             signal: abortController.signal,
           });
@@ -2095,14 +2207,16 @@ export class ZeroNativeHost {
     if (this.server) {
       await new Promise((resolve) => this.server.close(resolve));
     }
+    await this.workspaceManager?.close();
+    await this.pluginManager?.close();
+    await this.screenObserver?.destroy();
+    this.voiceEngine?.close();
     this.sessions.close();
     this.tasks.close();
     this.memory.close();
     this.unifiedMemory?.close();
     this.researchEngine?.close();
-    this.workspaceManager?.close();
     this.deviceManager?.close();
-    this.voiceEngine?.close();
     this.automation.close();
     this.eventAutomation?.close();
     console.log(`[Zero Host] Zero Native Gateway stopped cleanly (${options.reason || 'normal'}).`);

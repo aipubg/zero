@@ -121,9 +121,24 @@ test('Phase 2 UI Functional Interaction & Persistence Suite', async (suite) => {
       await page.goto(`${BASE_URL}/settings/about`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(300);
 
-      await page.evaluate(() => window.scrollTo(0, 300));
-      const scrollY = await page.evaluate(() => window.scrollY || document.documentElement.scrollTop || 0);
-      assert.ok(scrollY >= 0, 'Scroll position evaluated successfully');
+      const target = await page.locator('body *').evaluateAll(elements => {
+        const candidates = elements.filter(el => {
+          const style = getComputedStyle(el);
+          const box = el.getBoundingClientRect();
+          return box.width > 100 && box.height > 100 && el.scrollHeight > el.clientHeight + 20 && /(auto|scroll)/.test(style.overflowY);
+        });
+        const element = candidates.at(-1) || document.scrollingElement;
+        if (!element || element.scrollHeight <= element.clientHeight + 20) return null;
+        element.setAttribute('data-zero-scroll-test', 'active');
+        return { before: element.scrollTop };
+      });
+      assert.ok(target, 'About page must expose overflowing content at this viewport for the scroll gate');
+      const scroller = page.locator('[data-zero-scroll-test="active"]');
+      await scroller.hover();
+      await page.mouse.wheel(0, 400);
+      await page.waitForFunction(before => document.querySelector('[data-zero-scroll-test="active"]').scrollTop > before, target.before);
+      const after = await scroller.evaluate(element => element.scrollTop);
+      assert.ok(after > target.before, `Wheel interaction moved scrollTop from ${target.before} to ${after}`);
     });
 
     // 8. Form Data Persistence Roundtrip via RPC

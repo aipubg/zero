@@ -20,7 +20,10 @@ export default {
   activate(host) {
     if (typeof window !== "undefined") {
       window.__zero_surfaces_installed = true;
+      window.__zero_fallback_dispose?.();
+      window.__zero_fallback_dispose = null;
     }
+    if (typeof document !== 'undefined') document.getElementById?.("zero-permanent-top-actions")?.remove();
     const disposeRoutes = installLegacyRouteInterceptor(host);
     const disposeSurfaces = installNativeSurfaces(host);
     return () => {
@@ -29,19 +32,3 @@ export default {
     };
   },
 };
-
-if (typeof window !== "undefined") {
-  const bootZero = () => {
-    try {
-      if (!window.__zero_surfaces_installed) {
-        window.__zero_surfaces_installed = true;
-        installNativeSurfaces(window.__openclaw_host || window);
-      }
-    } catch {}
-  };
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootZero);
-  } else {
-    bootZero();
-  }
-}

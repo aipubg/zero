@@ -3,6 +3,7 @@ import { mountModelsPage } from "./pages/models.js";
 import { mountComputerHold } from "./computer/hold.js";
 import { agentRole } from "./shared/sessions.js";
 import { renderGenerativeWidgets } from "./spaces/generative-widgets.js";
+import { mountPluginInstall } from "./pages/plugin-install.js";
 import {
   SPECIALIST_AGENT_IDS,
   isAboutRoute,
@@ -42,6 +43,7 @@ const COMPUTER_SELECTOR = ".systems-desktop, .zero-computer-hold-host";
 const COMMUNITY_SELECTOR = ".sidebar-shell__invite, .community-invite-card";
 const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"]';
 const CHROME_SELECTOR = [
+  'openclaw-plugins-page',
   COMMUNITY_SELECTOR,
   STALE_PLUGIN_NAV_SELECTOR,
   ".sidebar-agent-card",
@@ -759,7 +761,7 @@ function installNativeSurfaces(host) {
       </button>
       <button class="zero-voice-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#0c1a2e;border:1px solid #0284c7;color:#38bdf8;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span>
-        Voice: Ready
+         Voice: Checking
       </button>
       <button class="zero-reasoning-toggle zero-reasoning-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#181611;border:1px solid #f59e0b;color:#fbbf24;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>
@@ -767,11 +769,11 @@ function installNativeSurfaces(host) {
       </button>
       <div class="zero-workforce-indicator" style="display:inline-flex;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#818cf8;"></span>
-        Workforce: 3 Agents
+         Workforce: Checking
       </div>
       <div class="zero-screen-intel-indicator" style="display:inline-flex;align-items:center;gap:6px;background:#064e3b;border:1px solid #059669;color:#6ee7b7;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34d399;"></span>
-        Screen Intel: Buffer OK (<250MB)
+         Screen Intel: Checking
       </div>
       <div class="zero-action-indicator" style="display:none;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;">
         <span class="zero-action-text">Zero: Ready</span>
@@ -779,8 +781,15 @@ function installNativeSurfaces(host) {
     `;
 
     const toggleBtn = pill.querySelector(".zero-control-toggle-btn");
-    toggleBtn?.addEventListener("click", () => {
-      controlActive = !controlActive;
+    let controlLeaseId = null;
+    toggleBtn?.addEventListener("click", async () => {
+      toggleBtn.disabled = true;
+      try {
+        const response = await host.request("zero.computer.control", controlActive ? { action: "take" } : { action: "release", controlLeaseId });
+        const state = response?.result ?? response;
+        if (state.ok === false) throw new Error(state.error || "Control request failed");
+        controlLeaseId = state.controlLeaseId ?? null;
+        controlActive = !state.held;
       if (controlActive) {
         toggleBtn.style.background = "#101c14";
         toggleBtn.style.borderColor = "#10b981";
@@ -792,12 +801,20 @@ function installNativeSurfaces(host) {
         toggleBtn.style.color = "#fb7185";
         toggleBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span> Computer Control: Standby';
       }
+      } catch (error) { toggleBtn.textContent = `Computer Control: ${error.message}`; }
+      finally { toggleBtn.disabled = false; }
     });
 
     let voiceActive = false;
     const voiceBtn = pill.querySelector(".zero-voice-toggle-btn");
-    voiceBtn?.addEventListener("click", () => {
-      voiceActive = !voiceActive;
+    voiceBtn?.addEventListener("click", async () => {
+      voiceBtn.disabled = true;
+      try {
+        const sessionId = "agent:zero:main";
+        const response = await host.request(voiceActive ? "voice.microphone.stop" : "voice.microphone.start", { sessionId });
+        const result = response?.result ?? response;
+        if (result.ok === false) throw new Error(result.error || "Microphone unavailable");
+        voiceActive = !voiceActive;
       if (voiceActive) {
         voiceBtn.style.background = "#14253d";
         voiceBtn.style.borderColor = "#0ea5e9";
@@ -809,6 +826,8 @@ function installNativeSurfaces(host) {
         voiceBtn.style.color = "#38bdf8";
         voiceBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span> Voice: Ready';
       }
+      } catch (error) { voiceBtn.textContent = `Voice: ${error.message}`; }
+      finally { voiceBtn.disabled = false; }
     });
 
     let reasoningActive = true;
@@ -839,6 +858,15 @@ function installNativeSurfaces(host) {
     });
 
     permContainer.appendChild(pill);
+    const show = async (method, selector, format) => {
+      try {
+        const response = await host.request(method, {});
+        if (!disposed && pill.isConnected) pill.querySelector(selector).textContent = format(response?.result ?? response);
+      } catch { if (pill.isConnected) pill.querySelector(selector).textContent = "Status unavailable"; }
+    };
+    void show("voice.status", ".zero-voice-toggle-btn", state => `Voice: ${state.status || "PARTIAL"}`);
+    void show("agents.list", ".zero-workforce-indicator", state => `Workforce: ${state.agents?.length ?? 0} configured`);
+    void show("zero.observation.status", ".zero-screen-intel-indicator", state => `Screen Intel: ${state.observer?.running ? "Capturing" : "Stopped"}`);
   };
 
   const sanitizeChatModelMenu = () => {
@@ -942,6 +970,7 @@ function installNativeSurfaces(host) {
     isApplyingChanges = true;
     try {
       syncComputerSurface();
+      if (routePath(currentLocation()) === '/settings/plugins') mountPluginInstall(document.querySelector('openclaw-plugins-page'), host);
       const currentPath = routePath(currentLocation());
       const kind = currentSurface(host);
       if (!kind) {
@@ -1011,7 +1040,7 @@ function installNativeSurfaces(host) {
   const isInsideZeroTree = (node) => {
     if (!node || node.nodeType !== 1) return false;
     return Boolean(
-      node.closest?.(".zero-native-surface, .zero-computer-hold-host, .zero-chat-control-pill, .zero-gen-widget, .zero-admin-config")
+      node.closest?.(".zero-native-surface, .zero-plugin-install, .zero-computer-hold-host, .zero-chat-control-pill, .zero-gen-widget, .zero-admin-config")
     );
   };
 
@@ -1074,7 +1103,7 @@ function installNativeSurfaces(host) {
     }
 
     // Intercept Ask Zero / caretaker chat clicks and redirect to /chat/zero
-    const askZeroLink = target.closest("a[href*='/custodian'], a[href*='custodian'], a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab, [data-sidebar-entry*='custodian'], .settings-sidebar__item:has-text('Ask Zero')");
+    const askZeroLink = target.closest("a[href*='/custodian'], a[href*='custodian'], a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab, [data-sidebar-entry*='custodian']");
     if (askZeroLink || (target.textContent && target.textContent.trim().toLowerCase().includes("ask zero"))) {
       const txt = (target.textContent || "").trim();
       const href = (askZeroLink?.getAttribute?.("href")) || "";
