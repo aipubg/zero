@@ -21,6 +21,19 @@ test('[INTEGRATION] actual GGUF removal preserves outside source, unrelated data
   await service.saveManifest({ id: 'external', name: 'External original', filename: path.basename(source), modelPath: source, zeroCopy: true, parameters: {} });
   const catalog = await service.scanModels();
   assert.ok(catalog.some(model => model.id === 'owned')); assert.ok(catalog.some(model => model.id === 'external'));
+  const externalManifest = path.join(modelsDir, 'external.manifest.json');
+  const originalManifest = fs.readFileSync(externalManifest, 'utf8');
+  for (const invalid of [{ contextLength: -1 }, { name: '' }, { capabilities: { image: 'yes' } }, { parameters: { num_ctx: NaN } }]) {
+    await assert.rejects(service.updateModelSettings('external', invalid));
+    assert.equal(fs.readFileSync(externalManifest, 'utf8'), originalManifest);
+  }
+  await service.updateModelSettings('external', { name: 'Renamed external', contextLength: 4096, capabilities: { reasoning: false } });
+  const reopened = new LocalGgufEngineService({ modelsDir });
+  const saved = await reopened.loadManifest('external');
+  assert.equal(saved.name, 'Renamed external'); assert.equal(saved.parameters.num_ctx, 4096);
+  assert.equal(saved.modelPath, source); assert.equal(saved.zeroCopy, true);
+  const manifestBackup = fs.readdirSync(modelsDir).find(name => name.startsWith('external.manifest.json.before-manifest-change-'));
+  assert.equal(fs.readFileSync(path.join(modelsDir, manifestBackup), 'utf8'), originalManifest);
   for (const id of ['../outside.txt', '..\\outside.txt', outside, 'owned/../outside']) await assert.rejects(service.deleteModel(id), /Invalid local model identifier/);
   await assert.rejects(service.saveManifest({ id: '../escape', modelPath: source }), /Invalid local model identifier/);
   assert.equal(fs.readFileSync(outside, 'utf8'), 'OUTSIDE');

@@ -283,7 +283,19 @@ try {
     await page.goto(`${base}/settings/model-providers`);
     const card = page.locator('.zero-provider-card--gguf'); await card.waitFor();
     assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 1);
+    await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
+    await page.locator('.zero-modal-overlay.active').getByRole('button', { name: 'Edit', exact: true }).click();
+    await page.getByPlaceholder('Display Name', { exact: true }).fill('Persisted GGUF Settings');
+    await page.locator('.zero-gguf-edit-panel select').selectOption('4096');
+    await page.getByLabel(/Enable Reasoning/).uncheck();
+    await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
+    await page.getByText('Updated settings for "Persisted GGUF Settings".', { exact: true }).waitFor();
+    const savedManifest = JSON.parse(fs.readFileSync(path.join(modelsDir, 'ui-proof.manifest.json'), 'utf8'));
+    assert.equal(savedManifest.name, 'Persisted GGUF Settings'); assert.equal(savedManifest.parameters.num_ctx, 4096); assert.equal(savedManifest.capabilities.reasoning, false);
     await stop(); await start(); await page.reload(); await card.waitFor();
+    await card.getByText('Persisted GGUF Settings', { exact: true }).waitFor();
+    const restoredModel = (await rpc('zero.gateway.localGguf', { action: 'list' })).models[0];
+    assert.equal(restoredModel.contextLength, 4096); assert.equal(restoredModel.capabilities.reasoning, false);
     let dialogs = 0; page.on('dialog', async dialog => { dialogs++; await dialog.dismiss(); });
     await card.locator('.zero-chip-delete').click();
     await page.getByText(/Model .* removed\./).waitFor();
@@ -303,7 +315,7 @@ try {
     assert.equal(await page.getByText(/28\.4 tok\/s/).count(), 0);
     assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 0);
     await page.goto(`${base}/settings/model-providers`);
-    return { realGgufCatalog: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: false };
+    return { realGgufCatalog: true, actualUISettingsSaved: true, settingsPersistedAcrossProcess: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: false };
   });
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');

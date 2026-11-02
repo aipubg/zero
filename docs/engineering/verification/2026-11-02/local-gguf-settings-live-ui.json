@@ -1,0 +1,659 @@
+{
+  "pass": {
+    "classification": [
+      "REAL_BROWSER",
+      "INTEGRATION",
+      "REAL_EXTERNAL"
+    ],
+    "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+    "startedAt": "2026-11-02T22:39:46.199Z",
+    "status": "PASS",
+    "evidence": "E:\\zero\\artifacts\\functional-browser\\1793659186188",
+    "checks": [
+      {
+        "name": "Chat connects, native plugin activates, composer accepts text",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 461,
+        "details": {
+          "pageErrors": []
+        }
+      },
+      {
+        "name": "Local GGUF catalog and UI removal persist without deleting user guides",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 2634,
+        "details": {
+          "realGgufCatalog": true,
+          "actualUISettingsSaved": true,
+          "settingsPersistedAcrossProcess": true,
+          "actualUIRemoval": true,
+          "persistedAcrossProcess": true,
+          "permissionDialogs": 0,
+          "userGuidesPreserved": true,
+          "originalSourceUnchanged": true,
+          "originalSourceSha256": "2a31195d3769c0b0fd0a4906201666108834848db768af11de1d2cef7cd35e65",
+          "escapedIdentifierRejected": true,
+          "actualUIMountFailureVisible": true,
+          "failedMountNoRegistration": true,
+          "inferenceVerifiedByThisCheck": false
+        }
+      },
+      {
+        "name": "Memory search uses actual persisted records through the UI",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 368,
+        "details": {
+          "memoryId": "mem_semantic_1793659190384_lxjgu",
+          "marker": "Browser memory evidence 53265"
+        }
+      },
+      {
+        "name": "Skills filter changes visible results",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 248,
+        "details": {
+          "query": "web-research"
+        }
+      },
+      {
+        "name": "Skills details expose persisted enable/disable controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1054,
+        "details": {
+          "disabledPersisted": true,
+          "reenabled": true
+        }
+      },
+      {
+        "name": "Search form executes its configured provider and reports real outcome",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_EXTERNAL"
+        ],
+        "status": "PASS",
+        "durationMs": 1182,
+        "details": {
+          "sources": 5,
+          "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+          "sourceHttpStatus": 200,
+          "sourceBytes": 1031660,
+          "verifiedClaims": false
+        }
+      },
+      {
+        "name": "Plugins current page exposes lifecycle controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1922,
+        "details": {
+          "installedPersisted": true,
+          "executed": true,
+          "platform": "win32",
+          "verified": false,
+          "disabledAcrossProcessRestart": true,
+          "reenabled": true,
+          "uninstalled": true
+        }
+      },
+      {
+        "name": "Actual wheel input increases About scrollTop",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 552,
+        "details": {
+          "before": 0,
+          "scrollHeight": 1033,
+          "clientHeight": 165,
+          "after": 500
+        }
+      },
+      {
+        "name": "Gateway reconnects after a real process stop/restart and memory remains",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1313,
+        "details": {
+          "oldPid": 11948,
+          "newPid": 7032,
+          "memoryCount": 1,
+          "closedAt": 1793659196346,
+          "reconnectedAt": 1793659197246,
+          "completedRequestReplay": null
+        }
+      }
+    ],
+    "pageErrors": [],
+    "rpcDiagnostics": [
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      }
+    ],
+    "connections": [
+      {
+        "openedAt": 1793659187132,
+        "closedAt": null,
+        "connectedAt": 1793659187277,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659187726,
+        "closedAt": 1793659188119,
+        "connectedAt": 1793659187748,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659188639,
+        "closedAt": 1793659189020,
+        "connectedAt": 1793659188689,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659189524,
+        "closedAt": null,
+        "connectedAt": 1793659189552,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659190171,
+        "closedAt": null,
+        "connectedAt": 1793659190230,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659190453,
+        "closedAt": null,
+        "connectedAt": 1793659190500,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659190871,
+        "closedAt": null,
+        "connectedAt": 1793659190911,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659191645,
+        "closedAt": null,
+        "connectedAt": 1793659191696,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659192365,
+        "closedAt": null,
+        "connectedAt": 1793659192404,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659193608,
+        "closedAt": null,
+        "connectedAt": 1793659193669,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659194134,
+        "closedAt": 1793659194417,
+        "connectedAt": 1793659194190,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659194926,
+        "closedAt": null,
+        "connectedAt": 1793659194982,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659195561,
+        "closedAt": null,
+        "connectedAt": 1793659195604,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659195820,
+        "closedAt": null,
+        "connectedAt": 1793659195859,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659196143,
+        "closedAt": 1793659196346,
+        "connectedAt": 1793659196264,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793659197223,
+        "closedAt": null,
+        "connectedAt": 1793659197246,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      }
+    ],
+    "finishedAt": "2026-11-02T22:39:57.624Z"
+  },
+  "priorFailedAttempts": [
+    {
+      "status": "FAIL",
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793658975977",
+      "failedChecks": [
+        {
+          "name": "Local GGUF catalog and UI removal persist without deleting user guides",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "status": "FAIL",
+          "durationMs": 8459,
+          "error": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Edit', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" class=\"zero-providers-btn zero-providers-btn--subtle\">Edit</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"zero-modal-overlay active\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"zero-modal-overlay active\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    15 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"zero-modal-overlay active\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ]
+    },
+    {
+      "status": "FAIL",
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793659089649",
+      "failedChecks": [
+        {
+          "name": "Local GGUF catalog and UI removal persist without deleting user guides",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "status": "FAIL",
+          "durationMs": 441,
+          "error": "locator.click: Error: strict mode violation: getByRole('button', { name: 'Edit', exact: true }) resolved to 2 elements:\n    1) <button type=\"button\" class=\"zero-providers-btn zero-providers-btn--subtle\">Edit</button> aka locator('#zero-models-providers-section').getByRole('button', { name: 'Edit' })\n    2) <button type=\"button\" class=\"zero-providers-btn zero-providers-btn--subtle\">Edit</button> aka getByRole('button', { name: 'Edit' }).nth(1)\n\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Edit', exact: true })\u001b[22m\n"
+        }
+      ],
+      "diagnostics": {
+        "overlays": [
+          {
+            "text": "Offline GGUF Model Manager×Installed Models (1)Mount Local Model (Zero-Copy)Hugg",
+            "z": "99999",
+            "pointer": "auto",
+            "display": "flex"
+          }
+        ],
+        "ancestors": [
+          {
+            "tag": "BUTTON",
+            "className": "zero-providers-btn zero-providers-btn--subtle",
+            "pointer": "auto",
+            "opacity": "1",
+            "z": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "zero-provider-card__actions",
+            "pointer": "auto",
+            "opacity": "1",
+            "z": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "zero-provider-card__header",
+            "pointer": "auto",
+            "opacity": "1",
+            "z": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "zero-provider-card",
+            "pointer": "auto",
+            "opacity": "1",
+            "z": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "zero-providers-list",
+            "pointer": "auto",
+            "opacity": "1",
+            "z": "auto"
+          }
+        ]
+      }
+    },
+    {
+      "status": "FAIL",
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793659122868",
+      "failedChecks": [
+        {
+          "name": "Local GGUF catalog and UI removal persist without deleting user guides",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "status": "FAIL",
+          "durationMs": 8494,
+          "error": "locator.uncheck: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel(/Enable Reasoning/)\u001b[22m\n"
+        }
+      ]
+    }
+  ]
+}

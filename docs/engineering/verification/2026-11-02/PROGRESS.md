@@ -1494,3 +1494,29 @@ setup, local chat assignment/inference, model load/self-test/settings workflows,
 or HF download. Those remain open; dispatch existence is not their acceptance.
 Endurance original PID 16744 remains live at about 0.690 hours, still IN_PROGRESS
 and resources PARTIAL. No owner running backend deployment is inferred from tests.
+
+### Repair real GGUF edit controls and persist validated settings atomically
+
+Actual edit workflow exposed a product UI bug: labels and Save button were passed
+to the text-only DOM helper and rendered as [object HTMLLabelElement] and
+[object HTMLButtonElement]. They now append as actual DOM controls, retaining
+the existing edit-panel layout. Earlier harness selectors also targeted the
+underlying cloud Edit button; those two failed attempts are retained separately
+from the third attempt that exposed the real missing controls.
+
+Manifest writes use exclusive temporary files, flush and atomic rename, retaining
+an exact prior-byte backup. Settings validate primitive field types, capability
+booleans, context bounds and parameters before writes; unknown models cannot be
+edited into a false success. Service test confirms invalid inputs leave original
+bytes intact, valid update reopens with unchanged model path/zero-copy state and
+the backup matches the original manifest.
+
+[local-gguf-settings-live-ui.json](local-gguf-settings-live-ui.json) records nine
+passing browser workflows plus all three earlier failed attempts. Actual dialog
+controls save the display name, context 4096 and reasoning false; independent file
+read and a real host restart confirm persistence in registry/UI. Subsequent actual
+removal, exact source SHA preservation and failed source mount checks also pass.
+This certifies metadata settings, not model inference or advertised capabilities.
+The real GGUF service preservation/backup test passes. Full arbitrary model runtime,
+local chat routing and HF download gates remain open. Endurance original PID 16744
+is still live; this source change is not hot-loaded or a 24-hour sign-off.

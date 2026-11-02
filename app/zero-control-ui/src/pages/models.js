@@ -1917,14 +1917,17 @@ export function mountModelsPage(container, context = {}) {
           }
         };
 
+        const contextLabel = element('div', null, 'Context Size:');
+        contextLabel.style.marginTop = '6px';
+        const settingRows = [[rLabel, 6], [vLabel, 4], [saveMBtn, 10]].map(([control, margin]) => {
+          const row = element('div'); row.style.marginTop = `${margin}px`; row.append(control); return row;
+        });
         editPanel.append(
           element("div", null, "Display Name:"),
           editNameInp,
-          element("div", { style: "margin-top:6px" }, "Context Size:"),
+          contextLabel,
           editCtxSel,
-          element("div", { style: "margin-top:6px" }, rLabel),
-          element("div", { style: "margin-top:4px" }, vLabel),
-          element("div", { style: "margin-top:10px" }, saveMBtn)
+          ...settingRows
         );
 
         editMBtn.onclick = () => {

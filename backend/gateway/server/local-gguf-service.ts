@@ -427,7 +427,14 @@ export class LocalGgufEngineService {
    */
   public async saveManifest(manifest: GgufModelManifest): Promise<string> {
     const manifestPath = this.getManifestPath(manifest.id);
-    await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+    const suffix = crypto.randomUUID();
+    const temporary = `${manifestPath}.${suffix}.tmp`;
+    if (fs.existsSync(manifestPath)) await fs.promises.copyFile(manifestPath, `${manifestPath}.before-manifest-change-${suffix}.json`, fs.constants.COPYFILE_EXCL);
+    try {
+      const file = await fs.promises.open(temporary, 'wx', 0o600);
+      try { await file.writeFile(JSON.stringify(manifest, null, 2)); await file.sync(); } finally { await file.close(); }
+      await fs.promises.rename(temporary, manifestPath);
+    } finally { if (fs.existsSync(temporary)) await fs.promises.unlink(temporary); }
     return manifestPath;
   }
 
@@ -1556,10 +1563,19 @@ export class LocalGgufEngineService {
       chatTemplate?: string;
     }
   ): Promise<LocalGgufModel> {
+    this.getManifestPath(modelId);
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) throw new Error('Invalid local model settings');
+    for (const key of ['name', 'systemPrompt', 'chatTemplate'] as const) if (updates[key] !== undefined && typeof updates[key] !== 'string') throw new Error(`Invalid local model setting: ${key}`);
+    if (updates.name !== undefined && !updates.name.trim()) throw new Error('Model display name must not be empty');
+    if (updates.contextLength !== undefined && (!Number.isInteger(updates.contextLength) || updates.contextLength < 512 || updates.contextLength > 8192)) throw new Error('Model context must be an integer between 512 and 8192');
+    if (updates.capabilities !== undefined && (!updates.capabilities || typeof updates.capabilities !== 'object' || Array.isArray(updates.capabilities) || Object.entries(updates.capabilities).some(([key, value]) => !['reasoning', 'image', 'embedding'].includes(key) || typeof value !== 'boolean'))) throw new Error('Invalid local model capabilities');
+    if (updates.parameters !== undefined && (!updates.parameters || typeof updates.parameters !== 'object' || Array.isArray(updates.parameters))) throw new Error('Invalid local model parameters');
+    if (updates.parameters?.num_ctx !== undefined && (!Number.isInteger(updates.parameters.num_ctx) || updates.parameters.num_ctx < 512 || updates.parameters.num_ctx > 8192)) throw new Error('Invalid local model context parameter');
     const cleanId = modelId.trim().replace(/\.gguf$/i, '').replace(/\.manifest\.json$/i, '');
     let manifest = await this.loadManifest(cleanId);
     const models = await this.scanModels();
     const target = models.find((m) => m.id === cleanId || m.filename === modelId);
+    if (!target) throw new Error(`Model "${modelId}" not found; settings were preserved.`);
 
     if (!manifest) {
       if (!target) throw new Error(`Model "${modelId}" not found.`);
