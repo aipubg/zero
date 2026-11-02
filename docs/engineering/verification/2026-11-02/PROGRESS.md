@@ -1372,3 +1372,24 @@ subsequent external runs. Two receipt/scope regression checks also pass.
 Endurance PID 16744 remains present with its original start time at this audit;
 its checkpoint is still IN_PROGRESS, completed24Hours false and resources PARTIAL.
 No current source edit is claimed to have hot-loaded into that long-running process.
+
+### Main assistant validates the whole streamed tool batch before execution
+
+Main Zero loop now validates every reconstructed tool call before admitting the
+assistant tool message or running the first action. Missing/duplicate IDs,
+undeclared tools, malformed JSON and non-object arguments fail the whole batch.
+Missing IDs are no longer synthesized. A terminal tool_calls/function_call reason
+with no actual calls also fails rather than accepting prose as completion.
+Rejected batches preserve their original calls in a failed task validation step
+with executed:false; malformed tool messages do not poison later model context.
+This is structural validation, not full JSON Schema validation or transactional
+rollback of successfully validated tools that fail during execution.
+
+[assistant-whole-batch-validation.json](assistant-whole-batch-validation.json)
+records a real HTTP/SSE controlled upstream through the actual native host,
+ModelFabric and assistant execution path. Five malformed scenarios all prevent
+the valid leading write_file from creating its target and retain FAILED receipts,
+tasks and non-executed validation evidence. This is CONTRACT evidence. Two reported
+checks, including scope isolation, pass. Actual external NVIDIA missing-file,
+write and identical-read recovery also PASS after the final edit, independently
+verifies file contents, and preserves failed/completed/completed durable steps.

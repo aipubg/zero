@@ -19,6 +19,7 @@ import crypto from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
+import { prepareToolBatch } from './tool-batch.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -2109,7 +2110,7 @@ export class ZeroNativeHost {
                 const idx = tc.index ?? 0;
                 if (!toolCallsMap.has(idx)) {
                   toolCallsMap.set(idx, {
-                    id: tc.id || `call_${Date.now()}_${idx}`,
+                    id: tc.id || '',
                     type: 'function',
                     function: {
                       name: tc.function?.name || '',
@@ -2158,6 +2159,11 @@ export class ZeroNativeHost {
         }
         // If no tool calls were requested, complete with the accumulated content from this single request
         if (toolCallsMap.size === 0) {
+          if (finishReason !== 'stop') {
+            const error = new Error('Model declared tool calls without calls');
+            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
+            throw error;
+          }
           finalContent = accumulatedContent;
           if (!firstTokenTime) firstTokenTime = Date.now();
           break;
@@ -2165,6 +2171,12 @@ export class ZeroNativeHost {
 
         // Reconstruct tool calls and execute capabilities
         const toolCalls = Array.from(toolCallsMap.values());
+        let prepared;
+        try { prepared = prepareToolBatch(toolCalls, new Set(DESKTOP_TOOLS.map(tool => tool.function.name))); }
+        catch (error) {
+          recordTool('tool_batch_validation', { calls: toolCalls }, { ok: false, executed: false, error: error.message });
+          throw error;
+        }
         const assistantMsg = {
           role: 'assistant',
           content: accumulatedContent || null,
@@ -2173,41 +2185,7 @@ export class ZeroNativeHost {
         currentMessages.push(assistantMsg);
         this.sessions.appendMessage(sessionKey, assistantMsg);
 
-        const executedCallIds = new Set();
-        for (const call of toolCalls) {
-          if (!call.id) call.id = `call_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-          if (executedCallIds.has(call.id)) {
-            console.warn(`[Zero Host] Skipping duplicate tool call ID '${call.id}'`);
-            continue;
-          }
-          executedCallIds.add(call.id);
-
-          const fnName = call.function?.name || '';
-          let args = {};
-          let parseError = null;
-          try {
-            args = typeof call.function?.arguments === 'string'
-              ? JSON.parse(call.function.arguments)
-              : (call.function?.arguments || {});
-          } catch (err) {
-            parseError = `Malformed tool arguments JSON: ${err.message}`;
-          }
-          if (!parseError && (!args || typeof args !== 'object' || Array.isArray(args))) parseError = 'Tool arguments must be a JSON object';
-
-          if (parseError) {
-            console.warn(`[Zero Host] Tool call argument parse failure for '${fnName}':`, parseError);
-            const errObservation = { ok: false, error: parseError, raw: call.function?.arguments };
-            executedActions.push({ action: fnName, args: {}, execRes: errObservation });
-            recordTool(fnName, { malformedArguments: call.function?.arguments }, errObservation);
-            const toolMsg = {
-              role: 'tool',
-              tool_call_id: call.id,
-              content: JSON.stringify(errObservation),
-            };
-            currentMessages.push(toolMsg);
-            this.sessions.appendMessage(sessionKey, toolMsg);
-            continue;
-          }
+        for (const { call, fnName, args } of prepared) {
 
           let action = args.action || fnName;
           if (fnName === 'open_app' || fnName === 'launch_app') action = 'open_app';

@@ -1,0 +1,50 @@
+{
+  "contract": {
+    "classification": [
+      "CONTRACT"
+    ],
+    "status": "PASS",
+    "command": "node --test test/assistant-tool-batch-contract.test.mjs test/assistant-write-scopes.test.mjs",
+    "reportedChecks": 2,
+    "streamedScenarios": [
+      "malformed JSON",
+      "duplicate call IDs",
+      "undeclared tool",
+      "missing call ID",
+      "declared calls with empty batch"
+    ],
+    "outcome": "No leading file effect, FAILED durable task/receipt, failed non-executed validation step, malformed transcript omitted"
+  },
+  "actualExternalRegression": {
+    "classification": [
+      "REAL_EXTERNAL",
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "startedAt": "2026-11-02T22:20:55.381Z",
+    "scope": "Actual model missing-file read followed by write and identical-argument verified read recovery; original error retained",
+    "durableToolSteps": [
+      {
+        "name": "read_file",
+        "status": "failed"
+      },
+      {
+        "name": "write_file",
+        "status": "completed"
+      },
+      {
+        "name": "read_file",
+        "status": "completed"
+      }
+    ],
+    "toolRecovery": {
+      "taskId": "task_1793658056093_fohcsz",
+      "failedReadPreserved": true,
+      "laterVerifiedRead": true,
+      "matchingReadArguments": true,
+      "actualContentVerified": true,
+      "status": "COMPLETED"
+    },
+    "finishedAt": "2026-11-02T22:21:04.089Z"
+  }
+}
