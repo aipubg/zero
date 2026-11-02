@@ -27,12 +27,14 @@ export class ModelFabric {
    * @param {Object} [options.aliases] - Model alias map (e.g. { 'zero-lead': 'nvidia/nemotron-3.5-lightning-30b-a3b' })
    */
   constructor(options = {}) {
-    this.configPath = options.configPath || (fs.existsSync(DEFAULT_CONFIG_PATH) ? DEFAULT_CONFIG_PATH : null);
+    this.configPath = Object.hasOwn(options, 'configPath') ? options.configPath
+      : Array.isArray(options.providers) ? null : (fs.existsSync(DEFAULT_CONFIG_PATH) ? DEFAULT_CONFIG_PATH : null);
     this.aliases = new Map(Object.entries({ ...DEFAULT_ALIASES, ...(options.aliases || {}) }));
     this.providers = new Map();
     this.healthStats = new Map();
     this.upstreamRequestCount = 0;
-    this.agentBindingsPath = options.agentBindingsPath || path.resolve(__dirname, '..', '..', 'models', 'gateway-defaults.json');
+    this.agentBindingsPath = Object.hasOwn(options, 'agentBindingsPath') ? options.agentBindingsPath
+      : Array.isArray(options.providers) ? null : path.resolve(__dirname, '..', '..', 'models', 'gateway-defaults.json');
     this.usageStats = {
       totalPromptTokens: 0,
       totalCompletionTokens: 0,
@@ -262,21 +264,25 @@ export class ModelFabric {
   }
 
   resolveAgentModel(agentId = 'zero') {
-    try {
-      if (this.agentBindingsPath && fs.existsSync(this.agentBindingsPath)) {
-        const raw = fs.readFileSync(this.agentBindingsPath, 'utf8');
-        const data = JSON.parse(raw);
-        const binding = data?.agentBindings?.[agentId]?.model;
-        if (binding) {
-          const resolved = this.resolveModel(binding);
-          if (resolved) return resolved;
-        }
-        if (data?.defaults?.primary) {
-          const resolved = this.resolveModel(data.defaults.primary);
-          if (resolved) return resolved;
-        }
+    if (this.agentBindingsPath && fs.existsSync(this.agentBindingsPath)) {
+      let data;
+      try { data = JSON.parse(fs.readFileSync(this.agentBindingsPath, 'utf8')); }
+      catch { throw new Error('Saved model assignments cannot be read; restore or correct the settings'); }
+      if (!data || typeof data !== 'object' || Array.isArray(data) ||
+          (data.agentBindings !== undefined && (!data.agentBindings || typeof data.agentBindings !== 'object' || Array.isArray(data.agentBindings))) ||
+          (data.defaults !== undefined && (!data.defaults || typeof data.defaults !== 'object' || Array.isArray(data.defaults)))) throw new Error('Invalid saved model assignments');
+      const binding = data.agentBindings?.[agentId]?.model;
+      if (binding !== undefined) {
+        const resolved = this.resolveModel(binding);
+        if (!resolved) throw new Error(`Assigned model for agent ${agentId} is unavailable; update its saved assignment`);
+        return resolved;
       }
-    } catch (_) {}
+      if (data.defaults?.primary !== undefined) {
+        const resolved = this.resolveModel(data.defaults.primary);
+        if (!resolved) throw new Error('Configured default model is unavailable; update the saved model settings');
+        return resolved;
+      }
+    }
     return this.resolveModel('zero-lead');
   }
 

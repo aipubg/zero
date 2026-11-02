@@ -1100,10 +1100,12 @@ export class ZeroNativeHost {
       case 'models.list':
       case 'gateway.models.list': {
         const models = this.modelFabric.listModels();
-        const defaultModel = 'nvidia/nemotron-3.5-lightning-30b-a3b';
+        const selection = modelSettings(this.modelFabric);
+        const defaultModel = selection.effectiveModel;
         return {
           models,
           defaultModel,
+          assignmentError: selection.assignmentError,
           providers: this.modelFabric.getProviders(),
         };
       }

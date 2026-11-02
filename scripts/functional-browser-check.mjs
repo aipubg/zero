@@ -172,14 +172,45 @@ try {
     assert.equal(JSON.parse(fs.readFileSync(path.join(temporary, 'bindings.json'), 'utf8')).agentBindings.zero.model, selected);
     await stop(); await start(); await page.reload();
     const settings = await rpc('zero.providers.list'); assert.equal(settings.agentBindings.zero.model, selected);
-    const result = await rpc('chat.send', { sessionKey: 'actual-model-assignment', message: 'What is two plus two? Reply with only the number.' });
+    await page.goto(`${base}/chat`);
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('What is two plus two? Reply with only the number.');
+    await page.locator('button.chat-send-btn--send').click();
+    const replyDeadline = Date.now() + 60000;
+    while ((!chatRequests.length || !chatResponses.some(response => response.payload?.runId === chatRequests.at(-1).idempotencyKey)) && Date.now() < replyDeadline) await new Promise(resolve => setTimeout(resolve, 100));
+    const completedReply = chatResponses.find(response => response.payload?.runId === chatRequests.at(-1)?.idempotencyKey);
+    assert.ok(completedReply?.ok, 'The real UI chat must complete using the newly assigned default');
+    const result = completedReply.payload;
     assert.match(result.content, /4/); assert.equal(result.requestedModel, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
     assert.ok(outboundModelRequests.length > 0 && outboundModelRequests.every(request => request.model === 'nvidia/nemotron-3.5-super-vl-120b-a12b'), 'Independent forwarding proxy must observe the actual selected model in every real upstream request');
     assert.ok(typeof result.providerModel === 'string' && result.providerModel.length > 0, 'Record the actual provider-reported model without rewriting it');
+    const beforeBlocked = outboundModelRequests.length;
+    await page.goto(`${base}/settings/model-providers`);
+    await rpc('zero.providers.save', { id: 'nv', enabled: false });
+    await page.reload();
+    await page.getByText('Assigned model for agent zero is unavailable; update its saved assignment', { exact: true }).waitFor();
+    await assert.rejects(rpc('chat.send', { sessionKey: 'unavailable-assignment', message: 'This must fail before any upstream request.' }), /Assigned model.*unavailable/);
+    assert.equal(outboundModelRequests.length, beforeBlocked, 'Unavailable assignment must not silently route to another default model');
+    assert.equal(JSON.parse(fs.readFileSync(path.join(temporary, 'bindings.json'), 'utf8')).agentBindings.zero.model, selected);
+    await rpc('zero.providers.save', { id: 'nv', enabled: true });
+    const bindingsFile = path.join(temporary, 'bindings.json');
+    const invalid = JSON.parse(fs.readFileSync(bindingsFile, 'utf8'));
+    invalid.agentBindings.zero.model = 'unavailable-provider/unknown';
+    fs.writeFileSync(bindingsFile, JSON.stringify(invalid)); // Actual saved-state fault injection; the valid default remains configured.
+    await page.reload();
+    await page.getByText('Assigned model for agent zero is unavailable; update its saved assignment', { exact: true }).waitFor();
+    await assert.rejects(rpc('chat.send', { sessionKey: 'invalid-saved-assignment', message: 'Do not substitute a different configured model.' }), /Assigned model.*unavailable/);
+    assert.equal(outboundModelRequests.length, beforeBlocked);
+    assert.equal(JSON.parse(fs.readFileSync(bindingsFile, 'utf8')).agentBindings.zero.model, 'unavailable-provider/unknown');
+    await page.locator('#zero-agent-assign-select button').click();
+    await page.locator(`#zero-agent-assign-select [role="option"][data-value="${selected}"]`).click();
+    await page.getByRole('button', { name: 'Assign to Zero', exact: true }).click();
+    await page.getByText(`Successfully assigned "${selected}" to Zero agent!`, { exact: true }).waitFor();
+    assert.equal(JSON.parse(fs.readFileSync(bindingsFile, 'utf8')).agentBindings.zero.model, selected);
     assert.equal(fs.readFileSync(path.join(root, 'models/gateway-defaults.json'), 'utf8'), owner, 'Owner model settings must remain unchanged');
     return { selected, requestedModel: result.requestedModel, independentlyObservedRequests: outboundModelRequests, providerModel: result.providerModel,
       providerIdentityMatchesRequestedName: result.providerModel === result.requestedModel, providerInternalAliasMappingVerified: false,
-      persistedAcrossProcess: true, actualReply: result.content, ownerSettingsPreserved: true };
+      persistedAcrossProcess: true, unavailableAssignmentBlockedWithoutUpstreamCall: true, invalidAssignmentBlockedWhileValidDefaultExists: true,
+      actualUIRepair: true, savedAssignmentPreserved: true, actualReply: result.content, ownerSettingsPreserved: true };
   });
   if (process.argv.includes('--providers')) await check('Provider UI creates, edits and deletes persisted settings without credential loss', async () => {
     const owner = fs.readFileSync(path.join(root, 'models/gateway-providers.json'), 'utf8');

@@ -5,9 +5,11 @@ import crypto from 'node:crypto';
 export function modelSettings(fabric) {
   const settings = fs.existsSync(fabric.agentBindingsPath) ? JSON.parse(fs.readFileSync(fabric.agentBindingsPath, 'utf8')) : {};
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new Error('Invalid model settings file');
+  let effectiveModel = null; let assignmentError = null;
+  try { effectiveModel = fabric.resolveAgentModel('zero')?.canonicalModelId || null; } catch (error) { assignmentError = error.message; }
   return { ok: true, providers: fabric.getProviders().map(provider => ({ ...provider, enabled: fabric.providers.get(provider.id)?.enabled !== false, models: (fabric.providers.get(provider.id)?.models || []).map(model => typeof model === 'string' ? model : Object.fromEntries(['id', 'name', 'image', 'reasoning', 'tools', 'contextWindow', 'maxTokens'].filter(key => Object.hasOwn(model, key)).map(key => [key, model[key]]))) })),
     defaults: settings.defaults || {}, agentBindings: settings.agentBindings || {}, offlineModels: [],
-    localModelsStatus: 'Not supplied by this configured-provider catalog', effectiveModel: fabric.resolveAgentModel('zero')?.canonicalModelId || null };
+    localModelsStatus: 'Not supplied by this configured-provider catalog', effectiveModel, assignmentError };
 }
 
 function writeProviders(fabric, providers) {

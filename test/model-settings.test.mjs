@@ -34,6 +34,8 @@ test('[CONTRACT] actual HTTP provider probe retrieves a model catalog and preser
   t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
   const baseUrl = `http://127.0.0.1:${server.address().port}/v1`;
   const fabric = new ModelFabric({ providers: [{ id: 'probe', baseUrl, apiKey: 'probe-secret', models: [] }] });
+  assert.equal(fabric.configPath, null); assert.equal(fabric.agentBindingsPath, null);
+  assert.throws(() => saveConfiguredProvider(fabric, { id: 'memory-only', baseUrl, models: [] }), /No provider configuration path/);
   const result = await probeConfiguredProvider(fabric, { id: 'probe' });
   assert.equal(authorization, 'Bearer probe-secret'); assert.equal(result.models[0].id, 'actual-catalog-entry'); assert.equal(result.verified, false);
   await assert.rejects(probeConfiguredProvider(fabric, { baseUrl: baseUrl + '/failed', apiKey: 'present-but-invalid' }), /HTTP 503/);
@@ -56,4 +58,11 @@ test('[INTEGRATION] model assignment persists across reopen, preserves unrelated
   const before = fs.readFileSync(agentBindingsPath, 'utf8');
   assert.throws(() => assignZeroModel(fabric, { modelId: 'local/unconfigured' }), /configured catalog/);
   assert.equal(fs.readFileSync(agentBindingsPath, 'utf8'), before);
+  saveConfiguredProvider(fabric, { id: 'local', enabled: false });
+  assert.throws(() => fabric.resolveAgentModel('zero'), /Assigned model.*unavailable/);
+  assert.equal(modelSettings(fabric).effectiveModel, null);
+  assert.match(modelSettings(fabric).assignmentError, /unavailable/);
+  saveConfiguredProvider(fabric, { id: 'local', enabled: true });
+  fs.writeFileSync(agentBindingsPath, '{broken');
+  assert.throws(() => fabric.resolveAgentModel('zero'), /cannot be read/);
 });

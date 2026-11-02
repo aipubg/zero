@@ -273,6 +273,8 @@ export function mountModelsPage(container, context = {}) {
   let disposed = false;
   let activeProviders = [];
   let offlineModels = [];
+  let effectiveModel = null;
+  let assignmentError = null;
   let systemDefaults = {
     primary: "",
     utility: "",
@@ -584,6 +586,8 @@ export function mountModelsPage(container, context = {}) {
     try {
       const data = await callGateway(host, "zero.providers.list");
       if (data && data.ok) {
+        effectiveModel = data.effectiveModel || null; assignmentError = data.assignmentError || null;
+        if (assignmentError) showNotice(assignmentError, true);
         activeProviders = Array.isArray(data.providers) ? data.providers : [];
         offlineModels = Array.isArray(data.offlineModels) ? data.offlineModels : [];
         if (data.defaults) {
@@ -623,6 +627,7 @@ export function mountModelsPage(container, context = {}) {
 
     // 2. Cloud provider models
     for (const p of activeProviders) {
+      if (p.enabled === false) continue;
       if (Array.isArray(p.models)) {
         for (const pm of p.models) {
           const mid = typeof pm === "string" ? pm : pm.id;
@@ -645,32 +650,12 @@ export function mountModelsPage(container, context = {}) {
 
     const isModelValid = (mId) => {
       if (!mId || typeof mId !== "string") return false;
-      const lower = mId.toLowerCase();
-      if (lower.includes("glm-5.3") || lower.includes("test-model") || lower.includes("zero-gateway") || lower === "default") return false;
       return validModelIdSet.has(mId);
     };
 
-    const safeFallbackId = allModelOptions[0]?.id || "nv/nvidia/nemotron-3.5-lightning-30b-a3b";
-
-    let effectivePrimary = systemDefaults.primary;
-    if (!isModelValid(effectivePrimary)) {
-      effectivePrimary = safeFallbackId;
-      systemDefaults.primary = safeFallbackId;
-    }
-    if (!isModelValid(systemDefaults.utility)) {
-      systemDefaults.utility = safeFallbackId;
-    }
-    if (systemDefaults.fallback && !isModelValid(systemDefaults.fallback)) {
-      systemDefaults.fallback = "";
-    }
-
-    let effectiveZeroModel = agentBindings?.zero?.model;
-    if (!isModelValid(effectiveZeroModel)) {
-      effectiveZeroModel = effectivePrimary;
-      if (!agentBindings) agentBindings = {};
-      if (!agentBindings.zero) agentBindings.zero = { allowOverride: true };
-      agentBindings.zero.model = effectivePrimary;
-    }
+    const effectivePrimary = isModelValid(systemDefaults.primary) ? systemDefaults.primary : '';
+    const savedZeroModel = agentBindings?.zero?.model;
+    const effectiveZeroModel = isModelValid(savedZeroModel) ? savedZeroModel : savedZeroModel ? '' : effectivePrimary;
 
     function fillSelect(selEl, emptyLabel, currentVal) {
       const options = [{ value: "", label: emptyLabel }];
@@ -700,7 +685,7 @@ export function mountModelsPage(container, context = {}) {
 
     fillSelect(agentModelSelect, "(Select Model for Zero Agent)", effectiveZeroModel);
 
-    activeModelVal.textContent = effectiveZeroModel || "default";
+    activeModelVal.textContent = assignmentError ? 'Unavailable' : effectiveModel || effectiveZeroModel || "Unassigned";
     fallbacksVal.textContent = systemDefaults.fallback || "None";
   }
 

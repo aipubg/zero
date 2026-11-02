@@ -1008,3 +1008,25 @@ CRUD is explicitly not claimed as an executable service. Twenty-six regressions
 pass across settings, model streaming, authorization and UI components. Provider
 import/export, all API variants, local-GGUF UI integration and internal provider
 alias identity remain separate open work; this is not full Models sign-off.
+
+Saved model routing now fails explicitly when an assigned/default model cannot
+resolve or its configuration is unreadable; it no longer silently selects
+zero-lead after those failures. In-memory provider fabrics no longer read/write owner
+provider or assignment files unless explicit paths are supplied. Configured owner
+hosts keep their existing paths. Catalog/settings reads still expose providers
+for repair and return assignmentError/effectiveModel:null when resolution fails.
+The Models UI displays Unavailable, excludes disabled choices and no longer
+mutates saved selections in memory to the first available model. Model-catalog
+default selection is derived from actual settings instead of a hard-coded ID.
+
+[models-no-silent-fallback-ui.json](models-no-silent-fallback-ui.json) passes
+all nine selected browser workflows. The positive case now sends through the
+actual chat composer after UI assignment/process restart; the independent proxy
+observes the selected NVIDIA model request and the real reply is 4. Negative
+cases disable the assigned provider and inject an actual invalid saved binding
+while a valid default remains configured: both fail before any extra upstream
+call, preserve the saved selection, and display the error. A real UI selection
+repairs the invalid binding. Owner files stay unchanged; provider internal alias
+mapping remains explicitly unverified. Fifteen settings/stream/skill regressions
+and 22 settings/UI checks pass. This is explicit failure/repair behavior, not
+general automatic provider failover or all alternate-provider compatibility.
