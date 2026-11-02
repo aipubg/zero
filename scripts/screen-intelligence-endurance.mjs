@@ -59,7 +59,7 @@ let persistenceEvidence = null;
 const firstRss = [], lastRss = [];
 const localVision = options['local-vision'] === 1 ? new LocalInferenceRuntime({ enabled: true }) : null;
 const manifest = { classification: ['REAL_OS', 'INTEGRATION', 'ENDURANCE'], pid: process.pid, startedAt, outputDir,
-  localVisionEnabled: Boolean(localVision), resourceCoverage: 'PARTIAL: capture SDK and local model subprocess CPU/RAM are not fully accounted',
+  localVisionEnabled: Boolean(localVision), resourceCoverage: 'PARTIAL: capture SDK accounting and whole-process-lifetime aggregation are incomplete; local model counters are sampled separately',
   requestedDurationMs, requestedHours: requestedDurationMs / 3600000, options, node: process.version,
   platform: process.platform, host: os.hostname(), completed24Hours: false,
   notes: ['Real capture and WinRT OCR, no mocked desktop source.',
@@ -116,7 +116,7 @@ function report(status = 'running') {
     requestedDurationMs, elapsedHours: elapsedMs / 3600000, durationReached, stopReason, fatalError,
     captureOcrCompleted24Hours: status === 'completed' && durationReached && elapsedMs >= 86_400_000 && healthy && pipelineHealthy && persistenceVerified,
     completed24Hours: false,
-    resourceAcceptance: 'PARTIAL', resourceGaps: ['Capture SDK subprocess accounting', 'Local vision subprocess CPU/RAM accounting'],
+    resourceAcceptance: 'PARTIAL', resourceGaps: ['Capture SDK subprocess accounting', 'Whole-process-lifetime aggregation and final counters'],
     localVisionEnabled: Boolean(localVision),
     verdict: status === 'running' ? 'in-progress' : fatalError ? 'failed' : status !== 'completed' || !durationReached ? 'incomplete' : healthy && pipelineHealthy && persistenceVerified ? 'partial' : 'failed',
     pipelineVerdict: status === 'completed' && durationReached && healthy && pipelineHealthy && persistenceVerified ? 'passed' : 'unverified',
@@ -127,6 +127,9 @@ function report(status = 'running') {
 }
 
 function sample() {
+  // Single-flight sampler reads the owned model PID; the next sample includes
+  // its timestamped cumulative counters. It does not sum repeated CPU totals.
+  void localVision?.sampleResources();
   const now = performance.now(), gapMs = now - lastSampleAt;
   lastSampleAt = now;
   maxSampleGapMs = Math.max(maxSampleGapMs, gapMs);
@@ -140,6 +143,7 @@ function sample() {
   if (firstRss.length < 60) firstRss.push(memory.rss);
   lastRss.push(memory.rss); if (lastRss.length > 60) lastRss.shift();
   const metric = { at: new Date().toISOString(), elapsedMs: now - began, gapMs, memory,
+    localVision: localVision?.getStatus() ?? null,
     systemFreeMemoryBytes: os.freemem(), buffer, counters: { ...counters }, activeCaptures: active,
     eventLoopDelayMs: { mean: Number.isFinite(eventLoop.mean) ? eventLoop.mean / 1e6 : null, max: eventLoop.max / 1e6 },
     cpu: process.cpuUsage(cpuBegan), store: observer.store.getStatus() };

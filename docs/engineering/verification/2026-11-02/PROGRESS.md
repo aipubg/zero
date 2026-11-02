@@ -773,3 +773,24 @@ passed, overall verdict partial, completed24Hours false and process exit 1.
 The earlier development run remains in artifacts with its superseded verdict;
 it is not accepted for overall resource verification. No new 24-hour run has been
 launched yet: full subprocess measurements remain required before that gate.
+
+LocalInferenceRuntime now samples its owned llama-server process using actual
+Windows Process counters: PID, process name/start time, measurement time,
+cumulative CPU milliseconds, working set/peak and private bytes. Sampling is
+single-flight, bounded to five seconds, validates the owned live child and never
+starts a model merely to read status. Historical samples are marked
+currentProcess:false after exit/restart; cumulative CPU must not be summed across
+repeated samples. No global PowerShell policy is changed.
+
+[local-vision-resource-policy-failure.json](local-vision-resource-policy-failure.json)
+retains the initial measurement failure under the machine script policy. Using
+the same process-scoped launch setting as existing native capture fixes it.
+[local-vision-process-resources.json](local-vision-process-resources.json) passes
+real local text/color inference, CPU monotonicity for the same start time,
+positive working-set/peak counters, interruption and fresh-process recovery.
+[endurance-model-resource-short.json](endurance-model-resource-short.json) also
+records an actual combined short run with model counters, encrypted persistence,
+eight completed captures/OCR and one capture aborted on orderly shutdown.
+Overall acceptance stays PARTIAL. The final source refines gap wording to SDK
+accounting plus whole-lifetime aggregation/final counters and writes model
+snapshots into sample rows; this last sample-row field was not separately rerun.

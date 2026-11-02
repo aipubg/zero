@@ -1,0 +1,56 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_BROWSER",
+    "INTEGRATION"
+  ],
+  "status": "FAIL",
+  "startedAt": "2026-11-02T16:45:30.995Z",
+  "checks": [],
+  "scope": "Actual local model execution and controlled dominant-color recognition; not general visual understanding accuracy or 24-hour endurance",
+  "runtime": {
+    "enabled": true,
+    "available": true,
+    "status": "ready",
+    "reason": null,
+    "confidence": null,
+    "model": "zero-local-vision",
+    "runtime": "llama.cpp b11960",
+    "transport": "loopback-http",
+    "threads": 2,
+    "pid": 10680,
+    "resources": {
+      "status": "not-measured",
+      "currentProcess": false
+    },
+    "requests": 0,
+    "completed": 0,
+    "failures": 0,
+    "active": 0
+  },
+  "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'unavailable'\n- 'measured'\n",
+  "afterClose": {
+    "enabled": true,
+    "available": false,
+    "status": "stopped",
+    "reason": null,
+    "confidence": null,
+    "model": "zero-local-vision",
+    "runtime": "llama.cpp b11960",
+    "transport": "loopback-http",
+    "threads": 2,
+    "pid": null,
+    "resources": {
+      "status": "unavailable",
+      "pid": 10680,
+      "measuredAt": "2026-11-02T16:45:31.542Z",
+      "reason": "Native process resource measurement failed",
+      "currentProcess": false
+    },
+    "requests": 0,
+    "completed": 0,
+    "failures": 0,
+    "active": 0
+  },
+  "finishedAt": "2026-11-02T16:45:31.559Z"
+}

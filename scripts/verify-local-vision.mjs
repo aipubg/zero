@@ -17,6 +17,10 @@ let browser;
 try {
   await runtime.ensureStarted();
   report.runtime = runtime.getStatus();
+  const beforeResources = await runtime.sampleResources();
+  assert.equal(beforeResources.status, 'measured');
+  assert.equal(beforeResources.pid, report.runtime.pid);
+  assert.ok(beforeResources.workingSetBytes > 0 && beforeResources.peakWorkingSetBytes >= beforeResources.workingSetBytes);
   const answer = await runtime.complete([{ role: 'user', content: 'What is two plus two? Answer briefly.' }]);
   assert.match(answer.text, /\b4\b|\bfour\b/i);
   report.checks.push({ name: 'Local GGUF text generation', status: 'PASS', ...answer });
@@ -33,6 +37,11 @@ try {
   }
   assert.equal(report.checks.every(check => check.status === 'PASS'), true, 'Actual image outputs must match the independently rendered pixels');
   report.afterInference = runtime.getStatus();
+  const afterResources = await runtime.sampleResources();
+  assert.equal(afterResources.status, 'measured');
+  assert.ok(afterResources.cpuMs >= beforeResources.cpuMs);
+  assert.equal(afterResources.startedAt, beforeResources.startedAt);
+  report.processResources = { before: beforeResources, after: afterResources };
   const completedBeforeAbort = runtime.completed;
   const pending = runtime.describe(fs.readFileSync(path.join(directory, 'blue.png')), { maxTokens: 512 });
   while (!runtime.active) await new Promise(resolve => setTimeout(resolve, 1));

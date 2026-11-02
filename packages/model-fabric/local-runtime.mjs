@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import net from 'node:net';
-import { spawn } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const runFile = promisify(execFile);
 
 /** Owned, CPU-bounded llama.cpp process. Local image requests never use cloud routing. */
 export class LocalInferenceRuntime {
@@ -23,12 +25,32 @@ export class LocalInferenceRuntime {
     this.requests = 0; this.completed = 0; this.failures = 0; this.active = 0;
     this.controllers = new Set();
     this.generation = 0;
+    this.resources = { status: 'not-measured' }; this.resourceRequest = null;
   }
   getStatus() {
     return { enabled: this.enabled, available: this.state === 'ready', status: this.state,
       reason: this.lastError || (this.enabled ? null : 'No local vision model configured'), confidence: null,
       model: this.modelId, runtime: 'llama.cpp b11960', transport: 'loopback-http', threads: this.threads,
-      pid: this.child?.pid || null, requests: this.requests, completed: this.completed, failures: this.failures, active: this.active };
+      pid: this.child?.pid || null, resources: { ...this.resources, currentProcess: this.resources.pid === this.child?.pid }, requests: this.requests, completed: this.completed, failures: this.failures, active: this.active };
+  }
+  async sampleResources() {
+    if (this.resourceRequest) return this.resourceRequest;
+    const child = this.child;
+    if (process.platform !== 'win32' || !child?.pid || child.exitCode !== null) return { status: 'unavailable', reason: 'No owned live Windows model process' };
+    const request = (async () => {
+      try {
+        const { stdout } = await runFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
+          path.join(root, 'packages/model-fabric/measure-process.ps1'), '-TargetProcessId', String(child.pid), '-ExpectedName', path.basename(this.executable, '.exe')],
+        { windowsHide: true, timeout: 5000, maxBuffer: 16384 });
+        const value = JSON.parse(stdout.trim());
+        if (this.child !== child || child.exitCode !== null) return { status: 'unavailable', reason: 'Owned process exited during measurement' };
+        if (value.pid !== child.pid || !Number.isFinite(value.cpuMs) || !Number.isFinite(value.workingSetBytes)) throw new Error('Invalid native resource counters');
+        this.resources = { status: 'measured', ...value, cpuAccounting: 'cumulative-per-process; do not sum repeated samples' };
+      } catch { this.resources = { status: 'unavailable', pid: child.pid, measuredAt: new Date().toISOString(), reason: 'Native process resource measurement failed' }; }
+      return this.resources;
+    })();
+    this.resourceRequest = request;
+    try { return await request; } finally { if (this.resourceRequest === request) this.resourceRequest = null; }
   }
   async ensureStarted() {
     if (this.closed) throw new Error('Local runtime is closed');
