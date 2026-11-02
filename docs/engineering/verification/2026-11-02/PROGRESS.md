@@ -1097,3 +1097,20 @@ also reopens ModelFabric and confirms coder resolves its model independently of
 Zero. Seven settings/import checks pass. This gate explicitly does not certify
 specialist inference or arbitrary planning; prior real multi-agent execution is
 separate evidence, and a combined UI-to-execution gate remains to be completed.
+
+### UI assignment to real specialist inference and parent consolidation
+
+[specialist-ui-execution-live.json](specialist-ui-execution-live.json) closes the
+combined single-specialist gate above. After actual UI assignment and host restart,
+the coder executed through agent.task.execute without an explicit subtask model
+override. Its real read_file tool retrieved an independently created UUID marker
+not included in the prompt, and model output reproduced that content. The real
+NVIDIA forwarding proxy recorded two requests to the UI-assigned super-VL model
+and a separate lightning request for Zero consolidation. The parent completed and
+returned its synthesis with the actual marker. Nine selected browser checks pass.
+
+This is REAL_BROWSER + INTEGRATION + REAL_EXTERNAL evidence for the selected
+workflow, not multi-specialist parallel/interruption acceptance or arbitrary agent
+planning. Provider-reported model alias verification remains separate from the
+actual requested model observed in outgoing requests. No owner files were used
+for assignment writes; all settings and evidence source files were isolated.

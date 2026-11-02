@@ -15,6 +15,7 @@ import { mcpCapabilityName } from '../packages/plugin-sdk/mcp-adapter.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (process.argv.includes('--screen-recall') && !process.argv.includes('--screen')) throw new Error('--screen-recall requires --screen');
 if (process.argv.includes('--plugin-crash') && !process.argv.includes('--external-plugins')) throw new Error('--plugin-crash requires --external-plugins');
+if (process.argv.includes('--agent-execution') && !process.argv.includes('--agent-models')) throw new Error('--agent-execution requires --agent-models');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
 const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.now()));
 fs.mkdirSync(evidence, { recursive: true });
@@ -36,7 +37,7 @@ const workflowLabels = new Map([
   ['Provider UI creates, edits and deletes persisted settings without credential loss', []],
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
-  ['Specialist UI model assignment persists without changing coordinator defaults', []],
+  ['Specialist UI model assignment persists without changing coordinator defaults', process.argv.includes('--agent-execution') ? ['REAL_EXTERNAL'] : []],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
   ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
   ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
@@ -55,7 +56,7 @@ const outboundModelRequests = [];
 const errors = [];
 
 async function startModelProxy() {
-  if (!process.argv.includes('--models')) return;
+  if (!process.argv.includes('--models') && !process.argv.includes('--agent-execution')) return;
   const file = path.join(temporary, 'providers.json'); const providers = JSON.parse(fs.readFileSync(file, 'utf8'));
   const provider = providers.find(row => row.id === 'nv'); assert.ok(provider);
   const upstream = provider.baseUrl.replace(/\/+$/, '');
@@ -100,7 +101,7 @@ async function stop() {
   child.kill();
   await exited;
 }
-async function rpc(method, params = {}) {
+async function rpc(method, params = {}, timeoutMs = 20000) {
   const response = await fetch(`${base}/api/auth/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'admin', clientId: 'functional-browser-check' }) });
   assert.equal(response.status, 200);
   const { token } = await response.json();
@@ -108,7 +109,7 @@ async function rpc(method, params = {}) {
   await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
   const call = (method, params) => new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
-    const timeout = setTimeout(() => { socket.removeEventListener('message', handler); reject(new Error(`${method} timed out`)); }, 20000);
+    const timeout = setTimeout(() => { socket.removeEventListener('message', handler); reject(new Error(`${method} timed out`)); }, timeoutMs);
     const handler = event => { const frame = JSON.parse(event.data); if (frame.id !== id) return; clearTimeout(timeout); socket.removeEventListener('message', handler); frame.ok === false ? reject(new Error(JSON.stringify(frame.error))) : resolve(frame.payload); };
     socket.addEventListener('message', handler);
     socket.send(JSON.stringify({ type: 'req', id, method, params }));
@@ -273,7 +274,24 @@ try {
     await page.locator('.zero-agent-desc-box__value').first().filter({ hasText: selected }).waitFor();
     saved = await rpc('zero.providers.list'); assert.equal(saved.agentBindings.coder.model, selected);
     await assert.rejects(rpc('zero.providers.setActive', { agentId: 'unknown', modelId: selected }), /Unknown specialist/);
-    return { selectedAgent: 'coder', savedModel: selected, persistedAcrossProcess: true, coordinatorDefaultsUnchanged: true, unknownAgentRejected: true, inferenceVerifiedByThisCheck: false };
+    let execution = null;
+    if (process.argv.includes('--agent-execution')) {
+      const target = path.join(temporary, 'specialist-source.txt');
+      const marker = `SPECIALIST_ACTUAL_READ_${crypto.randomUUID()}`;
+      fs.writeFileSync(target, marker);
+      const beforeRequests = outboundModelRequests.length;
+      const outcome = await rpc('agent.task.execute', { goal: 'Read the actual local file and consolidate its content.', timeoutMs: 120000, maxToolRounds: 3, maxOutputTokens: 2048,
+        subtasks: [{ id: 'ui_assigned_coder', agentId: 'coder', goal: `Call read_file with path ${JSON.stringify(target)}. Report its exact content. You must actually call the tool.`, tools: ['read_file'], dependsOn: [] }] }, 130000);
+      assert.equal(outcome.status, 'COMPLETED');
+      const result = outcome.consolidatedResult.results.ui_assigned_coder;
+      assert.equal(result.modelId, selected.replace(/^nv\//, ''));
+      assert.ok(result.toolResults.some(tool => tool.toolName === 'read_file' && JSON.stringify(tool.result).includes(marker)), 'Actual tool result must contain the independently created unknown file marker');
+      assert.ok(result.output.includes(marker));
+      const requests = outboundModelRequests.slice(beforeRequests);
+      assert.ok(requests.some(request => request.model === result.modelId), 'Independent proxy must observe assigned model on actual upstream traffic');
+      execution = { masterTaskId: outcome.masterTaskId, status: outcome.status, modelId: result.modelId, actualRead: true, outputMatchesFile: true, upstreamModels: requests.map(request => request.model), synthesis: outcome.consolidatedResult.synthesis };
+    }
+    return { selectedAgent: 'coder', savedModel: selected, persistedAcrossProcess: true, coordinatorDefaultsUnchanged: true, unknownAgentRejected: true, inferenceVerifiedByThisCheck: Boolean(execution), execution };
   });
   if (process.argv.includes('--model-import')) await check('Provider config UI import/export preserves credentials and recovers interrupted two-file updates', async () => {
     const providersFile = path.join(temporary, 'providers.json'); const bindingsFile = path.join(temporary, 'bindings.json');
