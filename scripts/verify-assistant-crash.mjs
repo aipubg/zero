@@ -44,9 +44,25 @@ function call(method, params = {}) {
 async function stop() { socket?.close(); if (child?.exitCode === null) { const closed = once(child, 'close'); child.kill(); await closed; } }
 try {
   await start(); const firstPid = child.pid;
-  if (process.argv.includes('--tool-failure-only')) {
+  if (process.argv.includes('--tool-recovery-only')) {
+    const filename = path.join(output, 'recoverable-read.txt'); const marker = 'ZERO_VERIFIED_READ_RECOVERY';
+    const request = { sessionKey: 'real-tool-recovery', idempotencyKey: 'real-tool-recovery-request', message: `Perform exactly these operations in this order: first call read_file with path ${JSON.stringify(filename)} and observe the missing-file error. Next call write_file on that same path with exactly ${marker}. Finally call read_file on that same path again, using the identical read_file arguments as the first call. Confirm its actual contents. The first missing-file check is intentional; do not skip it or stop after it.` };
+    const result = await call('chat.send', request);
+    assert.ok(result.content.trim()); assert.equal(fs.readFileSync(filename, 'utf8').trim(), marker);
+    const history = await call('chat.history', { sessionKey: request.sessionKey });
+    const reads = history.messages.filter(message => message.role === 'assistant').flatMap(message => message.tool_calls || []).filter(item => item.function?.name === 'read_file');
+    assert.ok(reads.length >= 2);
+    assert.deepEqual(JSON.parse(reads[0].function.arguments), JSON.parse(reads.at(-1).function.arguments));
+    const toolResults = history.messages.filter(message => message.role === 'tool').map(message => JSON.parse(message.content));
+    assert.ok(toolResults.some(value => value.ok === false && value.capability === 'read_file'));
+    assert.ok(toolResults.some(value => value.ok === true && value.verified === true && value.capability === 'read_file'));
+    const task = await call('tasks.get', { id: result.taskId }); assert.equal((task.task || task).status, 'COMPLETED');
+    report.scope = 'Actual model missing-file read followed by write and identical-argument verified read recovery; original error retained';
+    report.toolRecovery = { taskId: result.taskId, failedReadPreserved: true, laterVerifiedRead: true, matchingReadArguments: true, actualContentVerified: true, status: 'COMPLETED' };
+  } else if (process.argv.includes('--tool-failure-only') || process.argv.includes('--tool-unrelated-only')) {
     const missing = path.join(output, 'deliberately-missing.txt');
-    const request = { sessionKey: 'real-tool-failure', idempotencyKey: 'real-tool-failure-request', message: `Use read_file on exactly ${JSON.stringify(missing)}. Do not create or modify any file. Report its actual error honestly.` };
+    const unrelated = process.argv.includes('--tool-unrelated-only') ? path.join(output, 'unrelated-success.txt') : null;
+    const request = { sessionKey: 'real-tool-failure', idempotencyKey: 'real-tool-failure-request', message: `Use read_file on exactly ${JSON.stringify(missing)}. ${unrelated ? `After observing its error, use write_file to create the DIFFERENT file ${JSON.stringify(unrelated)} containing UNRELATED_SUCCESS, then read_file that different file to verify it. Never create the original missing file.` : 'Do not create or modify any file.'} Report the original read error honestly.` };
     await assert.rejects(call('chat.send', request), /tool action.*failed or were blocked/);
     const db = new DatabaseSync(path.join(state, 'data/zero-sessions.sqlite'), { readOnly: true });
     const receipt = db.prepare('SELECT status,task_id FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey); db.close();
@@ -57,8 +73,9 @@ try {
     assert.ok(history.messages.some(message => message.tool_calls?.some(item => item.function?.name === 'read_file')));
     assert.ok(history.messages.some(message => message.role === 'tool' && JSON.parse(message.content).ok === false));
     assert.equal(fs.existsSync(missing), false);
+    if (unrelated) assert.equal(fs.readFileSync(unrelated, 'utf8').trim(), 'UNRELATED_SUCCESS');
     report.scope = 'Real model read_file failure cannot become a completed task even when the model gives a final explanation';
-    report.toolFailure = { taskId: receipt.task_id, receiptStatus: receipt.status, taskStatus: 'FAILED', actualToolErrorPreserved: true, noFileCreated: true };
+    report.toolFailure = { taskId: receipt.task_id, receiptStatus: receipt.status, taskStatus: 'FAILED', actualToolErrorPreserved: true, originalFileStillAbsent: true, unrelatedSuccessfulEffect: Boolean(unrelated) };
   } else if (process.argv.includes('--retry-only')) {
     const filename = path.join(output, 'retried-effect.txt'); const marker = 'ZERO_REAL_RETRY_EFFECT';
     const request = { sessionKey: 'real-retry-task', idempotencyKey: 'real-retry-request', message: `Use write_file to create ${JSON.stringify(filename)} containing exactly ${marker}. Use read_file to verify it and give a short confirmation.` };

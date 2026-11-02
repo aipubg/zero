@@ -1,0 +1,18 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T06:54:27.329Z",
+  "scope": "Actual model missing-file read followed by write and identical-argument verified read recovery; original error retained",
+  "toolRecovery": {
+    "taskId": "task_1793602468029_uibima",
+    "failedReadPreserved": true,
+    "laterVerifiedRead": true,
+    "matchingReadArguments": true,
+    "actualContentVerified": true,
+    "status": "COMPLETED"
+  },
+  "finishedAt": "2026-11-02T06:54:36.862Z"
+}

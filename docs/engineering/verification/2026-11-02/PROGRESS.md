@@ -718,3 +718,16 @@ persisted and both task and receipt are FAILED despite a final model response.
 passes the real successful task retry/concurrency/model-pinning/file workflow.
 Two receipt/write-scope regressions pass. This is not proof of arbitrary external
 effect recovery or independent verification of every assistant deliverable.
+
+Actual tool recovery now has positive and negative external-model evidence:
+[assistant-identical-read-recovery.json](assistant-identical-read-recovery.json)
+passes intentional missing-file read, actual write and verified read of the same
+path with deeply equal original arguments. The first real error remains in the
+transcript and the task completes only after actual verified recovery.
+[assistant-unrelated-success-still-failed.json](assistant-unrelated-success-still-failed.json)
+passes the inverse: the model reads a missing file, successfully writes/reads a
+different file and gives an explanation, but the original file remains absent
+and task/receipt stay FAILED. Unrelated success cannot erase the earlier failure.
+Both are new executions through an owned isolated host and the real configured
+model/capability engine; no substituted model/tool responses. These bounded file
+cases do not establish general compensation for arbitrary external side effects.
