@@ -386,3 +386,11 @@ Four receipt/session regression tests pass. The separate live capture/OCR
 endurance PID 15716 remains running with fresh telemetry: 5.012 hours, 7,527
 successful captures and no capture failures at 06:03 UTC. It is not a 24-hour
 certificate and still excludes the newer local vision/resource pipeline.
+
+Interrupted assistant receipts now retain their real durable task ID. Startup
+reclassifies surviving running receipts as interrupted; retry errors identify
+the linked task and never silently rerun it. The schema migration adds the task
+reference without replacing existing receipts. Four file-backed receipt/session
+regressions pass, including interrupted-state classification and task identity.
+This is component evidence, not a real mid-execution process-kill acceptance run;
+that crash/effect-reconciliation gate remains open before owner deployment.

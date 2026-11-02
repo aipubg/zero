@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 
 /** Durable retry identity. Interrupted execution is never silently repeated. */
 export function createAssistantReceipts(db) {
+  // Only startup initializes this coordinator. Surviving running receipts are crash evidence.
+  db.prepare("UPDATE zero_assistant_receipts SET status='interrupted',updated_at=? WHERE status='running'").run(Date.now());
   const active = new Map();
   return function executeOnce(options, execute) {
     const runId = options.runId || crypto.randomUUID();
@@ -14,7 +16,7 @@ export function createAssistantReceipts(db) {
       if (existing.input_hash !== inputHash) return Promise.reject(new Error('Assistant request id was reused with different input'));
       if (active.has(key)) return active.get(key);
       if (existing.status === 'completed') return Promise.resolve(JSON.parse(existing.result_json));
-      return Promise.reject(new Error(existing.error || 'Previous execution was interrupted; inspect its task before explicitly retrying with a new request id'));
+      return Promise.reject(new Error(existing.error || `Previous execution was interrupted${existing.task_id ? ` (task ${existing.task_id})` : ''}; inspect its task before explicitly retrying with a new request id`));
     }
     const now = Date.now();
     db.prepare("INSERT INTO zero_assistant_receipts(session_id,run_id,input_hash,status,created_at,updated_at) VALUES(?,?,?,'running',?,?)").run(sessionId, runId, inputHash, now, now);

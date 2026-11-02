@@ -22,10 +22,11 @@ export class SessionManager {
   _initSchema() {
     this.db.exec(`CREATE TABLE IF NOT EXISTS zero_assistant_receipts (
       session_id TEXT NOT NULL, run_id TEXT NOT NULL, input_hash TEXT NOT NULL,
-      status TEXT NOT NULL, result_json TEXT, error TEXT,
+      status TEXT NOT NULL, result_json TEXT, error TEXT, task_id TEXT,
       created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
       PRIMARY KEY(session_id, run_id)
     )`);
+    if (!this.db.prepare('PRAGMA table_info(zero_assistant_receipts)').all().some(column => column.name === 'task_id')) this.db.exec('ALTER TABLE zero_assistant_receipts ADD COLUMN task_id TEXT');
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS zero_sessions (
         id TEXT PRIMARY KEY,

@@ -1892,6 +1892,7 @@ export class ZeroNativeHost {
       if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
       const task = this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
+      this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=? WHERE session_id=? AND run_id=?').run(task.id, sessionKey, options.runId);
       this.tasks.enqueueTask(task.id); this.tasks.startTask(task.id);
       const combinedSignal = AbortSignal.any([this.tasks.getSignal(task.id), ...(signal ? [signal] : [])]);
       try {
