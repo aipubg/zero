@@ -1234,3 +1234,31 @@ gate remains FAIL and must be fixed; no combined overall PASS is claimed.
 Three focused contract/process-recovery checks pass after these changes. The
 endurance original PID 16744/start time remains live at recent reinspection,
 about 0.147 hours at the recorded checkpoint; still IN_PROGRESS, resources PARTIAL.
+
+### Preserve authenticated desktop session across host restart
+
+Connection diagnostics isolated the disabled composer cause: valid browser
+sessions lived only in RAM, so after host restart the cookie no longer resolved
+and hello downgraded to viewer/operator.read. The prior failure report and safe
+role/scope diagnostics are retained in
+[durable-owner-reconnect-live.json](durable-owner-reconnect-live.json).
+
+DesktopSessionStore now optionally persists atomic, flushed metadata keyed by a
+SHA-256 hash of its random 256-bit bearer token. Raw tokens are excluded from disk
+records; current roles/scopes and expiry are restored. Revocation and clear persist,
+expired sessions do not reopen, malformed metadata fails instead of silently
+granting authority. Native host uses its isolated/owner data directory consistently.
+This preserves established authorization; it does not ignore expiry or promote
+viewer identities. No permission popup or new approval flow was added.
+
+test/desktop-session-persistence.test.mjs uses a fresh actual Node process to
+restore the original scopes and revoke the token, confirms raw token absence,
+expiry and malformed-file behavior. Six reported protocol/session checks pass.
+The actual combined browser/external run passes all ten workflows: two distinct
+assigned models with real file tools, host kill/restart, same-child pinned resume,
+and final same-page reconnect with preserved operator/write scopes and editable
+composer. An additional eleven-workflow import/settings browser run also passed
+(artifacts/functional-browser/1793657152654/report.json). This closes the observed
+reconnect regression; it does not certify 24-hour auth expiry renewal or every
+possible interrupted tool effect. Endurance PID 16744 remains live with original
+start time around 0.234 hours at reinspection, still IN_PROGRESS/resources PARTIAL.

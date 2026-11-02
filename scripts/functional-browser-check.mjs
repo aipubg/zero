@@ -162,8 +162,8 @@ try {
     const connection = { openedAt: Date.now(), closedAt: null, connectedAt: null, methods: new Map() };
     connections.push(connection);
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); if (connection.methods.get(frame.id) === 'zero.providers.test') providerProbeResult = frame; if (connection.methods.get(frame.id) === 'zero.gateway.config.save') modelImportResponses.push(frame); } catch {} });
-    socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); if (frame.method?.startsWith('voice.microphone.')) voiceRequests.push({ method: frame.method, sessionId: frame.params?.sessionId }); } catch {} });
-    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) connection.connectedAt = Date.now(); if (method === 'webSearch.test') searchResult = frame; if (method === 'chat.send') chatResponses.push(frame); } catch {} });
+    socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); if (frame.method === 'connect') connection.requestedScopes = frame.params?.scopes; if (frame.method?.startsWith('voice.microphone.')) voiceRequests.push({ method: frame.method, sessionId: frame.params?.sessionId }); } catch {} });
+    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) { connection.connectedAt = Date.now(); connection.role = frame.payload?.auth?.role; connection.scopes = frame.payload?.auth?.scopes; } if (method === 'webSearch.test') searchResult = frame; if (method === 'chat.send') chatResponses.push(frame); } catch {} });
     socket.on('close', () => { connection.closedAt = Date.now(); });
     socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.method === 'chat.send') chatRequests.push(frame.params); if (/^chat\./.test(frame.method)) rpcDiagnostics.push({ direction: 'request', method: frame.method, fields: Object.keys(frame.params || {}) }); } catch {} });
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (/^chat\./.test(method)) rpcDiagnostics.push({ direction: 'response', method, ok: frame.ok, fields: Object.keys(frame.payload || {}), error: frame.error }); } catch {} });
@@ -799,6 +799,7 @@ try {
   });
   report.pageErrors = pageErrors;
   report.rpcDiagnostics = rpcDiagnostics;
+  report.connections = connections.map(({ openedAt, closedAt, connectedAt, requestedScopes, role, scopes }) => ({ openedAt, closedAt, connectedAt, requestedScopes, role, scopes }));
   report.status = report.checks.every(check => check.status === 'PASS') && pageErrors.length === 0 ? 'PASS' : 'FAIL';
 } catch (error) { report.status = 'FAIL'; report.error = error.stack; }
 finally {

@@ -145,12 +145,12 @@ export class ZeroNativeHost {
         resolvedToken = (process.env.ZERO_GATEWAY_TOKEN || process.env.OPENCLAW_GATEWAY_TOKEN || '').trim();
       }
     }
-    this.localDesktopSessions = new DesktopSessionStore();
     this.loopbackUiToken = crypto.randomBytes(24).toString('hex');
     this.expectedToken = resolvedToken || this.loopbackUiToken;
 
     // Initialize persistence & state engines
     const dataDir = options.dataDir || process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data');
+    this.localDesktopSessions = new DesktopSessionStore({ filePath: path.join(dataDir, 'desktop-session-metadata.json') });
     // Stable, non-secret storage namespace for the native UI's durable outbox.
     this.recoveryScope = `zero-local:${crypto.createHash('sha256').update(path.resolve(dataDir).toLowerCase()).digest('hex')}`;
     if (!fs.existsSync(dataDir)) {

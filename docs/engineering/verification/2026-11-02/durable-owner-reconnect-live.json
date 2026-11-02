@@ -1,0 +1,642 @@
+{
+  "pass": {
+    "classification": [
+      "REAL_BROWSER",
+      "INTEGRATION",
+      "REAL_EXTERNAL"
+    ],
+    "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+    "startedAt": "2026-11-02T22:06:22.898Z",
+    "status": "PASS",
+    "evidence": "E:\\zero\\artifacts\\functional-browser\\1793657182887",
+    "checks": [
+      {
+        "name": "Chat connects, native plugin activates, composer accepts text",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 466,
+        "details": {
+          "pageErrors": []
+        }
+      },
+      {
+        "name": "Specialist UI model assignment persists without changing coordinator defaults",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_EXTERNAL"
+        ],
+        "status": "PASS",
+        "durationMs": 16224,
+        "details": {
+          "selectedAgent": "coder",
+          "savedModel": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+          "persistedAcrossProcess": true,
+          "coordinatorDefaultsUnchanged": true,
+          "unknownAgentRejected": true,
+          "inferenceVerifiedByThisCheck": true,
+          "execution": {
+            "masterTaskId": "task_1793657186017_n9ua0i",
+            "status": "COMPLETED",
+            "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+            "actualRead": true,
+            "outputMatchesFile": true,
+            "upstreamModels": [
+              "nvidia/nemotron-3.5-super-vl-120b-a12b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-super-vl-120b-a12b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b"
+            ],
+            "parallelEvidence": {
+              "agents": [
+                "coder",
+                "researcher"
+              ],
+              "models": [
+                "nvidia/nemotron-3.5-super-vl-120b-a12b",
+                "nvidia/nemotron-3.5-lightning-30b-a3b"
+              ],
+              "overlapMs": 1068,
+              "actualIndependentFileResults": true,
+              "bothResultsInParentSynthesis": true
+            },
+            "synthesis": "### Consolidated File Content\n\n**1. Researcher source file** (`researcher-source.txt`)\n- Exact content: `RESEARCHER_ACTUAL_READ_57b3725f-b978-4889-b0c4-d9a34ba06964`\n- File size: 59 bytes\n- SHA-256: `2be3b573da158bc3cf7ee5028d89bae0957f891cf00092676913fc5e098d74d4`\n- Tool outcome: `COMPLETED` | `verified: true` (per tool evidence)\n\n**2. Specialist/coder source file** (`specialist-source.txt`)\n- Exact content: `SPECIALIST_ACTUAL_READ_44c99b6d-99e3-4e22-bb28-6a033dd3cdf1`\n- File size: 59 bytes\n- SHA-256: `d425fa0421d1bf89c88b0c71d97cc1e4110da63da7ecf742c38239dcc4505b3f`\n- Tool outcome: `COMPLETED` | `verified: true` (per tool evidence)\n\n### Consolidated View\nBoth files contain simple identifier/UUID-style strings (59 bytes each) rather than free-form text, paragraphs, or structured data. They appear to be auto-generated read markers left by their respective agents. No additional text, formatting, or nested content is present in either file.\n\n### Limitations & Recorded Constraints\n- **Content depth**: The files offer no beyond-the-surface content; they are purely marker strings.\n- **Verification scope**: Verification is strictly limited to the SHA-256 hashes, byte counts, and `ok: true` outcomes reported by the `read_file` tool. No external validation, content analysis, or semantic interpretation has been performed.\n- **File origin**: Both paths resolve to the same temporary workspace (`C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-functional-browser-6APVCW\\`), but the files are independent and contain distinct identifiers.\n- **No failures were recorded** by the tool executions; both reads completed successfully as documented.\n\n*All content above is derived exclusively from the provided tool results. No additional claims, interpretations, or verifications beyond the recorded evidence are included.*"
+          }
+        }
+      },
+      {
+        "name": "Interrupted external team resumes pinned models and preserves completed child evidence",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_EXTERNAL"
+        ],
+        "status": "PASS",
+        "durationMs": 26599,
+        "details": {
+          "masterTaskId": "task_1793657200622_g3ns0v",
+          "killedPid": 17304,
+          "restartedPid": 18036,
+          "actualExternalResponseHeld": true,
+          "completedCoderNotReplayed": true,
+          "sameChildIds": true,
+          "pinnedResearcherModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+          "changedBindingIgnoredForResume": true,
+          "resumedUpstreamModels": [
+            "nvidia/nemotron-3.5-lightning-30b-a3b",
+            "nvidia/nemotron-3.5-lightning-30b-a3b",
+            "nvidia/nemotron-3.5-lightning-30b-a3b"
+          ]
+        }
+      },
+      {
+        "name": "Memory search uses actual persisted records through the UI",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 344,
+        "details": {
+          "memoryId": "mem_semantic_1793657227267_g3i1d",
+          "marker": "Browser memory evidence 58174"
+        }
+      },
+      {
+        "name": "Skills filter changes visible results",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 340,
+        "details": {
+          "query": "web-research"
+        }
+      },
+      {
+        "name": "Skills details expose persisted enable/disable controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1301,
+        "details": {
+          "disabledPersisted": true,
+          "reenabled": true
+        }
+      },
+      {
+        "name": "Search form executes its configured provider and reports real outcome",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_EXTERNAL"
+        ],
+        "status": "PASS",
+        "durationMs": 1209,
+        "details": {
+          "sources": 5,
+          "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+          "sourceHttpStatus": 200,
+          "sourceBytes": 1031660,
+          "verifiedClaims": false
+        }
+      },
+      {
+        "name": "Plugins current page exposes lifecycle controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1967,
+        "details": {
+          "installedPersisted": true,
+          "executed": true,
+          "platform": "win32",
+          "verified": false,
+          "disabledAcrossProcessRestart": true,
+          "reenabled": true,
+          "uninstalled": true
+        }
+      },
+      {
+        "name": "Actual wheel input increases About scrollTop",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 564,
+        "details": {
+          "before": 0,
+          "scrollHeight": 1033,
+          "clientHeight": 165,
+          "after": 500
+        }
+      },
+      {
+        "name": "Gateway reconnects after a real process stop/restart and memory remains",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1343,
+        "details": {
+          "oldPid": 15792,
+          "newPid": 8552,
+          "memoryCount": 1,
+          "closedAt": 1793657233654,
+          "reconnectedAt": 1793657234542,
+          "completedRequestReplay": null
+        }
+      }
+    ],
+    "pageErrors": [],
+    "rpcDiagnostics": [
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      }
+    ],
+    "connections": [
+      {
+        "openedAt": 1793657183867,
+        "closedAt": null,
+        "connectedAt": 1793657184013,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657184322,
+        "closedAt": 1793657184674,
+        "connectedAt": 1793657184349,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657185182,
+        "closedAt": 1793657185507,
+        "connectedAt": 1793657185233,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657186000,
+        "closedAt": 1793657202726,
+        "connectedAt": 1793657186031,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657203553,
+        "closedAt": null,
+        "connectedAt": 1793657203574,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657227337,
+        "closedAt": null,
+        "connectedAt": 1793657227380,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657227714,
+        "closedAt": null,
+        "connectedAt": 1793657227758,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657228685,
+        "closedAt": null,
+        "connectedAt": 1793657228739,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657229540,
+        "closedAt": null,
+        "connectedAt": 1793657229585,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657230795,
+        "closedAt": null,
+        "connectedAt": 1793657230856,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657231330,
+        "closedAt": 1793657231657,
+        "connectedAt": 1793657231388,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657232162,
+        "closedAt": null,
+        "connectedAt": 1793657232217,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657232803,
+        "closedAt": null,
+        "connectedAt": 1793657232851,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657233058,
+        "closedAt": null,
+        "connectedAt": 1793657233102,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657233419,
+        "closedAt": 1793657233654,
+        "connectedAt": 1793657233535,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793657234516,
+        "closedAt": null,
+        "connectedAt": 1793657234542,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      }
+    ],
+    "finishedAt": "2026-11-02T22:07:14.942Z"
+  },
+  "priorFailure": {
+    "status": "FAIL",
+    "evidence": "E:\\zero\\artifacts\\functional-browser\\1793657090462",
+    "failedChecks": [
+      {
+        "name": "Gateway reconnects after a real process stop/restart and memory remains",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "FAIL",
+        "durationMs": 9333,
+        "error": "locator.fill: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('textbox', { name: 'Chat composer', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <textarea rows=\"1\" disabled dir=\"ltr\" aria-autocomplete=\"list\" aria-keyshortcuts=\"Enter\" aria-label=\"Chat composer\" placeholder=\"Message Zero\" aria-describedby=\"chat-%5B%22p1%22%2C%22agent%3Azero%3Amain%22%5D-slash-active-announcement chat-%5B%22p1%22%2C%22agent%3Azero%3Amain%22%5D-disabled-reason\"></textarea>\u001b[22m\n\u001b[2m    - fill(\"Connected after real restart\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    16 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+      }
+    ],
+    "lastConnection": {
+      "openedAt": 1793657102423,
+      "closedAt": null,
+      "connectedAt": 1793657102452,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "viewer",
+      "scopes": [
+        "operator.read"
+      ]
+    }
+  }
+}

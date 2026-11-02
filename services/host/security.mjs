@@ -7,6 +7,8 @@
  */
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
  * Validates that an incoming Host header targets the local loopback interface.
@@ -110,12 +112,34 @@ export function parseCookies(cookieHeader) {
 }
 
 /**
- * In-memory secure desktop browser session store.
+ * Desktop sessions with optional durable metadata; bearer tokens are never stored.
  */
 export class DesktopSessionStore {
   constructor(options = {}) {
     this.maxAgeMs = options.maxAgeMs || 24 * 60 * 60 * 1000; // 24 hours
     this.sessions = new Map();
+    this.filePath = options.filePath || null;
+    if (this.filePath && fs.existsSync(this.filePath)) {
+      const stored = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+      if (stored.version !== 1 || !Array.isArray(stored.sessions)) throw new Error('Invalid desktop session metadata');
+      for (const entry of stored.sessions) {
+        if (!/^[a-f0-9]{64}$/.test(entry.key) || !entry.session || typeof entry.session.role !== 'string' || !Array.isArray(entry.session.scopes) || entry.session.scopes.some(scope => typeof scope !== 'string') || !Number.isFinite(entry.session.expiresAt)) throw new Error('Invalid desktop session record');
+        if (entry.session.expiresAt > Date.now()) this.sessions.set(entry.key, entry.session);
+      }
+    }
+  }
+
+  _key(token) { return crypto.createHash('sha256').update(token).digest('hex'); }
+
+  _persist() {
+    if (!this.filePath) return;
+    fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
+    const temporary = `${this.filePath}.${crypto.randomUUID()}.tmp`;
+    try {
+      const fd = fs.openSync(temporary, 'wx', 0o600);
+      try { fs.writeFileSync(fd, JSON.stringify({ version: 1, sessions: [...this.sessions].map(([key, session]) => ({ key, session })) })); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+      fs.renameSync(temporary, this.filePath);
+    } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
   }
 
   create(metadata = {}) {
@@ -130,19 +154,22 @@ export class DesktopSessionStore {
       expiresAt: now + this.maxAgeMs,
       ...metadata,
     };
-    this.sessions.set(sessionId, session);
+    const { id, ...record } = session;
+    this.sessions.set(this._key(sessionId), record);
+    this._persist();
     return session;
   }
 
   get(sessionId) {
     if (!sessionId || typeof sessionId !== 'string') return null;
-    const session = this.sessions.get(sessionId);
+    const key = this._key(sessionId);
+    const session = this.sessions.get(key);
     if (!session) return null;
     if (Date.now() > session.expiresAt) {
-      this.sessions.delete(sessionId);
+      this.sessions.delete(key); this._persist();
       return null;
     }
-    return session;
+    return { ...session, id: sessionId };
   }
 
   has(sessionId) {
@@ -150,10 +177,14 @@ export class DesktopSessionStore {
   }
 
   delete(sessionId) {
-    return this.sessions.delete(sessionId);
+    if (typeof sessionId !== 'string') return false;
+    const removed = this.sessions.delete(this._key(sessionId));
+    if (removed) this._persist();
+    return removed;
   }
 
   clear() {
     this.sessions.clear();
+    this._persist();
   }
 }
