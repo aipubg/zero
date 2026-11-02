@@ -850,3 +850,20 @@ tests or turn catalog integrity into product acceptance. The CONTRACT test prove
 source changes, new unclassified runners and invalid labels fail closed. The
 historical inventory still covers 18 suites / 137 leaves; new component-test
 leaves are not all independently inventoried by this runner-entry-point catalog.
+
+External executable plugin work now has a real MCP stdio transport foundation:
+owned Node executable, explicit arguments/no shell, minimal inherited environment,
+bounded outstanding requests/response buffering, timeout/abort cancellation,
+initialization and tool RPCs, UTF-8 stream decoding and process cleanup. This is
+not yet integrated into PluginManager or the Plugins UI and does not close the
+third-party executable plugin acceptance requirement.
+
+[external-mcp-transport.json](external-mcp-transport.json) records an actual
+downloaded @modelcontextprotocol/server-filesystem@2.0.1 execution: negotiated
+2025-06-18 protocol, 14 discovered tools, real tools/call write_file/read_text_file,
+independent filesystem content verification including Hindi/Unicode, and owned
+process shutdown. Package version/tarball integrity are recorded from the actual
+installed package/lockfile. No new fixture package substitutes for the external
+executable. Plugin adapter registration, enable/disable, persisted restart,
+uninstall and current-UI lifecycle remain OPEN. OpenClaw plugin-format coverage
+is not claimed by this MCP transport result.

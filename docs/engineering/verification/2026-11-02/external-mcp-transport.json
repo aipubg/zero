@@ -1,0 +1,23 @@
+{
+  "classification": [
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "scope": "Actual downloaded third-party executable MCP transport and filesystem effects; Zero plugin registration/UI remain unfinished",
+  "startedAt": "2026-11-02T16:57:38.760Z",
+  "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-mcp-ipcQTX",
+  "protocolVersion": "2025-06-18",
+  "serverPid": 13964,
+  "toolCount": 14,
+  "actualFileEffect": true,
+  "actualReadResult": true,
+  "processClosed": true,
+  "finishedAt": "2026-11-02T16:57:38.929Z",
+  "package": {
+    "name": "@modelcontextprotocol/server-filesystem",
+    "version": "2.0.1",
+    "resolved": "https://registry.npmjs.org/@modelcontextprotocol/server-filesystem/-/server-filesystem-2.0.1.tgz",
+    "integrity": "sha512-K6n1daveB54TybQECAIzSp8DYq014Xfff159OtD1zjB48PONyMcQwyfMPw8jvhZnua/Jd+R/2HcCbTC3YVc3ag=="
+  }
+}
