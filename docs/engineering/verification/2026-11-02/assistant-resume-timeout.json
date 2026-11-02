@@ -1,0 +1,11 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "FAIL",
+  "startedAt": "2026-11-02T06:10:16.346Z",
+  "scope": "Actual model file effect and process-kill recovery without duplicate execution; not arbitrary side-effect reconciliation or automatic resumption",
+  "error": "The operation was aborted due to timeout",
+  "finishedAt": "2026-11-02T06:11:21.438Z"
+}

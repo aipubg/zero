@@ -414,3 +414,14 @@ No fake model, manually injected task/receipt or dummy side effect was used.
 The runner retains isolated state and the actual artifact. This proves bounded
 crash evidence/replay protection, not automatic task resumption or reconciliation
 of arbitrary external side effects; those broader recovery workflows remain open.
+
+Assistant resume implementation now invokes the shared model/tool executor for
+the original WAITING task, preserves its task ID/user transcript, and supplies
+an explicit instruction to inspect existing effects before repeating actions.
+Unsupported task types retain state and reject instead of pretending execution.
+Successful execution would reconcile the original receipt to its real result.
+This path is NOT accepted yet: the expanded real crash/resume runner failed with
+an upstream timeout, retained in
+[assistant-resume-timeout.json](assistant-resume-timeout.json). Four receipt/session
+regressions pass, but they do not substitute for the failed real resumption gate.
+The change remains undeployed to owner PID 15384 pending successful verification.

@@ -1441,7 +1441,7 @@ export class ZeroNativeHost {
         return this.tasks.cancelTask(params.id, params.reason);
 
       case 'tasks.resume':
-        return this.tasks.resumeTask(params.id);
+        return await this._resumeAssistantTask(params.id || params.taskId, { ws, isReferenceWire, clientSession });
 
       // Multi-Agent Workforce & Specialist Teams
       case 'agent.profile.list':
@@ -1890,20 +1890,33 @@ export class ZeroNativeHost {
     return this.executeAssistantOnce(options, request => this._executeAssistantRequest(request));
   }
 
+  async _resumeAssistantTask(taskId, context) {
+    const task = this.tasks.getTask(taskId);
+    if (!task || task.status !== 'WAITING') throw new Error('Only an existing WAITING task can resume');
+    const receipt = this.sessions.db.prepare('SELECT * FROM zero_assistant_receipts WHERE task_id=? LIMIT 1').get(taskId);
+    if (!receipt) throw new Error('This task has no registered assistant resume executor; its state was preserved');
+    const result = await this._executeAssistantRequest({ ...context, sessionKey: receipt.session_id, runId: receipt.run_id,
+      userContent: task.goal, source: 'resume', resumeTaskId: taskId });
+    this.sessions.db.prepare("UPDATE zero_assistant_receipts SET status='completed',result_json=?,error=NULL,updated_at=? WHERE session_id=? AND run_id=?")
+      .run(JSON.stringify(result), Date.now(), receipt.session_id, receipt.run_id);
+    return result;
+  }
+
   _executeAssistantRequest(options) {
     options = { ...options, runId: options.runId || crypto.randomUUID() };
     const request = (async () => {
       const { sessionKey, userContent, signal, source = 'chat' } = options;
       if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
-      const task = this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
+      const task = options.resumeTaskId ? this.tasks.getTask(options.resumeTaskId) : this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
       this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=? WHERE session_id=? AND run_id=?').run(task.id, sessionKey, options.runId);
-      this.tasks.enqueueTask(task.id); this.tasks.startTask(task.id);
+      if (options.resumeTaskId) this.tasks.resumeTask(task.id);
+      else { this.tasks.enqueueTask(task.id); this.tasks.startTask(task.id); }
       const combinedSignal = AbortSignal.any([this.tasks.getSignal(task.id), ...(signal ? [signal] : [])]);
       try {
         combinedSignal.throwIfAborted();
-        this.sessions.appendMessage(sessionKey, { role: 'user', content: userContent });
-        this.tasks.recordStep(task.id, { stepNumber: 1, toolName: 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
+        this.sessions.appendMessage(sessionKey, options.resumeTaskId ? { role: 'system', content: `Resume interrupted task ${task.id}. Original goal: ${userContent}. Existing effects may already have happened. Inspect prior tool results and actual files/state before repeating any action. Continue remaining work and report unresolved effects honestly.` } : { role: 'user', content: userContent });
+        this.tasks.recordStep(task.id, { stepNumber: this.tasks.getTaskSteps(task.id).length + 1, toolName: options.resumeTaskId ? 'assistant_resume' : 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
         const result = await this._executeAgentTurn({ ...options, signal: combinedSignal });
         combinedSignal.throwIfAborted();
         if (!result?.ok) throw new Error(result?.error || 'Assistant turn failed');

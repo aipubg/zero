@@ -64,6 +64,12 @@ try {
   assert.equal(fs.readFileSync(filename, 'utf8').trim(), marker);
   const history = await call('chat.history', { sessionKey: request.sessionKey });
   assert.equal(history.messages.filter(message => message.role === 'user').length, 1);
+  const resumed = await call('tasks.resume', { id: receipt.task_id });
+  assert.equal(resumed.taskId, receipt.task_id); assert.ok(resumed.content.trim());
+  const finished = await call('tasks.get', { id: receipt.task_id, taskId: receipt.task_id });
+  assert.equal((finished.task || finished).status, 'COMPLETED');
+  assert.equal(fs.readFileSync(filename, 'utf8').trim(), marker);
+  report.resumption = { taskId: resumed.taskId, completed: true, actualAssistantOutput: true, fileEffectPreserved: true };
   report.recovery = { firstPid, restartedPid: child.pid, taskId: receipt.task_id, status: recoveredTask.status, actualFileEffectPreserved: true, replayModelCalls: 0, originalUserMessages: 1 };
   report.status = 'PASS';
 } catch (error) { report.status = 'FAIL'; report.error = error.message; process.exitCode = 1; }
