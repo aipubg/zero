@@ -89,6 +89,11 @@ test('local install copies an external bundle; state, update, and uninstall surv
   assert.equal(updated.skill.version, '2.0.0');
   assert.equal(updated.skill.enabled, false);
   assert.equal(updated.skill.config.destination, 'reports');
+  assert.equal(fs.readFileSync(path.join(updated.archivePath, 'bundle/scripts/helper.txt'), 'utf8'), 'supporting asset');
+  assert.match(fs.readFileSync(path.join(updated.archivePath, 'bundle/SKILL.md'), 'utf8'), /version: '1.0.0'/);
+  const prior = JSON.parse(fs.readFileSync(path.join(updated.archivePath, 'record.json')));
+  assert.equal(prior.record.enabled, false);
+  assert.equal(prior.record.config.env.EXAMPLE_TOKEN, 'secret');
   assert.equal(fs.readFileSync(path.join(skillsDir, 'external-report/scripts/helper.txt'), 'utf8'), 'updated asset');
   restarted.enableSkill('external-report');
   assert.equal(new SkillLoader({ skillsDir }).getSkill('external-report').enabled, true);

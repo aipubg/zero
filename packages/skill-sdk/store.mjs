@@ -124,6 +124,7 @@ export class SkillStore {
     fs.mkdirSync(this.skillsDir, { recursive: true });
     const stage = fs.mkdtempSync(path.join(this.skillsDir, '.skill-stage-'));
     const stagedPackage = path.join(stage, 'package');
+    let previousArchive = null;
     try {
       // Copy and validate before touching an installed package, including bundled assets.
       copySkillTree(directory, stagedPackage);
@@ -137,7 +138,11 @@ export class SkillStore {
         const target = existing ? this._target(existing) : path.join(this.skillsDir, skill.name);
         if (!existing && fs.existsSync(target)) throw new Error('Skill destination already exists');
         const old = this._record(state, skill.name);
-        const backup = path.join(stage, 'previous');
+        if (existing) {
+          previousArchive = fs.mkdtempSync(path.join(this.skillsDir, '.skill-previous-'));
+          fs.writeFileSync(path.join(previousArchive, 'record.json'), JSON.stringify({ schemaVersion: 1, name: skill.name, archivedAt: Date.now(), record: old }, null, 2), { flag: 'wx', mode: 0o600 });
+        }
+        const backup = existing ? path.join(previousArchive, 'bundle') : null;
         let published = false;
         if (existing) fs.renameSync(target, backup);
         try {
@@ -156,7 +161,7 @@ export class SkillStore {
         }
       });
       const installed = this.getSkill(skill.name);
-      return { ok: true, name: skill.name, path: installed.filePath, skill: installed };
+      return { ok: true, name: skill.name, path: installed.filePath, skill: installed, ...(previousArchive ? { archivePath: previousArchive } : {}) };
     } finally { fs.rmSync(stage, { recursive: true, force: true }); }
   }
 

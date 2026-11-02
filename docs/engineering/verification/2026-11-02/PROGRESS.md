@@ -624,3 +624,20 @@ uninstall and process restart persistence. Separate independent inspection in
 [skill-uninstall-archive.json](skill-uninstall-archive.json) confirms the removed
 UI-installed bundle's 9,434-character SKILL.md, enabled flag and pinned source
 revision remain in its archive. Skill execution was not selected in this UI run.
+
+Skill update/refresh/save now also retain the previous bundle and registry
+configuration in a hidden .skill-previous-* archive outside the temporary staging
+directory. Previously success removed the previous copy with staging cleanup,
+including local edits. Failed publication still restores the previous active
+bundle. Active discovery excludes these archives, and returned update results
+include their path. Archive restore UI, encryption and retention management remain
+unfinished; no automatic deletion policy was introduced.
+
+Nine SDK regressions verify the previous asset bytes, version, enabled flag and
+configuration alongside active updated content.
+[skill-refresh-browser.json](skill-refresh-browser.json) records nine passing
+real UI workflows including actual pinned GitHub refresh and process restarts.
+[skill-refresh-archive.json](skill-refresh-archive.json) independently inspects
+that retained state: the original disposable local edit remains in the previous
+bundle while the active source refresh succeeded. This scope is preservation
+during refresh, not a completed rollback/restore user workflow.
