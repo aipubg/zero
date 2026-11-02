@@ -498,3 +498,17 @@ shows the real durable task ID/status/output, renders errors as failures, and
 adds no owner permission dialog. Nineteen UI regressions plus write-scope
 contract pass. This scoped result does not certify every community skill,
 external prerequisite, long-running execution interruption or marketplace format.
+
+Follow-up: starting another skill execution now clears the previous task ID from
+the status element before awaiting the request. A failed second attempt cannot
+retain a successful earlier task's identifier. The UI rebuild and 19 component
+regressions pass; this small change has no additional real-browser claim.
+
+Endurance checkpoint at 2026-11-02T06:31:17Z: the existing capture/OCR run reports
+5.47 hours, 8,219 successful captures/OCR operations and zero capture failures.
+It remains IN_PROGRESS, not a completed 24-hour gate, and does not cover the
+newer combined local-vision pipeline or all subprocess resource accounting.
+
+External executable plugin remains OPEN. The current SDK requires a Zero
+manifest and executable named handlers; bundled System Tools lifecycle evidence
+does not demonstrate compatibility with arbitrary OpenClaw community packages.

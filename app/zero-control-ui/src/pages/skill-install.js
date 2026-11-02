@@ -57,6 +57,7 @@ export function mountSkillInstall(container, host) {
   taskForm.append(goalLabel, run); section.append(taskForm, taskStatus);
   taskForm.addEventListener('submit', async event => {
     event.preventDefault(); if (run.disabled || !name.value.trim()) return;
+    delete taskStatus.dataset.taskId;
     run.disabled = true; update.disabled = true; remove.disabled = true; taskStatus.textContent = 'Executing skill task…';
     try {
       const response = await host.request('skills.execute', { name: name.value.trim(), goal: goal.value.trim() });
