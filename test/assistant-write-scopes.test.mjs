@@ -5,6 +5,7 @@ test('[CONTRACT] read-only sessions cannot bypass assistant mutation scopes thro
   const host = Object.create(ZeroNativeHost.prototype);
   let invoked = 0;
   host._runAssistantRequest = async () => { invoked++; return { ok: true }; };
+  host._resumeAssistantTask = async () => { invoked++; return { ok: true }; };
   host.tasks = { retryFailedTask: () => { invoked++; return { id: 'retry-task' }; } };
   const reader = { authenticated: true, role: 'viewer', scopes: ['operator.read'] };
   for (const method of ['chat.send', 'agent', 'gateway.agent', 'tasks.retry', 'tasks.resume']) {

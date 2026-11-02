@@ -544,3 +544,23 @@ REAL_BROWSER / INTEGRATION run also passes: four actual captures, one native
 window transition, one real get_screen_size result (1920x1080), no dropped events
 or failures. Synthetic overload checks do not stand in for this real capture
 workflow, and this run does not certify arbitrary OS event types or 24-hour use.
+
+tasks.retry now executes the registered assistant task rather than only changing
+FAILED to QUEUED. It validates the task/receipt before mutation, uses the original
+task ID, preserves the existing user transcript, records continuation instructions
+to inspect prior effects, and reconciles the durable request receipt on success
+or failure. Unsupported task types retain their state and return an explicit
+missing-executor error. The original write/admin authorization still applies;
+there is no additional owner approval flow.
+
+The real runner's new --retry-only mode failed first with a null AbortSignal:
+[assistant-retry-signal-failure.json](assistant-retry-signal-failure.json). This
+exposed retryFailedTask retaining completed_at from the failed attempt; retry now
+clears that terminal timestamp so the actual executor gets a fresh signal.
+[assistant-retry-real-pass.json](assistant-retry-real-pass.json) then passes an
+actual isolated host hold-induced failure, release and explicit task retry using
+the real configured model/write_file/read_file tools. The file content, original
+task COMPLETED status, one original user message, completed SQLite receipt and
+zero additional model calls on original chat request replay were checked.
+This verifies assistant retry after that bounded failure, not arbitrary external
+side-effect reconciliation, every task family or a provider/model reassignment UI.

@@ -636,7 +636,7 @@ export class TaskStateMachine {
     const now = Date.now();
     const updateStmt = this.db.prepare(`
       UPDATE zero_tasks
-      SET status = 'QUEUED', error = NULL, updated_at = ?
+      SET status = 'QUEUED', error = NULL, completed_at = NULL, updated_at = ?
       WHERE id = ?
     `);
     updateStmt.run(now, taskId);

@@ -1,0 +1,16 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-02T06:35:50.259Z",
+  "scope": "Actual hold-induced FAILED assistant task explicitly retried through real model/tools; original task ID, single user message, file output and durable receipt verified",
+  "retry": {
+    "taskId": "task_1793601350951_t3ri9r",
+    "actualFileEffect": true,
+    "originalUserMessages": 1,
+    "replayModelCalls": 0
+  },
+  "finishedAt": "2026-11-02T06:35:57.116Z"
+}

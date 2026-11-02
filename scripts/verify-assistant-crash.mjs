@@ -44,6 +44,30 @@ function call(method, params = {}) {
 async function stop() { socket?.close(); if (child?.exitCode === null) { const closed = once(child, 'close'); child.kill(); await closed; } }
 try {
   await start(); const firstPid = child.pid;
+  if (process.argv.includes('--retry-only')) {
+    const filename = path.join(output, 'retried-effect.txt'); const marker = 'ZERO_REAL_RETRY_EFFECT';
+    const request = { sessionKey: 'real-retry-task', idempotencyKey: 'real-retry-request', message: `Use write_file to create ${JSON.stringify(filename)} containing exactly ${marker}. Use read_file to verify it and give a short confirmation.` };
+    await call('zero-policy.computer-hold.take');
+    await assert.rejects(call('chat.send', request), /hold/i);
+    const db = new DatabaseSync(path.join(state, 'data/zero-sessions.sqlite'), { readOnly: true });
+    const failed = db.prepare('SELECT status,task_id FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey);
+    assert.equal(failed.status, 'failed'); assert.ok(failed.task_id); assert.equal(fs.existsSync(filename), false);
+    await call('zero-policy.computer-hold.release');
+    const retried = await call('tasks.retry', { taskId: failed.task_id });
+    assert.equal(retried.taskId, failed.task_id); assert.ok(retried.content.trim());
+    assert.equal(fs.readFileSync(filename, 'utf8').trim(), marker);
+    const task = await call('tasks.get', { id: failed.task_id });
+    assert.equal((task.task || task).status, 'COMPLETED');
+    const history = await call('chat.history', { sessionKey: request.sessionKey });
+    assert.equal(history.messages.filter(message => message.role === 'user').length, 1);
+    const completed = db.prepare('SELECT status FROM zero_assistant_receipts WHERE run_id=?').get(request.idempotencyKey);
+    assert.equal(completed.status, 'completed'); db.close();
+    const before = (await call('models.status')).upstreamRequestCount;
+    assert.equal((await call('chat.send', request)).taskId, failed.task_id);
+    assert.equal((await call('models.status')).upstreamRequestCount, before);
+    report.scope = 'Actual hold-induced FAILED assistant task explicitly retried through real model/tools; original task ID, single user message, file output and durable receipt verified';
+    report.retry = { taskId: failed.task_id, actualFileEffect: true, originalUserMessages: 1, replayModelCalls: 0 };
+  } else {
   const filename = path.join(output, 'actual-effect.txt'); const marker = 'ZERO_CRASH_EFFECT_ONCE';
   const request = { sessionKey: 'real-crash-task', idempotencyKey: 'real-crash-request', message: `Use write_file to create ${JSON.stringify(filename)} with exactly ${JSON.stringify(marker)}. Then read_file to verify it. Only after that, write a detailed 1000-word explanation of the verification.` };
   const running = call('chat.send', request).catch(error => ({ error: error.message }));
@@ -71,6 +95,7 @@ try {
   assert.equal(fs.readFileSync(filename, 'utf8').trim(), marker);
   report.resumption = { taskId: resumed.taskId, completed: true, actualAssistantOutput: true, fileEffectPreserved: true };
   report.recovery = { firstPid, restartedPid: child.pid, taskId: receipt.task_id, status: recoveredTask.status, actualFileEffectPreserved: true, replayModelCalls: 0, originalUserMessages: 1 };
+  }
   report.status = 'PASS';
 } catch (error) { report.status = 'FAIL'; report.error = error.message; process.exitCode = 1; }
 finally { await stop(); report.finishedAt = new Date().toISOString(); fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify({ ...report, output, retainedState: state }, null, 2)); }

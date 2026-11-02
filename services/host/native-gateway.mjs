@@ -1488,7 +1488,7 @@ export class ZeroNativeHost {
         return { ok: true, checkpoints: this.tasks.listCheckpoints(params.taskId) };
 
       case 'tasks.retry':
-        return { ok: true, task: this.tasks.retryFailedTask(params.taskId) };
+        return await this._resumeAssistantTask(params.taskId || params.id, { ws, isReferenceWire, clientSession }, true);
 
       // Skills SDK RPCs
       case 'skills.list':
@@ -1893,13 +1893,23 @@ export class ZeroNativeHost {
     return this.executeAssistantOnce(options, request => this._executeAssistantRequest(request));
   }
 
-  async _resumeAssistantTask(taskId, context) {
+  async _resumeAssistantTask(taskId, context, retry = false) {
     const task = this.tasks.getTask(taskId);
-    if (!task || task.status !== 'WAITING') throw new Error('Only an existing WAITING task can resume');
+    const requiredStatus = retry ? 'FAILED' : 'WAITING';
+    if (!task || task.status !== requiredStatus) throw new Error(`Only an existing ${requiredStatus} task can ${retry ? 'retry' : 'resume'}`);
     const receipt = this.sessions.db.prepare('SELECT * FROM zero_assistant_receipts WHERE task_id=? LIMIT 1').get(taskId);
     if (!receipt) throw new Error('This task has no registered assistant resume executor; its state was preserved');
-    const result = await this._executeAssistantRequest({ ...context, sessionKey: receipt.session_id, runId: receipt.run_id,
-      userContent: task.goal, source: 'resume', resumeTaskId: taskId });
+    this.sessions.db.prepare("UPDATE zero_assistant_receipts SET status='running',error=NULL,updated_at=? WHERE session_id=? AND run_id=?")
+      .run(Date.now(), receipt.session_id, receipt.run_id);
+    let result;
+    try {
+      result = await this._executeAssistantRequest({ ...context, sessionKey: receipt.session_id, runId: receipt.run_id,
+        userContent: task.goal, source: retry ? 'retry' : 'resume', resumeTaskId: taskId, retryFailed: retry });
+    } catch (error) {
+      this.sessions.db.prepare("UPDATE zero_assistant_receipts SET status='failed',error=?,updated_at=? WHERE session_id=? AND run_id=?")
+        .run(error.message, Date.now(), receipt.session_id, receipt.run_id);
+      throw error;
+    }
     this.sessions.db.prepare("UPDATE zero_assistant_receipts SET status='completed',result_json=?,error=NULL,updated_at=? WHERE session_id=? AND run_id=?")
       .run(JSON.stringify(result), Date.now(), receipt.session_id, receipt.run_id);
     return result;
@@ -1913,7 +1923,8 @@ export class ZeroNativeHost {
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
       const task = options.resumeTaskId ? this.tasks.getTask(options.resumeTaskId) : this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
       this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=? WHERE session_id=? AND run_id=?').run(task.id, sessionKey, options.runId);
-      if (options.resumeTaskId) this.tasks.resumeTask(task.id);
+      if (options.retryFailed) { this.tasks.retryFailedTask(task.id); this.tasks.startTask(task.id); }
+      else if (options.resumeTaskId) this.tasks.resumeTask(task.id);
       else { this.tasks.enqueueTask(task.id); this.tasks.startTask(task.id); }
       const combinedSignal = AbortSignal.any([this.tasks.getSignal(task.id), ...(signal ? [signal] : [])]);
       try {
