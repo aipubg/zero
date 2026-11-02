@@ -754,3 +754,22 @@ or PASS. The reason/time of process loss is unknown. Original summary is retaine
 unchanged; a separate audit records the missing live handle. Combined vision and
 all subprocess resource endurance remain outstanding, so the old capture-only
 run is not silently restarted or counted toward those gates.
+
+The endurance runner now optionally uses the actual local GGUF vision runtime
+with --local-vision 1 and --vision-interval-ms, records native capture/metadata/OCR
+resourceUsage for each real frame, and verifies persisted inferred observations
+after reopening encrypted SQLite. Classification uses the required separate
+REAL_OS / INTEGRATION / ENDURANCE labels. Missing SDK/model subprocess accounting
+now explicitly prevents overall completed24Hours and keeps verdict PARTIAL even
+when the bounded capture/OCR/vision pipeline succeeds. captureOcrCompleted24Hours
+is a separately named subset and cannot certify the full requirement.
+
+[endurance-combined-short-partial.json](endurance-combined-short-partial.json)
+records a real 30-second run: 13 captures/OCR, two completed local inferences,
+encrypted persistence/reopen verified, zero capture/OCR/buffer budget failures.
+One in-flight model request is aborted during orderly stop (runtime failures=1,
+observer inference failures=0); this is visible, not hidden. Pipeline verdict is
+passed, overall verdict partial, completed24Hours false and process exit 1.
+The earlier development run remains in artifacts with its superseded verdict;
+it is not accepted for overall resource verification. No new 24-hour run has been
+launched yet: full subprocess measurements remain required before that gate.
