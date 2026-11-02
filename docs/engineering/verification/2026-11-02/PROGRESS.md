@@ -141,5 +141,25 @@ inspection. External skill verification is `node scripts/verify-external-skill.m
   UNIT/CONTRACT/INTEGRATION checks; this is not 64 real-world acceptance gates.
 - Remaining native chat work includes durable idempotency receipts and interrupted
   request recovery. Successful ordinary sends do not certify those scenarios.
-- The new `services/host/screen-observation.mjs` adapter is work in progress and
-  is not yet connected or included in this verified chat/voice milestone.
+- Observation adapter verification is recorded separately below.
+
+## Native observation lifecycle — 01:33 UTC checkpoint
+
+[browser-observation-eleven-flows.json](browser-observation-eleven-flows.json)
+passes eleven real Chrome workflows. About now uses the existing durable
+observation lifecycle with actual native capture, instead of a wrapped telemetry
+object its controls could not interpret. Enable waits for a real first capture;
+failure never becomes a successful capture status. Private Mode stops capture
+and clears app-owned frames. Actual process restarts verify Private Mode remains
+on, enabled observation resumes when private mode is off, and disabled capture
+stays disabled. Real summary retrieval and encrypted field status are checked.
+No owner permission prompt or new screen was added.
+
+The native adapter preserves unrelated preference fields and uses atomic
+replacement of the preference file. Three additional CONTRACT/INTEGRATION tests
+exercise file-backed reopen, original settings preservation, private buffer
+clearing and capture/storage failures; all 21 native/legacy lifecycle tests pass.
+These deterministic adapter tests are not counted as real screen capture.
+The standalone encrypted 24-hour run is separate, remains incomplete, and was
+not restarted by these isolated browser process tests. Local vision remains
+unavailable until a real model/runtime has been installed and validated.

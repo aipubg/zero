@@ -42,6 +42,7 @@ import { WorkspaceManager } from '../../packages/workspaces/index.mjs';
 import { DeviceManager } from '../../packages/device-protocol/index.mjs';
 import { VoiceEngine } from '../../packages/voice-engine/index.mjs';
 import { VoiceConversation } from '../../packages/voice-engine/conversation.mjs';
+import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
@@ -152,6 +153,7 @@ export class ZeroNativeHost {
 
     const sessionDb = path.join(dataDir, 'zero-sessions.sqlite');
     this.screenObserver = createScreenObserver({ dataDir });
+    this.observationLifecycle = createNativeObservationLifecycle({ observer: this.screenObserver, prefsPath: this.prefsPath });
     this.modelFabric = new ModelFabric({
       configPath: path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
       aliases: { 'zero-lead': 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
@@ -278,6 +280,7 @@ export class ZeroNativeHost {
 
   async start() {
     await this.pluginManager.initialize();
+    await this.observationLifecycle.initialize();
     const wsModule = await loadWs();
     const WebSocketServer = wsModule.WebSocketServer;
 
@@ -732,7 +735,7 @@ export class ZeroNativeHost {
           'sessions.subscribe', 'config.get', 'config.patch', 'config.schema', 'config.schema.lookup',
           'users.self', 'users.prefs.get', 'users.prefs.set', 'models.authStatus',
           'memory.search', 'agents.workspace.get', 'doctor.memory.status', 'webSearch.status', 'webSearch.test',
-          'zero.observation.query', 'zero.observation.control',
+          'zero.observation.query', 'zero.observation.control', 'zero.observation.recent',
           ...SKILLS_UI_METHODS,
           ...PLUGINS_UI_METHODS,
         ];
@@ -1226,6 +1229,7 @@ export class ZeroNativeHost {
         const observerTelemetry = this.screenObserver.getStatus();
         return {
           ok: true,
+          ...this.observationLifecycle.status(),
           screen: { available: process.platform === 'win32', active: observerTelemetry.running },
           accessibility: { available: Boolean(windowState?.ok), engine: 'UIAutomation' },
           activeWindow: windowState?.window || null,
@@ -1242,13 +1246,11 @@ export class ZeroNativeHost {
       }
 
       case 'zero.observation.control': {
-        if (params.action === 'start') await this.screenObserver.start();
-        else if (['stop', 'private-on'].includes(params.action)) {
-          await this.screenObserver.stop();
-          if (params.action === 'private-on') this.screenObserver.buffer.clear();
-        } else throw new Error('Observation action must be start, stop or private-on');
-        return { ok: true, observer: this.screenObserver.getStatus() };
+        return { ok: true, ...await this.observationLifecycle.control(params.action) };
       }
+
+      case 'zero.observation.recent':
+        return this.observationLifecycle.recent(params);
 
       case 'zero.integrations.cli.status':
         return {
@@ -2311,7 +2313,7 @@ export class ZeroNativeHost {
     }
     await this.workspaceManager?.close();
     await this.pluginManager?.close();
-    await this.screenObserver?.destroy();
+    await this.observationLifecycle?.dispose();
     this.voiceEngine?.close();
     this.sessions.close();
     this.tasks.close();

@@ -226,6 +226,41 @@ try {
     assert.equal(remaining.plugins.some(plugin => plugin.id === 'system-tools'), false);
     return { installedPersisted: true, executed: executed.executed, platform: executed.platform, verified: executed.verified, disabledAcrossProcessRestart: true, reenabled: true, uninstalled: true };
   });
+  if (process.argv.includes('--screen')) await check('About controls real native capture and durable Private Mode across process restarts', async () => {
+    await page.goto(`${base}/settings/about`);
+    await page.getByRole('button', { name: 'Enable observation', exact: true }).click();
+    await page.getByText(/^Capturing locally:/).waitFor();
+    const capturing = await rpc('zero.observation.status');
+    assert.equal(capturing.captureRunning, true);
+    assert.ok(capturing.observer.buffer.frameCount > 0);
+    assert.ok(capturing.counters.processed > 0);
+    const recent = await rpc('zero.observation.recent');
+    assert.equal(recent.ok, true); assert.ok(recent.observations[0].summary);
+    await page.getByRole('button', { name: 'Private Mode', exact: true }).click();
+    await page.getByText(/^Private Mode is on\./).waitFor();
+    const privateState = await rpc('zero.observation.status');
+    assert.equal(privateState.privateMode, true);
+    assert.equal(privateState.captureRunning, false); assert.equal(privateState.ring.frames, 0);
+    await stop(); await start(); await page.reload();
+    await page.getByText(/^Private Mode is on\./).waitFor();
+    assert.equal((await rpc('zero.observation.status')).captureRunning, false);
+    await page.getByRole('button', { name: 'Exit Private Mode', exact: true }).click();
+    await page.getByText(/^Capturing locally:/).waitFor();
+    await stop(); await start(); await page.reload();
+    await page.getByText(/^Capturing locally:/).waitFor();
+    const resumed = await rpc('zero.observation.status');
+    assert.equal(resumed.preferenceEnabled, true); assert.equal(resumed.captureRunning, true);
+    assert.ok(resumed.observer.stats.lastCaptureTimestamp > capturing.observer.stats.lastCaptureTimestamp);
+    await page.getByRole('button', { name: 'Stop observation', exact: true }).click();
+    await page.getByText('Observation is off. No screen frames are being captured.', { exact: true }).waitFor();
+    await stop(); await start(); await page.reload();
+    await page.getByRole('button', { name: 'Enable observation', exact: true }).waitFor();
+    const stopped = await rpc('zero.observation.status');
+    assert.equal(stopped.preferenceEnabled, false); assert.equal(stopped.captureRunning, false);
+    return { actualFrames: capturing.observer.buffer.frameCount, persistedSummaries: capturing.counters.processed,
+      privateClearedFrames: true, privatePersistedAcrossProcess: true, enabledResumedAfterProcessRestart: true,
+      disabledPersisted: true, encryptedFields: resumed.observer.observationStore.encryptedFields, localVision: 'UNVERIFIED', completed24Hours: false };
+  });
   await check('Actual wheel input increases About scrollTop', async () => {
     await page.setViewportSize({ width: 1000, height: 400 });
     await page.goto(`${base}/settings/about`);
