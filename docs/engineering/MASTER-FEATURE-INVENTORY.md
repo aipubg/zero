@@ -1,3 +1,9 @@
+# Current feature-verification notice — 2026-11-01
+
+**Product PARTIAL; release BLOCKED.** The inventory below is a historical baseline, not fresh independent verification of every listed feature. Individual e2e/RPC baseline claims were not re-audited here. Current phase/48-requirement coverage and gaps are recorded in the [classification audit](verification/CLASSIFICATION-AUDIT.md) and [per-leaf JSON inventory](verification/test-classification-inventory.json). Metadata, HTTP success, synthetic fixtures and local worker/device registrations must not be promoted into real-workflow completion. Physical mobile/device/cloud-worker gates are BLOCKED; reported UI smoke improved after the asset-path fix, with no chat trim crash and key surfaces rendered, while persistence/reconnect acceptance remains unverified.
+
+## Historical feature inventory — preserved; not current production acceptance
+
 # Zero AI — Master Feature & Subsystem Inventory
 
 **Document Reference:** `docs/engineering/MASTER-FEATURE-INVENTORY.md`  

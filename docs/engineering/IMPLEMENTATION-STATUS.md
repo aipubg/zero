@@ -1,3 +1,11 @@
+# Current implementation/verification distinction — 2026-11-01
+
+**Product PARTIAL; release acceptance BLOCKED.** Historical dashboards below are retained but do not establish current production completion. The [current classification audit](verification/CLASSIFICATION-AUDIT.md) separates implementation claims, scoped assertion results and independent workflow verification. Current phase sources contain 89 leaves; requirements contain 48. All legacy assertions were NOT_RUN by this audit.
+
+Latest reported browser smoke after the canonical asset-path fix has no trim crash and renders model/Skills/Search/Memory surfaces; persisted interaction and reconnect have not passed. The five originally missing RPCs were not individually revalidated by this audit. Search returned empty with both APIs 200 and zero citations, so actual retrieval is not PASS. Physical mobile/device/cloud-worker evidence is BLOCKED because the user confirmed no real targets. Reported one-model inference (1938 ms), 3/3 search provenance contracts and 19-file backup integrity have narrow scopes and do not establish search retrieval, restore or overall release readiness.
+
+## Historical implementation status — preserved; current completion claims superseded
+
 # Zero AI — Engineering Implementation Status
 
 **Last Updated:** 2026-11-01  

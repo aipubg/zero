@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: all audited source hashes, exact labels, titles and leaf counts match
+ok 1 - all audited source hashes, exact labels, titles and leaf counts match
+  ---
+  duration_ms: 3.9403
+  type: 'test'
+  ...
+# Subtest: classification rejects source drift, missing suites, label drift and title drift
+ok 2 - classification rejects source drift, missing suites, label drift and title drift
+  ---
+  duration_ms: 2.2177
+  type: 'test'
+  ...
+# Subtest: literal extraction preserves title and exact CRLF line
+ok 3 - literal extraction preserves title and exact CRLF line
+  ---
+  duration_ms: 0.1115
+  type: 'test'
+  ...
+# Subtest: dry audit has no passing assertions or verified requirements
+ok 4 - dry audit has no passing assertions or verified requirements
+  ---
+  duration_ms: 0.1627
+  type: 'test'
+  ...
+# Subtest: leaf skip and TODO, including empty reasons, never become PASS
+ok 5 - leaf skip and TODO, including empty reasons, never become PASS
+  ---
+  duration_ms: 0.2564
+  type: 'test'
+  ...
+# Subtest: suite-only skip or setup failure blocks all missing leaves and adds no parent PASS
+ok 6 - suite-only skip or setup failure blocks all missing leaves and adds no parent PASS
+  ---
+  duration_ms: 0.1201
+  type: 'test'
+  ...
+# Subtest: failures, cancellation, timeouts and child transport problems cannot become green
+ok 7 - failures, cancellation, timeouts and child transport problems cannot become green
+  ---
+  duration_ms: 0.1657
+  type: 'test'
+  ...
+# Subtest: unknown/duplicate leaves and nonzero child exit cannot produce overall PASS
+ok 8 - unknown/duplicate leaves and nonzero child exit cannot produce overall PASS
+  ---
+  duration_ms: 0.0932
+  type: 'test'
+  ...
+# Subtest: all passing assertions still leave acceptance and release blocked
+ok 9 - all passing assertions still leave acceptance and release blocked
+  ---
+  duration_ms: 0.1123
+  type: 'test'
+  ...
+# Subtest: real Node reporter handles passing, skipped, TODO and failed fixtures
+ok 10 - real Node reporter handles passing, skipped, TODO and failed fixtures
+  ---
+  duration_ms: 60.3863
+  type: 'test'
+  ...
+# Subtest: real Node suite skip before declaration blocks inventoried children
+ok 11 - real Node suite skip before declaration blocks inventoried children
+  ---
+  duration_ms: 56.4513
+  type: 'test'
+  ...
+# Subtest: real Node setup failure leaves inventoried assertions blocked
+ok 12 - real Node setup failure leaves inventoried assertions blocked
+  ---
+  duration_ms: 54.6015
+  type: 'test'
+  ...
+# Subtest: hung child has a bounded deadline and cannot pass
+ok 13 - hung child has a bounded deadline and cannot pass
+  ---
+  duration_ms: 416.5001
+  type: 'test'
+  ...
+# Subtest: CLI rejects implicit execution and invalid selections without touching host
+ok 14 - CLI rejects implicit execution and invalid selections without touching host
+  ---
+  duration_ms: 197.5111
+  type: 'test'
+  ...
+# Subtest: CLI dry audit returns NOT_RUN and BLOCKED for all 137 leaves
+ok 15 - CLI dry audit returns NOT_RUN and BLOCKED for all 137 leaves
+  ---
+  duration_ms: 51.2803
+  type: 'test'
+  ...
+# Subtest: CLI integrity check exit zero explicitly means no product tests ran
+ok 16 - CLI integrity check exit zero explicitly means no product tests ran
+  ---
+  duration_ms: 51.5721
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 946.6437

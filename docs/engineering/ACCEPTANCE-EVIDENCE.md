@@ -1,3 +1,13 @@
+# Current acceptance correction — 2026-11-01
+
+**Product PARTIAL; release BLOCKED.** The historical results below are preserved, not rerun by this audit. In particular, sections 4–5 do not establish all-phase or all-48 real-world acceptance. Source inspection found **89 phase leaves plus 17 parents**, and **48 requirement leaves plus one parent**. Parent suite PASS results are not additional requirements.
+
+Several requirement labels exceed their assertions: browser navigation uses HTTP GET; scrolling searches CSS; keyboard input checks action names; external skill execution matches metadata; OCR inserts handwritten text; restart recovery uses :memory:; clean installation reads package.json; endurance pushes 1000 buffers without a soak duration. These are partial component/contract checks, not verified outcomes for the named requirements.
+
+Use the [current audit and integration evidence](verification/CLASSIFICATION-AUDIT.md), [exact per-leaf inventory](verification/test-classification-inventory.json), and [dry audit report](verification/classified-audit-run.json). Latest reported browser smoke after the asset path fix has no chat trim crash and renders key surfaces, but persistence/reconnect remain unverified, keeping browser acceptance BLOCKED. Real search returned empty with both APIs 200 and zero citations; no source retrieval PASS. Actual mobile/device/cloud targets are unavailable and BLOCKED. One reported NVIDIA inference and backup/search contract checks do not close the other gates.
+
+## Historical acceptance report — preserved; completion interpretations superseded
+
 # Zero AI — Verified Baseline Test Evidence (Phase 0)
 
 **Document Reference:** `docs/audit/BASELINE-TEST-EVIDENCE.md`  

@@ -1,0 +1,51 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "REAL_BROWSER"
+  ],
+  "startedAt": "2026-11-02T00:53:12.361Z",
+  "status": "FAIL",
+  "directory": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-skill-2wuFj6",
+  "evidence": "E:\\zero\\artifacts\\external-skill\\1793580792361",
+  "source": {
+    "type": "github",
+    "url": "https://github.com/anthropics/skills.git",
+    "ref": "ca45fc496a3436251f191354091d557da31c15b5",
+    "subpath": "skills/frontend-design",
+    "revision": "ca45fc496a3436251f191354091d557da31c15b5"
+  },
+  "execution": {
+    "ok": true,
+    "status": "completed",
+    "taskId": "task_1793580796800_wazwy4",
+    "output": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-skill-2wuFj6\\community-skill-counter.html",
+    "steps": [
+      {
+        "capability": "model",
+        "status": "completed"
+      },
+      {
+        "capability": "write_file",
+        "status": "completed"
+      },
+      {
+        "capability": "model",
+        "status": "completed"
+      },
+      {
+        "capability": "read_file",
+        "status": "completed"
+      },
+      {
+        "capability": "model",
+        "status": "completed"
+      }
+    ]
+  },
+  "artifact": {
+    "bytes": 2291,
+    "sha256": "fc331f1d361298a6bf13a67a541ea1bd6ef3c9f72aa3a6a2f0cd6c48a436790b"
+  },
+  "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Increment', exact: true })\u001b[22m\n",
+  "finishedAt": "2026-11-02T00:55:08.435Z"
+}

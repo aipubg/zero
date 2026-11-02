@@ -1,0 +1,2264 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-01T16:22:57.541Z",
+  "mode": "AUDIT_ONLY",
+  "inventory": "docs/engineering/verification/test-classification-inventory.json",
+  "selectedSuites": [
+    "phase1",
+    "phase2",
+    "phase3",
+    "phase4",
+    "phase5",
+    "phase6",
+    "phase7",
+    "phase8",
+    "phase9",
+    "phase10",
+    "phase11",
+    "phase12",
+    "phase13",
+    "phase14",
+    "phase15",
+    "phase16",
+    "phase17",
+    "requirements48"
+  ],
+  "sourceHashes": {
+    "test/phase1-host-contracts.test.mjs": "54a361f17b67ef9583b2fc7dc8eafd62832d8238a800bcaf355a8078b38af3d5",
+    "test/phase2-ui-interaction.test.mjs": "ad62a0afc6a5803ce7bd8f909d8a847db2e3459958d0ba3bf5d4ac364dd08381",
+    "test/phase3-model-fabric.test.mjs": "85b69bbb34fab3ef8301d948ebabc5cde31f1204116420d44f9dde9e3e2a5f14",
+    "test/phase4-multi-agent.test.mjs": "243323dc7daa5a9ccf90ef71b04f4e6a3fb3f3e1465997b0123485f615812b86",
+    "test/phase5-durable-tasks.test.mjs": "4649615a5488167ac5e1dcf0d72dbc7223aaa351f6119e58504cc75f84844cd5",
+    "test/phase6-skills-plugins.test.mjs": "df8be593561616cebc852e043f0daec9424e4bba1dfd3c2d3144aaa154e6e4b1",
+    "test/phase7-computer-operator.test.mjs": "71c16355953e01635545db4c0bfd1253f63a7ebc671b164630981300e42daed4",
+    "test/phase8-screen-intelligence.test.mjs": "c60f4e61bfc07b486f3dae309bdeec7181977fd0d1fbe30bc7cc05607875ad95",
+    "test/phase9-unified-memory.test.mjs": "6d9d1a600766718eadcdc2483dd7a8e7b99c12383ca34eaf64f01f41bbf02034",
+    "test/phase10-research-engine.test.mjs": "382bdfa506ffba0e3df20ef3eb9317e8254c5e8543b05ad18d2fe545c2ee08ee",
+    "test/phase11-automation-connectors.test.mjs": "62206b97ebeeb889591bed0434d72bf424a84fe541aa34e45e50762630c7967e",
+    "test/phase12-workspaces-workers.test.mjs": "d5116bd7316889d2a3d7326ffad9b2278dd6976e4a1da855fe1786c58ab67d04",
+    "test/phase13-project-workflows.test.mjs": "a938d5740e2ba9b0e4f4ec8438bb006a2d3c60a69e7f9b0a5665f5abf6f78016",
+    "test/phase14-device-protocol.test.mjs": "ff18fc7bbc45b4199d876d7877ac73f498ab62961c2603f02d9048784dc7789c",
+    "test/phase15-voice-engine.test.mjs": "fabe75685b1c5f81d83a5590c4421853bea265c9ec621876a458c66376d06c35",
+    "test/phase16-zero-experience.test.mjs": "0fb8b54bddb4f3e35c1956b619a7e361ddd31a64cddb0f227b6b73842b27f4b9",
+    "test/phase17-production-release.test.mjs": "ccc3720cdbf132d43d9e1bbb5c262ed8db67a3a4dc2d99aec57a9edaa67906a8",
+    "test/real-world-requirements-48.test.mjs": "0476c73d8c6d825bbd906385051b031e79e2046fa4dbc8c2d436bfd654815d8f"
+  },
+  "scope": "Selected audited leaves only; never an overall product acceptance result",
+  "summary": {
+    "leafCount": 137,
+    "counts": {
+      "PASS": 0,
+      "FAIL": 0,
+      "BLOCKED": 0,
+      "NOT_RUN": 137
+    },
+    "assertionStatus": "NOT_RUN",
+    "releaseStatus": "BLOCKED",
+    "releaseReason": "Required workflow evidence remains missing; assertion PASS never closes acceptance gaps",
+    "verifiedRequirements": 0
+  },
+  "suiteRuns": [],
+  "results": [
+    {
+      "id": "phase1:01",
+      "file": "test/phase1-host-contracts.test.mjs",
+      "title": "HTTP /health returns general status summary",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Already-running health does not verify launch/supervision."
+      ]
+    },
+    {
+      "id": "phase1:02",
+      "file": "test/phase1-host-contracts.test.mjs",
+      "title": "HTTP /health/liveness returns live process telemetry",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No resource time series or crash detection."
+      ]
+    },
+    {
+      "id": "phase1:03",
+      "file": "test/phase1-host-contracts.test.mjs",
+      "title": "HTTP /health/readiness returns subsystem readiness flags",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No dependent workflows exercise declared readiness."
+      ]
+    },
+    {
+      "id": "phase1:04",
+      "file": "test/phase1-host-contracts.test.mjs",
+      "title": "HTTP /health/features reports operational capability domains",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Flags do not demonstrate working capabilities."
+      ]
+    },
+    {
+      "id": "phase1:05",
+      "file": "test/phase1-host-contracts.test.mjs",
+      "title": "WebSocket RPC contracts match HTTP readiness definitions",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No transport/subsystem fault or active workload."
+      ]
+    },
+    {
+      "id": "phase1:06",
+      "file": "test/phase1-host-contracts.test.mjs",
+      "title": "WebSocket connection recovery resumes session state without loss",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No host restart/network fault; cleanup delete sent without acknowledgement."
+      ]
+    },
+    {
+      "id": "phase2:01",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "Chat Page (/chat/zero) renders interactive controls & session state",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Root alone satisfies input check; no chat message/result."
+      ]
+    },
+    {
+      "id": "phase2:02",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "Model Providers Page (/settings/model-providers) displays configured providers",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No provider edits or model execution."
+      ]
+    },
+    {
+      "id": "phase2:03",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "Skills Page (/settings/skills) renders skills catalog without errors",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Branding alone passes; no skill lifecycle."
+      ]
+    },
+    {
+      "id": "phase2:04",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "Memory Page (/settings/memory) renders memory search and management",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Branding alone passes; no search/edit/delete."
+      ]
+    },
+    {
+      "id": "phase2:05",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "Automation Page (/settings/automation) renders scheduled workflows",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No job registration or observed UI execution."
+      ]
+    },
+    {
+      "id": "phase2:06",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "Gateway Page (/settings/gateway) reflects authoritative port and runtime",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Branding alone passes; no reconnect or settings changes."
+      ]
+    },
+    {
+      "id": "phase2:07",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "Settings pages scroll without viewport lock",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Not executed by this audit; covers only /settings/about at one viewport, without other route/content/viewport scrolling or form workflows."
+      ]
+    },
+    {
+      "id": "phase2:08",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "title": "RPC form preferences update and persist across re-read",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No form interaction, restart check or added-preference cleanup."
+      ]
+    },
+    {
+      "id": "phase3:01",
+      "file": "test/phase3-model-fabric.test.mjs",
+      "title": "ModelFabric resolves canonical model IDs and aliases",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No live selection request."
+      ]
+    },
+    {
+      "id": "phase3:02",
+      "file": "test/phase3-model-fabric.test.mjs",
+      "title": "ModelFabric resolves per-agent model assignment",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No two independent models or concurrent agents."
+      ]
+    },
+    {
+      "id": "phase3:03",
+      "file": "test/phase3-model-fabric.test.mjs",
+      "title": "ModelFabric calculates context budget against model window",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No oversized conversation/live provider token limit."
+      ]
+    },
+    {
+      "id": "phase3:04",
+      "file": "test/phase3-model-fabric.test.mjs",
+      "title": "ModelFabric tracks token usage and request statistics",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No actual provider usage, billing or cost verification."
+      ]
+    },
+    {
+      "id": "phase3:05",
+      "file": "test/phase3-model-fabric.test.mjs",
+      "title": "ModelFabric throws deterministic error for unknown model invocation",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No upstream failure/failover, retry or cancellation."
+      ]
+    },
+    {
+      "id": "phase3:06",
+      "file": "test/phase3-model-fabric.test.mjs",
+      "title": "ModelFabric streams genuine incremental deltas from configured provider",
+      "labels": [
+        "REAL_EXTERNAL"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Done-only passes; no incremental timing, request count or cancellation."
+      ]
+    },
+    {
+      "id": "phase4:01",
+      "file": "test/phase4-multi-agent.test.mjs",
+      "title": "4.1 Agent Profiles & Specialist Discovery",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No specialist work or independent model assignments."
+      ]
+    },
+    {
+      "id": "phase4:02",
+      "file": "test/phase4-multi-agent.test.mjs",
+      "title": "4.2 Dynamic Team Creation and Registry",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No workload scheduling/result; fixed entry remains."
+      ]
+    },
+    {
+      "id": "phase4:03",
+      "file": "test/phase4-multi-agent.test.mjs",
+      "title": "4.3 Automated Goal Decomposition into DAG Plan",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No generalization or delegated execution."
+      ]
+    },
+    {
+      "id": "phase4:04",
+      "file": "test/phase4-multi-agent.test.mjs",
+      "title": "4.4 Structured Agent Messaging Frames",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No child produces events or real artifact."
+      ]
+    },
+    {
+      "id": "phase4:05",
+      "file": "test/phase4-multi-agent.test.mjs",
+      "title": "4.5 Desktop Lease Mutual Exclusion & Contention Prevention",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No simultaneous physical action contention/enforcement."
+      ]
+    },
+    {
+      "id": "phase4:06",
+      "file": "test/phase4-multi-agent.test.mjs",
+      "title": "4.6 End-to-End Multi-Agent Workflow Execution & Consolidation",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No independent artifact readback, model/tool provenance, parallel branches or overlap."
+      ]
+    },
+    {
+      "id": "phase5:01",
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "title": "5.1 Durable Task Lifecycle & Step Persistence in SQLite",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No durable disk reopen or cross-process persistence."
+      ]
+    },
+    {
+      "id": "phase5:02",
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "title": "5.2 Persistent Step Checkpoints with State Snapshots & Artifacts",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No artifact bytes, process restart or continuation; task remains."
+      ]
+    },
+    {
+      "id": "phase5:03",
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "title": "5.3 Idempotency Key Execution Guarantees Single Execution",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No restart, contention or external side-effect deduplication."
+      ]
+    },
+    {
+      "id": "phase5:04",
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "title": "5.4 Task Execution Budget Enforcement",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No runtime deadline, cost budget or active interruption."
+      ]
+    },
+    {
+      "id": "phase5:05",
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "title": "5.5 Task Failure and Retry Policy Execution",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No real transient failure; also leaves a live task."
+      ]
+    },
+    {
+      "id": "phase5:06",
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "title": "5.6 Process Reboot Recovery Sweep (RUNNING -> WAITING)",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No process reboot, disk checkpoint reopen or resumed outcome."
+      ]
+    },
+    {
+      "id": "phase6:01",
+      "file": "test/phase6-skills-plugins.test.mjs",
+      "title": "6.1 Skill Discovery & Parsing of Installed SKILL.md Packages",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No third-party import or executable invocation."
+      ]
+    },
+    {
+      "id": "phase6:02",
+      "file": "test/phase6-skills-plugins.test.mjs",
+      "title": "6.2 Natural Language Skill Trigger Matching",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Trigger matching is not execution."
+      ]
+    },
+    {
+      "id": "phase6:03",
+      "file": "test/phase6-skills-plugins.test.mjs",
+      "title": "6.3 Dynamic Skill Package Creation and Hot Discovery",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No external package/workflow execution; recursive cleanup trusts returned path."
+      ]
+    },
+    {
+      "id": "phase6:04",
+      "file": "test/phase6-skills-plugins.test.mjs",
+      "title": "6.4 Dynamic Plugin Installation, Tool Registration & Execution",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Function handler is dropped by JSON serialization; no dotProduct assertion or external executable."
+      ]
+    },
+    {
+      "id": "phase7:01",
+      "file": "test/phase7-computer-operator.test.mjs",
+      "title": "7.1 Screen Geometry and DPI Resolution Discovery",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No DPI assertion, multiple monitors or coordinate action."
+      ]
+    },
+    {
+      "id": "phase7:02",
+      "file": "test/phase7-computer-operator.test.mjs",
+      "title": "7.2 Live Cursor Position Coordinates Retrieval",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No pointer movement/click or target readback."
+      ]
+    },
+    {
+      "id": "phase7:03",
+      "file": "test/phase7-computer-operator.test.mjs",
+      "title": "7.3 Windows Desktop Enumeration and State Observation",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Empty fallback list passes; no known window identity/focus change."
+      ]
+    },
+    {
+      "id": "phase7:04",
+      "file": "test/phase7-computer-operator.test.mjs",
+      "title": "7.4 Windows UI Automation (UIA) Tree Inspection",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No nonempty tree, known control, selection or invocation."
+      ]
+    },
+    {
+      "id": "phase7:05",
+      "file": "test/phase7-computer-operator.test.mjs",
+      "title": "7.5 Human Safety Takeover Hold Arbitration",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No human input detection or guaranteed cleanup on failure."
+      ]
+    },
+    {
+      "id": "phase7:06",
+      "file": "test/phase7-computer-operator.test.mjs",
+      "title": "7.6 Desktop Action Mutual Exclusion via Lease Locking",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No simultaneous agents or physical action enforcement."
+      ]
+    },
+    {
+      "id": "phase8:01",
+      "file": "test/phase8-screen-intelligence.test.mjs",
+      "title": "RollingFrameBuffer enforces strict memory budget and time eviction",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No time advancement despite time-eviction title, native capture or RSS."
+      ]
+    },
+    {
+      "id": "phase8:02",
+      "file": "test/phase8-screen-intelligence.test.mjs",
+      "title": "ChangeDetector prevents unnecessary inference on static frames",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No screen input, real visual changes or OCR inference-count evidence."
+      ]
+    },
+    {
+      "id": "phase8:03",
+      "file": "test/phase8-screen-intelligence.test.mjs",
+      "title": "SemanticObservationStore persists and searches structured observations",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No OCR provenance or persisted reopen/restart."
+      ]
+    },
+    {
+      "id": "phase8:04",
+      "file": "test/phase8-screen-intelligence.test.mjs",
+      "title": "ScreenObserver orchestrates capture, change detection, buffer, and agent queries",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No capture driver output, OCR, timed observation, sleep/restart or 24-hour soak."
+      ]
+    },
+    {
+      "id": "phase9:01",
+      "file": "test/phase9-unified-memory.test.mjs",
+      "title": "9.1 Storage Across All 8 Canonical Memory Layers in SQLite",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No database reopening, cross-session use or real producers."
+      ]
+    },
+    {
+      "id": "phase9:02",
+      "file": "test/phase9-unified-memory.test.mjs",
+      "title": "9.2 Multi-Layer Hybrid Contextual Retrieval & Ranking",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No unseen paraphrase or retrieval quality benchmark."
+      ]
+    },
+    {
+      "id": "phase9:03",
+      "file": "test/phase9-unified-memory.test.mjs",
+      "title": "9.3 Memory Correction and Updating via WebSocket RPC",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No restart durability or UI correction; record remains."
+      ]
+    },
+    {
+      "id": "phase9:04",
+      "file": "test/phase9-unified-memory.test.mjs",
+      "title": "9.4 Memory Telemetry & Layer Statistics RPC",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No independent persisted row-count cross-check."
+      ]
+    },
+    {
+      "id": "phase9:05",
+      "file": "test/phase9-unified-memory.test.mjs",
+      "title": "9.5 Memory Consolidation and Forget Deletion Controls",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No aged-record fixture/pruning correctness; consolidation touches shared host state."
+      ]
+    },
+    {
+      "id": "phase10:01",
+      "file": "test/phase10-research-engine.test.mjs",
+      "title": "10.1 Structured Web Search and Citation Tracking",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No fetched-source validation, provenance or unavailable-provider assertion."
+      ]
+    },
+    {
+      "id": "phase10:02",
+      "file": "test/phase10-research-engine.test.mjs",
+      "title": "10.2 Sandboxed File Read, Write, and Directory Scanning",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No sandbox escape/denial test; recursive cleanup removes shared temp-test-data."
+      ]
+    },
+    {
+      "id": "phase10:03",
+      "file": "test/phase10-research-engine.test.mjs",
+      "title": "10.3 CSV Tabular Data Analysis and Column Schema Extraction",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No large, malformed, quoted/multiline or document workflow coverage."
+      ]
+    },
+    {
+      "id": "phase10:04",
+      "file": "test/phase10-research-engine.test.mjs",
+      "title": "10.4 Artifact Production and SHA-256 Checksum Validation",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No tamper negative test; benchmark prose is fixture content, not measured results."
+      ]
+    },
+    {
+      "id": "phase10:05",
+      "file": "test/phase10-research-engine.test.mjs",
+      "title": "10.5 Autonomous Multi-Step Research Workflow & Memory Integration",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No independent source content, citation support or research quality check."
+      ]
+    },
+    {
+      "id": "phase11:01",
+      "file": "test/phase11-automation-connectors.test.mjs",
+      "title": "11.1 Scheduled Cron Job Registration and Due Execution",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No unattended timer, restart durability or independent side-effect verification."
+      ]
+    },
+    {
+      "id": "phase11:02",
+      "file": "test/phase11-automation-connectors.test.mjs",
+      "title": "11.2 Event-Driven Conditional Workflow Rules",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No native event producer; deletes all existing screen:window_changed rules."
+      ]
+    },
+    {
+      "id": "phase11:03",
+      "file": "test/phase11-automation-connectors.test.mjs",
+      "title": "11.3 Automation Templates Catalog and Instantiation",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No instantiated workflow execution/outcome."
+      ]
+    },
+    {
+      "id": "phase11:04",
+      "file": "test/phase11-automation-connectors.test.mjs",
+      "title": "11.4 External Connected Connectors Discovery and Health Ping",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No independent authenticated remote request or service-side outcome."
+      ]
+    },
+    {
+      "id": "phase12:01",
+      "file": "test/phase12-workspaces-workers.test.mjs",
+      "title": "12.1 Isolated Workspace Creation and Directory Sandboxing",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No escape attempt/cross-workspace denial; recursive cleanup trusts returned path."
+      ]
+    },
+    {
+      "id": "phase12:02",
+      "file": "test/phase12-workspaces-workers.test.mjs",
+      "title": "12.2 Multi-Tier Worker Registration (Local, Remote, Cloud)",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No cloud process, transport or execution; record remains."
+      ]
+    },
+    {
+      "id": "phase12:03",
+      "file": "test/phase12-workspaces-workers.test.mjs",
+      "title": "12.3 Distributed Task Handoff Contract with State Snapshots",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No remote acknowledgement/resumption/artifact."
+      ]
+    },
+    {
+      "id": "phase13:01",
+      "file": "test/phase13-project-workflows.test.mjs",
+      "title": "13.1 Multi-Project Context Creation and Discovery",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No real organizational workflow, assignment or report."
+      ]
+    },
+    {
+      "id": "phase13:02",
+      "file": "test/phase13-project-workflows.test.mjs",
+      "title": "13.2 Project-Scoped Organizational Memory Isolation",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No adversarial multi-user authorization boundary."
+      ]
+    },
+    {
+      "id": "phase13:03",
+      "file": "test/phase13-project-workflows.test.mjs",
+      "title": "13.3 Configurable Human-in-the-Loop Approval Boundaries",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No production approval enforcement; CANCELLED is not approval WAITING/resume."
+      ]
+    },
+    {
+      "id": "phase14:01",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "title": "1. Generates 6-character short-lived pairing code",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No actual expiry wait, replay or connected device."
+      ]
+    },
+    {
+      "id": "phase14:02",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "title": "2. Rejects claim with invalid pairing code",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No actual expired code or external auth boundary."
+      ]
+    },
+    {
+      "id": "phase14:03",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "title": "3. Successfully claims pairing code and registers Android phone",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No Android client/device authentication/capability execution."
+      ]
+    },
+    {
+      "id": "phase14:04",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "title": "4. Lists paired devices with active registration",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No physical device heartbeat or liveness."
+      ]
+    },
+    {
+      "id": "phase14:05",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "title": "5. Dispatches remote push notification to paired device",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No push transport or phone receipt/display."
+      ]
+    },
+    {
+      "id": "phase14:06",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "title": "6. Lists and marks notifications as read for paired device",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No mobile receipt/read acknowledgement."
+      ]
+    },
+    {
+      "id": "phase14:07",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "title": "7. Unpairs device cleanly",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No rejection of previously issued token from real client."
+      ]
+    },
+    {
+      "id": "phase15:01",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "title": "1. Starts full-duplex voice session",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No duplex microphone/speaker pipeline or conversation."
+      ]
+    },
+    {
+      "id": "phase15:02",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "title": "2. Analyzes silence frames without triggering false speech detection",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No microphone or real acoustic noise benchmark."
+      ]
+    },
+    {
+      "id": "phase15:03",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "title": "3. Detects speech onset via VAD and transitions turn state",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Tone is not human speech; no language recognition."
+      ]
+    },
+    {
+      "id": "phase15:04",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "title": "4. Transitions to processing when silence threshold is reached",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No real utterance, completion or model/tool request."
+      ]
+    },
+    {
+      "id": "phase15:05",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "title": "5. Assistant synthesizes speech and emits audio PCM frames",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No intelligibility, actual speech content or audible-output assertion; byte count alone cannot establish speech synthesis."
+      ]
+    },
+    {
+      "id": "phase15:06",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "title": "6. Transcribes accumulated speech audio buffer",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No recognized text, accuracy reference, STT provider or utterance."
+      ]
+    },
+    {
+      "id": "phase15:07",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "title": "7. Cleanly terminates voice session",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No microphone/output resource release or interrupted conversation."
+      ]
+    },
+    {
+      "id": "phase16:01",
+      "file": "test/phase16-zero-experience.test.mjs",
+      "title": "1. Chat Surface (/chat/zero) renders top actions and controls",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No live agent-count or observer telemetry cross-check."
+      ]
+    },
+    {
+      "id": "phase16:02",
+      "file": "test/phase16-zero-experience.test.mjs",
+      "title": "2. Voice Assistant toggle toggles listening state on click",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No microphone, recognized speech, output or backend state check."
+      ]
+    },
+    {
+      "id": "phase16:03",
+      "file": "test/phase16-zero-experience.test.mjs",
+      "title": "3. Settings Navigation (/settings/model-providers) loads cleanly",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No form submission, validation or persistence."
+      ]
+    },
+    {
+      "id": "phase16:04",
+      "file": "test/phase16-zero-experience.test.mjs",
+      "title": "4. Workspaces route (/workspaces) serves SPA shell without 404",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Fallback SPA shell passes; no workspace-specific controls/actions."
+      ]
+    },
+    {
+      "id": "phase16:05",
+      "file": "test/phase16-zero-experience.test.mjs",
+      "title": "5. No unhandled exceptions or broken branding links",
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No pageerror/console listener; reported trim-on-undefined can escape the text check."
+      ]
+    },
+    {
+      "id": "phase17:01",
+      "file": "test/phase17-production-release.test.mjs",
+      "title": "1. Verified startup scripts exist and configure native environment",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No launcher execution, clean installation or reproducibility."
+      ]
+    },
+    {
+      "id": "phase17:02",
+      "file": "test/phase17-production-release.test.mjs",
+      "title": "2. Vacuum backup test & integrity check on openclaw.sqlite",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No restore, migration, rollback or logical before/after comparison; reads owner DB."
+      ]
+    },
+    {
+      "id": "phase17:03",
+      "file": "test/phase17-production-release.test.mjs",
+      "title": "3. Zero Host health check returns 200 OK and native runtime",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No startup, crash recovery or installed release behavior."
+      ]
+    },
+    {
+      "id": "phase17:04",
+      "file": "test/phase17-production-release.test.mjs",
+      "title": "4. Native subsystems report ready status",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No real workflows, compatibility, endurance, clean install or secret scan in this suite."
+      ]
+    },
+    {
+      "id": "requirements48:01",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "1. Clean Windows startup",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No clean Windows launch or installation."
+      ]
+    },
+    {
+      "id": "requirements48:02",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "2. Gateway availability and reconnection",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No persisted session, network fault or restarted host."
+      ]
+    },
+    {
+      "id": "requirements48:03",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "3. Actual browser navigation",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No browser engine, rendered route or navigation controls."
+      ]
+    },
+    {
+      "id": "requirements48:04",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "4. Actual UI scrolling",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No overflowing content or nonzero scroll movement."
+      ]
+    },
+    {
+      "id": "requirements48:05",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "5. Actual settings modification and persistence",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No browser form; cleanup outside finally can overwrite concurrent owner changes."
+      ]
+    },
+    {
+      "id": "requirements48:06",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "6. Actual provider discovery",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No usable credentials or authenticated provider roundtrip."
+      ]
+    },
+    {
+      "id": "requirements48:07",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "7. Real model inference",
+      "labels": [
+        "REAL_EXTERNAL"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Assistant role alone can satisfy content check; no independent upstream provenance or requested-text validation."
+      ]
+    },
+    {
+      "id": "requirements48:08",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "8. Real streaming",
+      "labels": [
+        "REAL_EXTERNAL"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No incremental arrival timing, multiple deltas, cancellation or upstream request count."
+      ]
+    },
+    {
+      "id": "requirements48:09",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "9. Model selection",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No execution reaches either selected model/provider."
+      ]
+    },
+    {
+      "id": "requirements48:10",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "10. Multi-provider execution",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "One provider passes; no two distinct providers execute."
+      ]
+    },
+    {
+      "id": "requirements48:11",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "11. Parallel agent models",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No independent model assignments or overlapping parallel executions."
+      ]
+    },
+    {
+      "id": "requirements48:12",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "12. Genuine agent delegation",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Planning does not execute children or verify outputs."
+      ]
+    },
+    {
+      "id": "requirements48:13",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "13. Multi-step execution with tool results",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "A single observation is not multi-step model/tool/feedback execution."
+      ]
+    },
+    {
+      "id": "requirements48:14",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "14. Durable task state",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No checkpoint re-read, disk reopen, restart or resumed artifact."
+      ]
+    },
+    {
+      "id": "requirements48:15",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "15. Resume after restart",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No killed process, disk persistence or actual resumption."
+      ]
+    },
+    {
+      "id": "requirements48:16",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "16. Actual desktop mouse actions",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No mouse movement/click or target effect readback."
+      ]
+    },
+    {
+      "id": "requirements48:17",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "17. Actual keyboard input",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No keyboard input or text readback in a real application."
+      ]
+    },
+    {
+      "id": "requirements48:18",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "18. Actual UI element selection",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Empty array passes; no target selection or invocation."
+      ]
+    },
+    {
+      "id": "requirements48:19",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "19. Browser automation",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No browser session or browser action."
+      ]
+    },
+    {
+      "id": "requirements48:20",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "20. Dynamic UI change handling",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No live dynamic UI transition or action recovery."
+      ]
+    },
+    {
+      "id": "requirements48:21",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "21. Multi-monitor operation",
+      "labels": [
+        "REAL_OS"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No multiple monitors, mixed DPI or cross-monitor action."
+      ]
+    },
+    {
+      "id": "requirements48:22",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "22. Continuous screen capture",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No real screenshot producer or continuous acquisition."
+      ]
+    },
+    {
+      "id": "requirements48:23",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "23. Bounded RAM frame retention",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No realistic frames, process RSS ceiling or retention duration."
+      ]
+    },
+    {
+      "id": "requirements48:24",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "24. Local OCR and vision inference",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No image capture, OCR or local vision inference."
+      ]
+    },
+    {
+      "id": "requirements48:25",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "25. Semantic observation memory",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No observation content, persistence or semantic retrieval."
+      ]
+    },
+    {
+      "id": "requirements48:26",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "26. Cross-session memory recall",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No distinct sessions/restart; record is left behind."
+      ]
+    },
+    {
+      "id": "requirements48:27",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "27. Real external skill installation",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No third-party artifact download/install or lifecycle."
+      ]
+    },
+    {
+      "id": "requirements48:28",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "28. Real external skill execution",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Metadata matching is not skill execution or artifact verification."
+      ]
+    },
+    {
+      "id": "requirements48:29",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "29. Real compatible plugin installation",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No real external package bytes, entrypoint or imported executable."
+      ]
+    },
+    {
+      "id": "requirements48:30",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "30. Real compatible plugin execution",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No plugin capability invocation or output check."
+      ]
+    },
+    {
+      "id": "requirements48:31",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "31. Memory UI interactions",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No memory UI search, correction or deletion."
+      ]
+    },
+    {
+      "id": "requirements48:32",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "32. Skills UI interactions",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No skills UI controls or persisted form interaction."
+      ]
+    },
+    {
+      "id": "requirements48:33",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "33. Plugins UI interactions",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No plugin UI operation or configuration."
+      ]
+    },
+    {
+      "id": "requirements48:34",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "34. Search UI interactions",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No browser search interaction or independently fetched source validation."
+      ]
+    },
+    {
+      "id": "requirements48:35",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "35. Agents UI interactions",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No agent UI interaction or displayed result."
+      ]
+    },
+    {
+      "id": "requirements48:36",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "36. Background scheduled execution",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No unattended clock scheduling; count need not identify this job or a successful effect."
+      ]
+    },
+    {
+      "id": "requirements48:37",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "37. External-service workflows when configured",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No authenticated external service workflow/outcome."
+      ]
+    },
+    {
+      "id": "requirements48:38",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "38. Task cancellation",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No in-flight model/tool/worker is observed stopping."
+      ]
+    },
+    {
+      "id": "requirements48:39",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "39. Human takeover",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No input denial or physical human takeover asserted here."
+      ]
+    },
+    {
+      "id": "requirements48:40",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "40. Gateway restart recovery",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "Expected rejection does not restart gateway or recover clients/state."
+      ]
+    },
+    {
+      "id": "requirements48:41",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "41. Worker crash recovery",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No worker process crash, replacement or resumed work."
+      ]
+    },
+    {
+      "id": "requirements48:42",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "42. No unintended data loss",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No before/after rows, checksum, migration or restore comparison."
+      ]
+    },
+    {
+      "id": "requirements48:43",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "43. CPU and RAM measurements",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No CPU measurement, duration, workload baseline or resource trend."
+      ]
+    },
+    {
+      "id": "requirements48:44",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "44. Long-duration observation stability",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No elapsed soak, native capture, CPU/RSS series or sleep/restart recovery."
+      ]
+    },
+    {
+      "id": "requirements48:45",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "45. Clean-machine installation",
+      "labels": [
+        "UNIT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No clean VM install, launch, update, rollback or uninstall."
+      ]
+    },
+    {
+      "id": "requirements48:46",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "46. Mobile capability tests",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No physical phone, companion transport, delivered push or reconnect."
+      ]
+    },
+    {
+      "id": "requirements48:47",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "47. Voice interaction tests",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No microphone, recognized speech, audible synthesis or voice-directed tool."
+      ]
+    },
+    {
+      "id": "requirements48:48",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "title": "48. Final complete frontend/backend regression",
+      "labels": [
+        "CONTRACT"
+      ],
+      "assertionStatus": "NOT_RUN",
+      "reason": "Audit only; legacy assertions were not executed",
+      "claimStatus": "PARTIAL",
+      "requirementStatus": "UNVERIFIED",
+      "gaps": [
+        "No frontend interaction, full regression workflows or recovery."
+      ]
+    }
+  ],
+  "unimplementedGates": [
+    {
+      "id": "real-browser-workflows",
+      "required": true,
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "status": "BLOCKED",
+      "reason": "Route-specific controls, nonzero scrolling, form persistence and browser error/RPC checks.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "native-input-multimonitor",
+      "required": true,
+      "labels": [
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "Mouse/keyboard/UIA invocation and multiple monitors with independent readback.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "native-screen-ocr",
+      "required": true,
+      "labels": [
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "Continuous captured screen pixels through local OCR/vision into retrievable observations.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "external-model-agent-workflows",
+      "required": true,
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "Two real providers, independent concurrent agent models, verified tools/artifacts, measured streams and cancellation.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "external-extensions-connectors",
+      "required": true,
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "Real third-party skill/plugin install and execution plus authenticated external workflow outcomes.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "process-recovery-state-preservation",
+      "required": true,
+      "labels": [
+        "INTEGRATION",
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "Killed/restarted gateway/workers, disk checkpoint resumption, idempotency and before/after state preservation on copies.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "observation-24-hour-endurance",
+      "required": true,
+      "labels": [
+        "ENDURANCE",
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "At least 24 hours of native observation, timed CPU/RSS/capture-rate samples, resource bounds, sleep/restart recovery.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "clean-windows-release",
+      "required": true,
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "Clean VM install, launch, migrations, restore, update/rollback, uninstall and compatibility matrix.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "physical-mobile-voice",
+      "required": true,
+      "labels": [
+        "REAL_OS",
+        "REAL_EXTERNAL"
+      ],
+      "status": "BLOCKED",
+      "reason": "Connected device receipt/reconnection and microphone/STT/model/tools/TTS/audible-output/barge-in workflow. User confirmed no actual mobile/device available; physical-device gate remains BLOCKED.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "actual-remote-cloud-worker",
+      "required": true,
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "User confirmed no actual mobile/cloud worker/device available. Local registration and handoff records cannot establish remote execution.",
+      "runnerImplemented": false
+    }
+  ],
+  "reportedBrowserBlocker": {
+    "status": "BLOCKED",
+    "source": "User report during this audit; not independently rerun here",
+    "detail": "Real browser reproduced trim on undefined in control-ui-boot-shared fT; missing skills.status, library.list, config.schema, doctor.memory.status, webSearch.status.",
+    "repairStatus": "UNVERIFIED; parent is editing host/UI. Requires browser recheck after fixes.",
+    "observedStatus": "FAIL",
+    "missingRpcs": [
+      "skills.status",
+      "library.list",
+      "config.schema",
+      "doctor.memory.status",
+      "webSearch.status"
+    ]
+  },
+  "reportedChecks": [
+    {
+      "id": "owner-state-backup",
+      "source": "User report in this audit session; not executed or independently inspected by this runner",
+      "status": "REPORTED_PASS",
+      "scope": "Backup script scripts/backup-user-state.mjs: 19 database/config files; snapshot .backup/functional-correction-1793549776379; reported integrity ok.",
+      "gap": "Backup integrity is not restore, migration, no-data-loss or restart-resumption proof."
+    },
+    {
+      "id": "search-provenance-contract",
+      "source": "User report in this audit session",
+      "status": "REPORTED_PASS",
+      "scope": "Search provenance contract 3/3.",
+      "gap": "Actual real retrieval not yet verified; search workflow gate remains BLOCKED."
+    },
+    {
+      "id": "nvidia-zero-lead-inference",
+      "source": "User report in this audit session",
+      "status": "REPORTED_PASS",
+      "scope": "Actual NVIDIA zero-lead inference returned literal ZERO_CONNECTION_OK in 1938 ms.",
+      "gap": "One model inference only; no independent rerun here, second provider, parallel agent/model execution or streaming timing."
+    }
+  ]
+}

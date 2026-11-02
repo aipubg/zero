@@ -1,0 +1,98 @@
+{
+  "startedAt": "2026-11-02T00:43:12.853Z",
+  "status": "PASS",
+  "provider": "NVIDIA",
+  "externalWorkerGates": {
+    "mobile": "BLOCKED",
+    "cloud": "BLOCKED",
+    "remote": "BLOCKED"
+  },
+  "requests": [
+    {
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "phase": "initial",
+      "startedAt": 1793580192904,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580194980,
+      "durationMs": 2076
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "phase": "initial",
+      "startedAt": 1793580192917,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580193649,
+      "durationMs": 732
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "phase": "after-tool",
+      "startedAt": 1793580193655,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580194962,
+      "durationMs": 1307
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "phase": "after-tool",
+      "startedAt": 1793580194984,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580195616,
+      "durationMs": 632
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "phase": "consolidation",
+      "startedAt": 1793580195643,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580210288,
+      "durationMs": 14645
+    }
+  ],
+  "tools": [
+    {
+      "agent": "b",
+      "content": "ZERO_B_TOOL_OK",
+      "bytes": 14,
+      "sha256": "8db750f24f32731dc945ba660d7ae7ced99a0cb40d0a4da4ace7c5dad8766022",
+      "timestamp": 1793580193653
+    },
+    {
+      "agent": "a",
+      "content": "ZERO_A_TOOL_OK",
+      "bytes": 14,
+      "sha256": "63a80b92ac71639d81ea3543c70448fcf745181c10362896f8d6ff629d9e44e1",
+      "timestamp": 1793580194982
+    }
+  ],
+  "assignments": {
+    "coder": {
+      "alias": "zero-lead",
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b"
+    },
+    "researcher": {
+      "alias": "zero-vision",
+      "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+    }
+  },
+  "workflow": {
+    "status": "COMPLETED",
+    "masterTaskId": "task_1793580192874_azagpv",
+    "subtaskStatuses": {
+      "live_a": "COMPLETED",
+      "live_b": "COMPLETED"
+    },
+    "errors": {},
+    "consolidationError": null,
+    "synthesis": "**Consolidated Results of Two Independent `write_parallel_evidence` Calls**\n\n| Aspect | Call (Agent `a`) | Call (Agent `b`) |\n|--------|------------------|------------------|\n| **Tool** | `write_parallel_evidence` | `write_parallel_evidence` |\n| **Content** | `ZERO_A_TOOL_OK` | `ZERO_B_TOOL_OK` |\n| **Byte Length** | 14 bytes | 14 bytes |\n| **SHA256 Hash** | `63a80b92ac71639d81ea3543c70448fcf745181c10362896f8d6ff629d9e44e1` | `8db750f24f32731dc945ba660d7ae7ced99a0cb40d0a4da4ace7c5dad8766022` |\n| **Timestamp** | `1793580194982` | `1793580193653` |\n| **Execution Status** | `executed: true`, `ok: true` | `executed: true`, `ok: true` |\n| **Verification/Completion** | `verified: false`, `completed: false`, `outcome: UNVERIFIED` | `verified: false`, `completed: false`, `outcome: UNVERIFIED` |\n| **Audit ID** | `audit_1793580194981_jrwooh` | `audit_1793580193652_3vf0wc` |\n\n**Consolidated Observations**\n- Both calls ran independently and reported successful execution (`ok: true`, `executed: true`).\n- Both produced identical-length outputs (14 bytes) with distinct content strings and cryptographic hashes, confirming separate generation.\n- **Recorded limitations are preserved**: both results are formally marked `verified: false`, `completed: false`, with `outcome: UNVERIFIED`. No verification or completion status is claimed beyond the logged audit data.\n- The consolidated evidence reflects exactly what the tool system recorded: two autonomous, size-matched, unverified messages with distinct provenance.\n\n*No verification or reliability assertion is made beyond the recorded tool evidence.*",
+    "durationMs": 17423
+  },
+  "parallelOverlapMs": 732,
+  "restartVerified": true,
+  "finishedAt": "2026-11-02T00:43:30.301Z"
+}

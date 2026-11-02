@@ -1,3 +1,5 @@
+> **Current verification — 2026-11-01: PARTIAL; release BLOCKED.** The roadmap below is a development specification. Historical engineering reports do not establish production completion. A source audit found 89 phase-test leaves and 48 requirement leaves, with substantial real-workflow gaps and no endurance test. Reported browser smoke improved after parent fixes; persisted interactions and reconnect remain unverified; mobile/device/cloud-worker gates are BLOCKED because no real target is available. See the [classification audit](docs/engineering/verification/CLASSIFICATION-AUDIT.md) and [machine-readable inventory](docs/engineering/verification/test-classification-inventory.json). The new runner defaults to static audit and does not run legacy suites against owner state.
+
 
 ZERO AI
 MASTER PRODUCT VISION, TARGET ARCHITECTURE, REPOSITORY TRANSFORMATION,

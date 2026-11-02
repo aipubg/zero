@@ -1,3 +1,11 @@
+# Current verification correction — 2026-11-01
+
+**Product PARTIAL; release BLOCKED.** The historical scenario report below was not independently rerun in this audit and cannot be extended into an all-phase production-readiness claim. The current [test classification audit](verification/CLASSIFICATION-AUDIT.md) covers the 48-requirement suite and phase 1–17 sources only, with exact leaf inventory and explicit acceptance gaps.
+
+No legacy suite was run against owner databases/host. The earlier reported browser crash is now absent in reported smoke after the asset-path fix; model picker, Skills, Search and Memory surfaces render. Persisted interaction and reconnect have not passed. Search returned empty (both APIs 200, zero citations), so real retrieval is not PASS. Actual mobile/device/cloud-worker targets are unavailable: BLOCKED. Required endurance, clean-installation, recovery and other real-workflow evidence remains outstanding.
+
+## Historical scenario report — preserved, not current release acceptance
+
 # Zero AI — Verification Report: End-to-End Scenario Matrix (T01–T15)
 
 **Date:** 2026-11-01  

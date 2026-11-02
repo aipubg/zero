@@ -1,0 +1,97 @@
+{
+  "startedAt": "2026-11-02T00:42:42.731Z",
+  "status": "FAILED_EXTERNAL",
+  "provider": "NVIDIA",
+  "externalWorkerGates": {
+    "mobile": "BLOCKED",
+    "cloud": "BLOCKED",
+    "remote": "BLOCKED"
+  },
+  "requests": [
+    {
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "phase": "initial",
+      "startedAt": 1793580162778,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580167614,
+      "durationMs": 4836
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "phase": "initial",
+      "startedAt": 1793580162790,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580163746,
+      "durationMs": 956
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "phase": "after-tool",
+      "startedAt": 1793580163754,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580164528,
+      "durationMs": 774
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "phase": "after-tool",
+      "startedAt": 1793580167632,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580168489,
+      "durationMs": 857
+    },
+    {
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "phase": "consolidation",
+      "startedAt": 1793580168515,
+      "ok": true,
+      "httpStatus": 200,
+      "finishedAt": 1793580171000,
+      "durationMs": 2485
+    }
+  ],
+  "tools": [
+    {
+      "agent": "b",
+      "content": "ZERO_B_TOOL_OK",
+      "bytes": 14,
+      "sha256": "8db750f24f32731dc945ba660d7ae7ced99a0cb40d0a4da4ace7c5dad8766022",
+      "timestamp": 1793580163752
+    },
+    {
+      "agent": "a",
+      "content": "ZERO_A_TOOL_OK",
+      "bytes": 14,
+      "sha256": "63a80b92ac71639d81ea3543c70448fcf745181c10362896f8d6ff629d9e44e1",
+      "timestamp": 1793580167626
+    }
+  ],
+  "assignments": {
+    "coder": {
+      "alias": "zero-lead",
+      "modelId": "nvidia/nemotron-3.5-lightning-30b-a3b"
+    },
+    "researcher": {
+      "alias": "zero-vision",
+      "modelId": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+    }
+  },
+  "workflow": {
+    "status": "FAILED",
+    "masterTaskId": "task_1793580162750_kj3s88",
+    "subtaskStatuses": {
+      "live_a": "COMPLETED",
+      "live_b": "COMPLETED"
+    },
+    "errors": {},
+    "consolidationError": "Coordinator returned empty consolidation",
+    "synthesis": null,
+    "durationMs": 8261
+  },
+  "error": "{\"status\":\"FAILED\",\"masterTaskId\":\"task_1793580162750_kj3s88\",\"subtaskStatuses\":{\"live_a\":\"COMPLETED\",\"live_b\":\"COMPLETED\"},\"errors\":{},\"consolidationError\":\"Coordinator returned empty consolidation\",\"synthesis\":null,\"durationMs\":8261}\n+ actual - expected\n\n+ 'FAILED'\n- 'COMPLETED'\n",
+  "finishedAt": "2026-11-02T00:42:51.012Z"
+}

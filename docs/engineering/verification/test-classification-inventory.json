@@ -1,0 +1,2972 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-11-01",
+  "scope": "All 48 requirement leaves and all 17 phase suites; static assertion audit, not product acceptance.",
+  "labels": [
+    "UNIT",
+    "CONTRACT",
+    "INTEGRATION",
+    "REAL_BROWSER",
+    "REAL_OS",
+    "REAL_EXTERNAL",
+    "ENDURANCE"
+  ],
+  "labelDefinitions": {
+    "UNIT": "Isolated logic/static file checks, including synthetic buffers and supplied counters.",
+    "CONTRACT": "HTTP/RPC shapes, flags, catalogs or negative API contracts without independent workflow outcomes.",
+    "INTEGRATION": "Local components/stores/filesystem/RPC collaborate; declared fixtures do not prove external execution.",
+    "REAL_BROWSER": "A real browser executes navigation/DOM interaction; gaps separately record assertion strength.",
+    "REAL_OS": "Calls native desktop observation/input surfaces; reads do not prove action, multi-monitor or recovery.",
+    "REAL_EXTERNAL": "Attempts a configured remote model/service; not independent provenance or broad provider coverage.",
+    "ENDURANCE": "Measured elapsed sustained operation with explicit duration and resource/outcome checks; tight loops do not qualify."
+  },
+  "countingRule": "Count leaf declarations only. Exclude 18 suite containers. Labels describe assertion scope if executed, not evidence any run occurred.",
+  "reportedBrowserBlocker": {
+    "status": "BLOCKED",
+    "observedStatus": "PARTIAL",
+    "source": "Latest user report during this audit; not independently rerun here",
+    "detail": "After canonical __openclaw__/ asset path fix, native UI plugin activates: chat has no trim crash, model picker displayed, Voice PARTIAL, Workforce 1 configured, Screen Stopped; Settings Skills lists 9 actual skills; Search form and Memory real status render.",
+    "repairStatus": "Reported smoke improvement only. Persisted interaction and reconnect have not passed; full browser acceptance remains BLOCKED.",
+    "previouslyMissingRpcs": [
+      "skills.status",
+      "library.list",
+      "config.schema",
+      "doctor.memory.status",
+      "webSearch.status"
+    ],
+    "rpcRevalidation": "The five previously missing RPCs were not individually revalidated by this audit.",
+    "history": [
+      {
+        "status": "BLOCKED",
+        "source": "User report during this audit; not independently rerun here",
+        "detail": "Real browser reproduced trim on undefined in control-ui-boot-shared fT; missing skills.status, library.list, config.schema, doctor.memory.status, webSearch.status.",
+        "repairStatus": "UNVERIFIED; parent is editing host/UI. Requires browser recheck after fixes.",
+        "observedStatus": "FAIL",
+        "missingRpcs": [
+          "skills.status",
+          "library.list",
+          "config.schema",
+          "doctor.memory.status",
+          "webSearch.status"
+        ]
+      }
+    ]
+  },
+  "unimplementedGates": [
+    {
+      "id": "real-browser-workflows",
+      "required": true,
+      "labels": [
+        "REAL_BROWSER"
+      ],
+      "status": "BLOCKED",
+      "reason": "Route-specific controls, nonzero scrolling, form persistence and browser error/RPC checks.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "native-input-multimonitor",
+      "required": true,
+      "labels": [
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "Mouse/keyboard/UIA invocation and multiple monitors with independent readback.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "native-screen-ocr",
+      "required": true,
+      "labels": [
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "Continuous captured screen pixels through local OCR/vision into retrievable observations.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "external-model-agent-workflows",
+      "required": true,
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "Two real providers, independent concurrent agent models, verified tools/artifacts, measured streams and cancellation.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "external-extensions-connectors",
+      "required": true,
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "Real third-party skill/plugin install and execution plus authenticated external workflow outcomes.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "process-recovery-state-preservation",
+      "required": true,
+      "labels": [
+        "INTEGRATION",
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "Killed/restarted gateway/workers, disk checkpoint resumption, idempotency and before/after state preservation on copies.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "observation-24-hour-endurance",
+      "required": true,
+      "labels": [
+        "ENDURANCE",
+        "REAL_OS"
+      ],
+      "status": "BLOCKED",
+      "reason": "At least 24 hours of native observation, timed CPU/RSS/capture-rate samples, resource bounds, sleep/restart recovery.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "clean-windows-release",
+      "required": true,
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "Clean VM install, launch, migrations, restore, update/rollback, uninstall and compatibility matrix.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "physical-mobile-voice",
+      "required": true,
+      "labels": [
+        "REAL_OS",
+        "REAL_EXTERNAL"
+      ],
+      "status": "BLOCKED",
+      "reason": "Connected device receipt/reconnection and microphone/STT/model/tools/TTS/audible-output/barge-in workflow. User confirmed no actual mobile/device available; physical-device gate remains BLOCKED.",
+      "runnerImplemented": false
+    },
+    {
+      "id": "actual-remote-cloud-worker",
+      "required": true,
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "status": "BLOCKED",
+      "reason": "User confirmed no actual mobile/cloud worker/device available. Local registration and handoff records cannot establish remote execution.",
+      "runnerImplemented": false
+    }
+  ],
+  "suites": [
+    {
+      "id": "phase1",
+      "file": "test/phase1-host-contracts.test.mjs",
+      "sha256": "54a361f17b67ef9583b2fc7dc8eafd62832d8238a800bcaf355a8078b38af3d5",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase1:01",
+          "title": "HTTP /health returns general status summary",
+          "line": 21,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "HTTP /health returns general status summary",
+          "proves": "Checks health JSON fields.",
+          "gaps": [
+            "Already-running health does not verify launch/supervision."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase1:02",
+          "title": "HTTP /health/liveness returns live process telemetry",
+          "line": 31,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "ENDURANCE"
+          ],
+          "claim": "HTTP /health/liveness returns live process telemetry",
+          "proves": "Checks liveness telemetry types/timestamp.",
+          "gaps": [
+            "No resource time series or crash detection."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase1:03",
+          "title": "HTTP /health/readiness returns subsystem readiness flags",
+          "line": 43,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "HTTP /health/readiness returns subsystem readiness flags",
+          "proves": "Checks five readiness strings.",
+          "gaps": [
+            "No dependent workflows exercise declared readiness."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase1:04",
+          "title": "HTTP /health/features reports operational capability domains",
+          "line": 57,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "HTTP /health/features reports operational capability domains",
+          "proves": "Checks feature active flags.",
+          "gaps": [
+            "Flags do not demonstrate working capabilities."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase1:05",
+          "title": "WebSocket RPC contracts match HTTP readiness definitions",
+          "line": 72,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "WebSocket RPC contracts match HTTP readiness definitions",
+          "proves": "Negotiates protocol and checks liveness/readiness/features RPC payloads.",
+          "gaps": [
+            "No transport/subsystem fault or active workload."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase1:06",
+          "title": "WebSocket connection recovery resumes session state without loss",
+          "line": 135,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "WebSocket connection recovery resumes session state without loss",
+          "proves": "Creates session then retrieves it on a second socket.",
+          "gaps": [
+            "No host restart/network fault; cleanup delete sent without acknowledgement."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase2",
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "sha256": "ad62a0afc6a5803ce7bd8f909d8a847db2e3459958d0ba3bf5d4ac364dd08381",
+      "prerequisites": [
+        "node24",
+        "host18789",
+        "chrome",
+        "playwright-core"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase2:01",
+          "title": "Chat Page (/chat/zero) renders interactive controls & session state",
+          "line": 30,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "Chat Page (/chat/zero) renders interactive controls & session state",
+          "proves": "Loads chat, checks title and generic root/input selectors.",
+          "gaps": [
+            "Root alone satisfies input check; no chat message/result."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase2:02",
+          "title": "Model Providers Page (/settings/model-providers) displays configured providers",
+          "line": 45,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "REAL_EXTERNAL"
+          ],
+          "claim": "Model Providers Page (/settings/model-providers) displays configured providers",
+          "proves": "Loads provider page and checks generic text.",
+          "gaps": [
+            "No provider edits or model execution."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase2:03",
+          "title": "Skills Page (/settings/skills) renders skills catalog without errors",
+          "line": 62,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "REAL_EXTERNAL"
+          ],
+          "claim": "Skills Page (/settings/skills) renders skills catalog without errors",
+          "proves": "Loads skills page and accepts skill/installed/Zero text.",
+          "gaps": [
+            "Branding alone passes; no skill lifecycle."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase2:04",
+          "title": "Memory Page (/settings/memory) renders memory search and management",
+          "line": 76,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "Memory Page (/settings/memory) renders memory search and management",
+          "proves": "Loads memory page and accepts memory/semantic/Zero text.",
+          "gaps": [
+            "Branding alone passes; no search/edit/delete."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase2:05",
+          "title": "Automation Page (/settings/automation) renders scheduled workflows",
+          "line": 90,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "claim": "Automation Page (/settings/automation) renders scheduled workflows",
+          "proves": "Loads automation page and accepts generic text.",
+          "gaps": [
+            "No job registration or observed UI execution."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase2:06",
+          "title": "Gateway Page (/settings/gateway) reflects authoritative port and runtime",
+          "line": 105,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "claim": "Gateway Page (/settings/gateway) reflects authoritative port and runtime",
+          "proves": "Loads gateway page and accepts gateway/port/Zero text.",
+          "gaps": [
+            "Branding alone passes; no reconnect or settings changes."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase2:07",
+          "title": "Settings pages scroll without viewport lock",
+          "line": 120,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "Settings pages scroll without viewport lock",
+          "proves": "Identifies an overflowing element, hovers it, sends a real browser mouse wheel action and requires scrollTop to increase.",
+          "gaps": [
+            "Not executed by this audit; covers only /settings/about at one viewport, without other route/content/viewport scrolling or form workflows."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase2:08",
+          "title": "RPC form preferences update and persist across re-read",
+          "line": 145,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "claim": "RPC form preferences update and persist across re-read",
+          "proves": "Sets/gets preferences over RPC in browser harness.",
+          "gaps": [
+            "No form interaction, restart check or added-preference cleanup."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ],
+      "auditHistory": [
+        {
+          "sha256": "073e1f7813c1e53bd04b7309a2b49db93eaf1991d5a70bab6b993307d60085ac",
+          "note": "Earlier snapshot before concurrent parent scrolling fix; test not run by this audit.",
+          "testId": "phase2:07",
+          "proves": "Calls window.scrollTo and accepts scrollY >= 0.",
+          "gaps": [
+            "Zero movement passes; no overflow target identified."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase3",
+      "file": "test/phase3-model-fabric.test.mjs",
+      "sha256": "85b69bbb34fab3ef8301d948ebabc5cde31f1204116420d44f9dde9e3e2a5f14",
+      "prerequisites": [
+        "node24",
+        "configured-provider"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase3:01",
+          "title": "ModelFabric resolves canonical model IDs and aliases",
+          "line": 32,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "ModelFabric resolves canonical model IDs and aliases",
+          "proves": "Resolves configured aliases/unknown ID.",
+          "gaps": [
+            "No live selection request."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase3:02",
+          "title": "ModelFabric resolves per-agent model assignment",
+          "line": 46,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "ModelFabric resolves per-agent model assignment",
+          "proves": "Resolves zero agent configured model.",
+          "gaps": [
+            "No two independent models or concurrent agents."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase3:03",
+          "title": "ModelFabric calculates context budget against model window",
+          "line": 53,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "ModelFabric calculates context budget against model window",
+          "proves": "Estimates context budget for short fixture messages.",
+          "gaps": [
+            "No oversized conversation/live provider token limit."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase3:04",
+          "title": "ModelFabric tracks token usage and request statistics",
+          "line": 66,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "ModelFabric tracks token usage and request statistics",
+          "proves": "Records supplied token counts and reads counters.",
+          "gaps": [
+            "No actual provider usage, billing or cost verification."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase3:05",
+          "title": "ModelFabric throws deterministic error for unknown model invocation",
+          "line": 77,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "ModelFabric throws deterministic error for unknown model invocation",
+          "proves": "Rejects unknown model locally with error metadata.",
+          "gaps": [
+            "No upstream failure/failover, retry or cancellation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase3:06",
+          "title": "ModelFabric streams genuine incremental deltas from configured provider",
+          "line": 91,
+          "labels": [
+            "REAL_EXTERNAL"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "ModelFabric streams genuine incremental deltas from configured provider",
+          "proves": "Consumes configured provider iterator requiring one done-or-delta chunk.",
+          "gaps": [
+            "Done-only passes; no incremental timing, request count or cancellation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase4",
+      "file": "test/phase4-multi-agent.test.mjs",
+      "sha256": "243323dc7daa5a9ccf90ef71b04f4e6a3fb3f3e1465997b0123485f615812b86",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase4:01",
+          "title": "4.1 Agent Profiles & Specialist Discovery",
+          "line": 108,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "4.1 Agent Profiles & Specialist Discovery",
+          "proves": "Lists specialist IDs and lease metadata.",
+          "gaps": [
+            "No specialist work or independent model assignments."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase4:02",
+          "title": "4.2 Dynamic Team Creation and Registry",
+          "line": 125,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "4.2 Dynamic Team Creation and Registry",
+          "proves": "Creates team and reads registry.",
+          "gaps": [
+            "No workload scheduling/result; fixed entry remains."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase4:03",
+          "title": "4.3 Automated Goal Decomposition into DAG Plan",
+          "line": 149,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "4.3 Automated Goal Decomposition into DAG Plan",
+          "proves": "Checks roles/dependencies for one fixed goal.",
+          "gaps": [
+            "No generalization or delegated execution."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase4:04",
+          "title": "4.4 Structured Agent Messaging Frames",
+          "line": 172,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "4.4 Structured Agent Messaging Frames",
+          "proves": "Sends four hand-authored in-process bus messages.",
+          "gaps": [
+            "No child produces events or real artifact."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase4:05",
+          "title": "4.5 Desktop Lease Mutual Exclusion & Contention Prevention",
+          "line": 225,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "claim": "4.5 Desktop Lease Mutual Exclusion & Contention Prevention",
+          "proves": "Serially acquires/denies/releases leases over RPC.",
+          "gaps": [
+            "No simultaneous physical action contention/enforcement."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase4:06",
+          "title": "4.6 End-to-End Multi-Agent Workflow Execution & Consolidation",
+          "line": 265,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "4.6 End-to-End Multi-Agent Workflow Execution & Consolidation",
+          "proves": "Executes three-node sequential DAG and checks completion metadata/results exist.",
+          "gaps": [
+            "No independent artifact readback, model/tool provenance, parallel branches or overlap."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase5",
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "sha256": "4649615a5488167ac5e1dcf0d72dbc7223aaa351f6119e58504cc75f84844cd5",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase5:01",
+          "title": "5.1 Durable Task Lifecycle & Step Persistence in SQLite",
+          "line": 100,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "5.1 Durable Task Lifecycle & Step Persistence in SQLite",
+          "proves": "Exercises SQLite :memory: transitions and hand-recorded steps.",
+          "gaps": [
+            "No durable disk reopen or cross-process persistence."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase5:02",
+          "title": "5.2 Persistent Step Checkpoints with State Snapshots & Artifacts",
+          "line": 143,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "5.2 Persistent Step Checkpoints with State Snapshots & Artifacts",
+          "proves": "Saves/lists live checkpoints with metadata paths.",
+          "gaps": [
+            "No artifact bytes, process restart or continuation; task remains."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase5:03",
+          "title": "5.3 Idempotency Key Execution Guarantees Single Execution",
+          "line": 190,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "5.3 Idempotency Key Execution Guarantees Single Execution",
+          "proves": "Runs in-memory callback twice with one idempotency key.",
+          "gaps": [
+            "No restart, contention or external side-effect deduplication."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase5:04",
+          "title": "5.4 Task Execution Budget Enforcement",
+          "line": 225,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "5.4 Task Execution Budget Enforcement",
+          "proves": "Checks in-memory three-step budget.",
+          "gaps": [
+            "No runtime deadline, cost budget or active interruption."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase5:05",
+          "title": "5.5 Task Failure and Retry Policy Execution",
+          "line": 254,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "5.5 Task Failure and Retry Policy Execution",
+          "proves": "Simulates in-memory failure/retry limits.",
+          "gaps": [
+            "No real transient failure; also leaves a live task."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase5:06",
+          "title": "5.6 Process Reboot Recovery Sweep (RUNNING -> WAITING)",
+          "line": 299,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "5.6 Process Reboot Recovery Sweep (RUNNING -> WAITING)",
+          "proves": "Calls sweep on two in-memory tasks.",
+          "gaps": [
+            "No process reboot, disk checkpoint reopen or resumed outcome."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase6",
+      "file": "test/phase6-skills-plugins.test.mjs",
+      "sha256": "df8be593561616cebc852e043f0daec9424e4bba1dfd3c2d3144aaa154e6e4b1",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase6:01",
+          "title": "6.1 Skill Discovery & Parsing of Installed SKILL.md Packages",
+          "line": 102,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "6.1 Skill Discovery & Parsing of Installed SKILL.md Packages",
+          "proves": "Lists bundled skills and reads metadata.",
+          "gaps": [
+            "No third-party import or executable invocation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase6:02",
+          "title": "6.2 Natural Language Skill Trigger Matching",
+          "line": 121,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "6.2 Natural Language Skill Trigger Matching",
+          "proves": "Matches fixed prompt to skill and positive score.",
+          "gaps": [
+            "Trigger matching is not execution."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase6:03",
+          "title": "6.3 Dynamic Skill Package Creation and Hot Discovery",
+          "line": 132,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "6.3 Dynamic Skill Package Creation and Hot Discovery",
+          "proves": "Creates local SKILL.md through RPC and discovers it.",
+          "gaps": [
+            "No external package/workflow execution; recursive cleanup trusts returned path."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase6:04",
+          "title": "6.4 Dynamic Plugin Installation, Tool Registration & Execution",
+          "line": 158,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "6.4 Dynamic Plugin Installation, Tool Registration & Execution",
+          "proves": "Installs fixture manifest, checks execution metadata and lifecycle.",
+          "gaps": [
+            "Function handler is dropped by JSON serialization; no dotProduct assertion or external executable."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase7",
+      "file": "test/phase7-computer-operator.test.mjs",
+      "sha256": "71c16355953e01635545db4c0bfd1253f63a7ebc671b164630981300e42daed4",
+      "prerequisites": [
+        "node24",
+        "host18789",
+        "windows"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase7:01",
+          "title": "7.1 Screen Geometry and DPI Resolution Discovery",
+          "line": 102,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "7.1 Screen Geometry and DPI Resolution Discovery",
+          "proves": "Reads positive screen dimensions.",
+          "gaps": [
+            "No DPI assertion, multiple monitors or coordinate action."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase7:02",
+          "title": "7.2 Live Cursor Position Coordinates Retrieval",
+          "line": 113,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "7.2 Live Cursor Position Coordinates Retrieval",
+          "proves": "Reads numeric cursor coordinates.",
+          "gaps": [
+            "No pointer movement/click or target readback."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase7:03",
+          "title": "7.3 Windows Desktop Enumeration and State Observation",
+          "line": 126,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "7.3 Windows Desktop Enumeration and State Observation",
+          "proves": "Enumerates windows and reads window state.",
+          "gaps": [
+            "Empty fallback list passes; no known window identity/focus change."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase7:04",
+          "title": "7.4 Windows UI Automation (UIA) Tree Inspection",
+          "line": 140,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "7.4 Windows UI Automation (UIA) Tree Inspection",
+          "proves": "Requests UIA elements and checks ok.",
+          "gaps": [
+            "No nonempty tree, known control, selection or invocation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase7:05",
+          "title": "7.5 Human Safety Takeover Hold Arbitration",
+          "line": 148,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "claim": "7.5 Human Safety Takeover Hold Arbitration",
+          "proves": "Sets hold and expects mouse_move rejection.",
+          "gaps": [
+            "No human input detection or guaranteed cleanup on failure."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase7:06",
+          "title": "7.6 Desktop Action Mutual Exclusion via Lease Locking",
+          "line": 184,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "claim": "7.6 Desktop Action Mutual Exclusion via Lease Locking",
+          "proves": "Serial lease acquire/deny/release calls.",
+          "gaps": [
+            "No simultaneous agents or physical action enforcement."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase8",
+      "file": "test/phase8-screen-intelligence.test.mjs",
+      "sha256": "c60f4e61bfc07b486f3dae309bdeec7181977fd0d1fbe30bc7cc05607875ad95",
+      "prerequisites": [
+        "node24"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase8:01",
+          "title": "RollingFrameBuffer enforces strict memory budget and time eviction",
+          "line": 24,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "ENDURANCE"
+          ],
+          "claim": "RollingFrameBuffer enforces strict memory budget and time eviction",
+          "proves": "Pushes seven allocated buffers and checks logical memory.",
+          "gaps": [
+            "No time advancement despite time-eviction title, native capture or RSS."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase8:02",
+          "title": "ChangeDetector prevents unnecessary inference on static frames",
+          "line": 51,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "ChangeDetector prevents unnecessary inference on static frames",
+          "proves": "Compares mock pixel strings and supplied titles/app names.",
+          "gaps": [
+            "No screen input, real visual changes or OCR inference-count evidence."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase8:03",
+          "title": "SemanticObservationStore persists and searches structured observations",
+          "line": 83,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "claim": "SemanticObservationStore persists and searches structured observations",
+          "proves": "Writes handwritten observations to SQLite and searches them.",
+          "gaps": [
+            "No OCR provenance or persisted reopen/restart."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase8:04",
+          "title": "ScreenObserver orchestrates capture, change detection, buffer, and agent queries",
+          "line": 127,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "ENDURANCE"
+          ],
+          "claim": "ScreenObserver orchestrates capture, change detection, buffer, and agent queries",
+          "proves": "Manually ingests three synthetic frames and queries observer context.",
+          "gaps": [
+            "No capture driver output, OCR, timed observation, sleep/restart or 24-hour soak."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase9",
+      "file": "test/phase9-unified-memory.test.mjs",
+      "sha256": "6d9d1a600766718eadcdc2483dd7a8e7b99c12383ca34eaf64f01f41bbf02034",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase9:01",
+          "title": "9.1 Storage Across All 8 Canonical Memory Layers in SQLite",
+          "line": 100,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "9.1 Storage Across All 8 Canonical Memory Layers in SQLite",
+          "proves": "Stores eight fixture records in SQLite :memory: and counts layers.",
+          "gaps": [
+            "No database reopening, cross-session use or real producers."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase9:02",
+          "title": "9.2 Multi-Layer Hybrid Contextual Retrieval & Ranking",
+          "line": 175,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "9.2 Multi-Layer Hybrid Contextual Retrieval & Ranking",
+          "proves": "Ranks three known records and filters a layer.",
+          "gaps": [
+            "No unseen paraphrase or retrieval quality benchmark."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase9:03",
+          "title": "9.3 Memory Correction and Updating via WebSocket RPC",
+          "line": 215,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "9.3 Memory Correction and Updating via WebSocket RPC",
+          "proves": "Remembers/corrects/recalls one fact over RPC.",
+          "gaps": [
+            "No restart durability or UI correction; record remains."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase9:04",
+          "title": "9.4 Memory Telemetry & Layer Statistics RPC",
+          "line": 249,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "9.4 Memory Telemetry & Layer Statistics RPC",
+          "proves": "Reads layer counters and field presence.",
+          "gaps": [
+            "No independent persisted row-count cross-check."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase9:05",
+          "title": "9.5 Memory Consolidation and Forget Deletion Controls",
+          "line": 259,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "9.5 Memory Consolidation and Forget Deletion Controls",
+          "proves": "Deletes known memory then invokes consolidation.",
+          "gaps": [
+            "No aged-record fixture/pruning correctness; consolidation touches shared host state."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase10",
+      "file": "test/phase10-research-engine.test.mjs",
+      "sha256": "382bdfa506ffba0e3df20ef3eb9317e8254c5e8543b05ad18d2fe545c2ee08ee",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase10:01",
+          "title": "10.1 Structured Web Search and Citation Tracking",
+          "line": 100,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "10.1 Structured Web Search and Citation Tracking",
+          "proves": "Checks citation title/url/snippet fields.",
+          "gaps": [
+            "No fetched-source validation, provenance or unavailable-provider assertion."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase10:02",
+          "title": "10.2 Sandboxed File Read, Write, and Directory Scanning",
+          "line": 116,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "10.2 Sandboxed File Read, Write, and Directory Scanning",
+          "proves": "Writes/reads/lists a file over RPC.",
+          "gaps": [
+            "No sandbox escape/denial test; recursive cleanup removes shared temp-test-data."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase10:03",
+          "title": "10.3 CSV Tabular Data Analysis and Column Schema Extraction",
+          "line": 148,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "10.3 CSV Tabular Data Analysis and Column Schema Extraction",
+          "proves": "Analyzes three-row CSV with local ResearchEngine.",
+          "gaps": [
+            "No large, malformed, quoted/multiline or document workflow coverage."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase10:04",
+          "title": "10.4 Artifact Production and SHA-256 Checksum Validation",
+          "line": 169,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "10.4 Artifact Production and SHA-256 Checksum Validation",
+          "proves": "Creates supplied report and verifies stored SHA-256.",
+          "gaps": [
+            "No tamper negative test; benchmark prose is fixture content, not measured results."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase10:05",
+          "title": "10.5 Autonomous Multi-Step Research Workflow & Memory Integration",
+          "line": 190,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "10.5 Autonomous Multi-Step Research Workflow & Memory Integration",
+          "proves": "Requests research workflow and checks artifact/memory metadata.",
+          "gaps": [
+            "No independent source content, citation support or research quality check."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase11",
+      "file": "test/phase11-automation-connectors.test.mjs",
+      "sha256": "62206b97ebeeb889591bed0434d72bf424a84fe541aa34e45e50762630c7967e",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase11:01",
+          "title": "11.1 Scheduled Cron Job Registration and Due Execution",
+          "line": 97,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "ENDURANCE"
+          ],
+          "claim": "11.1 Scheduled Cron Job Registration and Due Execution",
+          "proves": "Registers due job, manually triggers it, reads completion history.",
+          "gaps": [
+            "No unattended timer, restart durability or independent side-effect verification."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase11:02",
+          "title": "11.2 Event-Driven Conditional Workflow Rules",
+          "line": 129,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "claim": "11.2 Event-Driven Conditional Workflow Rules",
+          "proves": "Emits handcrafted events and checks rule execution status.",
+          "gaps": [
+            "No native event producer; deletes all existing screen:window_changed rules."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase11:03",
+          "title": "11.3 Automation Templates Catalog and Instantiation",
+          "line": 173,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "11.3 Automation Templates Catalog and Instantiation",
+          "proves": "Lists/instantiates template.",
+          "gaps": [
+            "No instantiated workflow execution/outcome."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase11:04",
+          "title": "11.4 External Connected Connectors Discovery and Health Ping",
+          "line": 192,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "11.4 External Connected Connectors Discovery and Health Ping",
+          "proves": "Lists connectors and accepts healthy webhook status.",
+          "gaps": [
+            "No independent authenticated remote request or service-side outcome."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase12",
+      "file": "test/phase12-workspaces-workers.test.mjs",
+      "sha256": "d5116bd7316889d2a3d7326ffad9b2278dd6976e4a1da855fe1786c58ab67d04",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase12:01",
+          "title": "12.1 Isolated Workspace Creation and Directory Sandboxing",
+          "line": 98,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "12.1 Isolated Workspace Creation and Directory Sandboxing",
+          "proves": "Creates workspace directory and reads registry.",
+          "gaps": [
+            "No escape attempt/cross-workspace denial; recursive cleanup trusts returned path."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase12:02",
+          "title": "12.2 Multi-Tier Worker Registration (Local, Remote, Cloud)",
+          "line": 124,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "12.2 Multi-Tier Worker Registration (Local, Remote, Cloud)",
+          "proves": "Registers cloud metadata and submits local heartbeat.",
+          "gaps": [
+            "No cloud process, transport or execution; record remains."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase12:03",
+          "title": "12.3 Distributed Task Handoff Contract with State Snapshots",
+          "line": 149,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "12.3 Distributed Task Handoff Contract with State Snapshots",
+          "proves": "Stores handoff snapshot and reads local history.",
+          "gaps": [
+            "No remote acknowledgement/resumption/artifact."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase13",
+      "file": "test/phase13-project-workflows.test.mjs",
+      "sha256": "a938d5740e2ba9b0e4f4ec8438bb006a2d3c60a69e7f9b0a5665f5abf6f78016",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase13:01",
+          "title": "13.1 Multi-Project Context Creation and Discovery",
+          "line": 96,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "13.1 Multi-Project Context Creation and Discovery",
+          "proves": "Creates/lists project metadata, members and rules.",
+          "gaps": [
+            "No real organizational workflow, assignment or report."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase13:02",
+          "title": "13.2 Project-Scoped Organizational Memory Isolation",
+          "line": 122,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "13.2 Project-Scoped Organizational Memory Isolation",
+          "proves": "Queries two scoped facts and asserts no crossover.",
+          "gaps": [
+            "No adversarial multi-user authorization boundary."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase13:03",
+          "title": "13.3 Configurable Human-in-the-Loop Approval Boundaries",
+          "line": 160,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "claim": "13.3 Configurable Human-in-the-Loop Approval Boundaries",
+          "proves": "Test computes 500 > threshold then cancels task.",
+          "gaps": [
+            "No production approval enforcement; CANCELLED is not approval WAITING/resume."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase14",
+      "file": "test/phase14-device-protocol.test.mjs",
+      "sha256": "ff18fc7bbc45b4199d876d7877ac73f498ab62961c2603f02d9048784dc7789c",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase14:01",
+          "title": "1. Generates 6-character short-lived pairing code",
+          "line": 102,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "1. Generates 6-character short-lived pairing code",
+          "proves": "Generates six-character code with future expiry.",
+          "gaps": [
+            "No actual expiry wait, replay or connected device."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase14:02",
+          "title": "2. Rejects claim with invalid pairing code",
+          "line": 111,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "2. Rejects claim with invalid pairing code",
+          "proves": "Rejects literal INVALID pairing code.",
+          "gaps": [
+            "No actual expired code or external auth boundary."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase14:03",
+          "title": "3. Successfully claims pairing code and registers Android phone",
+          "line": 126,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "REAL_OS"
+          ],
+          "claim": "3. Successfully claims pairing code and registers Android phone",
+          "proves": "Claims code with Android fixture metadata and receives token.",
+          "gaps": [
+            "No Android client/device authentication/capability execution."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase14:04",
+          "title": "4. Lists paired devices with active registration",
+          "line": 144,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "4. Lists paired devices with active registration",
+          "proves": "Lists registered device record.",
+          "gaps": [
+            "No physical device heartbeat or liveness."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase14:05",
+          "title": "5. Dispatches remote push notification to paired device",
+          "line": 155,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "REAL_OS"
+          ],
+          "claim": "5. Dispatches remote push notification to paired device",
+          "proves": "Creates notification object for fixture device.",
+          "gaps": [
+            "No push transport or phone receipt/display."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase14:06",
+          "title": "6. Lists and marks notifications as read for paired device",
+          "line": 171,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "6. Lists and marks notifications as read for paired device",
+          "proves": "Lists/marks notification read over RPC.",
+          "gaps": [
+            "No mobile receipt/read acknowledgement."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase14:07",
+          "title": "7. Unpairs device cleanly",
+          "line": 188,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "7. Unpairs device cleanly",
+          "proves": "Removes paired device from registry.",
+          "gaps": [
+            "No rejection of previously issued token from real client."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase15",
+      "file": "test/phase15-voice-engine.test.mjs",
+      "sha256": "fabe75685b1c5f81d83a5590c4421853bea265c9ec621876a458c66376d06c35",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase15:01",
+          "title": "1. Starts full-duplex voice session",
+          "line": 122,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "REAL_EXTERNAL"
+          ],
+          "claim": "1. Starts full-duplex voice session",
+          "proves": "Starts voice session and checks activeCount.",
+          "gaps": [
+            "No duplex microphone/speaker pipeline or conversation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase15:02",
+          "title": "2. Analyzes silence frames without triggering false speech detection",
+          "line": 133,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "2. Analyzes silence frames without triggering false speech detection",
+          "proves": "Submits generated silent PCM and checks VAD energy zero.",
+          "gaps": [
+            "No microphone or real acoustic noise benchmark."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase15:03",
+          "title": "3. Detects speech onset via VAD and transitions turn state",
+          "line": 145,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "3. Detects speech onset via VAD and transitions turn state",
+          "proves": "Submits generated 440Hz sine frames and checks VAD state.",
+          "gaps": [
+            "Tone is not human speech; no language recognition."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase15:04",
+          "title": "4. Transitions to processing when silence threshold is reached",
+          "line": 164,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "4. Transitions to processing when silence threshold is reached",
+          "proves": "Submits silence and checks processing state.",
+          "gaps": [
+            "No real utterance, completion or model/tool request."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase15:05",
+          "title": "5. Assistant synthesizes speech and emits audio PCM frames",
+          "line": 182,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "REAL_OS"
+          ],
+          "claim": "5. Assistant synthesizes speech and emits audio PCM frames",
+          "proves": "Checks requested synthesis byte count and sample rate.",
+          "gaps": [
+            "No intelligibility, actual speech content or audible-output assertion; byte count alone cannot establish speech synthesis."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase15:06",
+          "title": "6. Transcribes accumulated speech audio buffer",
+          "line": 193,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "REAL_OS"
+          ],
+          "claim": "6. Transcribes accumulated speech audio buffer",
+          "proves": "Checks transcribed=true and byte count on synthetic audio.",
+          "gaps": [
+            "No recognized text, accuracy reference, STT provider or utterance."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase15:07",
+          "title": "7. Cleanly terminates voice session",
+          "line": 203,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "7. Cleanly terminates voice session",
+          "proves": "Stops session and confirms absence.",
+          "gaps": [
+            "No microphone/output resource release or interrupted conversation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase16",
+      "file": "test/phase16-zero-experience.test.mjs",
+      "sha256": "0fb8b54bddb4f3e35c1956b619a7e361ddd31a64cddb0f227b6b73842b27f4b9",
+      "prerequisites": [
+        "node24",
+        "host18789",
+        "chrome",
+        "playwright-core"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase16:01",
+          "title": "1. Chat Surface (/chat/zero) renders top actions and controls",
+          "line": 39,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "claim": "1. Chat Surface (/chat/zero) renders top actions and controls",
+          "proves": "Checks action elements and generic workforce/screen text.",
+          "gaps": [
+            "No live agent-count or observer telemetry cross-check."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase16:02",
+          "title": "2. Voice Assistant toggle toggles listening state on click",
+          "line": 72,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "REAL_OS"
+          ],
+          "claim": "2. Voice Assistant toggle toggles listening state on click",
+          "proves": "Clicks voice toggle and reads Ready/Listening/Ready.",
+          "gaps": [
+            "No microphone, recognized speech, output or backend state check."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase16:03",
+          "title": "3. Settings Navigation (/settings/model-providers) loads cleanly",
+          "line": 95,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "3. Settings Navigation (/settings/model-providers) loads cleanly",
+          "proves": "Loads provider settings and checks branding/model text.",
+          "gaps": [
+            "No form submission, validation or persistence."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase16:04",
+          "title": "4. Workspaces route (/workspaces) serves SPA shell without 404",
+          "line": 107,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "4. Workspaces route (/workspaces) serves SPA shell without 404",
+          "proves": "Navigates workspaces, accepts HTTP 200 and body/root presence.",
+          "gaps": [
+            "Fallback SPA shell passes; no workspace-specific controls/actions."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase16:05",
+          "title": "5. No unhandled exceptions or broken branding links",
+          "line": 117,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "5. No unhandled exceptions or broken branding links",
+          "proves": "Searches HTML for one TypeError string and branding URL.",
+          "gaps": [
+            "No pageerror/console listener; reported trim-on-undefined can escape the text check."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "phase17",
+      "file": "test/phase17-production-release.test.mjs",
+      "sha256": "ccc3720cdbf132d43d9e1bbb5c262ed8db67a3a4dc2d99aec57a9edaa67906a8",
+      "prerequisites": [
+        "node24",
+        "host18789"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "phase17:01",
+          "title": "1. Verified startup scripts exist and configure native environment",
+          "line": 22,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "claim": "1. Verified startup scripts exist and configure native environment",
+          "proves": "Checks launcher files and two string markers.",
+          "gaps": [
+            "No launcher execution, clean installation or reproducibility."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase17:02",
+          "title": "2. Vacuum backup test & integrity check on openclaw.sqlite",
+          "line": 38,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "claim": "2. Vacuum backup test & integrity check on openclaw.sqlite",
+          "proves": "Copies owner SQLite with VACUUM INTO and integrity-checks backup.",
+          "gaps": [
+            "No restore, migration, rollback or logical before/after comparison; reads owner DB."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase17:03",
+          "title": "3. Zero Host health check returns 200 OK and native runtime",
+          "line": 69,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "3. Zero Host health check returns 200 OK and native runtime",
+          "proves": "Checks live health status/runtime/port.",
+          "gaps": [
+            "No startup, crash recovery or installed release behavior."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "phase17:04",
+          "title": "4. Native subsystems report ready status",
+          "line": 79,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "REAL_OS",
+            "REAL_EXTERNAL",
+            "ENDURANCE"
+          ],
+          "claim": "4. Native subsystems report ready status",
+          "proves": "Checks voice/device/workspace/template/layer RPC flags.",
+          "gaps": [
+            "No real workflows, compatibility, endurance, clean install or secret scan in this suite."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "id": "requirements48",
+      "file": "test/real-world-requirements-48.test.mjs",
+      "sha256": "0476c73d8c6d825bbd906385051b031e79e2046fa4dbc8c2d436bfd654815d8f",
+      "prerequisites": [
+        "node24",
+        "host18789",
+        "windows",
+        "configured-provider"
+      ],
+      "executionWarning": "Never run against owner state/host. Use disposable checkout, isolated config/state and separate port-18789 network/process environment. Shared setup hooks can affect every leaf.",
+      "tests": [
+        {
+          "id": "requirements48:01",
+          "title": "1. Clean Windows startup",
+          "line": 155,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "1. Clean Windows startup",
+          "proves": "Launcher paths exist; already-running host returns health.",
+          "gaps": [
+            "No clean Windows launch or installation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:02",
+          "title": "2. Gateway availability and reconnection",
+          "line": 167,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "2. Gateway availability and reconnection",
+          "proves": "Opens two RPC clients and reads gateway.health.",
+          "gaps": [
+            "No persisted session, network fault or restarted host."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:03",
+          "title": "3. Actual browser navigation",
+          "line": 181,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "3. Actual browser navigation",
+          "proves": "Fetches five HTTP routes and accepts 200/304.",
+          "gaps": [
+            "No browser engine, rendered route or navigation controls."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:04",
+          "title": "4. Actual UI scrolling",
+          "line": 190,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "4. Actual UI scrolling",
+          "proves": "Searches CSS for overflow rules.",
+          "gaps": [
+            "No overflowing content or nonzero scroll movement."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:05",
+          "title": "5. Actual settings modification and persistence",
+          "line": 198,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "claim": "5. Actual settings modification and persistence",
+          "proves": "Patches config, reads disk and restores snapshot on success path.",
+          "gaps": [
+            "No browser form; cleanup outside finally can overwrite concurrent owner changes."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:06",
+          "title": "6. Actual provider discovery",
+          "line": 215,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "6. Actual provider discovery",
+          "proves": "Accepts provider array or any object and truthy auth status.",
+          "gaps": [
+            "No usable credentials or authenticated provider roundtrip."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:07",
+          "title": "7. Real model inference",
+          "line": 223,
+          "labels": [
+            "REAL_EXTERNAL"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "7. Real model inference",
+          "proves": "Requests one fixed model and checks finish_reason stop.",
+          "gaps": [
+            "Assistant role alone can satisfy content check; no independent upstream provenance or requested-text validation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:08",
+          "title": "8. Real streaming",
+          "line": 243,
+          "labels": [
+            "REAL_EXTERNAL"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "8. Real streaming",
+          "proves": "Buffers entire SSE response and checks content type/data marker.",
+          "gaps": [
+            "No incremental arrival timing, multiple deltas, cancellation or upstream request count."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:09",
+          "title": "9. Model selection",
+          "line": 260,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "9. Model selection",
+          "proves": "Resolves two canonical model IDs and compares them.",
+          "gaps": [
+            "No execution reaches either selected model/provider."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:10",
+          "title": "10. Multi-provider execution",
+          "line": 272,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "10. Multi-provider execution",
+          "proves": "Lists providers and requires at least one.",
+          "gaps": [
+            "One provider passes; no two distinct providers execute."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:11",
+          "title": "11. Parallel agent models",
+          "line": 282,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "11. Parallel agent models",
+          "proves": "Lists five profiles and three agent IDs.",
+          "gaps": [
+            "No independent model assignments or overlapping parallel executions."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:12",
+          "title": "12. Genuine agent delegation",
+          "line": 294,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "12. Genuine agent delegation",
+          "proves": "Requests a plan with at least three subtasks.",
+          "gaps": [
+            "Planning does not execute children or verify outputs."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:13",
+          "title": "13. Multi-step execution with tool results",
+          "line": 303,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL",
+            "REAL_OS"
+          ],
+          "claim": "13. Multi-step execution with tool results",
+          "proves": "Gets screen size and checks positive dimensions.",
+          "gaps": [
+            "A single observation is not multi-step model/tool/feedback execution."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:14",
+          "title": "14. Durable task state",
+          "line": 312,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "14. Durable task state",
+          "proves": "Creates a task and saves one checkpoint over RPC.",
+          "gaps": [
+            "No checkpoint re-read, disk reopen, restart or resumed artifact."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:15",
+          "title": "15. Resume after restart",
+          "line": 331,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "15. Resume after restart",
+          "proves": "Runs recovery sweep on SQLite :memory:.",
+          "gaps": [
+            "No killed process, disk persistence or actual resumption."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:16",
+          "title": "16. Actual desktop mouse actions",
+          "line": 346,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "16. Actual desktop mouse actions",
+          "proves": "Reads numeric nonnegative cursor coordinates.",
+          "gaps": [
+            "No mouse movement/click or target effect readback."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:17",
+          "title": "17. Actual keyboard input",
+          "line": 357,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "17. Actual keyboard input",
+          "proves": "Checks type_text/press_key/hotkey action names.",
+          "gaps": [
+            "No keyboard input or text readback in a real application."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:18",
+          "title": "18. Actual UI element selection",
+          "line": 364,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "18. Actual UI element selection",
+          "proves": "Gets a UIA element array.",
+          "gaps": [
+            "Empty array passes; no target selection or invocation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:19",
+          "title": "19. Browser automation",
+          "line": 371,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "19. Browser automation",
+          "proves": "Fetches chat HTML containing a bundle name.",
+          "gaps": [
+            "No browser session or browser action."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:20",
+          "title": "20. Dynamic UI change handling",
+          "line": 379,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "REAL_OS"
+          ],
+          "claim": "20. Dynamic UI change handling",
+          "proves": "Compares manually supplied byte buffers via ChangeDetector.",
+          "gaps": [
+            "No live dynamic UI transition or action recovery."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:21",
+          "title": "21. Multi-monitor operation",
+          "line": 392,
+          "labels": [
+            "REAL_OS"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "21. Multi-monitor operation",
+          "proves": "Reads screen width and defaults missing DPI to 1.0.",
+          "gaps": [
+            "No multiple monitors, mixed DPI or cross-monitor action."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:22",
+          "title": "22. Continuous screen capture",
+          "line": 402,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "ENDURANCE"
+          ],
+          "claim": "22. Continuous screen capture",
+          "proves": "Pushes one allocated buffer into RollingFrameBuffer.",
+          "gaps": [
+            "No real screenshot producer or continuous acquisition."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:23",
+          "title": "23. Bounded RAM frame retention",
+          "line": 409,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "ENDURANCE"
+          ],
+          "claim": "23. Bounded RAM frame retention",
+          "proves": "Pushes ten buffers and checks logical memory accounting.",
+          "gaps": [
+            "No realistic frames, process RSS ceiling or retention duration."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:24",
+          "title": "24. Local OCR and vision inference",
+          "line": 419,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "24. Local OCR and vision inference",
+          "proves": "Inserts handwritten observed_text into SQLite and searches it.",
+          "gaps": [
+            "No image capture, OCR or local vision inference."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:25",
+          "title": "25. Semantic observation memory",
+          "line": 442,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "claim": "25. Semantic observation memory",
+          "proves": "Accepts truthy observation status.",
+          "gaps": [
+            "No observation content, persistence or semantic retrieval."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:26",
+          "title": "26. Cross-session memory recall",
+          "line": 448,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "26. Cross-session memory recall",
+          "proves": "Writes and recalls a fact on the same RPC client.",
+          "gaps": [
+            "No distinct sessions/restart; record is left behind."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:27",
+          "title": "27. Real external skill installation",
+          "line": 466,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "27. Real external skill installation",
+          "proves": "Lists bundled skills and reads web-research metadata.",
+          "gaps": [
+            "No third-party artifact download/install or lifecycle."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:28",
+          "title": "28. Real external skill execution",
+          "line": 476,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "28. Real external skill execution",
+          "proves": "Matches a fixed prompt to web-research.",
+          "gaps": [
+            "Metadata matching is not skill execution or artifact verification."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:29",
+          "title": "29. Real compatible plugin installation",
+          "line": 486,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "29. Real compatible plugin installation",
+          "proves": "Installs a test-defined manifest then uninstalls it.",
+          "gaps": [
+            "No real external package bytes, entrypoint or imported executable."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:30",
+          "title": "30. Real compatible plugin execution",
+          "line": 502,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "claim": "30. Real compatible plugin execution",
+          "proves": "Lists plugins and accepts an array.",
+          "gaps": [
+            "No plugin capability invocation or output check."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:31",
+          "title": "31. Memory UI interactions",
+          "line": 508,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "31. Memory UI interactions",
+          "proves": "Reads memory layer metadata over RPC.",
+          "gaps": [
+            "No memory UI search, correction or deletion."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:32",
+          "title": "32. Skills UI interactions",
+          "line": 514,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "32. Skills UI interactions",
+          "proves": "Lists skills over RPC.",
+          "gaps": [
+            "No skills UI controls or persisted form interaction."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:33",
+          "title": "33. Plugins UI interactions",
+          "line": 520,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "33. Plugins UI interactions",
+          "proves": "Reads plugin diagnostics over RPC.",
+          "gaps": [
+            "No plugin UI operation or configuration."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:34",
+          "title": "34. Search UI interactions",
+          "line": 526,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "REAL_EXTERNAL"
+          ],
+          "claim": "34. Search UI interactions",
+          "proves": "Requests research.search and accepts nonempty citations.",
+          "gaps": [
+            "No browser search interaction or independently fetched source validation."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:35",
+          "title": "35. Agents UI interactions",
+          "line": 532,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER"
+          ],
+          "claim": "35. Agents UI interactions",
+          "proves": "Lists agents over RPC.",
+          "gaps": [
+            "No agent UI interaction or displayed result."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:36",
+          "title": "36. Background scheduled execution",
+          "line": 538,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION",
+            "ENDURANCE"
+          ],
+          "claim": "36. Background scheduled execution",
+          "proves": "Registers due job, manually triggers due jobs and checks global count.",
+          "gaps": [
+            "No unattended clock scheduling; count need not identify this job or a successful effect."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:37",
+          "title": "37. External-service workflows when configured",
+          "line": 557,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL"
+          ],
+          "claim": "37. External-service workflows when configured",
+          "proves": "Lists connector metadata and accepts an array.",
+          "gaps": [
+            "No authenticated external service workflow/outcome."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:38",
+          "title": "38. Task cancellation",
+          "line": 563,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "38. Task cancellation",
+          "proves": "Creates idle task then transitions it to CANCELLED.",
+          "gaps": [
+            "No in-flight model/tool/worker is observed stopping."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:39",
+          "title": "39. Human takeover",
+          "line": 571,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_OS"
+          ],
+          "claim": "39. Human takeover",
+          "proves": "Sets hold, reads held=true and releases it.",
+          "gaps": [
+            "No input denial or physical human takeover asserted here."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:40",
+          "title": "40. Gateway restart recovery",
+          "line": 579,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "40. Gateway restart recovery",
+          "proves": "Expects restart refusal without active supervisor.",
+          "gaps": [
+            "Expected rejection does not restart gateway or recover clients/state."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:41",
+          "title": "41. Worker crash recovery",
+          "line": 587,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "41. Worker crash recovery",
+          "proves": "Fails an in-memory task and retries to QUEUED.",
+          "gaps": [
+            "No worker process crash, replacement or resumed work."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:42",
+          "title": "42. No unintended data loss",
+          "line": 603,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "INTEGRATION"
+          ],
+          "claim": "42. No unintended data loss",
+          "proves": "Checks owner DB exists and exceeds 1 MB.",
+          "gaps": [
+            "No before/after rows, checksum, migration or restore comparison."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:43",
+          "title": "43. CPU and RAM measurements",
+          "line": 610,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "ENDURANCE"
+          ],
+          "claim": "43. CPU and RAM measurements",
+          "proves": "Checks one liveness RSS sample and numeric uptime.",
+          "gaps": [
+            "No CPU measurement, duration, workload baseline or resource trend."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:44",
+          "title": "44. Long-duration observation stability",
+          "line": 618,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "ENDURANCE",
+            "REAL_OS"
+          ],
+          "claim": "44. Long-duration observation stability",
+          "proves": "Pushes 1000 identical buffers in a tight loop.",
+          "gaps": [
+            "No elapsed soak, native capture, CPU/RSS series or sleep/restart recovery."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:45",
+          "title": "45. Clean-machine installation",
+          "line": 628,
+          "labels": [
+            "UNIT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "claim": "45. Clean-machine installation",
+          "proves": "Reads backend/package.json module type and dependencies.",
+          "gaps": [
+            "No clean VM install, launch, update, rollback or uninstall."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:46",
+          "title": "46. Mobile capability tests",
+          "line": 635,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "requiredLabels": [
+            "REAL_EXTERNAL",
+            "REAL_OS"
+          ],
+          "claim": "46. Mobile capability tests",
+          "proves": "Creates server pairing records and queues Android notification.",
+          "gaps": [
+            "No physical phone, companion transport, delivered push or reconnect."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:47",
+          "title": "47. Voice interaction tests",
+          "line": 654,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_OS",
+            "REAL_EXTERNAL"
+          ],
+          "claim": "47. Voice interaction tests",
+          "proves": "Starts/lists/stops a server voice session.",
+          "gaps": [
+            "No microphone, recognized speech, audible synthesis or voice-directed tool."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "requirements48:48",
+          "title": "48. Final complete frontend/backend regression",
+          "line": 669,
+          "labels": [
+            "CONTRACT"
+          ],
+          "requiredLabels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "claim": "48. Final complete frontend/backend regression",
+          "proves": "Fetches health and model catalog.",
+          "gaps": [
+            "No frontend interaction, full regression workflows or recovery."
+          ],
+          "claimStatus": "PARTIAL",
+          "verificationStatus": "UNVERIFIED"
+        }
+      ]
+    }
+  ],
+  "reportedChecks": [
+    {
+      "id": "owner-state-backup",
+      "source": "User report in this audit session; not executed or independently inspected by this runner",
+      "status": "REPORTED_PASS",
+      "scope": "Backup script scripts/backup-user-state.mjs: 19 database/config files; snapshot .backup/functional-correction-1793549776379; reported integrity ok.",
+      "gap": "Backup integrity is not restore, migration, no-data-loss or restart-resumption proof."
+    },
+    {
+      "id": "search-provenance-contract",
+      "source": "User report in this audit session",
+      "status": "REPORTED_PASS",
+      "scope": "Search provenance contract 3/3.",
+      "gap": "Actual real retrieval not yet verified; search workflow gate remains BLOCKED."
+    },
+    {
+      "id": "nvidia-zero-lead-inference",
+      "source": "User report in this audit session",
+      "status": "REPORTED_PASS",
+      "scope": "Actual NVIDIA zero-lead inference returned literal ZERO_CONNECTION_OK in 1938 ms.",
+      "gap": "One model inference only; no independent rerun here, second provider, parallel agent/model execution or streaming timing."
+    },
+    {
+      "id": "real-search-attempt",
+      "source": "Latest user report during this audit",
+      "status": "REPORTED_EMPTY",
+      "scope": "Query Windows UI Automation returned status empty, both APIs HTTP 200, zero citations.",
+      "gap": "No source retrieval PASS: transport success and honest empty reporting do not establish retrieved evidence."
+    },
+    {
+      "id": "native-ui-smoke",
+      "source": "Latest user report during this audit",
+      "status": "REPORTED_PASS",
+      "scope": "After canonical __openclaw__/ asset path fix, native UI plugin activates: chat has no trim crash, model picker displayed, Voice PARTIAL, Workforce 1 configured, Screen Stopped; Settings Skills lists 9 actual skills; Search form and Memory real status render.",
+      "gap": "Persisted interactions, reconnect and full workflow outcomes remain unverified."
+    }
+  ],
+  "integrationMilestone": {
+    "commit": "bd4607f",
+    "source": "User-reported milestone",
+    "scope": "Search provenance and backup script; this audit created no commit."
+  }
+}

@@ -1,3 +1,20 @@
+# Current execution tracker correction — 2026-11-02
+
+Latest authoritative checkpoint: [functional corrections and evidence](verification/2026-11-02/PROGRESS.md).
+The master goal remains active and PARTIAL. Eight actual UI workflows and real
+two-model execution now pass within their stated scope; encrypted observation,
+local vision, complete voice and other master acceptance requirements remain open.
+
+**Current product status: PARTIAL. Release: BLOCKED.** All phase 1–17 production-completion claims below are superseded by the [current classification audit](verification/CLASSIFICATION-AUDIT.md). Phase 0 and other legacy suites were not reassessed. No completion percentage is established.
+
+The source audit counts **89 phase leaves**, not 106 independent phase checks; 106 includes 17 suite containers. The requirement suite has **48 leaves**, not 49 independent requirements. Each leaf's exact label, limited assertions and remaining gaps are recorded in the [inventory](verification/test-classification-inventory.json). All legacy assertions are NOT_RUN by this audit; required real workflows remain UNVERIFIED/BLOCKED.
+
+User-reported integration evidence: NVIDIA zero-lead returned ZERO_CONNECTION_OK in 1938 ms; search provenance contract 3/3 (actual retrieval UNVERIFIED); 19-file backup integrity OK (restore UNVERIFIED). Latest reported UI smoke after the canonical __openclaw__/ asset fix has no chat trim crash and renders model/Skills/Search/Memory surfaces; persisted interaction and reconnect have not passed. The five originally missing RPCs were not individually revalidated by this audit. Real search returned empty (both APIs 200, zero citations), not source retrieval PASS. User-reported milestone bd4607f covers search provenance and backup. No actual mobile/device/cloud worker is available: those gates are BLOCKED. See the audit for attribution and exact scope.
+
+## Historical tracker — preserved, superseded for current completion status
+
+The original status tables, percentages, counts and execution claims below are retained for history. Their VERIFIED/100% labels must not be read as the current production acceptance verdict.
+
 # Zero AI — Master Autonomous Engineering Execution Tracker
 
 **Project:** ZERO AI (JARVIS/FRIDAY-Class Autonomous AI Assistant Platform)  

@@ -1,0 +1,56 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "REAL_BROWSER"
+  ],
+  "startedAt": "2026-11-02T00:56:11.547Z",
+  "status": "PASS",
+  "directory": "C:\\Users\\Professor Zero\\AppData\\Local\\Temp\\zero-external-skill-2wuFj6",
+  "evidence": "E:\\zero\\artifacts\\external-skill\\1793580971547",
+  "source": {
+    "type": "github",
+    "url": "https://github.com/anthropics/skills.git",
+    "ref": "ca45fc496a3436251f191354091d557da31c15b5",
+    "subpath": "skills/frontend-design",
+    "revision": "ca45fc496a3436251f191354091d557da31c15b5"
+  },
+  "reusedPersistedExecution": true,
+  "execution": {
+    "ok": true,
+    "status": "completed",
+    "taskId": "task_1793580796800_wazwy4",
+    "output": "C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-external-skill-2wuFj6\\community-skill-counter.html",
+    "steps": [
+      {
+        "capability": "model",
+        "status": "completed"
+      },
+      {
+        "capability": "write_file",
+        "status": "completed"
+      },
+      {
+        "capability": "model",
+        "status": "completed"
+      },
+      {
+        "capability": "read_file",
+        "status": "completed"
+      },
+      {
+        "capability": "model",
+        "status": "completed"
+      }
+    ]
+  },
+  "artifact": {
+    "bytes": 2291,
+    "sha256": "fc331f1d361298a6bf13a67a541ea1bd6ef3c9f72aa3a6a2f0cd6c48a436790b"
+  },
+  "independentVerification": {
+    "initial": 0,
+    "afterTwoClicks": 2,
+    "browserErrors": []
+  },
+  "finishedAt": "2026-11-02T00:56:11.998Z"
+}
