@@ -20,6 +20,12 @@ export class SessionManager {
   }
 
   _initSchema() {
+    this.db.exec(`CREATE TABLE IF NOT EXISTS zero_assistant_receipts (
+      session_id TEXT NOT NULL, run_id TEXT NOT NULL, input_hash TEXT NOT NULL,
+      status TEXT NOT NULL, result_json TEXT, error TEXT,
+      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+      PRIMARY KEY(session_id, run_id)
+    )`);
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS zero_sessions (
         id TEXT PRIMARY KEY,

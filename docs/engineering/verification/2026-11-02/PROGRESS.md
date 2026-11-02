@@ -353,3 +353,14 @@ and failure diagnostics are now loaded in that process.
 preserves the original 5,115 rows across 29 tables under the explicit monotonic
 runtime-clock policy. This live deployment checkpoint does not expand the scoped
 browser/OS tests into production sign-off or certify unfinished workflows.
+
+Durable assistant request receipts are now integrated at the shared chat/voice
+executor entry. Identical concurrent requests share execution; completed results
+survive database reopen. Reusing an ID for different input is rejected. Failed
+or interrupted requests are never automatically re-executed under that ID.
+A file-backed integration test verifies a single filesystem effect across
+concurrent retries/reopen and rejection of collisions/failures/interrupted state.
+Session continuity regressions also pass. Actual WebSocket retry, UI reconnect
+replay and receipt/task crash recovery gates still require real execution; this
+component evidence alone does not close them. Owner PID 15384 retains its prior
+loaded executor until the updated path passes those gates and is reloaded.

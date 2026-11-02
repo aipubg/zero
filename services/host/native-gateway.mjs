@@ -44,6 +44,7 @@ import { VoiceEngine } from '../../packages/voice-engine/index.mjs';
 import { VoiceConversation } from '../../packages/voice-engine/conversation.mjs';
 import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { connectScreenAutomation } from './screen-automation.mjs';
+import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
@@ -166,6 +167,7 @@ export class ZeroNativeHost {
       aliases: { 'zero-lead': 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
     });
     this.sessions = new SessionManager({ dbPath: sessionDb });
+    this.executeAssistantOnce = createAssistantReceipts(this.sessions.db);
     this.tasks = new TaskStateMachine({ dbPath: path.join(dataDir, 'zero-tasks.sqlite') });
     this.messageBus = new AgentMessageBus({ db: this.tasks.db });
     this.leaseManager = new DesktopLeaseManager();
@@ -1880,6 +1882,10 @@ export class ZeroNativeHost {
   }
 
   _runAssistantRequest(options) {
+    return this.executeAssistantOnce(options, request => this._executeAssistantRequest(request));
+  }
+
+  _executeAssistantRequest(options) {
     options = { ...options, runId: options.runId || crypto.randomUUID() };
     const request = (async () => {
       const { sessionKey, userContent, signal, source = 'chat' } = options;
