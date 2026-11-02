@@ -952,3 +952,33 @@ rendered crash status and UI recovery/effects. Thirty plugin/UI regressions pass
 the runner hash and conditional REAL_OS classification/mode are re-audited.
 This verifies explicit UI restart, not automatic replay of interrupted effects
 or every external executable/process topology.
+
+Models assignment now uses a real admin RPC, validates the selected configured
+model, atomically persists the Zero binding/defaults, preserves unrelated fields
+and saves exact original bytes to a local backup. Provider list now supplies the
+actual model catalog without credential/model-secret fields. Configurable provider
+and binding paths allow fully isolated acceptance runs; provider configuration
+writes use the selected fabric path. Existing owner paths remain the default.
+Canonical Models RPC errors now throw instead of falling through to another
+loopback host or being treated by save handlers as success. Standalone legacy
+fallback code is retained; remaining provider CRUD/discovery/local-GGUF native
+RPC integration is not declared complete.
+
+[models-ui-wrong-route-failure.json](models-ui-wrong-route-failure.json) retains
+the initial harness route error. [models-provider-identity-mismatch.json](models-provider-identity-mismatch.json)
+retains the actual strict-name mismatch: requested nvidia/nemotron-3.5-super-vl-120b-a12b
+but NVIDIA reports private/nvidia/nemotron-3.5-super-120b-a12b. That provider identity
+mapping is NOT verified or rewritten. The final routing gate adds stronger
+independent request evidence: an owned loopback forwarding proxy records only
+the outgoing model field and forwards the actual request/stream to NVIDIA, without
+logging credentials or prompts. The selected model is observed in the real
+upstream payload; the distinct response name remains explicit in evidence.
+
+[models-ui-assignment-real-routing.json](models-ui-assignment-real-routing.json)
+passes nine selected browser workflows, including UI model selection/save,
+actual host stop/restart, persisted selection, real inference returning 4,
+independent outgoing model verification and unchanged owner settings. All test
+model files are isolated copies. Twenty-two regressions pass, including exact
+backup preservation, file-backed settings reopen, unknown-model rejection and
+credential omission. This is model-selection/request-routing acceptance, not
+independent validation of NVIDIA's internal alias or all Models/Agents screens.

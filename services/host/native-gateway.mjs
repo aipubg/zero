@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
+import { modelSettings, assignZeroModel } from './model-settings.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -164,7 +165,8 @@ export class ZeroNativeHost {
     });
     this.observationLifecycle = createNativeObservationLifecycle({ observer: this.screenObserver, prefsPath: this.prefsPath });
     this.modelFabric = new ModelFabric({
-      configPath: path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
+      configPath: options.providersPath || process.env.ZERO_PROVIDERS_PATH || path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
+      agentBindingsPath: options.agentBindingsPath || process.env.ZERO_AGENT_BINDINGS_PATH || path.join(REPO_ROOT, 'models', 'gateway-defaults.json'),
       aliases: { 'zero-lead': 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
     });
     this.sessions = new SessionManager({ dbPath: sessionDb });
@@ -716,7 +718,7 @@ export class ZeroNativeHost {
           'chat.send', 'chat.abort', 'agent', 'gateway.agent',
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
-          'zero.providers.list', 'zero.providers.configure', 'zero.providers.test',
+          'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive',
           'zero.gateway.status', 'zero.gateway.restart',
           'zero.computer.control', 'zero.observation.status',
           'zero.integrations.cli.status', 'zero.integrations.connectors.status',
@@ -867,6 +869,7 @@ export class ZeroNativeHost {
       'config.apply': ['admin', 'operator.admin'],
       'zero.gateway.restart': ['admin', 'operator.admin'],
       'zero.providers.configure': ['admin', 'operator.admin'],
+      'zero.providers.setActive': ['admin', 'operator.admin'],
       'zero.computer.control': ['computer.control', 'operator.admin'],
       'chat.send': ['operator.write', 'operator.admin'],
       'agent': ['operator.write', 'operator.admin'],
@@ -1144,14 +1147,13 @@ export class ZeroNativeHost {
         };
 
       case 'zero.providers.list':
-        return {
-          ok: true,
-          providers: this.modelFabric.getProviders(),
-          health: this.modelFabric.getHealthReport(),
-        };
+        return { ...modelSettings(this.modelFabric), health: this.modelFabric.getHealthReport() };
+
+      case 'zero.providers.setActive':
+        return assignZeroModel(this.modelFabric, params);
 
       case 'zero.providers.configure': {
-        const providersPath = path.join(REPO_ROOT, 'models', 'gateway-providers.json');
+        const providersPath = this.modelFabric.configPath;
         if (params.provider && fs.existsSync(providersPath)) {
           const providers = JSON.parse(fs.readFileSync(providersPath, 'utf8'));
           const existingIdx = providers.findIndex((p) => p.id === params.provider.id);
@@ -2047,6 +2049,7 @@ export class ZeroNativeHost {
       let turns = 0;
       const maxTurns = 5;
       let finalContent = '';
+      let observedProviderModel = null;
       let mediaResult = null;
       const executedActions = [];
       const turnStartTime = Date.now();
@@ -2077,6 +2080,7 @@ export class ZeroNativeHost {
         try {
           // Single canonical streaming request handles both assistant text and incremental tool calls
           for await (const chunk of this.modelFabric.streamChat(modelPayload, { signal: abortController.signal })) {
+            if (typeof chunk.model === 'string') observedProviderModel = chunk.model;
             if (chunk.delta) {
               accumulatedContent += chunk.delta;
               publishChat({ state: 'delta', message: { role: 'assistant', content: [{ type: 'text', text: accumulatedContent }] } });
@@ -2340,6 +2344,8 @@ export class ZeroNativeHost {
         ...(failedActions.length ? { error: `${failedActions.length} tool action(s) failed or were blocked; inspect the persisted tool results before retrying` } : {}),
         role: 'assistant',
         content: finalContent,
+        requestedModel: model || null,
+        providerModel: observedProviderModel,
         messages: this.sessions.getTranscript(sessionKey),
       };
     } finally {

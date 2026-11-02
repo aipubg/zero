@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
+import http from 'node:http';
+import { Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +20,8 @@ const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.
 fs.mkdirSync(evidence, { recursive: true });
 fs.cpSync(path.join(root, 'skills'), path.join(temporary, 'skills'), { recursive: true });
 fs.copyFileSync(path.join(root, 'zero-system/config/zero.json'), path.join(temporary, 'config.json'));
+fs.copyFileSync(path.join(root, 'models/gateway-providers.json'), path.join(temporary, 'providers.json'));
+fs.copyFileSync(path.join(root, 'models/gateway-defaults.json'), path.join(temporary, 'bindings.json'));
 const listener = net.createServer();
 listener.listen(0, '127.0.0.1');
 await once(listener, 'listening');
@@ -28,6 +32,7 @@ const report = { classification: [], classificationMeaning: 'Selected workflow s
 const workflowLabels = new Map([
   ['Chat connects, native plugin activates, composer accepts text', []],
   ['Memory search uses actual persisted records through the UI', []],
+  ['Models UI assignment persists across process restart and actual inference uses the selection', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
   ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
   ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
@@ -41,13 +46,38 @@ const workflowLabels = new Map([
   ['Gateway reconnects after a real process stop/restart and memory remains', []],
 ]);
 let child, browser, page;
+let modelProxy;
+const outboundModelRequests = [];
 const errors = [];
+
+async function startModelProxy() {
+  if (!process.argv.includes('--models')) return;
+  const file = path.join(temporary, 'providers.json'); const providers = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const provider = providers.find(row => row.id === 'nv'); assert.ok(provider);
+  const upstream = provider.baseUrl.replace(/\/+$/, '');
+  modelProxy = http.createServer(async (request, response) => {
+    const controller = new AbortController(); response.on('close', () => controller.abort());
+    try {
+      const chunks = []; let bytes = 0;
+      for await (const chunk of request) { bytes += chunk.length; if (bytes > 1024 * 1024) throw new Error('Probe request exceeded bound'); chunks.push(chunk); }
+      const body = Buffer.concat(chunks); const payload = JSON.parse(body);
+      outboundModelRequests.push({ model: payload.model, provider: provider.id });
+      const result = await fetch(`${upstream}/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: request.headers.authorization }, body, signal: controller.signal });
+      response.writeHead(result.status, { 'Content-Type': result.headers.get('content-type') || 'application/json' });
+      Readable.fromWeb(result.body).on('error', () => response.destroy()).pipe(response);
+    } catch { if (!response.destroyed) { if (!response.headersSent) response.writeHead(502); response.end('Actual upstream forwarding failed'); } }
+  });
+  modelProxy.listen(0, '127.0.0.1'); await once(modelProxy, 'listening');
+  provider.baseUrl = `http://127.0.0.1:${modelProxy.address().port}/v1`;
+  fs.writeFileSync(file, JSON.stringify(providers));
+}
 
 async function start() {
   child = spawn(process.execPath, [path.join(root, 'backend/server/zero-host.mjs')], {
     cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, ZERO_PORT: String(port), ZERO_DATA_DIR: path.join(temporary, 'data'),
       ZERO_PREFS_PATH: path.join(temporary, 'prefs.json'), ZERO_SKILLS_DIR: path.join(temporary, 'skills'),
+      ZERO_PROVIDERS_PATH: path.join(temporary, 'providers.json'), ZERO_AGENT_BINDINGS_PATH: path.join(temporary, 'bindings.json'),
       OPENCLAW_CONFIG_PATH: path.join(temporary, 'config.json') },
   });
   child.stderr.on('data', data => errors.push(String(data)));
@@ -95,6 +125,7 @@ async function check(name, action) {
 }
 
 try {
+  await startModelProxy();
   await start();
   browser = await chromium.launch({ channel: 'chrome', headless: !process.argv.includes('--screen-recall') });
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -124,6 +155,27 @@ try {
     assert.equal(await page.getByRole('textbox', { name: 'Chat composer', exact: true }).inputValue(), 'A draft retained during functional checks');
     assert.deepEqual(pageErrors, []);
     return { pageErrors: [...pageErrors] };
+  });
+  if (process.argv.includes('--models')) await check('Models UI assignment persists across process restart and actual inference uses the selection', async () => {
+    const owner = fs.readFileSync(path.join(root, 'models/gateway-defaults.json'), 'utf8');
+    const selected = 'nv/nvidia/nemotron-3.5-super-vl-120b-a12b';
+    await page.goto(`${base}/settings/model-providers`);
+    const dropdown = page.locator('#zero-agent-assign-select');
+    await dropdown.locator('button').click();
+    await dropdown.locator(`[role="option"][data-value="${selected}"]`).click();
+    await page.getByRole('button', { name: 'Assign to Zero', exact: true }).click();
+    await page.getByText(`Successfully assigned "${selected}" to Zero agent!`, { exact: true }).waitFor();
+    assert.equal(JSON.parse(fs.readFileSync(path.join(temporary, 'bindings.json'), 'utf8')).agentBindings.zero.model, selected);
+    await stop(); await start(); await page.reload();
+    const settings = await rpc('zero.providers.list'); assert.equal(settings.agentBindings.zero.model, selected);
+    const result = await rpc('chat.send', { sessionKey: 'actual-model-assignment', message: 'What is two plus two? Reply with only the number.' });
+    assert.match(result.content, /4/); assert.equal(result.requestedModel, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
+    assert.ok(outboundModelRequests.length > 0 && outboundModelRequests.every(request => request.model === 'nvidia/nemotron-3.5-super-vl-120b-a12b'), 'Independent forwarding proxy must observe the actual selected model in every real upstream request');
+    assert.ok(typeof result.providerModel === 'string' && result.providerModel.length > 0, 'Record the actual provider-reported model without rewriting it');
+    assert.equal(fs.readFileSync(path.join(root, 'models/gateway-defaults.json'), 'utf8'), owner, 'Owner model settings must remain unchanged');
+    return { selected, requestedModel: result.requestedModel, independentlyObservedRequests: outboundModelRequests, providerModel: result.providerModel,
+      providerIdentityMatchesRequestedName: result.providerModel === result.requestedModel, providerInternalAliasMappingVerified: false,
+      persistedAcrossProcess: true, actualReply: result.content, ownerSettingsPreserved: true };
   });
   await check('Memory search uses actual persisted records through the UI', async () => {
     const marker = `Browser memory evidence ${port}`;
@@ -504,6 +556,7 @@ try {
 finally {
   await browser?.close();
   await stop();
+  if (modelProxy) { modelProxy.closeAllConnections(); await new Promise(resolve => modelProxy.close(resolve)); }
   report.finishedAt = new Date().toISOString();
   fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));

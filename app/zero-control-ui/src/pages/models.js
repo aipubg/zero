@@ -16,12 +16,11 @@ async function callGateway(host, method, params = {}) {
   if (host && typeof host.request === "function") {
     try {
       const res = await host.request(method, params);
-      if (res && res.ok !== false) return res;
-      if (res && typeof res === "object" && !res.error?.includes?.("Unknown method")) {
-        return res;
-      }
-    } catch {
-      // Fallback to loopback transport below
+      const result = res?.result ?? res;
+      if (!result || result.ok === false) throw new Error(typeof result?.error === 'string' ? result.error : result?.error?.message || 'Gateway request failed');
+      return result;
+    } catch (error) {
+      throw error; // Canonical RPC failures must never target another host or appear successful.
     }
   }
 
