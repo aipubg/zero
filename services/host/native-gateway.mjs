@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { modelSettings, assignZeroModel } from './model-settings.mjs';
+import { modelSettings, assignZeroModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider } from './model-settings.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -718,7 +718,7 @@ export class ZeroNativeHost {
           'chat.send', 'chat.abort', 'agent', 'gateway.agent',
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
-          'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive',
+          'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
           'zero.gateway.status', 'zero.gateway.restart',
           'zero.computer.control', 'zero.observation.status',
           'zero.integrations.cli.status', 'zero.integrations.connectors.status',
@@ -870,6 +870,8 @@ export class ZeroNativeHost {
       'zero.gateway.restart': ['admin', 'operator.admin'],
       'zero.providers.configure': ['admin', 'operator.admin'],
       'zero.providers.setActive': ['admin', 'operator.admin'],
+      'zero.providers.save': ['admin', 'operator.admin'],
+      'zero.providers.delete': ['admin', 'operator.admin'],
       'zero.computer.control': ['computer.control', 'operator.admin'],
       'chat.send': ['operator.write', 'operator.admin'],
       'agent': ['operator.write', 'operator.admin'],
@@ -1152,36 +1154,15 @@ export class ZeroNativeHost {
       case 'zero.providers.setActive':
         return assignZeroModel(this.modelFabric, params);
 
-      case 'zero.providers.configure': {
-        const providersPath = this.modelFabric.configPath;
-        if (params.provider && fs.existsSync(providersPath)) {
-          const providers = JSON.parse(fs.readFileSync(providersPath, 'utf8'));
-          const existingIdx = providers.findIndex((p) => p.id === params.provider.id);
-          if (existingIdx >= 0) {
-            providers[existingIdx] = { ...providers[existingIdx], ...params.provider };
-          } else {
-            providers.push(params.provider);
-          }
-          fs.writeFileSync(providersPath, JSON.stringify(providers, null, 2), 'utf8');
-          this.modelFabric.reloadFromDisk();
-        }
-        return { ok: true, providers: this.modelFabric.getProviders() };
-      }
+      case 'zero.providers.configure':
+        return saveConfiguredProvider(this.modelFabric, params.provider);
+      case 'zero.providers.save':
+        return saveConfiguredProvider(this.modelFabric, params);
+      case 'zero.providers.delete':
+        return deleteConfiguredProvider(this.modelFabric, params.id);
 
-      case 'zero.providers.test': {
-        const modelId = params.modelId || 'zero-lead';
-        const resolution = this.modelFabric.resolveModel(modelId);
-        if (!resolution) {
-          return { ok: false, error: `Model '${modelId}' not found` };
-        }
-        const apiKey = this.modelFabric.resolveApiKey(resolution.provider);
-        return {
-          ok: Boolean(apiKey),
-          provider: resolution.provider.id,
-          configured: Boolean(apiKey),
-          baseUrl: resolution.provider.baseUrl,
-        };
-      }
+      case 'zero.providers.test':
+        return await probeConfiguredProvider(this.modelFabric, params);
 
       case 'zero.gateway.status': {
         return {

@@ -982,3 +982,29 @@ model files are isolated copies. Twenty-two regressions pass, including exact
 backup preservation, file-backed settings reopen, unknown-model rejection and
 credential omission. This is model-selection/request-routing acceptance, not
 independent validation of NVIDIA's internal alias or all Models/Agents screens.
+
+Provider save/delete/configure now use the canonical admin RPC and selected
+isolated provider path. Saves merge existing data, retain blank/redacted private
+credentials on edits, validate URL/model IDs and write atomically with original
+configuration backups. Catalog responses omit credentials; disabled providers
+are excluded from inference resolution and selectable model lists. Empty provider
+catalogs no longer fabricate a default model. Provider Delete is the explicit
+action and no longer adds a confirm popup.
+
+Provider Test Connection no longer treats credential existence as success. It
+performs a real bounded GET /models, parses the actual returned catalog and fails
+on HTTP/response errors. Configured credentials/headers stay server-side, are only
+inherited for the configured endpoint, and redirects are refused. The UI states
+that model-list retrieval is not inference verification. Controlled HTTP CONTRACT
+checks test real requests/headers and 503 handling; they do not stand in for live
+external execution.
+
+[providers-ui-persistence-and-live-probe.json](providers-ui-persistence-and-live-probe.json)
+passes ten selected real browser workflows: actual form create/edit/delete,
+two real host restarts, preserved blank-edit secret, no secret in catalog, no
+synthetic model, unchanged owner provider file, and a separate UI NVIDIA probe
+retrieving a real nonempty external model catalog. The inert provider used for
+CRUD is explicitly not claimed as an executable service. Twenty-six regressions
+pass across settings, model streaming, authorization and UI components. Provider
+import/export, all API variants, local-GGUF UI integration and internal provider
+alias identity remain separate open work; this is not full Models sign-off.

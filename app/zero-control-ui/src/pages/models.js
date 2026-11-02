@@ -982,7 +982,7 @@ export function mountModelsPage(container, context = {}) {
           latencySpan.textContent = `${ms}ms`;
           latencySpan.style.display = "inline-block";
           if (r.ok) {
-            showNotice(`${p.name || p.id}: 200 OK (${ms}ms)`);
+            showNotice(`${p.name || p.id}: HTTP ${r.httpStatus} (${ms}ms); model list retrieved, inference unverified.`);
           } else {
             showNotice(`${p.name || p.id}: Connection check failed (${r.message || "Error"})`, true);
           }
@@ -999,7 +999,6 @@ export function mountModelsPage(container, context = {}) {
 
       const delBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Delete");
       delBtn.onclick = async () => {
-        if (!confirm(`Delete provider "${p.name || p.id}" and all its models?`)) return;
         try {
           delBtn.disabled = true;
           await callGateway(host, "zero.providers.delete", { id: p.id });
@@ -1415,7 +1414,7 @@ export function mountModelsPage(container, context = {}) {
 
     let configuredModels = Array.isArray(existingProvider?.models) && existingProvider.models.length > 0
       ? existingProvider.models.map(m => (typeof m === "string" ? { id: m, name: m, reasoning: false, image: false } : { id: m.id, name: m.name || m.id, reasoning: Boolean(m.reasoning), image: Boolean(m.image) }))
-      : [{ id: "default", name: existingProvider?.name || "default", reasoning: false, image: false }];
+      : [];
 
     function renderConfiguredModelsRows() {
       modelsTable.replaceChildren();
@@ -1699,7 +1698,7 @@ export function mountModelsPage(container, context = {}) {
         baseUrl: bUrl,
         apiKey: pool[0] || "",
         apiKeys: pool,
-        models: validModels.length > 0 ? validModels : [{ id: pId + "-model", name: pName, reasoning: false, image: false }],
+        models: validModels,
         fallbackModel: fbSelect.value || undefined,
       };
 

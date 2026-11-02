@@ -1,0 +1,247 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+  "startedAt": "2026-11-02T17:31:39.466Z",
+  "status": "PASS",
+  "evidence": "E:\\zero\\artifacts\\functional-browser\\1793640699456",
+  "checks": [
+    {
+      "name": "Chat connects, native plugin activates, composer accepts text",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 466,
+      "details": {
+        "pageErrors": []
+      }
+    },
+    {
+      "name": "Provider UI creates, edits and deletes persisted settings without credential loss",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1623,
+      "details": {
+        "createdAcrossProcessRestart": true,
+        "editedWithoutCredentialLoss": true,
+        "credentialsOmittedFromCatalog": true,
+        "deletedAcrossProcessRestart": true,
+        "syntheticModelsCreated": 0,
+        "ownerProvidersUnchanged": true,
+        "serviceExecution": "NOT_CLAIMED_BY_SETTINGS_TEST"
+      }
+    },
+    {
+      "name": "Provider Test Connection retrieves the actual external model catalog",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "status": "PASS",
+      "durationMs": 412,
+      "details": {
+        "httpStatus": 200,
+        "retrievedModels": 85,
+        "inferenceVerifiedByThisProbe": false
+      }
+    },
+    {
+      "name": "Memory search uses actual persisted records through the UI",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 216,
+      "details": {
+        "memoryId": "mem_semantic_1793640703011_z1eh2",
+        "marker": "Browser memory evidence 56896"
+      }
+    },
+    {
+      "name": "Skills filter changes visible results",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 171,
+      "details": {
+        "query": "web-research"
+      }
+    },
+    {
+      "name": "Skills details expose persisted enable/disable controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 885,
+      "details": {
+        "disabledPersisted": true,
+        "reenabled": true
+      }
+    },
+    {
+      "name": "Search form executes its configured provider and reports real outcome",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "status": "PASS",
+      "durationMs": 1248,
+      "details": {
+        "sources": 5,
+        "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+        "sourceHttpStatus": 200,
+        "sourceBytes": 1030701,
+        "verifiedClaims": false
+      }
+    },
+    {
+      "name": "Plugins current page exposes lifecycle controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1687,
+      "details": {
+        "installedPersisted": true,
+        "executed": true,
+        "platform": "win32",
+        "verified": false,
+        "disabledAcrossProcessRestart": true,
+        "reenabled": true,
+        "uninstalled": true
+      }
+    },
+    {
+      "name": "Actual wheel input increases About scrollTop",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 358,
+      "details": {
+        "before": 0,
+        "scrollHeight": 1033,
+        "clientHeight": 165,
+        "after": 500
+      }
+    },
+    {
+      "name": "Gateway reconnects after a real process stop/restart and memory remains",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 2274,
+      "details": {
+        "oldPid": 4420,
+        "newPid": 10732,
+        "memoryCount": 1,
+        "closedAt": 1793640707995,
+        "reconnectedAt": 1793640708947,
+        "completedRequestReplay": null
+      }
+    }
+  ],
+  "pageErrors": [],
+  "rpcDiagnostics": [
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-02T17:31:50.252Z"
+}

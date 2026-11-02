@@ -33,6 +33,8 @@ const workflowLabels = new Map([
   ['Chat connects, native plugin activates, composer accepts text', []],
   ['Memory search uses actual persisted records through the UI', []],
   ['Models UI assignment persists across process restart and actual inference uses the selection', ['REAL_EXTERNAL']],
+  ['Provider UI creates, edits and deletes persisted settings without credential loss', []],
+  ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
   ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
   ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
@@ -133,6 +135,7 @@ try {
   const pageErrors = [];
   const connections = [];
   let searchResult = null;
+  let providerProbeResult = null;
   const voiceRequests = [];
   const chatResponses = [];
   const chatRequests = [];
@@ -140,6 +143,7 @@ try {
   page.on('websocket', socket => {
     const connection = { openedAt: Date.now(), closedAt: null, connectedAt: null, methods: new Map() };
     connections.push(connection);
+    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); if (connection.methods.get(frame.id) === 'zero.providers.test') providerProbeResult = frame; } catch {} });
     socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); if (frame.method?.startsWith('voice.microphone.')) voiceRequests.push({ method: frame.method, sessionId: frame.params?.sessionId }); } catch {} });
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) connection.connectedAt = Date.now(); if (method === 'webSearch.test') searchResult = frame; if (method === 'chat.send') chatResponses.push(frame); } catch {} });
     socket.on('close', () => { connection.closedAt = Date.now(); });
@@ -176,6 +180,45 @@ try {
     return { selected, requestedModel: result.requestedModel, independentlyObservedRequests: outboundModelRequests, providerModel: result.providerModel,
       providerIdentityMatchesRequestedName: result.providerModel === result.requestedModel, providerInternalAliasMappingVerified: false,
       persistedAcrossProcess: true, actualReply: result.content, ownerSettingsPreserved: true };
+  });
+  if (process.argv.includes('--providers')) await check('Provider UI creates, edits and deletes persisted settings without credential loss', async () => {
+    const owner = fs.readFileSync(path.join(root, 'models/gateway-providers.json'), 'utf8');
+    const id = `ui-persisted-${port}`; const name = 'UI Persistence Provider';
+    await page.goto(`${base}/settings/model-providers`);
+    await page.getByRole('button', { name: '+ Add Provider', exact: true }).click();
+    await page.getByPlaceholder('e.g. nvidia, openrouter, custom-openai', { exact: true }).fill(id);
+    await page.getByPlaceholder('e.g. NVIDIA NIM, OpenRouter, Private Gateway', { exact: true }).fill(name);
+    await page.getByPlaceholder('https://integrate.api.nvidia.com/v1 or http://127.0.0.1:18789/v1', { exact: true }).fill('https://example.invalid/v1');
+    await page.getByPlaceholder('sk-xxxxxxxxxxxxxxxxxxxxxxxx', { exact: true }).first().fill('fixture-local-private-value');
+    await page.getByRole('button', { name: 'Save Provider', exact: true }).click();
+    await page.getByText(`Provider "${name}" saved successfully!`, { exact: true }).waitFor();
+    const read = () => JSON.parse(fs.readFileSync(path.join(temporary, 'providers.json'), 'utf8'));
+    assert.equal(read().find(row => row.id === id).models.length, 0, 'No synthetic model should be created');
+    await stop(); await start(); await page.reload();
+    const card = page.locator(`[data-provider-id="${id}"]`);
+    await card.getByRole('button', { name: 'Edit', exact: true }).click();
+    await page.getByPlaceholder('e.g. NVIDIA NIM, OpenRouter, Private Gateway', { exact: true }).fill('UI Persistence Edited');
+    await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
+    await page.getByText('Provider "UI Persistence Edited" saved successfully!', { exact: true }).waitFor();
+    assert.equal(read().find(row => row.id === id).apiKey, 'fixture-local-private-value');
+    assert.ok(!JSON.stringify(await rpc('zero.providers.list')).includes('fixture-local-private-value'));
+    await card.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByText('Provider "UI Persistence Edited" deleted.', { exact: true }).waitFor();
+    assert.equal(read().some(row => row.id === id), false);
+    await stop(); await start(); await page.reload();
+    assert.equal((await rpc('zero.providers.list')).providers.some(row => row.id === id), false);
+    assert.equal(fs.readFileSync(path.join(root, 'models/gateway-providers.json'), 'utf8'), owner);
+    return { createdAcrossProcessRestart: true, editedWithoutCredentialLoss: true, credentialsOmittedFromCatalog: true, deletedAcrossProcessRestart: true, syntheticModelsCreated: 0, ownerProvidersUnchanged: true, serviceExecution: 'NOT_CLAIMED_BY_SETTINGS_TEST' };
+  });
+  if (process.argv.includes('--provider-probe')) await check('Provider Test Connection retrieves the actual external model catalog', async () => {
+    await page.goto(`${base}/settings/model-providers`);
+    await page.locator('[data-provider-id="nv"]').getByRole('button', { name: 'Test Connection', exact: true }).click();
+    const deadline = Date.now() + 15000;
+    while (!providerProbeResult && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
+    assert.ok(providerProbeResult?.ok, JSON.stringify(providerProbeResult?.error));
+    assert.ok(providerProbeResult.payload.count > 0); assert.equal(providerProbeResult.payload.verified, false);
+    await page.getByText(/model list retrieved, inference unverified\./).waitFor();
+    return { httpStatus: providerProbeResult.payload.httpStatus, retrievedModels: providerProbeResult.payload.count, inferenceVerifiedByThisProbe: false };
   });
   await check('Memory search uses actual persisted records through the UI', async () => {
     const marker = `Browser memory evidence ${port}`;

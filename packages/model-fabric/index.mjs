@@ -83,6 +83,7 @@ export class ModelFabric {
   listModels() {
     const models = [];
     for (const provider of this.providers.values()) {
+      if (provider.enabled === false) continue;
       if (Array.isArray(provider.models)) {
         for (const m of provider.models) {
           const id = typeof m === 'string' ? m : (m.id || m.name);
@@ -124,6 +125,7 @@ export class ModelFabric {
 
     // Check each provider
     for (const provider of this.providers.values()) {
+      if (provider.enabled === false) continue;
       if (Array.isArray(provider.models)) {
         for (const m of provider.models) {
           const mId = typeof m === 'string' ? m : m.id;
@@ -144,6 +146,7 @@ export class ModelFabric {
 
     // Direct provider prefix lookup (e.g. nv/nvidia/...)
     for (const [pId, provider] of this.providers.entries()) {
+      if (provider.enabled === false) continue;
       if (aliasResolved.startsWith(`${pId}/`)) {
         const stripped = aliasResolved.slice(pId.length + 1);
         return {
