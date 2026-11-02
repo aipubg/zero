@@ -84,6 +84,7 @@ export class AgentTeamOrchestrator extends EventEmitter {
 
     this.profiles = new Map(Object.entries(CANONICAL_AGENT_PROFILES));
     this.teams = new Map();
+    this.runningTeams = new Set();
 
     this._registerDefaultTeam();
   }
@@ -231,7 +232,25 @@ export class AgentTeamOrchestrator extends EventEmitter {
   /**
    * Execute multi-agent team workflow with DAG dependencies and desktop lease locking
    */
-  async executeTeamWorkflow({
+  async resumeTeamWorkflow(taskId, options = {}) {
+    const task = this.sm.getTask(taskId);
+    if (!task || task.status !== TASK_STATUS.WAITING || this.runningTeams.has(taskId)) throw new Error('Only an interrupted WAITING team can resume');
+    const saved = this.sm.getLatestCheckpoint(taskId)?.stateSnapshot;
+    if (saved?.workflowKind !== 'team-v1' || !Array.isArray(saved.plan)) throw new Error('No recoverable team checkpoint; existing evidence was preserved');
+    return this.executeTeamWorkflow({ ...saved.executionOptions, ...options, goal: saved.goal, teamId: saved.teamId, subtasks: saved.plan, sessionId: task.sessionId, resumeTaskId: taskId });
+  }
+
+  async executeTeamWorkflow(options) {
+    let ownedId;
+    try {
+      return await this._executeTeamWorkflow({ ...options, onMaster: id => {
+        if (this.runningTeams.has(id)) throw new Error('Team workflow is already running');
+        this.runningTeams.add(id); ownedId = id;
+      } });
+    } finally { if (ownedId) this.runningTeams.delete(ownedId); }
+  }
+
+  async _executeTeamWorkflow({
     goal,
     teamId = 'team_alpha_core',
     subtasks = null,
@@ -241,6 +260,8 @@ export class AgentTeamOrchestrator extends EventEmitter {
     signal = null,
     maxToolRounds = 8,
     maxOutputTokens = 2048,
+    resumeTaskId = null,
+    onMaster,
   }) {
     const startTime = Date.now();
     const team = this.getTeam(teamId);
@@ -275,13 +296,20 @@ export class AgentTeamOrchestrator extends EventEmitter {
     signal?.throwIfAborted();
 
     // 2. Create Master Coordinator Task
-    const masterTask = this.sm.createTask({
+    const restored = resumeTaskId ? this.sm.getLatestCheckpoint(resumeTaskId)?.stateSnapshot : null;
+    if (resumeTaskId && (restored?.workflowKind !== 'team-v1' || this.sm.getTask(resumeTaskId)?.status !== TASK_STATUS.WAITING || restored.goal !== goal || restored.teamId !== teamId || JSON.stringify(restored.plan) !== JSON.stringify(taskPlan))) throw new Error('Invalid interrupted team recovery request');
+    for (const childId of Object.values(restored?.childTaskIds || {})) {
+      const child = this.sm.getTask(childId);
+      if (!child || child.parentTaskId !== resumeTaskId || ![TASK_STATUS.WAITING, TASK_STATUS.COMPLETED].includes(child.status)) throw new Error('Interrupted team child evidence cannot be resumed');
+    }
+    const masterTask = resumeTaskId ? this.sm.getTask(resumeTaskId) : this.sm.createTask({
       sessionId,
       agentId: team.leadAgentId,
       goal: `[Team Execution] ${goal}`,
     });
-    this.sm.enqueueTask(masterTask.id);
-    this.sm.startTask(masterTask.id);
+    onMaster(masterTask.id);
+    if (resumeTaskId) this.sm.resumeTask(masterTask.id);
+    else { this.sm.enqueueTask(masterTask.id); this.sm.startTask(masterTask.id); }
     const deadlineController = new AbortController();
     const timer = setTimeout(() => deadlineController.abort(new Error(`Team execution timed out after ${timeoutMs}ms`)), timeoutMs);
     const workflowSignal = AbortSignal.any([this.sm.getSignal(masterTask.id), deadlineController.signal, ...(signal ? [signal] : [])]);
@@ -291,17 +319,25 @@ export class AgentTeamOrchestrator extends EventEmitter {
       goal,
       teamId,
       masterTaskId: masterTask.id,
-      artifacts: [],
+      artifacts: [...(restored?.artifacts || [])],
       subtaskResults: Object.create(null),
       subtaskStatuses: Object.create(null),
       errors: Object.create(null),
+      childTaskIds: { ...restored?.childTaskIds },
+      workflowKind: 'team-v1',
+      executionOptions: { timeoutMs, maxToolRounds, maxOutputTokens },
     };
-    let checkpointIndex = 0;
+    let checkpointIndex = resumeTaskId ? (this.sm.getLatestCheckpoint(resumeTaskId)?.stepIndex || 0) + 1 : 0;
     const checkpoint = (extra = {}) => this.sm.saveCheckpoint(masterTask.id, checkpointIndex++, { plan: taskPlan, ...sharedContext, ...extra }, sharedContext.artifacts);
 
     // Initialize subtask states
     for (const st of taskPlan) {
       sharedContext.subtaskStatuses[st.id] = 'PENDING';
+      const child = sharedContext.childTaskIds[st.id] && this.sm.getTask(sharedContext.childTaskIds[st.id]);
+      if (child?.status === TASK_STATUS.COMPLETED) {
+        sharedContext.subtaskStatuses[st.id] = 'COMPLETED';
+        sharedContext.subtaskResults[st.id] = child.result;
+      } else if (child && child.status !== TASK_STATUS.WAITING) throw new Error(`Subtask ${st.id} cannot resume from ${child.status}`);
     }
     checkpoint();
 
@@ -327,13 +363,16 @@ export class AgentTeamOrchestrator extends EventEmitter {
       sharedContext.subtaskStatuses[st.id] = 'RUNNING';
 
       // Delegate task in state machine
-      const delegation = this.sm.delegateTask({
+      const previousChild = sharedContext.childTaskIds[st.id];
+      const delegation = previousChild ? { childTask: this.sm.resumeTask(previousChild) } : this.sm.delegateTask({
         parentTaskId: masterTask.id,
         childAgentId: st.agentId,
         goal: st.goal,
         permissions: st.tools || [],
       });
       const childTaskId = delegation.childTask.id;
+      sharedContext.childTaskIds[st.id] = childTaskId;
+      checkpoint();
 
       this.bus.send({
         taskId: childTaskId,
@@ -383,6 +422,7 @@ export class AgentTeamOrchestrator extends EventEmitter {
         const result = await abortable(() => executor(st, {
           goal, teamId, masterTaskId: masterTask.id, childTaskId, signal: childSignal, maxToolRounds, maxOutputTokens,
           subtaskResults: structuredClone(dependencyResults),
+          onModelResolved: modelId => { st.modelId = modelId; checkpoint(); },
         }), childSignal);
         childSignal.throwIfAborted();
         requireExecutionResult(result);

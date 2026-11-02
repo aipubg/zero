@@ -40,6 +40,7 @@ export async function executeSpecialist(orchestrator, subtask, context) {
     : modelFabric.resolveAgentModel(subtask.agentId);
   if (!resolution?.canonicalModelId) throw new Error(`No assigned model available for ${subtask.agentId}`);
   const modelId = resolution.canonicalModelId;
+  context.onModelResolved?.(resolution.provider?.id ? `${resolution.provider.id}/${modelId}` : modelId);
   const signal = context.signal;
   const tools = [];
   const handlers = new Map();

@@ -1180,3 +1180,30 @@ Zero to each agent plus TASK_COMPLETED messages back to Zero. Real interruption
 and recovery of this combined UI parallel workflow remain a separate open gate.
 Endurance PID 16744 remained live with its original start time at reinspection,
 still early IN_PROGRESS with resourceAcceptance PARTIAL, never 24-hour PASS.
+
+### Actual interrupted-team resume executor
+
+Team checkpoints now persist workflow kind, child task IDs, execution budgets and
+resolved provider-qualified specialist model IDs before model requests. Resume
+requires interrupted WAITING state and matching checkpoint/child ownership;
+concurrent live resume and incompatible legacy checkpoints are rejected. The
+executor continues the same parent and same children, imports durable COMPLETED
+child results, preserves saved artifacts, and only restarts unfinished children.
+Canonical tasks.resume dispatches saved team workflows to this executor instead
+of the assistant receipt executor. No approval popup was introduced.
+
+The new test/team-process-recovery.test.mjs is INTEGRATION evidence using a real
+Node writer process, actual file effect, parallel pending child, SIGKILL, database
+reopen/startup recovery and actual resumed file effect. It confirms original task
+IDs, zero replay of the completed child's effect, and final COMPLETED state; a
+second resume is rejected. Nineteen selected contract/runtime checks pass.
+
+[team-resume-regression-live-ui.json](team-resume-regression-live-ui.json) passes
+nine browser workflows after these runtime changes, including two actual external
+models, separate file results and parent consolidation. This is a successful-run
+regression gate, not an external-provider crash/resume gate. The real process-kill
+recovery test uses local executors; the combined external kill/resume gate remains
+open. Resuming an unfinished child may replay its uncommitted tool effects; this
+is not exactly-once semantics for arbitrary side effects or mid-tool recovery.
+Endurance PID 16744 was independently confirmed live around 0.086 hours; still
+IN_PROGRESS and whole-process lifetime resource accounting remains PARTIAL.

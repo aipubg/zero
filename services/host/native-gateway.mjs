@@ -1439,6 +1439,7 @@ export class ZeroNativeHost {
         return this.tasks.cancelTask(params.id, params.reason);
 
       case 'tasks.resume':
+        if (this.tasks.getLatestCheckpoint(params.id || params.taskId)?.stateSnapshot?.workflowKind === 'team-v1') return await this.teamOrchestrator.resumeTeamWorkflow(params.id || params.taskId);
         return await this._resumeAssistantTask(params.id || params.taskId, { ws, isReferenceWire, clientSession });
 
       // Multi-Agent Workforce & Specialist Teams
