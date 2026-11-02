@@ -337,3 +337,19 @@ Observation status exposes the bridge's counters/error. Both bridge CONTRACT
 tests pass and the real Windows transition/native action runner passes again in
 `artifacts/screen-automation/1793599071198/report.json`. Owner host reload and UI
 rendering of these additional diagnostic fields remain unverified separately.
+
+## Automation/resource deployment checkpoint — 05:59 UTC
+
+[browser-after-screen-automation.json](browser-after-screen-automation.json)
+passes the eleven real browser workflows after all automation/resource changes.
+Six targeted component/contract/integration regressions also pass. The owned
+host PID 6172 was replaced by PID 15384 after confirming zero running durable
+tasks and creating `.backup/functional-correction-1793599149884` (21 files,
+SQLite integrity OK). The live native host health is operational, with no startup
+stderr. Connector probes, native resource instrumentation, screen-event wiring
+and failure diagnostics are now loaded in that process.
+
+[owner-data-after-automation.json](owner-data-after-automation.json) again
+preserves the original 5,115 rows across 29 tables under the explicit monotonic
+runtime-clock policy. This live deployment checkpoint does not expand the scoped
+browser/OS tests into production sign-off or certify unfinished workflows.
