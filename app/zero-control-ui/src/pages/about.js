@@ -58,7 +58,7 @@ function mountAboutPage(container, context = {}) {
       element(
         "p",
         "zero-about__text",
-        "Zero is the only configured agent and the only conversation entry. No specialist workers or separate chat products exist; all work stays in the canonical Zero conversation.",
+        "Zero is the conversation entry. Specialist agents and workers can execute delegated tasks while their results stay in the canonical Zero conversation.",
       ),
     ),
   );
@@ -209,7 +209,7 @@ function mountAboutPage(container, context = {}) {
         element(
           "p",
           "zero-about__hint",
-          "Configured status and cached MCP capabilities do not prove live reachability. This card does not run a connector; live checks require the native MCP probe or app action under host approval.",
+          "Configured status and cached capabilities do not prove live reachability. Use an actual connector operation or probe to check execution and its result.",
         ),
       );
       const setupLink = element(

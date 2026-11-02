@@ -368,6 +368,11 @@ try {
       disabledPersisted: true, encryptedFields: resumed.observer.observationStore.encryptedFields, modelRecall: recall, localVision: 'UNVERIFIED', completed24Hours: false };
   });
   await check('Actual wheel input increases About scrollTop', async () => {
+    await page.goto(`${base}/settings/about`);
+    await page.getByText('Zero is the conversation entry. Specialist agents and workers can execute delegated tasks while their results stay in the canonical Zero conversation.', { exact: true }).waitFor();
+    const connectors = await rpc('zero.integrations.connectors.status');
+    assert.ok(connectors.connectors.length > 0);
+    assert.ok(connectors.connectors.every(row => row.liveVerified === false && row.status !== 'connected'));
     await page.setViewportSize({ width: 1000, height: 400 });
     await page.goto(`${base}/settings/about`);
     await page.getByText('About Zero', { exact: true }).last().waitFor();

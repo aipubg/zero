@@ -675,3 +675,23 @@ all nine selected workflows, including real captured-title retrieval via the
 configured external model, Private Mode clearing, preference restart recovery,
 scrolling and gateway reconnect. This does not certify general scene reasoning,
 human voice interaction, every UI screen or a completed 24-hour endurance gate.
+
+Native connector status no longer hardcodes Windows, model fabric and browser
+as connected without live execution. It returns configured/untested with
+liveVerified:false (Windows unavailable on non-Windows); model configuration is
+derived from the actual provider catalog. This status call performs no live probe
+and is deliberately not proof of availability. About now describes the real
+single-conversation/delegated-worker design instead of incorrectly claiming that
+no specialist workers exist, and removes the stale generic host-approval wording.
+No additional approval mechanism was added.
+
+The UI rebuild and 19 component checks pass.
+[about-truthful-status-browser.json](about-truthful-status-browser.json) records
+eight passing isolated browser workflows, including the rendered corrected About
+description, actual status RPC showing no unverified connected claim, real wheel
+scrolling and gateway process reconnect. Text checks cover these specific content
+claims; they are not used to substitute for the other actual interaction tests.
+
+Endurance checkpoint 2026-11-02T06:48:58Z: PID 15716 confirmed live, 5.77 hours,
+8,663 completed actual captures/OCR, zero capture failures. Still IN_PROGRESS;
+not 24 hours and not the newer combined vision/subprocess resource gate.

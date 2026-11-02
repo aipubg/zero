@@ -1283,9 +1283,9 @@ export class ZeroNativeHost {
         return {
           ok: true,
           connectors: [
-            { id: 'windows-desktop', status: 'connected', type: 'system' },
-            { id: 'model-fabric', status: 'connected', type: 'inference' },
-            { id: 'browser', status: 'connected', type: 'automation' },
+            { id: 'windows-desktop', status: process.platform === 'win32' ? 'untested' : 'unavailable', type: 'system', configured: process.platform === 'win32', liveVerified: false },
+            { id: 'model-fabric', status: 'untested', type: 'inference', configured: this.modelFabric.getProviders().length > 0, liveVerified: false },
+            { id: 'browser', status: 'untested', type: 'automation', configured: true, liveVerified: false },
           ],
         };
 
