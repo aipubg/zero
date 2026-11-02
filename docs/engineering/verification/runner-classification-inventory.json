@@ -34,7 +34,7 @@
     },
     {
       "file": "scripts/screen-intelligence-endurance.mjs",
-      "sha256": "993ec73e2fbfddca0d29ff86619aec9c079f907d5a60990025989d9a29a6f205",
+      "sha256": "c60538ec059f917eb7d77fc5f34b2f9e850b38778f46fcfdef1d99b7c7ad2372",
       "labels": [
         "REAL_OS",
         "INTEGRATION",

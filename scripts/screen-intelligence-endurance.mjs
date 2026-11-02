@@ -58,6 +58,7 @@ let lastSampleAt = began, maxSampleGapMs = 0, latestSuccessAt = began, maxSucces
 let sampleCount = 0, stopping = false, shutdownPromise, stopReason = null, fatalError = null;
 let persistenceVerified = false;
 let persistenceEvidence = null;
+let finalVisionSample = { status: 'not-requested' };
 // Fixed windows allow a first/last RSS comparison without retaining 24h of samples in RAM.
 const firstRss = [], lastRss = [];
 const localVision = options['local-vision'] === 1 ? new LocalInferenceRuntime({ enabled: true }) : null;
@@ -123,7 +124,7 @@ function report(status = 'running') {
     requestedDurationMs, elapsedHours: elapsedMs / 3600000, durationReached, stopReason, fatalError,
     captureOcrCompleted24Hours: status === 'completed' && durationReached && elapsedMs >= 86_400_000 && healthy && pipelineHealthy && persistenceVerified,
     completed24Hours: false,
-    resourceAcceptance: 'PARTIAL', captureResources: { ...captureResources },
+    resourceAcceptance: 'PARTIAL', finalVisionSample, captureResources: { ...captureResources },
     resourceGaps: [...(captureResources.missingFrames || !captureResources.measuredFrames ? ['Unmeasured capture process topology/counters'] : []), 'Whole-process-lifetime aggregation and final counters'],
     localVisionEnabled: Boolean(localVision),
     verdict: status === 'running' ? 'in-progress' : fatalError ? 'failed' : status !== 'completed' || !durationReached ? 'incomplete' : healthy && pipelineHealthy && persistenceVerified ? 'partial' : 'failed',
@@ -134,10 +135,10 @@ function report(status = 'running') {
     persistenceVerified, persistenceEvidence, observer: observer.getStatus(), outputDir };
 }
 
-function sample() {
+function sample({ measureVision = true } = {}) {
   // Single-flight sampler reads the owned model PID; the next sample includes
   // its timestamped cumulative counters. It does not sum repeated CPU totals.
-  void localVision?.sampleResources();
+  if (measureVision) void localVision?.sampleResources();
   const modelResources = localVision?.getStatus().resources;
   if (modelResources?.status === 'measured') resources.observe('vision', modelResources);
   const now = performance.now(), gapMs = now - lastSampleAt;
@@ -175,7 +176,13 @@ async function shutdown(reason) {
         drainTimeout = setTimeout(() => reject(new Error('Capture did not drain within 30 seconds')), 30_000);
       })]);
       clearTimeout(drainTimeout);
-      sample();
+      // stop() preserves its awaited pre-close measurement before killing its process.
+      // This is not whole-lifetime exit accounting.
+      if (localVision) {
+        finalVisionSample = localVision.getStatus().lastStopResources || { status: 'unavailable', reason: 'No owned model process reached pre-close sampling' };
+        if (finalVisionSample.status === 'measured') resources.observe('vision', finalVisionSample);
+      } else finalVisionSample = { status: 'not-applicable', reason: 'Local vision disabled' };
+      sample({ measureVision: false });
       const expectedCount = observer.store.getStatus().observationCount;
       await observer.destroy();
       const reopened = new SemanticObservationStore({ dataDir: outputDir });

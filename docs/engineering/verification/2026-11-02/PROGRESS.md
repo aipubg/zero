@@ -1262,3 +1262,30 @@ composer. An additional import/settings browser run also passed
 reconnect regression; it does not certify 24-hour auth expiry renewal or every
 possible interrupted tool effect. Endurance PID 16744 remains live with original
 start time around 0.234 hours at reinspection, still IN_PROGRESS/resources PARTIAL.
+
+### Await the final local-model pre-close resource measurement
+
+The endurance shutdown previously launched asynchronous resource sampling and
+could close the owned model before it finished. First real short run confirmed
+the lifecycle order: observer.stop itself stops the runtime, so sampling after
+that point was unavailable. LocalInferenceRuntime.stop now awaits any existing
+measurement, obtains a fresh owned-process sample before kill, retains it in
+lastStopResources, and rechecks process termination before waiting for close.
+Endurance records that sample and includes its final CPU delta without starting
+another measurement after shutdown. Teardown CPU is explicitly excluded.
+
+[final-local-process-counter-evidence.json](final-local-process-counter-evidence.json)
+retains both actual 20-second runs. Corrected run captures/OCRs eight real frames,
+reopens eight stored observations including actual local vision, and records the
+final model PID/start identity, CPU 21,828.125 ms, working set and peak RAM. Independent
+assertions confirm the final counter equals the aggregate role's last CPU sample.
+Overall short-run exit remains 1/resources PARTIAL/completed24Hours false; this is
+not a full endurance PASS. First unavailable final-sample result remains visible.
+
+Two resource-accounting unit checks pass. The actual pinned local GGUF verifier
+also passes its text/color recognition, measured resource and abort/restart
+workflows after the lifecycle change, with real pre-close counters retained.
+The original 24-hour PID 16744 was independently confirmed live and was not
+restarted to load these edits; that running process still uses its original code.
+Whole-lifetime process teardown counters and simultaneous system-wide RAM bounds
+remain unverified; full resource acceptance is still PARTIAL.

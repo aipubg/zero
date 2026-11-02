@@ -26,12 +26,13 @@ export class LocalInferenceRuntime {
     this.controllers = new Set();
     this.generation = 0;
     this.resources = { status: 'not-measured' }; this.resourceRequest = null;
+    this.lastStopResources = null;
   }
   getStatus() {
     return { enabled: this.enabled, available: this.state === 'ready', status: this.state,
       reason: this.lastError || (this.enabled ? null : 'No local vision model configured'), confidence: null,
       model: this.modelId, runtime: 'llama.cpp b11960', transport: 'loopback-http', threads: this.threads,
-      pid: this.child?.pid || null, resources: { ...this.resources, currentProcess: this.resources.pid === this.child?.pid }, requests: this.requests, completed: this.completed, failures: this.failures, active: this.active };
+      pid: this.child?.pid || null, resources: { ...this.resources, currentProcess: this.resources.pid === this.child?.pid }, lastStopResources: this.lastStopResources, requests: this.requests, completed: this.completed, failures: this.failures, active: this.active };
   }
   async sampleResources() {
     if (this.resourceRequest) return this.resourceRequest;
@@ -140,7 +141,13 @@ export class LocalInferenceRuntime {
     for (const controller of this.controllers) controller.abort(new DOMException('Local runtime stopped', 'AbortError'));
     const child = this.child;
     if (child?.pid && child.exitCode === null && child.signalCode === null) {
-      const exited = once(child, 'close'); child.kill(); await exited;
+      await this.resourceRequest?.catch(() => {});
+      const requestedAt = new Date().toISOString();
+      const measured = await this.sampleResources();
+      this.lastStopResources = { ...measured, requestedAt, completedAt: new Date().toISOString(), scope: 'pre-close; excludes process teardown CPU' };
+      if (child.exitCode === null && child.signalCode === null) {
+        const exited = once(child, 'close'); child.kill(); await exited;
+      }
     }
     await this.starting?.catch(() => {});
     this.child = null; this.baseUrl = null; this.state = this.closed ? 'stopped' : this.enabled ? 'configured' : 'unavailable';
