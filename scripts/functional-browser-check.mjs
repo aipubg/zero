@@ -170,7 +170,17 @@ try {
     await stop(); await start(); await page.reload();
     await page.getByText('frontend-design', { exact: true }).first().waitFor();
     assert.equal((await rpc('skills.get', { name: 'frontend-design' })).skill.name, 'frontend-design');
-    return { repository: 'anthropics/skills', revision: 'ca45fc496a3436251f191354091d557da31c15b5', name: 'frontend-design', actualBundleCharacters: content.length, persistedAfterProcessRestart: true, execution: 'NOT_TESTED_BY_THIS_UI_IMPORT_GATE' };
+    await page.getByText('frontend-design', { exact: true }).first().click();
+    await page.locator('wa-switch').last().click();
+    await page.getByText('Disabled', { exact: true }).last().waitFor();
+    assert.equal((await rpc('skills.get', { name: 'frontend-design' })).skill.enabled, false);
+    await page.reload();
+    await page.getByText('frontend-design', { exact: true }).first().click();
+    assert.equal(await page.getByRole('switch').last().isChecked(), false);
+    await page.locator('wa-switch').last().click();
+    await page.getByText('Enabled', { exact: true }).last().waitFor();
+    assert.equal((await rpc('skills.get', { name: 'frontend-design' })).skill.enabled, true);
+    return { repository: 'anthropics/skills', revision: 'ca45fc496a3436251f191354091d557da31c15b5', name: 'frontend-design', actualBundleCharacters: content.length, persistedAfterProcessRestart: true, disabledPersistedAfterReload: true, reenabled: true, execution: 'NOT_TESTED_BY_THIS_UI_IMPORT_GATE' };
   });
   await check('Skills filter changes visible results', async () => {
     await page.goto(`${base}/settings/skills`);

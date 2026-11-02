@@ -462,3 +462,10 @@ and 19 UI component regressions passed after rebuilding the native bundle.
 This gate does not certify execution/update/uninstall of that imported skill;
 earlier real SDK execution evidence is separate. No replacement Skills page or
 owner permission dialog was added.
+
+[skills-external-ui-toggle.json](skills-external-ui-toggle.json) extends that gate
+to the imported external skill's actual native detail switch: disable through UI,
+verify SDK state, reload and confirm disabled state, then re-enable through UI
+and independently confirm SDK enabled state. Nine selected workflows pass.
+Inspection found no native uninstall action in that detail view; removal/update
+and execution UI acceptance remain open rather than inferred from the toggle.
