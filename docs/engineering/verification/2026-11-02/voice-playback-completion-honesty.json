@@ -1,0 +1,69 @@
+{
+  "scope": "Playback completion honesty and actual Windows STT/TTS/device execution; human acoustic conversation remains unverified",
+  "contractChecks": {
+    "status": "PASS",
+    "reportedChecks": 27,
+    "initialHarnessFailure": "Wrong ingestion API name in new negative test; corrected to actual ingestChunk; first attempt was FAIL"
+  },
+  "priorExternalFailure": {
+    "classification": [
+      "REAL_OS",
+      "REAL_EXTERNAL"
+    ],
+    "startedAt": "2026-11-02T22:14:19.656Z",
+    "status": "FAIL",
+    "output": "E:\\zero\\artifacts\\voice-conversation\\1793657659656",
+    "inputSource": "Actual Windows speech synthesis uploaded as PCM; not human microphone speech",
+    "acousticConversation": "UNVERIFIED",
+    "error": "{\"code\":\"INTERNAL_ERROR\",\"message\":\"1 tool action(s) failed or were blocked; inspect the persisted tool results before retrying\"}",
+    "finishedAt": "2026-11-02T22:14:24.329Z"
+  },
+  "correctedExternalRun": {
+    "classification": [
+      "REAL_OS",
+      "REAL_EXTERNAL"
+    ],
+    "startedAt": "2026-11-02T22:15:41.881Z",
+    "status": "PASS",
+    "output": "E:\\zero\\artifacts\\voice-conversation\\1793657741881",
+    "inputSource": "Actual Windows speech synthesis uploaded as PCM; not human microphone speech",
+    "acousticConversation": "UNVERIFIED",
+    "retryIdentity": {
+      "sameTaskAcrossConcurrentRequests": true,
+      "completedReplaySameTask": true,
+      "additionalModelCallsOnReplay": 0,
+      "userMessagesBeforeVoice": 1,
+      "taskId": "task_1793657742373_bpws3h"
+    },
+    "sharedConversation": {
+      "chatTaskId": "task_1793657742373_bpws3h",
+      "voiceTaskId": "task_1793657745328_vjyq07",
+      "transcript": "What is the code word",
+      "reply": "BLUEBIRD\n\n```zero-ui:progress\n{\n  \"title\": \"Zero Computer Execution\",\n  \"step\": 1,\n  \"totalSteps\": 1,\n  \"status\": \"unverified\",\n  \"outcome\": \"UNVERIFIED\",\n  \"details\": \"Desktop Action UNVERIFIED\",\n  \"logs\": [\n    \"⚠ memory_recall (UNVERIFIED)\"\n  ]\n}\n```\n\nNote: One or more requested actions returned status UNVERIFIED.",
+      "pcmByteLength": 204960,
+      "persistedTaskStatus": "COMPLETED",
+      "messages": 8
+    },
+    "devices": {
+      "tested": true,
+      "microphoneFrames": 99,
+      "microphoneBytes": 95040,
+      "microphoneMaxRms": 0.00937214162501357,
+      "playbackResult": {
+        "ok": true,
+        "sessionId": "voice-device-output-proof",
+        "text": "Zero voice audio test.",
+        "pcmByteLength": 77600,
+        "sampleRate": 16000,
+        "channels": 1,
+        "encoding": "pcm_s16le",
+        "voice": "Microsoft David Desktop",
+        "played": true
+      },
+      "audibleToHuman": "UNVERIFIED",
+      "acousticBargeIn": "UNVERIFIED",
+      "rawAudioSaved": false
+    },
+    "finishedAt": "2026-11-02T22:15:53.187Z"
+  }
+}

@@ -174,7 +174,7 @@
     },
     {
       "file": "scripts/verify-voice-conversation.mjs",
-      "sha256": "87860705cebfb67d9226fcc53e995e38a8525031c942bb70b8a1ac1ecb3cd9a8",
+      "sha256": "7e90e7f384436b408eb9ec13af66226bd4d59acb9ac79972904a53afebe8ca99",
       "labels": [
         "REAL_OS",
         "REAL_EXTERNAL",

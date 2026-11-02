@@ -46,7 +46,7 @@ test('session creation enumerates capabilities without opening microphone/output
 
 test('speech routes adapter PCM and default playback consumes output queue', async t => {
   let played;
-  const engine = engineFor(t, { play: async pcm => { played = Buffer.from(pcm); } });
+  const engine = engineFor(t, { play: async (pcm, { onStarted }) => { played = Buffer.from(pcm); onStarted(); return { played: true }; } });
   const chunks = [];
   engine.on('voice:audio', event => chunks.push(Buffer.from(event.chunk, 'base64')));
   const result = await engine.synthesizeSpeech('session', 'Read these words');

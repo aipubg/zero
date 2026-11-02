@@ -1320,3 +1320,31 @@ are sampled sums, not unique physical RAM or continuous maximum. Short-lived
 processes between windows and final process teardown CPU remain uncovered. The
 existing 24-hour run was not stopped/reloaded for these changes and still runs
 its original source; the newer sampler's short run cannot certify that run.
+
+### Require real voice playback completion and preserve failed adapter states
+
+VoiceEngine previously converted any resolved play promise into played:true.
+It now requires both onStarted and a played:true completion result, rejects
+explicit adapter synthesis/transcription failures instead of overriding ok:false,
+and retains existing cancellation/buffer-restoration behavior. New CONTRACT
+negative checks cover absent result/start/completion and failed recognition with
+plausible text. Twenty-seven selected voice checks pass; an initial test harness
+used a nonexistent ingestion method and that failure was corrected explicitly.
+
+[voice-playback-completion-honesty.json](voice-playback-completion-honesty.json)
+preserves an actual external failure: model selected memory layer codeword,
+because tool schema exposed an unrestricted string. The real memory operation
+failed and task remained FAILED. The canonical tool schema now enumerates all
+eight actual layers and describes semantic facts; invalid layers still fail,
+never silently normalize. A subsequent Windows/NVIDIA run PASS uses real STT
+on actual synthesized PCM, shared durable chat context, real reply synthesis,
+and actual microphone frames. Device playback now goes through canonical
+voice.synthesize RPC and VoiceEngine's stricter start/completion check instead
+of bypassing the engine with a direct backend call.
+
+Recorded microphone: 99 frames/95,040 bytes; Microsoft David output: 77,600 PCM
+bytes, played:true. This is device/API evidence, not human spoken input or a
+human intelligibility/acoustic barge-in sign-off. No raw mic audio was saved.
+Asked the user asynchronously whether the phrase was audible; until an answer,
+human audibility stays UNVERIFIED. Voice remains PARTIAL. The long endurance PID
+16744 remained live at reinspection; its original run is not upgraded by this work.

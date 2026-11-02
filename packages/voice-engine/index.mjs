@@ -122,6 +122,7 @@ export class VoiceEngine extends EventEmitter {
       this._checkOperation(session, operation);
       const audio = await this.backend.synthesize(text, { ...options, sampleRate: this.sampleRate, signal: operation.controller.signal });
       this._checkOperation(session, operation);
+      if (audio?.ok === false) throw new VoiceError('VOICE_SYNTHESIS_FAILED', audio.error || 'Speech synthesis failed');
       validatePcm(audio.pcm);
       if (!audio.pcm.length) throw new VoiceError('VOICE_EMPTY_AUDIO', 'Speech synthesis returned no audio');
       const frameBytes = Math.floor(this.sampleRate * 0.03) * 2;
@@ -131,10 +132,11 @@ export class VoiceEngine extends EventEmitter {
       }
       let played = false;
       if (options.playback ?? this.playback) {
-        await this.backend.play(audio.pcm, { sampleRate: this.sampleRate, signal: operation.controller.signal, onStarted: () => {
+        const playback = await this.backend.play(audio.pcm, { sampleRate: this.sampleRate, signal: operation.controller.signal, onStarted: () => {
           if (session.output === operation && !operation.controller.signal.aborted) operation.playbackStarted = true;
         } });
         this._checkOperation(session, operation);
+        if (!operation.playbackStarted || playback?.played !== true || playback?.ok === false) throw new VoiceError('VOICE_PLAYBACK_INCOMPLETE', 'Audio device playback did not report start and successful completion');
         played = true;
         session.router.drainOutputBuffer();
       }
@@ -164,6 +166,7 @@ export class VoiceEngine extends EventEmitter {
     try {
       const result = await this.backend.transcribe(pcm, { ...options, sampleRate: this.sampleRate, signal: operation.controller.signal });
       this._checkOperation(session, operation);
+      if (result?.ok === false) throw new VoiceError('VOICE_TRANSCRIPTION_FAILED', result.error || 'Speech transcription failed');
       if (typeof result.text !== 'string') throw new VoiceError('VOICE_BACKEND_PROTOCOL', 'Recognizer returned no text field');
       const response = { ...result, ok: true, sessionId, pcmByteLength: pcm.length, transcribed: Boolean(result.text.trim()) };
       session.lastError = null;

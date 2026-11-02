@@ -90,8 +90,12 @@ try {
     const vad = new VoiceActivityDetector();
     const input = backend.startMicrophone({ durationMs: 3000, onFrame: pcm => { frames++; bytes += pcm.length; maxRms = Math.max(maxRms, vad.calculateRMS(pcm)); } });
     await input.ready;
-    const spoken = await backend.synthesize('Zero voice audio test.');
-    const played = await backend.play(spoken.pcm);
+    const deviceSession = 'voice-device-output-proof';
+    await call('voice.session.start', { sessionId: deviceSession });
+    const played = await call('voice.synthesize', { sessionId: deviceSession, text: 'Zero voice audio test.' });
+    assert.equal(played.played, true, 'Canonical engine must observe started and successfully completed device playback');
+    assert.ok(played.pcmByteLength > 1000);
+    await call('voice.session.stop', { sessionId: deviceSession });
     await input.done;
     assert.ok(frames > 0 && bytes > 0, 'Real microphone must return frames');
     report.devices = { tested: true, microphoneFrames: frames, microphoneBytes: bytes, microphoneMaxRms: maxRms,
