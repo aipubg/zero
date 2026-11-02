@@ -77,10 +77,15 @@ export async function probeConfiguredProvider(fabric, params = {}) {
     headers: { ...(key ? { Authorization: `Bearer ${key}` } : {}), ...inheritedHeaders, ...(params.headers || {}) }, redirect: 'error', signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) throw new Error(`Provider probe HTTP ${response.status}`);
-  const body = await response.json(); const entries = Array.isArray(body.data) ? body.data : Array.isArray(body.models) ? body.models : Array.isArray(body) ? body : null;
-  if (!entries || entries.some(model => typeof (typeof model === 'string' ? model : model?.id || model?.name) !== 'string')) throw new Error('Provider returned an invalid model catalog');
-  const models = entries.map(model => ({ id: typeof model === 'string' ? model : model.id || model.name, name: typeof model === 'string' ? model : model.name || model.id }));
-  return { ok: true, status: 'reachable', httpStatus: response.status, models, count: models.length, latencyMs: Date.now() - started, verified: false,
+  const chunks = []; let bytes = 0;
+  for await (const chunk of response.body) { bytes += chunk.length; if (bytes > 8 * 1024 * 1024) throw new Error('Provider model catalog exceeded 8 MiB'); chunks.push(chunk); }
+  let body;
+  try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new Error('Provider returned invalid model catalog JSON'); }
+  const entries = Array.isArray(body?.data) ? body.data : Array.isArray(body?.models) ? body.models : Array.isArray(body) ? body : null;
+  const ids = entries?.map(model => typeof model === 'string' ? model : model?.id || model?.name);
+  if (!ids || ids.some(id => typeof id !== 'string' || !id.trim() || id !== id.trim() || id.length > 1024) || new Set(ids).size !== ids.length) throw new Error('Provider returned an invalid model catalog');
+  const models = entries.map((model, index) => ({ id: ids[index], name: typeof model === 'string' ? model : typeof model.name === 'string' && model.name.trim() ? model.name : ids[index] }));
+  return { ok: true, status: models.length ? 'reachable' : 'empty', httpStatus: response.status, models, count: models.length, latencyMs: Date.now() - started, verified: false,
     notice: 'Actual model-list retrieval; this does not verify inference or model capabilities.' };
 }
 

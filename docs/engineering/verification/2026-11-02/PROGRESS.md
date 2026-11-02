@@ -1030,3 +1030,20 @@ repairs the invalid binding. Owner files stay unchanged; provider internal alias
 mapping remains explicitly unverified. Fifteen settings/stream/skill regressions
 and 22 settings/UI checks pass. This is explicit failure/repair behavior, not
 general automatic provider failover or all alternate-provider compatibility.
+
+Provider discovery now bounds response bodies at 8 MiB and parses JSON without
+echoing malformed remote contents. Blank/whitespace/duplicate IDs and invalid
+catalog structure fail explicitly; actual empty catalogs return status empty
+rather than pretending usable models were found. Returned names are strings and
+extra remote fields are not projected as credentials/capability proof. The UI
+distinguishes an empty catalog from a retrieved nonempty list.
+
+Four settings/HTTP checks pass, including real loopback responses for malformed
+JSON/IDs, empty data, duplicate entries, secret-field omission and oversized body
+cancellation. [provider-catalog-validation-live-ui.json](provider-catalog-validation-live-ui.json)
+passes nine selected real browser workflows and the actual NVIDIA probe returns
+85 real model entries with inferenceVerifiedByThisProbe:false. This does not
+claim each catalog entry can execute inference. Endurance PID 724 was confirmed
+live at 2026-11-02T17:46Z: 0.904 hours, 1,343 successful captures, zero capture
+failures, 54 completed local inferences and zero inference failures. Still
+IN_PROGRESS, not a 24-hour PASS.

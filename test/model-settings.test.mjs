@@ -41,6 +41,24 @@ test('[CONTRACT] actual HTTP provider probe retrieves a model catalog and preser
   await assert.rejects(probeConfiguredProvider(fabric, { baseUrl: baseUrl + '/failed', apiKey: 'present-but-invalid' }), /HTTP 503/);
 });
 
+test('[CONTRACT] provider catalogs distinguish empty data from malformed IDs and bound actual HTTP response bytes', async t => {
+  let payload = '{"data":[]}';
+  const server = http.createServer((request, response) => { request.resume(); response.writeHead(200, { 'Content-Type': 'application/json' }); response.end(payload); });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
+  const baseUrl = `http://127.0.0.1:${server.address().port}/v1`;
+  const fabric = new ModelFabric({ providers: [] });
+  const empty = await probeConfiguredProvider(fabric, { baseUrl }); assert.equal(empty.status, 'empty'); assert.deepEqual(empty.models, []); assert.equal(empty.verified, false);
+  for (const body of [null, { data: [{}] }, { data: [{ id: '' }] }, { data: [{ id: '  ' }] }, { data: [{ id: 'same' }, { id: 'same' }] }]) {
+    payload = JSON.stringify(body); await assert.rejects(probeConfiguredProvider(fabric, { baseUrl }), /invalid model catalog/);
+  }
+  payload = '{broken'; await assert.rejects(probeConfiguredProvider(fabric, { baseUrl }), /invalid model catalog JSON/);
+  payload = JSON.stringify({ data: [{ id: 'real-id', apiKey: 'private-marker', name: {} }] });
+  const valid = await probeConfiguredProvider(fabric, { baseUrl }); assert.deepEqual(valid.models, [{ id: 'real-id', name: 'real-id' }]);
+  payload = JSON.stringify({ data: ['x'.repeat(9 * 1024 * 1024)] });
+  await assert.rejects(probeConfiguredProvider(fabric, { baseUrl }), /exceeded 8 MiB/);
+});
+
 test('[INTEGRATION] model assignment persists across reopen, preserves unrelated settings and backs up original bytes', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-model-settings-'));
   t.after(() => { assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); });

@@ -967,7 +967,7 @@ export function mountModelsPage(container, context = {}) {
           latencySpan.textContent = `${ms}ms`;
           latencySpan.style.display = "inline-block";
           if (r.ok) {
-            showNotice(`${p.name || p.id}: HTTP ${r.httpStatus} (${ms}ms); model list retrieved, inference unverified.`);
+            showNotice(`${p.name || p.id}: HTTP ${r.httpStatus} (${ms}ms); ${r.status === 'empty' ? 'model catalog empty' : 'model list retrieved'}, inference unverified.`);
           } else {
             showNotice(`${p.name || p.id}: Connection check failed (${r.message || "Error"})`, true);
           }
