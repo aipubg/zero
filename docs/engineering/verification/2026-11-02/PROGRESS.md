@@ -269,3 +269,15 @@ PID 15716 was independently checked alive with fresh telemetry at 05:48 UTC:
 failures. It remains incomplete and covers the earlier capture/OCR pipeline,
 not the new vision model or full subprocess resource accounting. Its original
 loaded OCR path remains unchanged; no early completion certificate was issued.
+
+## Connector probe honesty correction
+
+`testConnector()` no longer fabricates healthy/connected responses. Webhook
+probes perform an actual bounded HEAD request and report only reachability;
+CLI probes actually execute the configured binary with literal `--version` and
+no implicit shell. Nonzero/missing binaries and HTTP errors fail; unsupported
+adapters remain unavailable. Neither successful probe claims functional service
+execution. Real local HTTP/CLI tests plus automation/settings regressions pass
+seven tests. The historical phase11 healthy-status expectation is superseded
+and still requires re-audit; it is not counted as currently passing. Owner host
+PID 6172 retains the previous loaded connector implementation until next restart.

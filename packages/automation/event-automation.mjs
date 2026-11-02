@@ -293,14 +293,28 @@ export class EventAutomationEngine extends EventEmitter {
     const conn = this.getConnector(id);
     if (!conn) throw new Error(`Connector '${id}' not found`);
 
-    if (conn.type === 'webhook') {
-      return { ok: true, id, status: 'healthy', latencyMs: 2, endpoint: conn.config.url };
+    const started = performance.now();
+    try {
+      if (conn.type === 'webhook') {
+        const url = new URL(conn.config.url);
+        if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Unsupported webhook protocol');
+        const response = await fetch(url, { method: 'HEAD', redirect: 'error', signal: AbortSignal.timeout(5000) });
+        return { ok: response.ok, id, status: response.ok ? 'reachable' : 'failed', httpStatus: response.status,
+          latencyMs: performance.now() - started, scope: 'HTTP HEAD reachability only', functionalExecutionVerified: false };
+      }
+      if (conn.type === 'cli') {
+        if (typeof conn.config.binary !== 'string' || !conn.config.binary.trim()) throw new Error('CLI binary is missing');
+        const { execFile } = await import('node:child_process');
+        const output = await new Promise((resolve, reject) => execFile(conn.config.binary, ['--version'], {
+          windowsHide: true, timeout: 5000, maxBuffer: 65536, shell: false,
+        }, (error, stdout) => error ? reject(error) : resolve(stdout)));
+        return { ok: true, id, status: 'executable', available: true, output: String(output).slice(0, 2000),
+          latencyMs: performance.now() - started, scope: 'Actual --version execution only', functionalExecutionVerified: false };
+      }
+      return { ok: false, id, status: 'unavailable', reason: 'No executable probe adapter registered for this connector type', functionalExecutionVerified: false };
+    } catch (error) {
+      return { ok: false, id, status: 'failed', error: error.message, latencyMs: performance.now() - started, functionalExecutionVerified: false };
     }
-    if (conn.type === 'cli') {
-      return { ok: true, id, status: 'healthy', binary: conn.config.binary, available: true };
-    }
-
-    return { ok: true, id, status: 'connected' };
   }
 
   close() {
