@@ -29,6 +29,7 @@ export function pluginUiRow(plugin) {
     installed: true, enabled: plugin.status === 'enabled', removable: true,
     state: plugin.runtimeStatus === 'unavailable' ? 'error' : plugin.status === 'disabled' ? 'disabled' : 'enabled',
     status: plugin.status, runtimeStatus: plugin.runtimeStatus, loaded: plugin.loaded,
+    process: plugin.process || null,
     origin: 'local', source: plugin.source?.kind === 'mcp' ? 'mcp' : plugin.source?.kind === 'package' ? 'npm' : 'path',
     catalogId: plugin.id, hasIcon: false, capabilities: [...plugin.capabilities],
     permissions: [...plugin.permissions], installedAt: plugin.installedAt, updatedAt: plugin.updatedAt,

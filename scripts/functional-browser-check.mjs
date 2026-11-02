@@ -12,6 +12,7 @@ import { mcpCapabilityName } from '../packages/plugin-sdk/mcp-adapter.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (process.argv.includes('--screen-recall') && !process.argv.includes('--screen')) throw new Error('--screen-recall requires --screen');
+if (process.argv.includes('--plugin-crash') && !process.argv.includes('--external-plugins')) throw new Error('--plugin-crash requires --external-plugins');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
 const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.now()));
 fs.mkdirSync(evidence, { recursive: true });
@@ -84,6 +85,7 @@ async function rpc(method, params = {}) {
 async function check(name, action) {
   assert.ok(workflowLabels.has(name), `Unclassified browser workflow: ${name}`);
   const classification = ['REAL_BROWSER', 'INTEGRATION', ...workflowLabels.get(name), ...(process.argv.includes('--screen-recall') && name.startsWith('About controls real native capture') ? ['REAL_EXTERNAL'] : [])];
+  if (process.argv.includes('--plugin-crash') && name.startsWith('Third-party MCP plugin')) classification.push('REAL_OS');
   report.classification = [...new Set([...report.classification, ...classification])];
   const began = Date.now();
   console.log(`Checking: ${name}`);
@@ -332,6 +334,23 @@ try {
     assert.ok(history.messages.some(message => message.tool_calls?.some(call => call.function?.name === capability)));
     await page.goto(`${base}/settings/plugins`);
     await page.getByPlaceholder('Installed plugin ID', { exact: true }).fill(id);
+    let crashRecovery = null;
+    if (process.argv.includes('--plugin-crash')) {
+      const beforeCrash = await rpc('plugins.inspect', { id });
+      const oldPid = beforeCrash.plugin.process.pid; assert.ok(oldPid); process.kill(oldPid);
+      const deadline = Date.now() + 5000;
+      while ((await rpc('plugins.inspect', { id })).plugin.runtimeStatus !== 'unavailable' && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
+      await page.getByRole('button', { name: 'Check plugin runtime', exact: true }).click();
+      await page.getByText(`Plugin runtime: ${id}: unavailable. Owned MCP executable is no longer running; restart the plugin`, { exact: true }).waitFor();
+      await assert.rejects(rpc('zero.computer.control', { action: capability, path: artifact, content: 'CRASHED_SHOULD_NOT_RUN' }), /MCP process is not running/);
+      assert.equal(fs.readFileSync(artifact, 'utf8'), 'ZERO_MCP_UI_REAL_EFFECT');
+      await page.getByRole('button', { name: 'Restart executable plugin', exact: true }).click();
+      await page.getByText(`Restarted plugin: ${id}.`, { exact: true }).waitFor({ timeout: 30000 });
+      const recovered = await rpc('plugins.inspect', { id }); assert.equal(recovered.plugin.runtimeStatus, 'active'); assert.notEqual(recovered.plugin.process.pid, oldPid);
+      assert.ok((await rpc('zero.computer.control', { action: capability, path: artifact, content: 'ZERO_MCP_UI_REAL_EFFECT' })).ok);
+      assert.equal(fs.readFileSync(artifact, 'utf8'), 'ZERO_MCP_UI_REAL_EFFECT');
+      crashRecovery = { oldPid, newPid: recovered.plugin.process.pid, actualUnavailableStateRendered: true, failedCallHadNoEffect: true, actualEffectAfterUIRestart: true };
+    }
     await page.getByRole('button', { name: 'Refresh plugin from saved source', exact: true }).click();
     await page.getByText(`Refreshed plugin: ${id}.`, { exact: true }).waitFor({ timeout: 120000 });
     await page.getByRole('button', { name: 'Restart executable plugin', exact: true }).click();
@@ -360,7 +379,7 @@ try {
     assert.equal((await rpc('plugins.list')).plugins.some(plugin => plugin.id === id), false, 'Uninstall must finish before stopping the host');
     await stop(); await start(); await page.reload();
     assert.equal((await rpc('plugins.list')).plugins.some(plugin => plugin.id === id), false);
-    return { id, actualChatToolEffect: true, refreshedFromSavedSourceThroughUI: true, restartedThroughUI: true, actualEffectAfterRefreshAndRestart: true, disabledAcrossProcessRestart: true, reenabledEffect: true, uninstalledAcrossProcessRestart: true };
+    return { id, actualChatToolEffect: true, crashRecovery, refreshedFromSavedSourceThroughUI: true, restartedThroughUI: true, actualEffectAfterRefreshAndRestart: true, disabledAcrossProcessRestart: true, reenabledEffect: true, uninstalledAcrossProcessRestart: true };
   });
   if (process.argv.includes('--screen')) await check('About controls real native capture and durable Private Mode across process restarts', async () => {
     await page.goto(`${base}/settings/about`);

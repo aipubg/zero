@@ -933,3 +933,22 @@ passes that fresh execution. Eleven plugin regressions and catalog contract pass
 the modern source-hash classification catalog now covers 13 entry points. This
 run tests manager/diagnostic state, not a new browser crash-status interaction or
 arbitrary post-detach rollback, distributed recovery or all plugin formats.
+
+The current Plugins management card now has Check plugin runtime, displaying
+the actual runtime status/error instead of assuming a loaded module is active.
+The native projection includes the owned PID/availability for diagnostics. The
+new browser --external-plugins --plugin-crash mode kills only its isolated
+official MCP child, clicks the real status control, asserts unavailable is
+rendered, confirms the dead tool call fails with no file change, then clicks
+Restart and checks a different PID plus actual file output. Normal source refresh,
+disable/enable/uninstall and host restart tests continue afterward.
+
+[external-mcp-ui-crash-contract-failure.json](external-mcp-ui-crash-contract-failure.json)
+preserves the first FAIL: the negative RPC rejected explicitly rather than
+returning the failed payload shape the harness expected. The final run in
+[external-mcp-ui-crash-recovery.json](external-mcp-ui-crash-recovery.json) passes
+all nine selected real browser workflows with no page errors, including actual
+rendered crash status and UI recovery/effects. Thirty plugin/UI regressions pass;
+the runner hash and conditional REAL_OS classification/mode are re-audited.
+This verifies explicit UI restart, not automatic replay of interrupted effects
+or every external executable/process topology.

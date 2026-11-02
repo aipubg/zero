@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "035098f9cd9b979d3775f90910f73826306d860a387af8eb42f760ffc1a24d98",
+      "sha256": "79bd8a1c8b1f74ed6334ebb100f3f3bd89a59c3cda566e6cbd88c68c9caf0399",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -15,6 +15,7 @@
       "modes": [
         "--external",
         "--external-plugins: actual executable MCP package lifecycle and UI chat tool effect",
+        "--plugin-crash (requires --external-plugins; REAL_OS): owned process kill, rendered unavailable status and actual effect after UI restart",
         "--devices",
         "--external-skills",
         "--skill-execution (requires --external-skills)",

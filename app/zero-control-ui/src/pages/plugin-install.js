@@ -52,19 +52,22 @@ export function mountPluginInstall(container, host) {
   const managedId = document.createElement('input'); managedId.className = 'input'; managedId.placeholder = 'Installed plugin ID'; managedId.required = true; managedLabel.append(managedId);
   const refresh = document.createElement('button'); refresh.type = 'submit'; refresh.className = 'btn'; refresh.textContent = 'Refresh plugin from saved source';
   const restart = document.createElement('button'); restart.type = 'button'; restart.className = 'btn'; restart.textContent = 'Restart executable plugin';
+  const inspect = document.createElement('button'); inspect.type = 'button'; inspect.className = 'btn'; inspect.textContent = 'Check plugin runtime';
   const manageStatus = document.createElement('p'); manageStatus.setAttribute('role', 'status');
-  manage.append(managedLabel, refresh, restart); section.append(manage, manageStatus);
+  manage.append(managedLabel, refresh, restart, inspect); section.append(manage, manageStatus);
   const mutate = async method => {
     const id = managedId.value.trim(); if (!id || refresh.disabled) return;
-    refresh.disabled = true; restart.disabled = true; manageStatus.textContent = 'Applying plugin change…';
+    refresh.disabled = true; restart.disabled = true; inspect.disabled = true; manageStatus.textContent = method === 'plugins.inspect' ? 'Checking plugin runtime…' : 'Applying plugin change…';
     try {
       const response = await host.request(method, { pluginId: id }); const result = response?.result ?? response;
       if (result.ok === false) throw new Error(result.error || 'Plugin change failed');
-      manageStatus.textContent = `${method === 'plugins.update' ? 'Refreshed' : 'Restarted'} plugin: ${id}.`;
+      if (method === 'plugins.inspect') manageStatus.textContent = `Plugin runtime: ${id}: ${result.plugin.runtimeStatus}.${result.plugin.error ? ` ${result.plugin.error}` : ''}`;
+      else manageStatus.textContent = `${method === 'plugins.update' ? 'Refreshed' : 'Restarted'} plugin: ${id}.`;
     } catch (error) { manageStatus.textContent = `Plugin change failed: ${error.message}`; }
-    finally { refresh.disabled = false; restart.disabled = false; }
+    finally { refresh.disabled = false; restart.disabled = false; inspect.disabled = false; }
   };
   manage.addEventListener('submit', event => { event.preventDefault(); void mutate('plugins.update'); });
   restart.addEventListener('click', () => { void mutate('plugins.restart'); });
+  inspect.addEventListener('click', () => { void mutate('plugins.inspect'); });
   container.append(section);
 }
