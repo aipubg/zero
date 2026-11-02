@@ -1,6 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import http from 'node:http';
+import { once } from 'node:events';
 import { SearchEngine } from '../packages/research-engine/search.mjs';
+
+test('[CONTRACT] malformed JSON and invalid response shapes are failures, never empty retrievals', async () => {
+  for (const body of ['{broken', 'null', '"unexpected"']) {
+    const result = await new SearchEngine({ fetch: async () => new Response(body) }).search('example');
+    assert.equal(result.status, 'failed');
+    assert.equal(result.attempts.length, 2);
+    assert.ok(result.attempts.every(attempt => attempt.status === 'failed'));
+    assert.deepEqual(result.citations, []);
+  }
+});
+
+test('[INTEGRATION] actual HTTP headers without a completed body cannot bypass the search deadline', async t => {
+  let requests = 0;
+  const server = http.createServer((request, response) => {
+    requests++; response.writeHead(200, { 'content-type': 'application/json' }); response.flushHeaders();
+    response.write('{'); // Deliberately stalled actual socket, not a fabricated fetch response.
+  });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
+  const engine = new SearchEngine({ fetch: (url, options) => fetch(`http://127.0.0.1:${server.address().port}`, options) });
+  const started = Date.now();
+  const result = await engine.search('deadline');
+  assert.equal(requests, 2); assert.equal(result.status, 'unavailable');
+  assert.equal(result.attempts.length, 2); assert.deepEqual(result.citations, []);
+  assert.ok(Date.now() - started < 12000, 'Both actual stalled bodies must terminate under bounded deadlines');
+});
 
 test('[CONTRACT] retrieved search entries carry provenance without claiming source verification', async () => {
   const engine = new SearchEngine({ fetch: async url => new Response(JSON.stringify(

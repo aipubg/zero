@@ -37,6 +37,27 @@ export class SearchEngine {
     }
   }
 
+  async retrieveJson(endpoint, provider, attempts, validate) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    let httpStatus;
+    try {
+      const response = await this.fetch(endpoint, {
+        headers: { 'User-Agent': 'ZeroAI-ResearchEngine/1.0 (Windows)' }, signal: controller.signal,
+      });
+      httpStatus = response.status;
+      if (!response.ok) { attempts.push({ provider, status: 'failed', httpStatus }); return null; }
+      // Keep the deadline active while reading/parsing the body, not just headers.
+      const data = await response.json();
+      if (!validate(data)) throw new Error('Invalid search response structure');
+      attempts.push({ provider, status: 'retrieved', httpStatus });
+      return data;
+    } catch (error) {
+      attempts.push({ provider, status: httpStatus === undefined || controller.signal.aborted ? 'unavailable' : 'failed', ...(httpStatus === undefined ? {} : { httpStatus }) });
+      return null;
+    } finally { clearTimeout(timer); }
+  }
+
   /**
    * Perform structured search query across live web sources
    * @param {string} query Search terms
@@ -60,17 +81,8 @@ export class SearchEngine {
     // 1. Try DuckDuckGo Instant Answer API
     try {
       const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1&skip_disambig=1`;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-
-      const res = await this.fetch(ddgUrl, {
-        headers: { 'User-Agent': 'ZeroAI-ResearchEngine/1.0 (Windows)' },
-        signal: controller.signal,
-      }).finally(() => clearTimeout(timer));
-      attempts.push({ provider: 'duckduckgo-instant', status: res.ok ? 'retrieved' : 'failed', httpStatus: res.status });
-
-      if (res.ok) {
-        const data = await res.json();
+      const data = await this.retrieveJson(ddgUrl, 'duckduckgo-instant', attempts, value => value !== null && typeof value === 'object' && !Array.isArray(value));
+      if (data) {
         if (data.Abstract && data.AbstractURL && SearchEngine.isValidWebUrl(data.AbstractURL)) {
           citations.push({
             citationIndex: citations.length + 1,
@@ -121,17 +133,9 @@ export class SearchEngine {
     if (citations.length < limit) {
       try {
         const wikiUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(cleanQuery)}&limit=${limit}&namespace=0&format=json`;
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 4000);
-
-        const res = await this.fetch(wikiUrl, {
-          headers: { 'User-Agent': 'ZeroAI-ResearchEngine/1.0 (Windows)' },
-          signal: controller.signal,
-        }).finally(() => clearTimeout(timer));
-        attempts.push({ provider: 'wikipedia-opensearch', status: res.ok ? 'retrieved' : 'failed', httpStatus: res.status });
-
-        if (res.ok) {
-          const [term, titles, snippets, urls] = await res.json();
+        const data = await this.retrieveJson(wikiUrl, 'wikipedia-opensearch', attempts, value => Array.isArray(value) && Array.isArray(value[1]) && Array.isArray(value[3]));
+        if (data) {
+          const [term, titles, snippets, urls] = data;
           if (Array.isArray(titles) && Array.isArray(urls)) {
             for (let i = 0; i < titles.length; i++) {
               if (citations.length >= limit) break;

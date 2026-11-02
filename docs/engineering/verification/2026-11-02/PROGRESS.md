@@ -641,3 +641,19 @@ real UI workflows including actual pinned GitHub refresh and process restarts.
 that retained state: the original disposable local edit remains in the previous
 bundle while the active source refresh succeeded. This scope is preservation
 during refresh, not a completed rollback/restore user workflow.
+
+Search provider deadlines now cover response body consumption/JSON parsing as
+well as headers. Previously timers were cleared on headers, permitting a stalled
+body to hang indefinitely. A provider is recorded retrieved only after valid JSON
+with the expected top-level structure is parsed. Malformed JSON/shape is failed,
+not an empty retrieval; HTTP errors remain failed and network/deadline failures
+remain unavailable. No fabricated citation or verified=true fallback was added.
+
+Five search checks pass, including an INTEGRATION check using actual loopback
+HTTP sockets that send headers and an unfinished JSON body: both provider reads
+abort in about eight seconds total. This controlled transport test does not claim
+external search results. Separate actual UI/live-provider search in
+[search-body-deadline-browser.json](search-body-deadline-browser.json) passes
+alongside the eight selected browser workflows, checking retrieved provenance,
+verified=false and fetching the real returned source URL. Source reachability
+does not independently verify the factual contents of a citation.
