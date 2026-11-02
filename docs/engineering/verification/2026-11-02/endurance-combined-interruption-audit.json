@@ -1,0 +1,28 @@
+{
+  "classification": [
+    "ENDURANCE",
+    "REAL_OS"
+  ],
+  "auditedAt": "2026-11-02T21:47:25.556Z",
+  "pid": 724,
+  "handlePresent": false,
+  "lastCheckpoint": "2026-11-02T19:55:55.595Z",
+  "elapsedHours": 3.060798731333333,
+  "counters": {
+    "capturesStarted": 4532,
+    "capturesSucceeded": 4532,
+    "capturesFailed": 0,
+    "capturesAborted": 0,
+    "ocrSucceeded": 4532,
+    "ocrUnavailable": 0,
+    "metadataUnavailable": 0,
+    "overlapViolations": 0,
+    "bufferBudgetViolations": 0,
+    "rssBudgetViolations": 0,
+    "samplingGapViolations": 0
+  },
+  "status": "INTERRUPTED",
+  "completed24Hours": false,
+  "resourceAcceptance": "PARTIAL",
+  "reason": "Original process absent from Get-Process and Win32_Process; stale running checkpoint is not completion evidence"
+}

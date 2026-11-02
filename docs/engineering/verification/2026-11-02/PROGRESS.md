@@ -1047,3 +1047,35 @@ claim each catalog entry can execute inference. Endurance PID 724 was confirmed
 live at 2026-11-02T17:46Z: 0.904 hours, 1,343 successful captures, zero capture
 failures, 54 completed local inferences and zero inference failures. Still
 IN_PROGRESS, not a 24-hour PASS.
+
+### Recoverable model configuration import and honest interrupted endurance
+
+Canonical config import validates the entire provider/binding batch before any
+write, merges unrelated settings, preserves privately stored credentials during
+redacted export/import, and retains original-byte backups. A flushed recovery
+journal protects the two files: exceptions roll back and a fresh owning host
+restores both originals after an actually killed writer. Inference refuses a
+pending journal. This proves process interruption recovery, not power-loss or
+arbitrary provider-format compatibility. Backups contain original private data;
+backup encryption/rotation remains open.
+
+Real browser testing exposed reference-wire errors being sent as strings;
+the browser ignored those invalid error frames and never displayed import failure.
+Structured code/message errors now reach the UI. Notice timers also cancel older
+timers so a previous success cannot hide a newer failure.
+
+[model-import-live-ui.json](model-import-live-ui.json) records nine passing
+browser workflows, including actual file chooser/download, two process restarts,
+private round-trip preservation, invalid batch with byte-identical files, and
+host startup restoration after a killed writer. Three earlier failed runs are
+retained as failures. Seven component/HTTP integration checks pass. Runner catalog
+integrity is VALID, execution NOT_RUN and release BLOCKED; catalog validation is
+not feature execution.
+
+[endurance-combined-interruption-audit.json](endurance-combined-interruption-audit.json)
+records PID 724 absent from both process APIs at reinspection. Its last checkpoint
+was 2026-11-02T19:55:55.595Z: 3.061 hours, 4,532 successful actual captures/OCR,
+zero capture failures. Original evidence remains untouched; stale running status
+does not count as live execution. This run is INTERRUPTED, never 24-hour PASS.
+The overall objective remains incomplete, including full endurance/resource,
+acoustic voice, remaining agent/model workflows and unavailable mobile/cloud gates.

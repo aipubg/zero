@@ -1,6 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { ModelFabric } from '../../packages/model-fabric/index.mjs';
+import { commitModelImport, assertModelImportComplete } from '../../packages/model-fabric/config-transaction.mjs';
+
+function publicSettings(value) {
+  if (Array.isArray(value)) return value.map(publicSettings);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, /api.?key|secret|password|authorization|token$/i.test(key) ? '[REDACTED]' : publicSettings(entry)]));
+}
 
 export function modelSettings(fabric) {
   const settings = fabric.agentBindingsPath && fs.existsSync(fabric.agentBindingsPath) ? JSON.parse(fs.readFileSync(fabric.agentBindingsPath, 'utf8')) : {};
@@ -8,7 +16,7 @@ export function modelSettings(fabric) {
   let effectiveModel = null; let assignmentError = null;
   try { effectiveModel = fabric.resolveAgentModel('zero')?.canonicalModelId || null; } catch (error) { assignmentError = error.message; }
   return { ok: true, providers: fabric.getProviders().map(provider => ({ ...provider, enabled: fabric.providers.get(provider.id)?.enabled !== false, models: (fabric.providers.get(provider.id)?.models || []).map(model => typeof model === 'string' ? model : Object.fromEntries(['id', 'name', 'image', 'reasoning', 'tools', 'contextWindow', 'maxTokens'].filter(key => Object.hasOwn(model, key)).map(key => [key, model[key]]))) })),
-    defaults: settings.defaults || {}, agentBindings: settings.agentBindings || {}, offlineModels: [],
+    defaults: publicSettings(settings.defaults || {}), agentBindings: publicSettings(settings.agentBindings || {}), offlineModels: [],
     localModelsStatus: 'Not supplied by this configured-provider catalog', effectiveModel, assignmentError };
 }
 
@@ -26,14 +34,15 @@ function writeProviders(fabric, providers) {
 
 function providerRows(fabric) {
   if (!fabric.configPath) throw new Error('No provider configuration path');
+  assertModelImportComplete(fabric.configPath);
   const rows = fs.existsSync(fabric.configPath) ? JSON.parse(fs.readFileSync(fabric.configPath, 'utf8')) : [];
   if (!Array.isArray(rows)) throw new Error('Invalid provider configuration file');
   return rows;
 }
 
-export function saveConfiguredProvider(fabric, input) {
+function mergeProvider(rows, input) {
   if (!input || typeof input !== 'object' || Array.isArray(input) || typeof input.id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(input.id)) throw new Error('Valid provider ID required');
-  const rows = providerRows(fabric); const index = rows.findIndex(row => row.id === input.id); const old = rows[index] || {};
+  const index = rows.findIndex(row => row.id === input.id); const old = rows[index] || {};
   const next = { ...old };
   for (const key of ['id', 'name', 'api', 'baseUrl', 'fallbackModel']) if (input[key] !== undefined) {
     if (typeof input[key] !== 'string') throw new Error(`Invalid provider field: ${key}`); next[key] = input[key];
@@ -55,7 +64,46 @@ export function saveConfiguredProvider(fabric, input) {
     if (input.apiKeys.length && input.apiKeys.every(key => key !== '[REDACTED]')) next.apiKeys = [...input.apiKeys];
   }
   if (index < 0) rows.push(next); else rows[index] = next;
-  return writeProviders(fabric, rows);
+  return rows;
+}
+
+export function saveConfiguredProvider(fabric, input) {
+  return writeProviders(fabric, mergeProvider(providerRows(fabric), input));
+}
+
+function mergeSettings(old, incoming) {
+  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) throw new Error('Imported settings must be JSON objects');
+  const result = { ...old };
+  for (const [key, value] of Object.entries(incoming)) {
+    if (['__proto__', 'prototype', 'constructor'].includes(key)) throw new Error('Invalid imported settings key');
+    if (value === '[REDACTED]') continue;
+    result[key] = value && typeof value === 'object' && !Array.isArray(value) ? mergeSettings(old?.[key], value) : value;
+  }
+  return result;
+}
+
+export function importModelSettings(fabric, payload = {}) {
+  if (!Array.isArray(payload.providers) || !fabric.agentBindingsPath) throw new Error('Model import requires a provider array and persisted binding path');
+  const ids = payload.providers.map(provider => provider?.id);
+  if (new Set(ids).size !== ids.length) throw new Error('Imported provider IDs must be unique');
+  let providers = providerRows(fabric);
+  for (const provider of payload.providers) providers = mergeProvider(providers, provider);
+  const current = fs.existsSync(fabric.agentBindingsPath) ? JSON.parse(fs.readFileSync(fabric.agentBindingsPath, 'utf8')) : {};
+  if (!current || typeof current !== 'object' || Array.isArray(current)) throw new Error('Invalid existing model settings');
+  const bindings = { ...current };
+  if (payload.defaults !== undefined) bindings.defaults = mergeSettings(current.defaults, payload.defaults);
+  if (payload.agentBindings !== undefined) bindings.agentBindings = mergeSettings(current.agentBindings, payload.agentBindings);
+  for (const key of ['defaults', 'agentBindings']) if (bindings[key] !== undefined && (!bindings[key] || typeof bindings[key] !== 'object' || Array.isArray(bindings[key]))) throw new Error('Invalid imported model settings structure');
+  const prospective = new ModelFabric({ providers, aliases: Object.fromEntries(fabric.aliases), configPath: null, agentBindingsPath: null });
+  const validate = model => {
+    const resolved = prospective.resolveModel(model);
+    if (!resolved || !resolved.provider.models?.some(entry => (typeof entry === 'string' ? entry : entry.id) === resolved.canonicalModelId)) throw new Error('Imported assignment references an unavailable model');
+  };
+  if (bindings.defaults?.primary !== undefined) validate(bindings.defaults.primary);
+  for (const value of Object.values(bindings.agentBindings || {})) { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid imported agent binding'); if (value.model !== undefined) validate(value.model); }
+  const committed = commitModelImport(fabric.configPath, fabric.agentBindingsPath, providers, bindings);
+  fabric.reloadFromDisk();
+  return { ...modelSettings(fabric), ...committed, importedProviders: ids.length };
 }
 
 export function deleteConfiguredProvider(fabric, id) {
@@ -90,6 +138,7 @@ export async function probeConfiguredProvider(fabric, params = {}) {
 }
 
 export function assignZeroModel(fabric, params = {}) {
+  assertModelImportComplete(fabric.configPath);
   const model = params.agentModel || params.modelId || params.model || params.primary;
   const validate = value => {
     const resolved = typeof value === 'string' && fabric.resolveModel(value);

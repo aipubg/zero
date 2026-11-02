@@ -275,6 +275,7 @@ export function mountModelsPage(container, context = {}) {
   let offlineModels = [];
   let effectiveModel = null;
   let assignmentError = null;
+  let exportSnapshot = null;
   let systemDefaults = {
     primary: "",
     utility: "",
@@ -325,13 +326,15 @@ export function mountModelsPage(container, context = {}) {
   noticeBar.style.display = "none";
   root.append(noticeBar);
 
+  let noticeTimer;
   function showNotice(msg, isError = false) {
+    clearTimeout(noticeTimer);
     noticeBar.textContent = msg;
     noticeBar.className = isError
       ? "zero-providers-notice zero-providers-notice--error"
       : "zero-providers-notice zero-providers-notice--success";
     noticeBar.style.display = "block";
-    setTimeout(() => {
+    noticeTimer = setTimeout(() => {
       if (!disposed && noticeBar) noticeBar.style.display = "none";
     }, 4500);
   }
@@ -587,6 +590,7 @@ export function mountModelsPage(container, context = {}) {
       const data = await callGateway(host, "zero.providers.list");
       if (data && data.ok) {
         effectiveModel = data.effectiveModel || null; assignmentError = data.assignmentError || null;
+        exportSnapshot = JSON.parse(JSON.stringify({ providers: data.providers, defaults: data.defaults, agentBindings: data.agentBindings }));
         if (assignmentError) showNotice(assignmentError, true);
         activeProviders = Array.isArray(data.providers) ? data.providers : [];
         offlineModels = Array.isArray(data.offlineModels) ? data.offlineModels : [];
@@ -1141,10 +1145,9 @@ export function mountModelsPage(container, context = {}) {
 
   // --- EXPORT CONFIG ---
   exportConfigBtn.onclick = () => {
+    if (!exportSnapshot) { showNotice('Load the current configuration before exporting.', true); return; }
     const configData = {
-      providers: activeProviders,
-      defaults: systemDefaults,
-      agentBindings,
+      ...exportSnapshot,
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(configData, null, 2)], { type: "application/json" });
@@ -1154,7 +1157,7 @@ export function mountModelsPage(container, context = {}) {
     a.download = "zero-gateway-config.json";
     a.click();
     URL.revokeObjectURL(url);
-    showNotice("Configuration exported to zero-gateway-config.json");
+    showNotice("Configuration exported to zero-gateway-config.json; credentials stay on this computer.");
   };
 
   // --- IMPORT CONFIG ---

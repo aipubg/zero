@@ -8,7 +8,7 @@ import http from 'node:http';
 import { Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '../backend/node_modules/playwright-core/index.mjs';
 import { mcpCapabilityName } from '../packages/plugin-sdk/mcp-adapter.mjs';
 
@@ -35,6 +35,7 @@ const workflowLabels = new Map([
   ['Models UI assignment persists across process restart and actual inference uses the selection', ['REAL_EXTERNAL']],
   ['Provider UI creates, edits and deletes persisted settings without credential loss', []],
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
+  ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
   ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
   ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
@@ -136,6 +137,7 @@ try {
   const connections = [];
   let searchResult = null;
   let providerProbeResult = null;
+  const modelImportResponses = [];
   const voiceRequests = [];
   const chatResponses = [];
   const chatRequests = [];
@@ -143,7 +145,7 @@ try {
   page.on('websocket', socket => {
     const connection = { openedAt: Date.now(), closedAt: null, connectedAt: null, methods: new Map() };
     connections.push(connection);
-    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); if (connection.methods.get(frame.id) === 'zero.providers.test') providerProbeResult = frame; } catch {} });
+    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); if (connection.methods.get(frame.id) === 'zero.providers.test') providerProbeResult = frame; if (connection.methods.get(frame.id) === 'zero.gateway.config.save') modelImportResponses.push(frame); } catch {} });
     socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); if (frame.method?.startsWith('voice.microphone.')) voiceRequests.push({ method: frame.method, sessionId: frame.params?.sessionId }); } catch {} });
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) connection.connectedAt = Date.now(); if (method === 'webSearch.test') searchResult = frame; if (method === 'chat.send') chatResponses.push(frame); } catch {} });
     socket.on('close', () => { connection.closedAt = Date.now(); });
@@ -250,6 +252,58 @@ try {
     assert.ok(providerProbeResult.payload.count > 0); assert.equal(providerProbeResult.payload.verified, false);
     await page.getByText(/model list retrieved, inference unverified\./).waitFor();
     return { httpStatus: providerProbeResult.payload.httpStatus, retrievedModels: providerProbeResult.payload.count, inferenceVerifiedByThisProbe: false };
+  });
+  if (process.argv.includes('--model-import')) await check('Provider config UI import/export preserves credentials and recovers interrupted two-file updates', async () => {
+    const providersFile = path.join(temporary, 'providers.json'); const bindingsFile = path.join(temporary, 'bindings.json');
+    const ownerProviders = fs.readFileSync(path.join(root, 'models/gateway-providers.json'), 'utf8');
+    const ownerBindings = fs.readFileSync(path.join(root, 'models/gateway-defaults.json'), 'utf8');
+    const id = `imported-${port}`;
+    const importThroughUI = async data => {
+      const previous = modelImportResponses.length;
+      const choosing = page.waitForEvent('filechooser');
+      await page.getByRole('button', { name: 'Import Config', exact: true }).click();
+      await (await choosing).setFiles({ name: 'model-import.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) });
+      const deadline = Date.now() + 10000;
+      while (modelImportResponses.length === previous && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
+      assert.equal(modelImportResponses.length, previous + 1, 'Actual import RPC response required');
+      return modelImportResponses.at(-1);
+    };
+    await page.goto(`${base}/settings/model-providers`);
+    await importThroughUI({ providers: [{ id, name: 'Imported Provider', baseUrl: 'https://example.invalid/v1', models: ['catalog-model'], apiKey: 'private-import-marker' }], agentBindings: { zero: { privateToken: 'private-binding-marker' } } });
+    await page.getByText('Imported 1 provider(s) successfully!', { exact: true }).waitFor();
+    assert.ok(JSON.parse(fs.readFileSync(providersFile, 'utf8')).some(row => row.id === 'nv'));
+    await stop(); await start(); await page.reload();
+    await page.locator(`[data-provider-id="${id}"]`).waitFor();
+    const downloading = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Export Config', exact: true }).click();
+    const download = await downloading;
+    const exported = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+    assert.ok(exported.providers.some(row => row.id === id));
+    assert.ok(!JSON.stringify(exported).includes('private-import-marker')); assert.ok(!JSON.stringify(exported).includes('private-binding-marker'));
+    await importThroughUI(exported);
+    await page.getByText(`Imported ${exported.providers.length} provider(s) successfully!`, { exact: true }).waitFor();
+    assert.equal(JSON.parse(fs.readFileSync(providersFile, 'utf8')).find(row => row.id === id).apiKey, 'private-import-marker');
+    assert.equal(JSON.parse(fs.readFileSync(bindingsFile, 'utf8')).agentBindings.zero.privateToken, 'private-binding-marker');
+    const beforeProviders = fs.readFileSync(providersFile, 'utf8'); const beforeBindings = fs.readFileSync(bindingsFile, 'utf8');
+    const rejected = await importThroughUI({ providers: [{ id: 'must-not-publish', baseUrl: 'https://example.invalid/v1' }, { id: 'invalid', baseUrl: 'file:///invalid' }] });
+    assert.equal(rejected.ok, false, JSON.stringify(rejected));
+    await page.getByText(/Import failed:/).waitFor();
+    const importError = await page.locator('.zero-providers-notice--error').innerText();
+    assert.match(importError, /HTTP/, importError);
+    assert.equal(fs.readFileSync(providersFile, 'utf8'), beforeProviders); assert.equal(fs.readFileSync(bindingsFile, 'utf8'), beforeBindings);
+    const writer = path.join(temporary, 'interrupted-import.mjs');
+    const moduleUrl = pathToFileURL(path.join(root, 'packages/model-fabric/config-transaction.mjs')).href;
+    fs.writeFileSync(writer, `import {commitModelImport} from ${JSON.stringify(moduleUrl)};commitModelImport(${JSON.stringify(providersFile)},${JSON.stringify(bindingsFile)},[],{}, {onProgress:()=>process.kill(process.pid,'SIGKILL')});`);
+    const crashing = spawn(process.execPath, [writer], { windowsHide: true, stdio: 'ignore' });
+    const [code] = await once(crashing, 'exit'); assert.notEqual(code, 0);
+    assert.ok(fs.existsSync(providersFile + '.pending-model-import.json'));
+    await stop(); await start(); await page.reload();
+    assert.equal(fs.readFileSync(providersFile, 'utf8'), beforeProviders); assert.equal(fs.readFileSync(bindingsFile, 'utf8'), beforeBindings);
+    assert.equal(fs.existsSync(providersFile + '.pending-model-import.json'), false);
+    await page.locator(`[data-provider-id="${id}"]`).waitFor();
+    assert.equal(fs.readFileSync(path.join(root, 'models/gateway-providers.json'), 'utf8'), ownerProviders);
+    assert.equal(fs.readFileSync(path.join(root, 'models/gateway-defaults.json'), 'utf8'), ownerBindings);
+    return { importPersistedAcrossProcess: true, unrelatedProviderPreserved: true, exportedSecrets: false, privateRoundTripPreserved: true, invalidBatchNoMutation: true, actualKilledWriter: true, hostStartupRecoveredBothFiles: true, ownerFilesUnchanged: true };
   });
   await check('Memory search uses actual persisted records through the UI', async () => {
     const marker = `Browser memory evidence ${port}`;

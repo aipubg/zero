@@ -17,7 +17,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { modelSettings, assignZeroModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider } from './model-settings.mjs';
+import { modelSettings, assignZeroModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
+import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -324,6 +325,8 @@ export class ZeroNativeHost {
         if (err) return reject(err);
         // Only the process that actually owns the listening port may recover work.
         try {
+          recoverModelImport(this.modelFabric.configPath, this.modelFabric.agentBindingsPath);
+          this.modelFabric.reloadFromDisk();
           this.executeAssistantOnce.recoverInterrupted();
           this.tasks.recoverTasksOnStartup();
         } catch (error) { this.server.close(); return reject(error); }
@@ -719,6 +722,7 @@ export class ZeroNativeHost {
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
           'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
+          'zero.gateway.config.get', 'zero.gateway.config.save',
           'zero.gateway.status', 'zero.gateway.restart',
           'zero.computer.control', 'zero.observation.status',
           'zero.integrations.cli.status', 'zero.integrations.connectors.status',
@@ -812,7 +816,7 @@ export class ZeroNativeHost {
               type: 'res',
               id,
               ok: false,
-              error: responseResult.error || 'Operation failed',
+              error: { code: String(responseResult.code || 'OPERATION_FAILED'), message: typeof responseResult.error === 'string' ? responseResult.error : responseResult.error?.message || 'Operation failed' },
               code: responseResult.code,
             }));
           } else {
@@ -838,7 +842,7 @@ export class ZeroNativeHost {
             type: 'res',
             id,
             ok: false,
-            error: err.message,
+            error: { code: String(err.code || 'INTERNAL_ERROR'), message: err.message || 'Operation failed' },
           }));
         } else {
           const code = err.code || RPC_ERROR_CODES.INTERNAL_ERROR;
@@ -872,6 +876,7 @@ export class ZeroNativeHost {
       'zero.providers.setActive': ['admin', 'operator.admin'],
       'zero.providers.save': ['admin', 'operator.admin'],
       'zero.providers.delete': ['admin', 'operator.admin'],
+      'zero.gateway.config.save': ['admin', 'operator.admin'],
       'zero.computer.control': ['computer.control', 'operator.admin'],
       'chat.send': ['operator.write', 'operator.admin'],
       'agent': ['operator.write', 'operator.admin'],
@@ -1152,6 +1157,10 @@ export class ZeroNativeHost {
 
       case 'zero.providers.list':
         return { ...modelSettings(this.modelFabric), health: this.modelFabric.getHealthReport() };
+      case 'zero.gateway.config.get':
+        return modelSettings(this.modelFabric);
+      case 'zero.gateway.config.save':
+        return importModelSettings(this.modelFabric, params);
 
       case 'zero.providers.setActive':
         return assignZeroModel(this.modelFabric, params);

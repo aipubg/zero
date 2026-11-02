@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertModelImportComplete } from './config-transaction.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -264,6 +265,7 @@ export class ModelFabric {
   }
 
   resolveAgentModel(agentId = 'zero') {
+    assertModelImportComplete(this.configPath);
     if (this.agentBindingsPath && fs.existsSync(this.agentBindingsPath)) {
       let data;
       try { data = JSON.parse(fs.readFileSync(this.agentBindingsPath, 'utf8')); }
@@ -290,6 +292,7 @@ export class ModelFabric {
    * Execute chat completion with backoff retries and optional fallback cascade.
    */
   async executeChat(payload, options = {}) {
+    assertModelImportComplete(this.configPath);
     const modelId = payload.model || 'zero-lead';
     const resolution = this.resolveModel(modelId);
 

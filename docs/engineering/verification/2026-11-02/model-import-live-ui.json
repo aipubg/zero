@@ -1,0 +1,277 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+  "startedAt": "2026-11-02T21:46:44.169Z",
+  "status": "PASS",
+  "evidence": "E:\\zero\\artifacts\\functional-browser\\1793656004158",
+  "checks": [
+    {
+      "name": "Chat connects, native plugin activates, composer accepts text",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 456,
+      "details": {
+        "pageErrors": []
+      }
+    },
+    {
+      "name": "Provider config UI import/export preserves credentials and recovers interrupted two-file updates",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1882,
+      "details": {
+        "importPersistedAcrossProcess": true,
+        "unrelatedProviderPreserved": true,
+        "exportedSecrets": false,
+        "privateRoundTripPreserved": true,
+        "invalidBatchNoMutation": true,
+        "actualKilledWriter": true,
+        "hostStartupRecoveredBothFiles": true,
+        "ownerFilesUnchanged": true
+      }
+    },
+    {
+      "name": "Memory search uses actual persisted records through the UI",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 194,
+      "details": {
+        "memoryId": "mem_semantic_1793656007464_s4fbi",
+        "marker": "Browser memory evidence 58591"
+      }
+    },
+    {
+      "name": "Skills filter changes visible results",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 173,
+      "details": {
+        "query": "web-research"
+      }
+    },
+    {
+      "name": "Skills details expose persisted enable/disable controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 938,
+      "details": {
+        "disabledPersisted": true,
+        "reenabled": true
+      }
+    },
+    {
+      "name": "Search form executes its configured provider and reports real outcome",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "status": "PASS",
+      "durationMs": 1060,
+      "details": {
+        "sources": 5,
+        "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+        "sourceHttpStatus": 200,
+        "sourceBytes": 1030701,
+        "verifiedClaims": false
+      }
+    },
+    {
+      "name": "Plugins current page exposes lifecycle controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1363,
+      "details": {
+        "installedPersisted": true,
+        "executed": true,
+        "platform": "win32",
+        "verified": false,
+        "disabledAcrossProcessRestart": true,
+        "reenabled": true,
+        "uninstalled": true
+      }
+    },
+    {
+      "name": "Actual wheel input increases About scrollTop",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 383,
+      "details": {
+        "before": 0,
+        "scrollHeight": 1033,
+        "clientHeight": 165,
+        "after": 500
+      }
+    },
+    {
+      "name": "Gateway reconnects after a real process stop/restart and memory remains",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1931,
+      "details": {
+        "oldPid": 18040,
+        "newPid": 9872,
+        "memoryCount": 1,
+        "closedAt": 1793656012077,
+        "reconnectedAt": 1793656013001,
+        "completedRequestReplay": null
+      }
+    }
+  ],
+  "pageErrors": [],
+  "rpcDiagnostics": [
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-02T21:46:54.017Z",
+  "priorFailedAttempts": [
+    {
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793642406236",
+      "status": "FAIL",
+      "check": {
+        "name": "Provider config UI import/export preserves credentials and recovers interrupted two-file updates",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "FAIL",
+        "durationMs": 9122,
+        "error": "locator.waitFor: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Import failed:.*HTTP/) to be visible\u001b[22m\n"
+      }
+    },
+    {
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793655917471",
+      "status": "FAIL",
+      "check": {
+        "name": "Provider config UI import/export preserves credentials and recovers interrupted two-file updates",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "FAIL",
+        "durationMs": 9138,
+        "error": "locator.waitFor: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Import failed:/) to be visible\u001b[22m\n"
+      }
+    },
+    {
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793655949039",
+      "status": "FAIL",
+      "check": {
+        "name": "Provider config UI import/export preserves credentials and recovers interrupted two-file updates",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "FAIL",
+        "durationMs": 9183,
+        "error": "locator.waitFor: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Import failed:/) to be visible\u001b[22m\n"
+      }
+    }
+  ]
+}
