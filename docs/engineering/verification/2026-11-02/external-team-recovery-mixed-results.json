@@ -1,0 +1,340 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "overallStatus": "FAIL",
+  "scope": "External team recovery passed; selected final composer reconnect gate remains failed. Original reports retained.",
+  "runs": [
+    {
+      "startedAt": "2026-11-02T21:59:06.152Z",
+      "status": "FAIL",
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793656746140",
+      "checks": [
+        {
+          "name": "Chat connects, native plugin activates, composer accepts text",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Specialist UI model assignment persists without changing coordinator defaults",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ]
+        },
+        {
+          "name": "Interrupted external team resumes pinned models and preserves completed child evidence",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "status": "PASS",
+          "durationMs": 20964,
+          "details": {
+            "masterTaskId": "task_1793656764031_5qemcg",
+            "killedPid": 8236,
+            "restartedPid": 17668,
+            "actualExternalResponseHeld": true,
+            "completedCoderNotReplayed": true,
+            "sameChildIds": true,
+            "pinnedResearcherModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+            "changedBindingIgnoredForResume": true,
+            "resumedUpstreamModels": [
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b"
+            ]
+          }
+        },
+        {
+          "name": "Memory search uses actual persisted records through the UI",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Skills filter changes visible results",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Skills details expose persisted enable/disable controls",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Search form executes its configured provider and reports real outcome",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ]
+        },
+        {
+          "name": "Plugins current page exposes lifecycle controls",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Actual wheel input increases About scrollTop",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Gateway reconnects after a real process stop/restart and memory remains",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "status": "FAIL",
+          "durationMs": 26117,
+          "error": "page.waitForFunction: Timeout 25000ms exceeded."
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "startedAt": "2026-11-02T22:01:07.846Z",
+      "status": "FAIL",
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793656867836",
+      "checks": [
+        {
+          "name": "Chat connects, native plugin activates, composer accepts text",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Specialist UI model assignment persists without changing coordinator defaults",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "status": "FAIL",
+          "durationMs": 23480,
+          "error": "{\"code\":\"OPERATION_FAILED\",\"message\":\"Team task_1793656870818_3dt5v2 FAILED: {\\\"errors\\\":{},\\\"consolidationError\\\":\\\"Coordinator returned incomplete completion: length\\\"}\"}"
+        },
+        {
+          "name": "Interrupted external team resumes pinned models and preserves completed child evidence",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "status": "PASS",
+          "durationMs": 21015,
+          "details": {
+            "masterTaskId": "task_1793656892773_lh33yb",
+            "killedPid": 3356,
+            "restartedPid": 9584,
+            "actualExternalResponseHeld": true,
+            "completedCoderNotReplayed": true,
+            "sameChildIds": true,
+            "pinnedResearcherModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+            "changedBindingIgnoredForResume": true,
+            "resumedUpstreamModels": [
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b"
+            ]
+          }
+        },
+        {
+          "name": "Memory search uses actual persisted records through the UI",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Skills filter changes visible results",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Skills details expose persisted enable/disable controls",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Search form executes its configured provider and reports real outcome",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ]
+        },
+        {
+          "name": "Plugins current page exposes lifecycle controls",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Actual wheel input increases About scrollTop",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Gateway reconnects after a real process stop/restart and memory remains",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "status": "FAIL",
+          "durationMs": 26204,
+          "error": "page.waitForFunction: Timeout 25000ms exceeded."
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "startedAt": "2026-11-02T22:02:38.382Z",
+      "status": "FAIL",
+      "evidence": "E:\\zero\\artifacts\\functional-browser\\1793656958371",
+      "checks": [
+        {
+          "name": "Chat connects, native plugin activates, composer accepts text",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Specialist UI model assignment persists without changing coordinator defaults",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ]
+        },
+        {
+          "name": "Interrupted external team resumes pinned models and preserves completed child evidence",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "status": "PASS",
+          "durationMs": 17030,
+          "details": {
+            "masterTaskId": "task_1793656978678_npgm3f",
+            "killedPid": 7284,
+            "restartedPid": 19916,
+            "actualExternalResponseHeld": true,
+            "completedCoderNotReplayed": true,
+            "sameChildIds": true,
+            "pinnedResearcherModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+            "changedBindingIgnoredForResume": true,
+            "resumedUpstreamModels": [
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b",
+              "nvidia/nemotron-3.5-lightning-30b-a3b"
+            ]
+          }
+        },
+        {
+          "name": "Memory search uses actual persisted records through the UI",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Skills filter changes visible results",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Skills details expose persisted enable/disable controls",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Search form executes its configured provider and reports real outcome",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ]
+        },
+        {
+          "name": "Plugins current page exposes lifecycle controls",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Actual wheel input increases About scrollTop",
+          "status": "PASS",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ]
+        },
+        {
+          "name": "Gateway reconnects after a real process stop/restart and memory remains",
+          "classification": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "status": "FAIL",
+          "durationMs": 9398,
+          "error": "locator.fill: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('textbox', { name: 'Chat composer', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <textarea rows=\"1\" disabled dir=\"ltr\" aria-autocomplete=\"list\" aria-keyshortcuts=\"Enter\" aria-label=\"Chat composer\" placeholder=\"Message Zero\" aria-describedby=\"chat-%5B%22p1%22%2C%22agent%3Azero%3Amain%22%5D-slash-active-announcement chat-%5B%22p1%22%2C%22agent%3Azero%3Amain%22%5D-disabled-reason\"></textarea>\u001b[22m\n\u001b[2m    - fill(\"Connected after real restart\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    16 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "pageErrors": []
+    }
+  ]
+}

@@ -770,7 +770,7 @@ export class ZeroNativeHost {
             payload: {
               type: 'hello',
               protocol: 4,
-              server: { version: '1.0.0', commit: 'zero-native', bootId: this.bootId },
+              server: { version: '1.0.0', commit: 'zero-native', bootId: this.bootId, controlUiBuildSource: 'configured' },
               features: { methods: supportedMethods },
               snapshot: {
                 presence: [{ clientId: clientSession.clientId, role: clientSession.role, connectedAt: Date.now() }],
@@ -1145,15 +1145,18 @@ export class ZeroNativeHost {
       case 'plugins.controlUi.report':
         return { ok: true };
 
-      case 'plugins.controlUi.status':
+      case 'plugins.controlUi.status': {
+        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
+        const revision = manifest.controlUi.entry.split('/').at(-2);
         return {
           clients: [
             {
               connId: clientSession?.clientId || 'operator',
-              activations: [{ pluginId: 'zero-control-ui', revision: '36a42defcd8df5b5112abb20e7ac5632ac511b36de5e755644122d0182bd5e46', active: true }],
+              activations: [{ pluginId: 'zero-control-ui', revision, active: true }],
             },
           ],
         };
+      }
 
       case 'zero.providers.list':
         return { ...modelSettings(this.modelFabric), health: this.modelFabric.getHealthReport() };

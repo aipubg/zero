@@ -8,6 +8,7 @@ import http from 'node:http';
 import { Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '../backend/node_modules/playwright-core/index.mjs';
 import { mcpCapabilityName } from '../packages/plugin-sdk/mcp-adapter.mjs';
@@ -17,6 +18,7 @@ if (process.argv.includes('--screen-recall') && !process.argv.includes('--screen
 if (process.argv.includes('--plugin-crash') && !process.argv.includes('--external-plugins')) throw new Error('--plugin-crash requires --external-plugins');
 if (process.argv.includes('--agent-execution') && !process.argv.includes('--agent-models')) throw new Error('--agent-execution requires --agent-models');
 if (process.argv.includes('--parallel-agents') && !process.argv.includes('--agent-execution')) throw new Error('--parallel-agents requires --agent-execution');
+if (process.argv.includes('--agent-recovery') && !process.argv.includes('--parallel-agents')) throw new Error('--agent-recovery requires --parallel-agents');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
 const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.now()));
 fs.mkdirSync(evidence, { recursive: true });
@@ -39,6 +41,7 @@ const workflowLabels = new Map([
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
   ['Specialist UI model assignment persists without changing coordinator defaults', process.argv.includes('--agent-execution') ? ['REAL_EXTERNAL'] : []],
+  ['Interrupted external team resumes pinned models and preserves completed child evidence', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
   ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
   ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
@@ -54,6 +57,7 @@ const workflowLabels = new Map([
 let child, browser, page;
 let modelProxy;
 const outboundModelRequests = [];
+let holdResearcher = false; let heldResearcher = 0;
 const errors = [];
 
 async function startModelProxy() {
@@ -71,6 +75,11 @@ async function startModelProxy() {
       outboundModelRequests.push(observed);
       response.once('finish', () => { observed.finishedAt = Date.now(); });
       const result = await fetch(`${upstream}/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: request.headers.authorization }, body, signal: controller.signal });
+      if (holdResearcher && payload.messages?.[0]?.content?.startsWith('You are Research Specialist')) {
+        heldResearcher++;
+        await new Promise(resolve => { if (controller.signal.aborted) resolve(); else controller.signal.addEventListener('abort', resolve, { once: true }); });
+        await result.body?.cancel().catch(() => {}); return;
+      }
       response.writeHead(result.status, { 'Content-Type': result.headers.get('content-type') || 'application/json' });
       Readable.fromWeb(result.body).on('error', () => response.destroy()).pipe(response);
     } catch { if (!response.destroyed) { if (!response.headersSent) response.writeHead(502); response.end('Actual upstream forwarding failed'); } }
@@ -113,7 +122,9 @@ async function rpc(method, params = {}, timeoutMs = 20000) {
   const call = (method, params) => new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
     const timeout = setTimeout(() => { socket.removeEventListener('message', handler); reject(new Error(`${method} timed out`)); }, timeoutMs);
-    const handler = event => { const frame = JSON.parse(event.data); if (frame.id !== id) return; clearTimeout(timeout); socket.removeEventListener('message', handler); frame.ok === false ? reject(new Error(JSON.stringify(frame.error))) : resolve(frame.payload); };
+    const onClose = () => { clearTimeout(timeout); socket.removeEventListener('message', handler); reject(new Error(`${method} connection closed`)); };
+    const handler = event => { const frame = JSON.parse(event.data); if (frame.id !== id) return; clearTimeout(timeout); socket.removeEventListener('close', onClose); socket.removeEventListener('message', handler); frame.ok === false ? reject(new Error(JSON.stringify(frame.error))) : resolve(frame.payload); };
+    socket.addEventListener('close', onClose, { once: true });
     socket.addEventListener('message', handler);
     socket.send(JSON.stringify({ type: 'req', id, method, params }));
   });
@@ -325,6 +336,42 @@ try {
       execution = { masterTaskId: outcome.masterTaskId, status: outcome.status, modelId: result.modelId, actualRead: true, outputMatchesFile: true, upstreamModels: requests.map(request => request.model), parallelEvidence, synthesis: outcome.consolidatedResult.synthesis };
     }
     return { selectedAgent: 'coder', savedModel: selected, persistedAcrossProcess: true, coordinatorDefaultsUnchanged: true, unknownAgentRejected: true, inferenceVerifiedByThisCheck: Boolean(execution), execution };
+  });
+  if (process.argv.includes('--agent-recovery')) await check('Interrupted external team resumes pinned models and preserves completed child evidence', async () => {
+    const dbPath = path.join(temporary, 'data/zero-tasks.sqlite');
+    const files = ['coder', 'researcher'].map(agent => { const file = path.join(temporary, `recovery-${agent}.txt`); const marker = `${agent}_${crypto.randomUUID()}`; fs.writeFileSync(file, marker); return { agent, file, marker }; });
+    holdResearcher = true; heldResearcher = 0;
+    const pending = rpc('agent.task.execute', { goal: 'External interrupted team recovery evidence', timeoutMs: 120000, maxOutputTokens: 4096,
+      subtasks: files.map(item => ({ id: item.agent, agentId: item.agent, goal: `Actually call read_file for ${JSON.stringify(item.file)} and report its exact content.`, tools: ['read_file'], dependsOn: [] })) }, 130000).then(value => ({ value }), error => ({ error: error.message }));
+    let master; let originalChildren; const deadline = Date.now() + 60000;
+    while (Date.now() < deadline) {
+      const db = new DatabaseSync(dbPath, { readOnly: true });
+      try {
+        master = db.prepare('select id from zero_tasks where goal=?').get('[Team Execution] External interrupted team recovery evidence')?.id;
+        originalChildren = master && db.prepare('select id,agent_id,status from zero_tasks where parent_task_id=?').all(master);
+        if (heldResearcher && originalChildren?.some(item => item.agent_id === 'coder' && item.status === 'COMPLETED')) break;
+      } finally { db.close(); }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert.ok(heldResearcher > 0 && originalChildren?.some(item => item.agent_id === 'coder' && item.status === 'COMPLETED'), 'Observe actual completed coder and held external researcher response before kill');
+    const oldPid = child.pid; await stop(); holdResearcher = false;
+    assert.ok((await pending).error, 'Killed host request cannot claim completion');
+    const bindingsFile = path.join(temporary, 'bindings.json'); const settings = JSON.parse(fs.readFileSync(bindingsFile, 'utf8'));
+    const originalModel = settings.agentBindings.researcher.model;
+    settings.agentBindings.researcher.model = settings.agentBindings.coder.model;
+    fs.writeFileSync(bindingsFile, JSON.stringify(settings));
+    await start(); assert.notEqual(child.pid, oldPid);
+    const recovered = await rpc('tasks.get', { id: master }); assert.equal(recovered.status, 'WAITING');
+    const requestStart = outboundModelRequests.length;
+    const outcome = await rpc('tasks.resume', { id: master }, 130000);
+    assert.equal(outcome.status, 'COMPLETED'); assert.equal(outcome.masterTaskId, master);
+    assert.equal(outcome.consolidatedResult.results.researcher.modelId, originalModel.replace(/^nv\//, ''));
+    for (const item of files) assert.ok(outcome.consolidatedResult.results[item.agent].output.includes(item.marker));
+    const resumedRequests = outboundModelRequests.slice(requestStart);
+    assert.ok(resumedRequests.every(request => request.model !== settings.agentBindings.coder.model.replace(/^nv\//, '')), 'Completed coder must not be executed again');
+    const db = new DatabaseSync(dbPath, { readOnly: true });
+    try { const after = db.prepare('select id,status from zero_tasks where parent_task_id=?').all(master); assert.deepEqual(after.map(item => item.id).sort(), originalChildren.map(item => item.id).sort()); assert.ok(after.every(item => item.status === 'COMPLETED')); } finally { db.close(); }
+    return { masterTaskId: master, killedPid: oldPid, restartedPid: child.pid, actualExternalResponseHeld: true, completedCoderNotReplayed: true, sameChildIds: true, pinnedResearcherModel: originalModel, changedBindingIgnoredForResume: true, resumedUpstreamModels: resumedRequests.map(request => request.model) };
   });
   if (process.argv.includes('--model-import')) await check('Provider config UI import/export preserves credentials and recovers interrupted two-file updates', async () => {
     const providersFile = path.join(temporary, 'providers.json'); const bindingsFile = path.join(temporary, 'bindings.json');

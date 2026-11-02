@@ -1207,3 +1207,30 @@ open. Resuming an unfinished child may replay its uncommitted tool effects; this
 is not exactly-once semantics for arbitrary side effects or mid-tool recovery.
 Endurance PID 16744 was independently confirmed live around 0.086 hours; still
 IN_PROGRESS and whole-process lifetime resource accounting remains PARTIAL.
+
+### External host-kill and pinned team resume; reconnect regression remains open
+
+[external-team-recovery-mixed-results.json](external-team-recovery-mixed-results.json)
+preserves three actual external runs, all overall FAIL. In each run the new team
+recovery check itself PASS: researcher response is held after actual upstream
+HTTP response, coder reaches durable COMPLETED, owned host is killed and restarted,
+and canonical tasks.resume completes the same parent and same two children.
+The isolated researcher's current binding is deliberately changed before restart;
+resume still sends the original checkpoint-pinned lightning model. Independent
+proxy confirms no completed coder model replay, and both real file markers are
+returned. This closes the selected external interrupted-team gate, not arbitrary
+uncommitted side-effect replay or mid-tool exactly-once behavior.
+
+The broader selected run exposed a separate repeated-reconnect UI failure. First
+two runs reached Server updated / Refresh required, despite completed handshake.
+The frontend's local build comparison expects a configured custom UI declaration;
+native handshake now truthfully sets controlUiBuildSource configured while
+retaining the native server's actual version. Plugin status also reads current
+manifest revision instead of an obsolete hard-coded generation. Third run clears
+the build-refresh barrier and reconnects, but composer stays disabled with
+Sending messages is unavailable with your current access. That final composer
+gate remains FAIL and must be fixed; no combined overall PASS is claimed.
+
+Three focused contract/process-recovery checks pass after these changes. The
+endurance original PID 16744/start time remains live at recent reinspection,
+about 0.147 hours at the recorded checkpoint; still IN_PROGRESS, resources PARTIAL.
