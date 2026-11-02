@@ -512,3 +512,17 @@ newer combined local-vision pipeline or all subprocess resource accounting.
 External executable plugin remains OPEN. The current SDK requires a Zero
 manifest and executable named handlers; bundled System Tools lifecycle evidence
 does not demonstrate compatibility with arbitrary OpenClaw community packages.
+
+Browser acceptance reporting now classifies every selected workflow separately.
+An unknown workflow name fails before execution rather than inheriting a broad
+report label. The report-level classification is the union of selected checks;
+REAL_OS is attached to actual microphone/capture workflows and REAL_EXTERNAL
+to remote model, GitHub import and search workflows. These labels describe
+scope for failures as well as successes, not production completion.
+[browser-per-workflow-classification.json](browser-per-workflow-classification.json)
+records a fresh isolated real-browser run: all eight default workflows PASS,
+including persisted memory/skill/plugin effects, real wheel scrolling and actual
+gateway process restart/reconnect, with no page errors. Optional external chat,
+external skill, microphone and observation checks were not selected in this run.
+The historical 18-suite/137-leaf inventory integrity check also remains VALID;
+it still does not inventory every newer acceptance runner, which remains open.

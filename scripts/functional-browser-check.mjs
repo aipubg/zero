@@ -21,7 +21,21 @@ await once(listener, 'listening');
 const port = listener.address().port;
 await new Promise(resolve => listener.close(resolve));
 const base = `http://127.0.0.1:${port}`;
-const report = { classification: ['REAL_BROWSER', 'INTEGRATION', 'REAL_EXTERNAL', ...(process.argv.some(arg => ['--devices', '--screen'].includes(arg)) ? ['REAL_OS'] : [])], startedAt: new Date().toISOString(), status: 'RUNNING', evidence, checks: [] };
+const report = { classification: [], classificationMeaning: 'Selected workflow scope; labels do not imply a passing outcome or product acceptance.', startedAt: new Date().toISOString(), status: 'RUNNING', evidence, checks: [] };
+const workflowLabels = new Map([
+  ['Chat connects, native plugin activates, composer accepts text', []],
+  ['Memory search uses actual persisted records through the UI', []],
+  ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
+  ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
+  ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
+  ['Skills filter changes visible results', []],
+  ['Skills details expose persisted enable/disable controls', []],
+  ['Search form executes its configured provider and reports real outcome', ['REAL_EXTERNAL']],
+  ['Plugins current page exposes lifecycle controls', []],
+  ['About controls real native capture and durable Private Mode across process restarts', ['REAL_OS']],
+  ['Actual wheel input increases About scrollTop', []],
+  ['Gateway reconnects after a real process stop/restart and memory remains', []],
+]);
 let child, browser, page;
 const errors = [];
 
@@ -65,10 +79,13 @@ async function rpc(method, params = {}) {
   finally { socket.close(); }
 }
 async function check(name, action) {
+  assert.ok(workflowLabels.has(name), `Unclassified browser workflow: ${name}`);
+  const classification = ['REAL_BROWSER', 'INTEGRATION', ...workflowLabels.get(name)];
+  report.classification = [...new Set([...report.classification, ...classification])];
   const began = Date.now();
   console.log(`Checking: ${name}`);
-  try { const details = await action(); report.checks.push({ name, status: 'PASS', durationMs: Date.now() - began, details }); }
-  catch (error) { report.checks.push({ name, status: 'FAIL', durationMs: Date.now() - began, error: error.message }); }
+  try { const details = await action(); report.checks.push({ name, classification, status: 'PASS', durationMs: Date.now() - began, details }); }
+  catch (error) { report.checks.push({ name, classification, status: 'FAIL', durationMs: Date.now() - began, error: error.message }); }
   if (page && !page.isClosed()) await page.screenshot({ path: path.join(evidence, `${report.checks.length}.png`), fullPage: true });
 }
 
