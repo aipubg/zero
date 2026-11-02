@@ -1327,7 +1327,7 @@
     {
       "id": "phase11",
       "file": "test/phase11-automation-connectors.test.mjs",
-        "sha256": "f86db2dd6016eb0749cb72672c7d63fed23fcb1f050566a350c395a150a30ecd",
+        "sha256": "6f051d16659d8683cf21138ded5d300cdbc8b20107e5b4206e5825f4acc52b05",
       "prerequisites": [
         "node24",
         "host18789"
@@ -1346,7 +1346,7 @@
             "ENDURANCE"
           ],
           "claim": "11.1 Scheduled Cron Job Registration and Due Execution",
-          "proves": "Registers due job, manually triggers it, reads completion history.",
+            "proves": "Executes a scheduled native window query and checks live PID/bounds plus exact persisted output; tool output is not independent verification.",
           "gaps": [
             "No unattended timer, restart durability or independent side-effect verification."
           ],
@@ -1356,7 +1356,7 @@
         {
           "id": "phase11:02",
           "title": "11.2 Event-Driven Conditional Workflow Rules",
-          "line": 129,
+            "line": 134,
           "labels": [
             "INTEGRATION"
           ],
@@ -1365,7 +1365,7 @@
             "REAL_OS"
           ],
           "claim": "11.2 Event-Driven Conditional Workflow Rules",
-          "proves": "Emits handcrafted events and checks rule execution status.",
+            "proves": "Emits explicit test events, checks matching and actual native screen dimensions; does not verify real event-source wiring.",
           "gaps": [
             "No native event producer; deletes all existing screen:window_changed rules."
           ],
@@ -1375,7 +1375,7 @@
         {
           "id": "phase11:03",
           "title": "11.3 Automation Templates Catalog and Instantiation",
-          "line": 173,
+            "line": 181,
           "labels": [
             "INTEGRATION"
           ],
@@ -1393,7 +1393,7 @@
         {
           "id": "phase11:04",
           "title": "11.4 External Connected Connectors Discovery and Health Ping",
-          "line": 192,
+            "line": 200,
           "labels": [
             "CONTRACT"
           ],

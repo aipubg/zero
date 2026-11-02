@@ -300,3 +300,11 @@ isolated RPC leaves pass again in
 `artifacts/automation-acceptance/1793598792402/report.json`. Positive native output
 assertions beyond execution status still require expansion; no broad workflow
 completion claim follows from this failure-propagation correction.
+
+Positive native outputs are now checked by the isolated phase11 suite as well:
+the scheduled window query must return an actual PID and positive window bounds,
+and persisted history must exactly retain that tool result. The conditional event
+test must return positive native screen dimensions while retaining
+`verified:false`. [automation-native-outcomes.json](automation-native-outcomes.json)
+records the passing four-leaf rerun. Events in this test are explicitly emitted
+test inputs; actual OS event-source wiring remains a separate open requirement.

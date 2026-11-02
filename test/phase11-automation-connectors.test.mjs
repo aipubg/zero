@@ -116,11 +116,16 @@ test('Phase 11: Proactive Automation & Connected Connectors Suite', async (suite
     const thisRun = triggerRes.runs.find((r) => r.jobId === jobId);
     assert.ok(thisRun, 'Our registered job must have executed');
     assert.equal(thisRun.status, 'completed');
+    assert.equal(thisRun.result.executed, true);
+    assert.equal(thisRun.result.data.window.ok, true);
+    assert.ok(thisRun.result.data.window.pid > 0);
+    assert.ok(thisRun.result.data.window.bounds.width > 0);
 
     // Verify in runs list
     const runsList = await client.call('automation.listRuns', { jobId });
     assert.ok(runsList.length >= 1);
     assert.equal(runsList[0].jobId, jobId);
+    assert.deepEqual(runsList[0].result, thisRun.result);
 
     // Clean up
     await client.call('automation.deleteJob', { id: jobId });
@@ -165,6 +170,9 @@ test('Phase 11: Proactive Automation & Connected Connectors Suite', async (suite
     const exec = dispatch2.executions.find((e) => e.ruleId === ruleId);
     assert.ok(exec);
     assert.equal(exec.status, 'executed');
+    assert.equal(exec.result.executed, true);
+    assert.ok(exec.result.data.width > 0 && exec.result.data.height > 0);
+    assert.equal(exec.result.verified, false, 'Tool output does not imply independent verification');
 
     // Clean up
     await client.call('automation.events.deleteRule', { id: ruleId });
