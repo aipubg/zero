@@ -1682,3 +1682,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Actual UI --gguf --gguf-runtime --gguf-qwen --gguf-tools artifact1793677103373 PASS, nine workflows. Correct requested path contains exact ZERO_LOCAL_TOOL_EFFECT, selected model local-gguf/ui-proof, one actual write_file result verified with SHA, successful final assistant turn; reconnect composer check also passes.
 - Summary local-qwen-history-replacement-pass.json links failing reproduction and passing native/browser evidence. Prior failures retained. Selected workflow achieved, not arbitrary local model reliability or full production acceptance.
 - Original endurance PID16744 independently live; 24-hour, remaining voice/mobile/cloud/general acceptance still open.
+
+### Local assignment config export/import/restart fixed with actual UI evidence
+- Reproduced real import rejection of valid registered local model: native artifact1793677185414 FAIL Imported assignment references an unavailable model. Prospective import validation created a cloud-only ModelFabric and omitted local transport catalog.
+- Prospective validation now uses current local transport; host refreshes actual catalog before config import. Missing local assignments still rejected before transaction writes; no permissive fallback.
+- Native integration1793677194020 PASS includes valid local default/coder import, reopened assignment resolution, rejected missing local model and both files byte-identical after rejection. Five selected native/settings leaves pass.
+- Extended existing --gguf UI check: real Export Config download contains namespaced local assignment; actual Import Config file chooser submits it; host stopped/restarted and local effective model/Active state retained. Latest browser report printed with this commit; nine workflows PASS, including selected native UI runtime checks, removal/data preservation and reconnect.
+- Runner inventory SHA/mode updated; inventory integrity VALID, not release sign-off. Full endurance/voice/external prerequisites and original master scope remain open.
+- Exact browser evidence: artifacts/functional-browser/1793677221034/report.json (PASS, nine workflows, localAssignmentUIExportImportRestart=true).

@@ -9,7 +9,7 @@ import { LocalGgufEngineService } from '../backend/gateway/server/local-gguf-ser
 import { LocalInferenceRuntime } from '../packages/model-fabric/local-runtime.mjs';
 import { LocalChatTransport } from '../packages/model-fabric/local-chat-transport.mjs';
 import { ModelFabric } from '../packages/model-fabric/index.mjs';
-import { assignZeroModel } from '../services/host/model-settings.mjs';
+import { assignZeroModel, importModelSettings } from '../services/host/model-settings.mjs';
 
 test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior history and unloads', { skip: process.platform !== 'win32' ? 'Windows native binary required' : false, timeout: 30000 }, async () => {
   const directory = path.resolve('artifacts/local-gguf-runtime', String(Date.now())); fs.mkdirSync(directory, { recursive: true });
@@ -54,12 +54,19 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     const localChat = new LocalChatTransport(service);
     await localChat.refresh();
     const bindingsPath = path.join(modelsDir, 'isolated-bindings.json');
-    const fabric = new ModelFabric({ providers: [], localChat, agentBindingsPath: bindingsPath });
+    const configPath = path.join(modelsDir, 'isolated-providers.json');
+    fs.writeFileSync(configPath, '[]');
+    const fabric = new ModelFabric({ providers: [], configPath, localChat, agentBindingsPath: bindingsPath });
     assert.equal(fabric.resolveModel('local-gguf/real-smol').provider.local, true);
     assert.equal(fabric.resolveModel('local-gguf/missing'), null);
     assignZeroModel(fabric, { modelId: 'local-gguf/real-smol' });
     const reopened = new ModelFabric({ providers: [], localChat, agentBindingsPath: bindingsPath });
     assert.equal(reopened.resolveAgentModel('zero').canonicalModelId, 'local-gguf/real-smol');
+    importModelSettings(fabric, { providers: [], defaults: { primary: 'local-gguf/real-smol' }, agentBindings: { coder: { model: 'local-gguf/real-smol' } } });
+    assert.equal(fabric.resolveAgentModel('coder').canonicalModelId, 'local-gguf/real-smol');
+    const beforeInvalidImport = [fs.readFileSync(configPath), fs.readFileSync(bindingsPath)];
+    assert.throws(() => importModelSettings(fabric, { providers: [], defaults: { primary: 'local-gguf/missing' } }), /unavailable/);
+    assert.deepEqual([fs.readFileSync(configPath), fs.readFileSync(bindingsPath)], beforeInvalidImport);
     const localPayload = { model: 'local-gguf/real-smol', messages: [{ role: 'user', content: 'Count to one hundred in detail.' }], max_tokens: 1, temperature: 0, keep_alive: -1 };
     const direct = await fabric.executeChat(localPayload);
     assert.equal(direct.data.choices[0].finish_reason, 'length');

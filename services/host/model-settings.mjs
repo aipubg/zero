@@ -94,7 +94,7 @@ export function importModelSettings(fabric, payload = {}) {
   if (payload.defaults !== undefined) bindings.defaults = mergeSettings(current.defaults, payload.defaults);
   if (payload.agentBindings !== undefined) bindings.agentBindings = mergeSettings(current.agentBindings, payload.agentBindings);
   for (const key of ['defaults', 'agentBindings']) if (bindings[key] !== undefined && (!bindings[key] || typeof bindings[key] !== 'object' || Array.isArray(bindings[key]))) throw new Error('Invalid imported model settings structure');
-  const prospective = new ModelFabric({ providers, aliases: Object.fromEntries(fabric.aliases), configPath: null, agentBindingsPath: null });
+  const prospective = new ModelFabric({ providers, localChat: fabric.localChat, aliases: Object.fromEntries(fabric.aliases), configPath: null, agentBindingsPath: null });
   const validate = model => {
     const resolved = prospective.resolveModel(model);
     if (!resolved || !resolved.provider.models?.some(entry => (typeof entry === 'string' ? entry : entry.id) === resolved.canonicalModelId)) throw new Error('Imported assignment references an unavailable model');

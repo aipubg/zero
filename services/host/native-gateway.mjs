@@ -1185,6 +1185,7 @@ export class ZeroNativeHost {
       case 'zero.gateway.config.get':
         return modelSettings(this.modelFabric);
       case 'zero.gateway.config.save':
+        await this.modelFabric.localChat.refresh();
         return importModelSettings(this.modelFabric, params);
 
       case 'zero.providers.setActive':
