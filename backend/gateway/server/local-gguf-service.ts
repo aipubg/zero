@@ -6,6 +6,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
 import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
 import { localContinuationPrompt } from './local-gguf-continuation.mjs';
+import { createRecognizedTextWrapper } from './local-chat-wrapper.mjs';
 import { parseGuideOrModelfile, type ParsedGuideConfig } from './local-gguf-parser.ts';
 
 // Types for Local GGUF Engine
@@ -1253,7 +1254,7 @@ export class LocalGgufEngineService {
     const safeContextSize = Math.max(512, Math.min(requestedCtx, 4096));
 
     try {
-      const { getLlama, LlamaChatSession, ChatMLChatWrapper, GeneralChatWrapper } = await import('node-llama-cpp');
+      const { getLlama, LlamaChatSession, ChatMLChatWrapper, GeneralChatWrapper, readGgufFileInfo } = await import('node-llama-cpp');
 
       // 1. Initialize Llama runtime with CPU fallback if GPU initialization fails
       if (!this.activeLlama) {
@@ -1333,7 +1334,11 @@ export class LocalGgufEngineService {
       const nameLower = (target.name || target.id || target.filename || '').toLowerCase();
 
       let chatWrapper: any = undefined;
-      if (archLower.includes('qwen') || nameLower.includes('qwen') || archLower.includes('chatml')) {
+      const modelInfo = await readGgufFileInfo(target.fullPath);
+      const recognizedWrapper = createRecognizedTextWrapper(modelInfo.metadata?.tokenizer?.chat_template, await import('node-llama-cpp'));
+      if (recognizedWrapper) {
+        chatWrapper = recognizedWrapper;
+      } else if (archLower.includes('qwen') || nameLower.includes('qwen') || archLower.includes('chatml')) {
         if (typeof ChatMLChatWrapper === 'function') {
           chatWrapper = new ChatMLChatWrapper();
         }
