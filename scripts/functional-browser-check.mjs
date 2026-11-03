@@ -22,6 +22,7 @@ if (process.argv.includes('--parallel-agents') && !process.argv.includes('--agen
 if (process.argv.includes('--agent-recovery') && !process.argv.includes('--parallel-agents')) throw new Error('--agent-recovery requires --parallel-agents');
 if (process.argv.includes('--gguf-runtime') && !process.argv.includes('--gguf')) throw new Error('--gguf-runtime requires --gguf');
 if (process.argv.includes('--gguf-chat') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-chat requires --gguf-runtime');
+if (process.argv.includes('--gguf-tools') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-tools requires --gguf-runtime');
 // Exercise current source, never an older immutable UI generation left on disk.
 execFileSync(process.execPath, [path.join(root, 'app/zero-control-ui/build.mjs')], { cwd: root, stdio: 'pipe', windowsHide: true });
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
@@ -346,6 +347,25 @@ try {
       runtimeEvidence.localChat = { actualUISend: true, reply: response.payload.content, taskId: response.payload.taskId, requestedModel: response.payload.requestedModel, persistedHistory: true, exactInstructionFollowed: response.payload.content.trim() === 'Paris' };
       report.localChatAttempt = runtimeEvidence.localChat;
       assert.equal(response.payload.content.trim(), 'Paris', 'Local model must follow the requested city-name-only outcome, not merely mention Paris');
+      await page.goto(`${base}/settings/model-providers`); await card.waitFor();
+    }
+    if (process.argv.includes('--gguf-tools')) {
+      const artifact = path.join(temporary, 'actual-local-tool.txt');
+      assert.equal(fs.existsSync(artifact), false);
+      const priorReplies = chatResponses.length;
+      await page.goto(`${base}/chat/zero`);
+      await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill(`Use write_file to create ${JSON.stringify(artifact)} with content exactly ZERO_LOCAL_TOOL_EFFECT. Execute the tool; do not merely describe a call. After the tool result, give a short confirmation.`);
+      await page.locator('button.chat-send-btn--send').click();
+      const deadline = Date.now() + 75000;
+      while (chatResponses.length === priorReplies && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
+      const response = chatResponses.length > priorReplies ? chatResponses.at(-1) : null;
+      report.localToolAttempt = { artifact, actualEffect: fs.existsSync(artifact) ? fs.readFileSync(artifact, 'utf8') : null, response };
+      assert.ok(response, 'Local tool UI request must settle');
+      assert.equal(response.ok, true, JSON.stringify(response));
+      assert.equal(response.payload.requestedModel, 'local-gguf/ui-proof');
+      assert.equal(report.localToolAttempt.actualEffect, 'ZERO_LOCAL_TOOL_EFFECT', 'Actual local tool file effect is required; prose is not execution');
+      const history = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
+      assert.ok(history.messages.some(message => message.role === 'tool' && JSON.parse(message.content).verified === true), 'Persisted verified tool result required');
       await page.goto(`${base}/settings/model-providers`); await card.waitFor();
     }
     let dialogs = 0; page.on('dialog', async dialog => { dialogs++; await dialog.dismiss(); });

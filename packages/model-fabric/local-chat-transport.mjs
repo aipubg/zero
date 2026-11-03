@@ -11,6 +11,10 @@ export class LocalChatTransport {
     return { provider: { id: 'local-gguf', models: this.models.map(m => ({ id: `local-gguf/${m.id}`, name: m.name })), local: true }, canonicalModelId: `local-gguf/${model.id}`, capabilities: { reasoning: !!model.capabilities?.reasoning, image: false, tools: true }, localModelId: model.id };
   }
   async execute(payload, options = {}) {
+    if (!Array.isArray(payload.messages) || payload.messages.some(message =>
+      Array.isArray(message.content) && message.content.some(part => typeof part !== 'string' && (part?.type !== 'text' || typeof part.text !== 'string')))) {
+      throw new Error('Local chat transport supports text messages only; use the vision runtime for images');
+    }
     await this.refresh();
     const resolution = this.resolve(payload.model);
     if (!resolution) throw new Error(`Local model unavailable: ${payload.model}`);

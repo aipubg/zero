@@ -70,6 +70,7 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     assert.equal(stream.at(-1).done, true);
     await assert.rejects(fabric.executeChat({ ...localPayload, model: 'local-gguf/missing' }), /unavailable/);
     assert.equal(fabric.upstreamRequestCount, 0);
+    await assert.rejects(fabric.executeChat({ ...localPayload, messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,AA==' } }] }] }), /text messages only/);
     const simultaneous = await Promise.all([fabric.executeChat(localPayload), fabric.executeChat(localPayload)]);
     assert.ok(simultaneous.every(result => result.data.usage.completion_tokens === 1));
     const cancelled = new AbortController(); cancelled.abort();
