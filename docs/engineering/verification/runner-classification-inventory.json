@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "c51ac6547acc45395c0671a7bce057a51d73125b823939ae69c9c99673aeca09",
+      "sha256": "40a649c3e0c2e23c797085d152cc5a3a5e4ca12ec593ab7cfbb89496f77e0a1a",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -32,7 +32,8 @@
         "--screen",
         "--screen-recall (requires --screen; REAL_OS + REAL_EXTERNAL)",
         "--gguf-chat (requires --gguf-runtime; REAL_OS): actual main UI local inference, selected-model identity and persisted reply; exact city-only outcome enforced, selected-model failures retained",
-        "--gguf-tools (requires --gguf-runtime; REAL_OS): actual UI local write_file request, exact independent disk effect and persisted verified tool result; absent effects FAIL even if chat returns success"
+        "--gguf-tools (requires --gguf-runtime; REAL_OS): actual UI local write_file request, exact independent disk effect and persisted verified tool result; absent effects FAIL even if chat returns success",
+        "--gguf-qwen (requires --gguf): select separately provisioned pinned official Qwen weights for the same actual UI chat/tool acceptance; no mock response or relaxed assertions"
       ],
       "execution": "NOT_RUN_BY_INVENTORY"
     },

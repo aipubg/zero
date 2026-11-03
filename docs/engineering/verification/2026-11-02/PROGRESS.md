@@ -1642,3 +1642,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Selected local model remains unverified for tool competence; main chat exact-answer case from prior turn does not establish this gate. Need instruction/tool-capable compatible model and actual tool/result continuation.
 - Local text transport now rejects unsupported image/non-text parts explicitly instead of silently dropping them. Native integration test checks rejection alongside actual inference, stream cancellation/deadline recovery and subsequent successful generation. Native evidence artifacts/local-gguf-runtime/1793676415010/report.json; wrapper contract also passes.
 - Runner classification digest/mode updated. Full release acceptance remains BLOCKED; goal remains active.
+
+### Pinned official text-model provisioning started; inference NOT_RUN
+- Official Qwen/Qwen2.5-0.5B-Instruct-GGUF model card inspected. Live official API metadata pins revision 9217f5db79a29953eb74d5343926648285ec7e67, qwen2.5-0.5b-instruct-q5_k_m.gguf, 522186592 bytes, SHA256 041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55.
+- Added install-local-chat.mjs: isolated artifacts directory, bounded download, streaming size/hash validation, exclusive destination copy, existing-file preservation, provisioning report only after full verification. Does not alter owner assignments or native dependencies.
+- Download is currently IN_PROGRESS, not installed: tool session25666, actual node PID20928 creation 2026-11-03 08:58:07 local independently observed. Latest partial file 0 bytes; process remains live. Do not restart based solely on output timeout. Installer has total network deadline10minutes and cleans only its unique partial file on terminal failure.
+- Added --gguf-qwen to select separately provisioned actual weights for the SAME real UI/tool outcome tests; no assertion relaxation. Browser execution awaits successful artifact hash validation; tool competence is UNVERIFIED.
+- Source syntax and runner inventory integrity VALID. This is preparatory implementation plus live external wait, not successful provisioning or local tool acceptance.
+- Endurance PID16744 independently revalidated with original start via Get-Process and CIM; latest summary5.601h,8154measuredframes,0missingframes, completed24Hoursfalse, resourceAcceptancePARTIAL.
