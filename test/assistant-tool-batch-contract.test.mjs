@@ -12,6 +12,16 @@ test('[CONTRACT] malformed tool batches fail before writes and exhausted loops p
   let mode; let target; let loopRequests = 0;
   const upstream = http.createServer(async (req, res) => {
     for await (const chunk of req) void chunk;
+    if (mode === 'recovery') {
+      res.writeHead(200, { 'content-type': 'text/event-stream' });
+      res.end(`data: ${JSON.stringify({ choices: [{ delta: { content: 'RECOVERED_RESPONSE' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`);
+      return;
+    }
+    if (mode === 'abort-partial') {
+      res.writeHead(200, { 'content-type': 'text/event-stream' });
+      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: 'ACTUAL_PARTIAL_STREAM' } }] })}\n\n`);
+      return; // Client cancellation closes this real HTTP stream.
+    }
     const calls = mode === 'endless' ? [{ index: 0, id: `loop-${++loopRequests}`, type: 'function', function: { name: 'read_file', arguments: JSON.stringify({ path: target }) } }] : mode === 'empty' ? [] : [{ index: 0, id: mode === 'missing-id' ? undefined : 'first', type: 'function', function: { name: 'write_file', arguments: JSON.stringify({ path: target, content: 'MUST_NOT_BE_WRITTEN' }) } },
       { index: 1, id: mode === 'duplicate' ? 'first' : 'second', type: 'function', function: { name: mode === 'undeclared' ? 'not_an_offered_tool' : 'read_file', arguments: mode === 'json' ? '{broken' : '{}' } }];
     res.writeHead(200, { 'content-type': 'text/event-stream' });
@@ -46,4 +56,29 @@ test('[CONTRACT] malformed tool batches fail before writes and exhausted loops p
   assert.equal(steps.filter(step => step.toolName === 'read_file' && step.toolResult.verified === true).length, 5);
   assert.equal(steps.find(step => step.toolName === 'assistant_turn_limit').status, 'failed');
   assert.equal(fs.readFileSync(target, 'utf8'), 'PRESERVE_READ_EFFECT_EVIDENCE');
+  mode = 'abort-partial';
+  const controller = new AbortController();
+  let observedDelta = false;
+  // Notification adapter only; upstream HTTP, session persistence and task
+  // cancellation are real. This is a protocol contract, not browser acceptance.
+  const notifications = { readyState: 1, send(raw) {
+    const frame = JSON.parse(raw);
+    if (frame.event === 'chat' && frame.payload?.state === 'delta') { observedDelta = true; controller.abort(new DOMException('Contract interruption', 'AbortError')); }
+  } };
+  host.clients.add(notifications);
+  try {
+    await assert.rejects(host._runAssistantRequest({ sessionKey: mode, runId: mode, userContent: 'Generate a streamed reply', source: 'contract', signal: controller.signal, ws: notifications, isReferenceWire: true }), /Contract interruption/);
+  } finally { host.clients.delete(notifications); }
+  assert.equal(observedDelta, true);
+  const partial = host.sessions.getTranscript(mode).find(message => message.role === 'assistant');
+  assert.equal(partial.content, 'ACTUAL_PARTIAL_STREAM');
+  assert.equal(partial.runId, mode); assert.equal(partial.status, 'interrupted');
+  const interrupted = host.sessions.db.prepare('select task_id,status from zero_assistant_receipts where run_id=?').get(mode);
+  assert.equal(interrupted.status, 'failed');
+  assert.equal(host.tasks.getTask(interrupted.task_id).status, 'CANCELLED');
+  const interruptedSession = mode; mode = 'recovery';
+  const recovered = await host._runAssistantRequest({ sessionKey: interruptedSession, runId: 'recovery-request', userContent: 'Continue after cancellation', source: 'contract' });
+  assert.equal(recovered.content, 'RECOVERED_RESPONSE'); assert.equal(recovered.status, 'ok');
+  assert.equal(host.tasks.getTask(recovered.taskId).status, 'COMPLETED');
+  assert.equal(host.sessions.getTranscript(interruptedSession).find(message => message.status === 'interrupted').content, 'ACTUAL_PARTIAL_STREAM');
 });

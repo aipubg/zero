@@ -1761,3 +1761,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Two selected contract/receipt leaves PASS. Actual browser --external artifacts/functional-browser/1793693543857/report.json PASS,nineworkflows, including two consecutive real cloud replies and restart/replay. Normal successful turns still complete.
 - Original local exact-hash/no-tool recall remains FAIL; no natural-language instruction enforcement claim added. No mock replaces that gate.
 - Inventory VALID, original current endurance PID16016 independently live. Full release/master requirements stay active.
+
+### Interrupted partial status and full tool-run identity persist
+- SessionManager previously discarded message.status, so existing host statusinterrupted was lost on storage/reopen. Added nullable status column via additive migration; stored/read status and runId now retained. Interrupted assistant partial and intermediate assistant/tool results carry actual run ID.
+- SQLite migration test preserves old Hindi row, stores partial statusinterrupted/run ID and verifies close/reopen. Existing continuity/compaction tests pass.
+- Extended existing CONTRACT with real loopback HTTP partial stream, controlled notification adapter triggers actual AbortController after host sees delta. Partial text exact, receipt failed/taskCANCELLED, status/run ID persisted. New request in SAME session then completes via actual HTTP stream, original partial retained.
+- Five selected contract/integration leaves PASS. Notification adapter and provider content are controlled contract inputs, not genuine model/real browser Stop-button acceptance; do not substitute for that remaining gate.
+- Inventory VALID; current endurance PID16016 independently alive. Full voice, local strict recall, real UI cancellation and24h/external acceptance remain open.

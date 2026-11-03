@@ -17,13 +17,14 @@ test('[INTEGRATION] additive run identity migration preserves old messages and s
     manager = new SessionManager({ dbPath });
     assert.equal(manager.getTranscript('legacy')[0].content, 'पुराना संदेश');
     assert.equal(manager.getTranscript('legacy')[0].runId, undefined);
-    const appended = manager.appendMessage('legacy', { role: 'assistant', content: 'Saved reply', runId: 'stable-run' });
+    const appended = manager.appendMessage('legacy', { role: 'assistant', content: 'Saved partial reply', runId: 'stable-run', status: 'interrupted' });
     assert.equal(appended.runId, 'stable-run');
     manager.close(); manager = new SessionManager({ dbPath });
     const messages = manager.getTranscript('legacy');
     assert.equal(messages.length, 2);
     assert.equal(messages[0].content, 'पुराना संदेश');
     assert.equal(messages[1].runId, 'stable-run');
+    assert.equal(messages[1].status, 'interrupted');
     assert.equal(messages[1].id, appended.id);
   } finally {
     manager?.close();

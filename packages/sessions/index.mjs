@@ -62,6 +62,7 @@ export class SessionManager {
     const columns = new Set(this.db.prepare('PRAGMA table_info(zero_messages)').all().map(column => column.name));
     if (!columns.has('tool_call_id')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN tool_call_id TEXT');
     if (!columns.has('run_id')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN run_id TEXT');
+    if (!columns.has('status')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN status TEXT');
     if (!columns.has('context_archived')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN context_archived INTEGER NOT NULL DEFAULT 0');
   }
 
@@ -157,10 +158,10 @@ export class SessionManager {
     const toolCalls = message.tool_calls ? JSON.stringify(message.tool_calls) : null;
 
     const insertStmt = this.db.prepare(`
-      INSERT INTO zero_messages (id, session_id, role, content, tool_calls, created_at, seq, tool_call_id, run_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO zero_messages (id, session_id, role, content, tool_calls, created_at, seq, tool_call_id, run_id, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    insertStmt.run(msgId, sessionId, message.role || 'user', content, toolCalls, now, nextSeq, message.tool_call_id || null, message.runId || null);
+    insertStmt.run(msgId, sessionId, message.role || 'user', content, toolCalls, now, nextSeq, message.tool_call_id || null, message.runId || null, message.status || null);
 
     // Update session updated_at
     const updateStmt = this.db.prepare(`UPDATE zero_sessions SET updated_at = ? WHERE id = ?`);
@@ -176,6 +177,7 @@ export class SessionManager {
       createdAt: now,
       seq: nextSeq,
       ...(message.runId ? { runId: message.runId } : {}),
+      ...(message.status ? { status: message.status } : {}),
     };
 
     this.emitEvent(sessionId, 'message:appended', storedMessage);
@@ -202,6 +204,7 @@ export class SessionManager {
       createdAt: r.created_at,
       seq: r.seq,
       ...(r.run_id ? { runId: r.run_id } : {}),
+      ...(r.status ? { status: r.status } : {}),
     }));
   }
 

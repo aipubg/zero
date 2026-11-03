@@ -2169,7 +2169,7 @@ export class ZeroNativeHost {
         } catch (streamErr) {
           if (abortController.signal.aborted) {
             if (accumulatedContent) {
-              this.sessions.appendMessage(sessionKey, { role: 'assistant', content: accumulatedContent, status: 'interrupted' });
+              this.sessions.appendMessage(sessionKey, { role: 'assistant', runId, content: accumulatedContent, status: 'interrupted' });
             }
             const interruptedPayload = { sessionKey, turnId, messageId, status: 'interrupted', partialContent: accumulatedContent };
             if (ws && ws.readyState === 1) {
@@ -2212,7 +2212,7 @@ export class ZeroNativeHost {
           tool_calls: toolCalls,
         };
         currentMessages.push(assistantMsg);
-        this.sessions.appendMessage(sessionKey, assistantMsg);
+        this.sessions.appendMessage(sessionKey, { ...assistantMsg, runId });
 
         for (const { call, fnName, args } of prepared) {
 
@@ -2253,7 +2253,7 @@ export class ZeroNativeHost {
             content: JSON.stringify(execRes),
           };
           currentMessages.push(toolMsg);
-          this.sessions.appendMessage(sessionKey, toolMsg);
+          this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
         }
       }
 
