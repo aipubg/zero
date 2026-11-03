@@ -1619,3 +1619,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Real 1ms deadline test rejects with TimeoutError during an actual native request; waits for original queue settlement and verifies next native generation succeeds. No replacement fake inference.
 - Evidence artifacts/local-gguf-runtime/1793676010682/report.json records stream interruption and deadline recovery; all existing direct HTTP, ModelFabric JSON/SSE, assignment persistence, concurrent request, source/history preservation checks still pass. CPU/template fallback limitations remain.
 - Main local chat UI semantic and tool-loop acceptance still open; this change establishes transport recovery only.
+
+### Main UI local chat real outcome: acceptance FAIL
+- Added opt-in --gguf-chat (requires --gguf-runtime), actual composer/send, saved-history equality, requested local model identity and exact city-only answer requirement. Inventory digest/scope updated.
+- First run artifacts/functional-browser/1793676049116/report.json originally passed a weak contains-Paris assertion. Review found model ignored exact instruction and invented false additional facts. This is explicitly reclassified FAIL for semantic acceptance; original artifact preserved. The weak assertion has been replaced by exact equality.
+- Strict rerun artifacts/functional-browser/1793676100113/report.json FAIL: actual chat request hit real 60-second Local inference timed out. No successful response is claimed. Evidence summary local-main-chat-real-outcome.json records both outcomes and limitations.
+- UI activation, native transport and persisted answer from the first run are engineering evidence only. Selected tiny SmolVLM model is not certified as a reliable main assistant. Need compatible instruction-capable model, exact UI outcomes and actual local tool execution.
+- Independent live handle check PID16744 retained original process start; endurance summary about 5.501h, completed24Hours false, resourceAcceptance PARTIAL. No restart or completion claim.

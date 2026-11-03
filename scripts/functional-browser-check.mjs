@@ -21,6 +21,7 @@ if (process.argv.includes('--agent-execution') && !process.argv.includes('--agen
 if (process.argv.includes('--parallel-agents') && !process.argv.includes('--agent-execution')) throw new Error('--parallel-agents requires --agent-execution');
 if (process.argv.includes('--agent-recovery') && !process.argv.includes('--parallel-agents')) throw new Error('--agent-recovery requires --parallel-agents');
 if (process.argv.includes('--gguf-runtime') && !process.argv.includes('--gguf')) throw new Error('--gguf-runtime requires --gguf');
+if (process.argv.includes('--gguf-chat') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-chat requires --gguf-runtime');
 // Exercise current source, never an older immutable UI generation left on disk.
 execFileSync(process.execPath, [path.join(root, 'app/zero-control-ui/build.mjs')], { cwd: root, stdio: 'pipe', windowsHide: true });
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
@@ -326,6 +327,25 @@ try {
       await page.getByText(/Unloaded .* from RAM\./).waitFor();
       assert.equal((await rpc('zero.gateway.localGguf', { action: 'status' })).isLoaded, false);
       runtimeEvidence = { actualUILoad: true, selfTest: ggufSelfTest.payload, actualUIUnload: true, scope: 'Selected model token generation only; not semantic readiness or local chat routing' };
+      await page.goto(`${base}/settings/model-providers`); await card.waitFor();
+    }
+    if (process.argv.includes('--gguf-chat')) {
+      const priorReplies = chatResponses.length;
+      await page.goto(`${base}/chat/zero`);
+      await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('What is the capital of France? Answer with the city name only. Do not use tools.');
+      await page.locator('button.chat-send-btn--send').click();
+      const deadline = Date.now() + 75000;
+      while (chatResponses.length === priorReplies && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
+      assert.ok(chatResponses.length > priorReplies, 'Local UI chat must settle');
+      const response = chatResponses.at(-1);
+      assert.equal(response.ok, true, JSON.stringify(response));
+      const history = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
+      assert.equal(history.messages.at(-1).content, response.payload.content);
+      await page.getByText(response.payload.content, { exact: true }).last().waitFor();
+      assert.equal(response.payload.requestedModel, 'local-gguf/ui-proof');
+      runtimeEvidence.localChat = { actualUISend: true, reply: response.payload.content, taskId: response.payload.taskId, requestedModel: response.payload.requestedModel, persistedHistory: true, exactInstructionFollowed: response.payload.content.trim() === 'Paris' };
+      report.localChatAttempt = runtimeEvidence.localChat;
+      assert.equal(response.payload.content.trim(), 'Paris', 'Local model must follow the requested city-name-only outcome, not merely mention Paris');
       await page.goto(`${base}/settings/model-providers`); await card.waitFor();
     }
     let dialogs = 0; page.on('dialog', async dialog => { dialogs++; await dialog.dismiss(); });

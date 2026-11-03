@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "4dda8673cc4ccd25cf6c14a05a33c42c9d2a5ddffdee7ee37fa6df870d6f5a8d",
+      "sha256": "7f3c2163b14673ce27a2266de602e5d18d706e1bf842654c9fe7427fa9f79648",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -30,7 +30,8 @@
         "--external-skills",
         "--skill-execution (requires --external-skills)",
         "--screen",
-        "--screen-recall (requires --screen; REAL_OS + REAL_EXTERNAL)"
+        "--screen-recall (requires --screen; REAL_OS + REAL_EXTERNAL)",
+        "--gguf-chat (requires --gguf-runtime; REAL_OS): actual main UI local inference, selected-model identity and persisted reply; exact city-only outcome enforced, selected-model failures retained"
       ],
       "execution": "NOT_RUN_BY_INVENTORY"
     },

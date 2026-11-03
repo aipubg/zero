@@ -1,0 +1,26 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "FAIL",
+  "scope": "Main UI local chat exact city-name-only outcome",
+  "firstRun": {
+    "artifact": "artifacts/functional-browser/1793676049116/report.json",
+    "originalRunnerStatus": "PASS",
+    "acceptanceReassessment": "FAIL",
+    "reason": "Contains Paris assertion was weaker than requested exact output. Actual answer ignored city-name-only instruction and included false geographical/architectural statements. Original artifact retained."
+  },
+  "strictRun": {
+    "artifact": "artifacts/functional-browser/1793676100113/report.json",
+    "status": "FAIL",
+    "reason": "Actual main UI local inference timed out at 60 seconds; no successful reply."
+  },
+  "transportEvidence": "Earlier native ModelFabric JSON/SSE tests remain valid for their narrow scope, not semantic assistant competence.",
+  "remaining": [
+    "Use compatible instruction-capable local model and validate real chat outcomes",
+    "Execute actual local agent tool workflow and verify effects",
+    "Do not convert failed selected-model acceptance to production readiness"
+  ]
+}
