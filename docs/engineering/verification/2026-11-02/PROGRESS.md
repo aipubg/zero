@@ -1658,3 +1658,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Actual browser --gguf --gguf-runtime --gguf-qwen --gguf-tools artifact1793676627047 FAIL: actual Qwen generated a bash write_file code block, no executable tool call and no file effect. Strict effect assertion caught it despite chat RPC ok=true. Do not execute arbitrary prose/code blocks to manufacture a pass.
 - Real local tool acceptance remains unresolved for both selected small models. Follow-up needs appropriate model/tool protocol integration and real effects; no synthetic handler evidence accepted.
 - Endurance original PID16744 independently observed live; no24hcompletion claim.
+
+### Qwen-trained tool prompt protocol yields actual local side effects; workflow still PARTIAL
+- Inspected pinned Qwen GGUF tokenizer.chat_template directly. Replaced nonstandard pretty-printed tool instructions with its compact # Tools / <tools> signature protocol and matching <tool_call> instruction. Removed contradictory appended requirement to answer in1-2sentences when reasoning disabled; reasoning suppression now preserves tool format.
+- Native REAL_OS plus parser/wrapper CONTRACT regression: five leaves PASS, artifacts/local-gguf-runtime/1793676726524/report.json.
+- Real UI run1793676709580: selected local tool workflow PASS with actual file exact ZERO_LOCAL_TOOL_EFFECT, persisted verified write_file evidence/hash and assistant final response. Model repeated write twice. Overall suite FAIL in later reconnect composer editability check. Selected evidence in local-qwen-real-tool-effect.json; no entire-suite or exactly-once claim.
+- Independent rerun1793676765963: actual file effect again present, but subsequent model turn supplied malformed arguments and request correctly failed Local tool arguments must be an object. Overall FAIL retained. Do not count early side effect as full successful completion.
+- Integration now reaches actual tools/results; continuation reliability/repeated calls and reconnect failure remain unresolved. Native prompt correction is verified progress, not production acceptance.
+- Endurance PID16744 original start independently live at2026-11-03T03:33Z;24h gate remains open.

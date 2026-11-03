@@ -2126,7 +2126,7 @@ export class LocalGgufEngineService {
 
       // Universal Tool / Function Calling System Instructions
       if (Array.isArray(options.tools) && options.tools.length > 0) {
-        const toolsDoc = `\n\n# AVAILABLE TOOLS\nYou have access to functions. To call a tool, reply in this exact format:\n<tool_call>\n{"name": "tool_name", "arguments": {"arg1": "value"}}\n</tool_call>\n\nTool Definitions:\n${JSON.stringify(options.tools, null, 2)}`;
+        const toolsDoc = `\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n${options.tools.map(tool => JSON.stringify(tool)).join('\n')}\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{"name": <function-name>, "arguments": <args-json-object>}\n</tool_call>`;
         effectiveSystemPrompt += toolsDoc;
       }
 
@@ -2135,7 +2135,7 @@ export class LocalGgufEngineService {
         (options.reasoningEnabled === undefined && target.capabilities?.reasoning === false);
 
       if (isReasoningOff) {
-        const noThinkDirective = '/no_think\nRespond directly and concisely in 1-2 sentences without generating internal monologue or <think> reasoning tags.';
+        const noThinkDirective = 'Do not generate internal monologue or <think> reasoning tags. Preserve the required tool-call format when using tools.';
         effectiveSystemPrompt = effectiveSystemPrompt ? `${effectiveSystemPrompt}\n\n${noThinkDirective}` : noThinkDirective;
       }
 

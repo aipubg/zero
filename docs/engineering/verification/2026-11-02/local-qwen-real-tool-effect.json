@@ -1,0 +1,36 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "source": "artifacts/functional-browser/1793676709580/report.json",
+  "suiteStatus": "FAIL",
+  "selectedToolEffectStatus": "PASS",
+  "requestedModel": "local-gguf/ui-proof",
+  "actualEffect": "ZERO_LOCAL_TOOL_EFFECT",
+  "taskId": "task_1793676718143_77x3u4",
+  "toolResults": [
+    {
+      "capability": "write_file",
+      "verified": true,
+      "evidence": {
+        "bytes": 22,
+        "sha256": "94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4"
+      }
+    },
+    {
+      "capability": "write_file",
+      "verified": true,
+      "evidence": {
+        "bytes": 22,
+        "sha256": "94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4"
+      }
+    }
+  ],
+  "limitations": [
+    "Model repeated the write twice; no exactly-once claim",
+    "Suite failed later reconnect composer editability gate",
+    "Single selected workflow, not general model competence"
+  ]
+}
