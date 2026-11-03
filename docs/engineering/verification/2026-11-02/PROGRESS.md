@@ -1590,3 +1590,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - CONTRACT: two parser tests pass, including Unicode arguments, multiple calls and five malformed/incomplete forms. These prove parsing, not model tool competence or execution.
 - REAL_OS / INTEGRATION: pinned native GGUF test passes again, including four actual HTTP generation terminal/accounting cases. Evidence: artifacts/local-gguf-runtime/1793675551878/report.json. CPU fallback and original Jinja-template fallback warning remain visible.
 - Main ModelFabric local routing and actual local assistant tool execution remain unfinished. Speaker audibility was separately confirmed by the owner; microphone semantic conversation and acoustic barge-in remain unverified. Mobile/cloud prerequisites remain unavailable.
+
+### Local tool-result continuation preservation
+- Found local executeChat discarded every assistant/tool message after the latest user turn, making tool loops repeat the original prompt without results. The text-wrapper adapter now preserves ordered assistant calls (including null content), exact tool result content and tool_call_id in an explicit continuation transcript; unsupported roles and unattributed tool results fail explicitly.
+- CONTRACT test verifies ordered lossless selected wire fields, Unicode failure result retention, unchanged no-continuation input, and rejection cases. This is prompt preservation, not proof that a selected model follows or understands tool results.
+- All four selected test leaves pass, including the actual native load/generation/history/unload and four HTTP cases. Latest actual runtime artifact: artifacts/local-gguf-runtime/1793675617471/report.json.
+- Independently observed endurance PID 16744 live with original start time 2026-11-03 03:22:41 local; 24-hour acceptance not yet established.
+- Main ModelFabric/UI local inference routing and real local tool-loop acceptance remain open.

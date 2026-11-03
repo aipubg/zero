@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
 import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
+import { localContinuationPrompt } from './local-gguf-continuation.mjs';
 import { parseGuideOrModelfile, type ParsedGuideConfig } from './local-gguf-parser.ts';
 
 // Types for Local GGUF Engine
@@ -2095,6 +2096,7 @@ export class LocalGgufEngineService {
       if (!userPromptText.trim()) {
         userPromptText = 'Hello';
       }
+      userPromptText = localContinuationPrompt(userPromptText, messages.slice(lastUserIndex + 1));
 
       // Build conversation history strictly from prior user and assistant turns
       let systemPromptFromChat = '';
