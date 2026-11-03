@@ -1174,6 +1174,7 @@ export class ZeroNativeHost {
         if (action === 'list' || action === 'scan') return { ok: true, models: await this.localGguf.scanModels() };
         if (action === 'status') return { ok: true, ...this.localGguf.getMemoryStatus() };
         if (action === 'ps') return { ok: true, models: this.localGguf.getRunningProcesses(), measurement: 'Engine-reported allocations, not OS resource measurements' };
+        return this.modelFabric.localChat.exclusive(async () => {
         if (action === 'delete') { if (params.all === true) await this.localGguf.deleteAllModels(); else await this.localGguf.deleteModel(params.modelId); return { ok: true }; }
         if (action === 'load') { await this.localGguf.loadModel(params.modelId); return { ok: true, ...this.localGguf.getMemoryStatus() }; }
         if (action === 'unload') { await this.localGguf.unloadModel(); return { ok: true, ...this.localGguf.getMemoryStatus() }; }
@@ -1181,6 +1182,7 @@ export class ZeroNativeHost {
         if (action === 'update') { await this.localGguf.updateModelSettings(params.modelId, params.data || {}); return { ok: true }; }
         if (action === 'setup' || action === 'mount-zero-copy') { const result = await this.localGguf.mountZeroCopyModel(params.sourcePath, params.guideContent, params.guidePath); return { ...result, ok: result.success, ...(result.success ? {} : { error: result.model?.lastSelfTest?.message || 'GGUF setup did not pass its runtime checks' }) }; }
         throw new Error(`Local GGUF action is not connected: ${action}`);
+        });
       }
       case 'zero.gateway.config.get':
         return modelSettings(this.modelFabric);

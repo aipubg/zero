@@ -103,8 +103,13 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     const interruptedReader = interruptedStream.stream.getReader();
     const firstGenerated = await interruptedReader.read();
     assert.equal(firstGenerated.done, false);
+    let unloadStarted = false;
+    const queuedUnload = localChat.exclusive(async () => { unloadStarted = true; await service.unloadModel(true); });
+    assert.equal(unloadStarted, false);
     await interruptedReader.cancel();
-    await localChat.tail.catch(() => {});
+    await queuedUnload;
+    assert.equal(unloadStarted, true);
+    assert.equal(service.getMemoryStatus().isLoaded, false);
     assert.equal((await fabric.executeChat(localPayload)).data.usage.completion_tokens, 1);
     report.localStreamCancellation = { actualNativeStreamStarted: true, readerCancelled: true, nativeQueueSettled: true, nextActualGenerationSucceeded: true };
     await assert.rejects(fabric.executeChat({ ...localPayload, max_tokens: 512 }, { timeoutMs: 1 }), { name: 'TimeoutError' });

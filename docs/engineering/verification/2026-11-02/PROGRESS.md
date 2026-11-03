@@ -1705,3 +1705,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Seven selected ModelFabric/native leaves pass; native evidence still includes real import/history replacement, context allocation, terminal reasons, abort/deadline recovery and source preservation. Inventory VALID; no entire-release claim.
 - Counts represent completed responses with reported usage, not every aborted/failed attempt. Native input counts are evaluated-token deltas and may exclude cached prefix; no billing or logical-prompt equivalence claim. Existing cloud JSON accounting is outside this specific correction.
 - Original endurance PID16744 independently revalidated live; remaining24h/voice/external acceptance gates open.
+
+### Local native management and inference share ownership queue
+- Native host mutation RPCs (load/unload/self-test/update/delete/setup) previously accessed the same mutable engine outside inference serialization. Added shared exclusive queue and routed native host mutations through it. Read-only status/catalog requests remain available.
+- Inference refreshes and revalidates local model availability after acquiring queue ownership, so a model removed while request waited is not silently substituted or executed from stale resolution.
+- REAL_OS test starts genuine stream, schedules queued actual unload, cancels reader, observes unload completion and actual isLoadedfalse, then verifies real inference reload and successful generation. Native artifact1793677445274 PASS; no dummy native context.
+- Actual browser --gguf --gguf-runtime artifact1793677472203 PASS,nineworkflows, including actual management controls, metadata/import/export persistence, removal/user-data preservation and reconnect. No claim that every possible management race has been stress-tested.
+- Inventory VALID; original endurance PID16744 independently observed live. General endurance/release acceptance remains incomplete.

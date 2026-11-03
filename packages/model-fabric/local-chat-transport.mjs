@@ -4,6 +4,12 @@ import { PassThrough, Readable } from 'node:stream';
 // request or credential lookup belongs on this transport.
 export class LocalChatTransport {
   constructor(engine) { this.engine = engine; this.models = []; this.tail = Promise.resolve(); }
+  exclusive(operation) {
+    const run = this.tail.catch(() => {}).then(operation);
+    this.tail = run;
+    run.catch(() => {});
+    return run;
+  }
   async refresh() { this.models = await this.engine.scanModels(); return this.models; }
   listModels() {
     const status = this.engine.getMemoryStatus();
@@ -40,14 +46,15 @@ export class LocalChatTransport {
     output.setHeader = () => output;
     output.writeHead = status => { output.statusCode = status; output.headersSent = true; return output; };
     output.statusCode = 200;
-    const run = this.tail.catch(() => {}).then(async () => {
+    const run = this.exclusive(async () => {
       signal.throwIfAborted();
+      await this.refresh();
+      if (!this.resolve(payload.model)) throw new Error(`Local model unavailable: ${payload.model}`);
       await this.engine.executeChat(resolution.localModelId, payload.messages, {
         ...payload, maxTokens: payload.max_tokens, responseFormat: payload.response_format,
         toolChoice: payload.tool_choice, signal,
       }, output);
     });
-    this.tail = run;
     const cleanup = () => { clearTimeout(deadline); signal.removeEventListener('abort', onAbort); };
     run.then(cleanup, cleanup);
     run.catch(error => output.destroy(error));
