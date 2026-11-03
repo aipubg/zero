@@ -2024,6 +2024,8 @@ export class LocalGgufEngineService {
       // Load merged manifest for default parameters and system prompt
       const manifest = await this.loadManifest(modelId);
       const effectiveTemperature = options.temperature ?? manifest?.parameters?.temperature ?? 0.7;
+      const target = (await this.scanModels()).find(model => model.id === modelId || model.filename === modelId);
+      if (!target) throw new Error('Loaded local model is missing from its catalog');
       const effectiveTopP = options.top_p ?? manifest?.parameters?.top_p ?? 0.9;
       const effectiveMaxTokens = options.maxTokens ?? manifest?.parameters?.num_ctx ?? 2048;
 
@@ -2206,6 +2208,15 @@ export class LocalGgufEngineService {
       }
 
       // Handle Streaming Response (SSE OpenAI-compatible)
+      const tokenMeter = this.activeSession.sequence.tokenMeter;
+      const meterBefore = tokenMeter.getState();
+      const finishReason = (reason: string, hasTools: boolean, watchdog: boolean) => {
+        if (watchdog) return 'error';
+        if (reason === 'maxTokens') return 'length';
+        if (reason === 'abort') return 'cancelled';
+        if (!['eogToken', 'stopGenerationTrigger', 'customStopTrigger', 'functionCalls'].includes(reason)) return 'error';
+        return hasTools ? 'tool_calls' : reason === 'functionCalls' ? 'error' : 'stop';
+      };
       if (options.stream) {
         res.writeHead(200, {
           'Content-Type': 'text/event-stream; charset=utf-8',
@@ -2218,6 +2229,7 @@ export class LocalGgufEngineService {
         let fullReasoning = '';
         let insideThinkTag = false;
         let tokenCount = 0;
+        let nativeStopReason = 'unknown';
 
         // Anti-Loop Watchdog State
         let consecutiveIdentical = 0;
@@ -2225,7 +2237,7 @@ export class LocalGgufEngineService {
         let loopBroken = false;
 
         try {
-          await this.activeSession.prompt(userPromptText, {
+          const completion = await this.activeSession.promptWithMeta(userPromptText, {
             temperature: effectiveTemperature,
             topP: effectiveTopP,
             maxTokens: effectiveMaxTokens,
@@ -2236,9 +2248,9 @@ export class LocalGgufEngineService {
             minP: options.minP,
             topK: options.topK,
             seed: options.seed,
+            onToken: (tokens: number[]) => { tokenCount += tokens.length; },
             onTextChunk: (chunk: string) => {
               if (loopBroken) return;
-              tokenCount++;
 
               // Anti-Loop Watchdog: Check identical token loop
               if (chunk === lastTokenPiece && chunk.trim().length > 0) {
@@ -2305,11 +2317,12 @@ export class LocalGgufEngineService {
               this.sendSseChunk(res, { content: chunk });
             },
           });
+          nativeStopReason = completion.stopReason;
         } catch (promptErr: any) {
           if (options.signal?.aborted || promptErr.name === 'AbortError' || promptErr.message?.includes('abort')) {
             console.log(`[LocalGguf] C++ Token Generation stopped immediately by AbortSignal (0ms).`);
             if (!res.writableEnded) {
-              res.write('data: [DONE]\n\n');
+              res.write(`data: ${JSON.stringify({ error: { code: 'CANCELLED', message: 'Local generation interrupted' } })}\n\n`);
               res.end();
             }
             return;
@@ -2339,16 +2352,18 @@ export class LocalGgufEngineService {
         if (!res.writableEnded) {
           res.write(
             `data: ${JSON.stringify({
-              choices: [{ delta: streamToolCalls ? { tool_calls: streamToolCalls } : {} }],
+              choices: [{ delta: streamToolCalls ? { tool_calls: streamToolCalls } : {}, finish_reason: finishReason(nativeStopReason, Boolean(streamToolCalls), loopBroken) }],
               toolCalls: streamToolCalls,
               usage: {
-                prompt_tokens: Math.max(1, Math.round(userPromptText.length / 4)),
+                prompt_tokens: tokenMeter.diff(meterBefore).usedInputTokens,
                 completion_tokens: tokenCount,
-                total_tokens: Math.max(1, Math.round(userPromptText.length / 4)) + tokenCount,
+                total_tokens: tokenMeter.diff(meterBefore).usedInputTokens + tokenCount,
               },
+              usageAccounting: 'Native evaluated input token delta and emitted generated token IDs; reused prefix may be excluded',
               telemetry: {
                 latencyMs: totalTimeMs,
                 tokensPerSec,
+                nativeStopReason,
               },
             })}\n\n`
           );
@@ -2364,12 +2379,13 @@ export class LocalGgufEngineService {
       let nonStreamReasoning = '';
       let insideThink = false;
       let tokens = 0;
+      let nativeStopReason = 'unknown';
       let consecutiveNonStream = 0;
       let lastTokenNonStream = '';
       let nonStreamLoopBroken = false;
 
       try {
-        await this.activeSession.prompt(userPromptText, {
+        const completion = await this.activeSession.promptWithMeta(userPromptText, {
           temperature: effectiveTemperature,
           topP: effectiveTopP,
           maxTokens: effectiveMaxTokens,
@@ -2380,9 +2396,9 @@ export class LocalGgufEngineService {
           minP: options.minP,
           topK: options.topK,
           seed: options.seed,
+          onToken: (generated: number[]) => { tokens += generated.length; },
           onTextChunk: (chunk: string) => {
             if (nonStreamLoopBroken) return;
-            tokens++;
 
             if (chunk === lastTokenNonStream && chunk.trim().length > 0) {
               consecutiveNonStream++;
@@ -2417,6 +2433,7 @@ export class LocalGgufEngineService {
             nonStreamContent += chunk;
           },
         });
+        nativeStopReason = completion.stopReason;
       } catch (promptErr: any) {
         if (options.signal?.aborted || promptErr.name === 'AbortError' || promptErr.message?.includes('abort')) {
           console.log(`[LocalGguf] Non-streaming C++ Token Generation stopped immediately by AbortSignal.`);
@@ -2466,15 +2483,17 @@ export class LocalGgufEngineService {
                   reasoning_content: nonStreamReasoning || undefined,
                   tool_calls: nonStreamToolCalls,
                 },
-                finish_reason: nonStreamToolCalls ? 'tool_calls' : 'stop',
+                finish_reason: finishReason(nativeStopReason, Boolean(nonStreamToolCalls), nonStreamLoopBroken),
               },
             ],
             toolCalls: nonStreamToolCalls,
             usage: {
-              prompt_tokens: Math.max(1, Math.round(userPromptText.length / 4)),
+              prompt_tokens: tokenMeter.diff(meterBefore).usedInputTokens,
               completion_tokens: tokens,
-              total_tokens: Math.max(1, Math.round(userPromptText.length / 4)) + tokens,
+              total_tokens: tokenMeter.diff(meterBefore).usedInputTokens + tokens,
             },
+            usageAccounting: 'Native evaluated input token delta and emitted generated token IDs; reused prefix may be excluded',
+            nativeStopReason,
             latencyMs,
           })
         );

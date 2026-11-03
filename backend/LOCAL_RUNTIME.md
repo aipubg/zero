@@ -27,4 +27,6 @@ the measured interval. A successful short generation does not prove semantic
 readiness, tool use, image understanding or arbitrary model compatibility. The
 selected model can trigger the library's chat-template fallback; that warning is
 not a certification of its original template. Native ModelFabric chat assignment,
-full local chat responses and HF download acceptance remain separate work.
+main chat UI routing, general conversational correctness and HF download acceptance
+remain separate work. Direct local HTTP JSON/SSE token-cap and custom-stop
+termination have independent native tests.

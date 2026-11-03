@@ -1,0 +1,100 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "scope": "Selected native GGUF JSON/SSE terminal reasons and token accounting; not main chat UI routing or semantic correctness",
+  "pass": {
+    "classification": [
+      "REAL_OS",
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "startedAt": "2026-11-03T03:07:19.816Z",
+    "directory": "E:\\zero\\artifacts\\local-gguf-runtime\\1793675239815",
+    "scope": "Selected pinned model load/token-generation/history-preservation/unload; not semantic readiness, local chat routing or arbitrary architectures",
+    "result": {
+      "passed": true,
+      "tokensGenerated": 12,
+      "tokensPerSec": 94.5,
+      "latencyMs": 127,
+      "sampleOutput": "I am ready to read and answer any questions you may have",
+      "tokenAccounting": "Native generated token IDs; rate includes model loading and prompt evaluation",
+      "verificationScope": "Model loading and token generation only; not semantic correctness or general model compatibility",
+      "message": "Self-test passed: generated 12 tokens at 94.5 tok/s (127ms)"
+    },
+    "chatResponses": [
+      {
+        "route": "/json",
+        "finishReason": "length",
+        "usage": {
+          "prompt_tokens": 54,
+          "completion_tokens": 1,
+          "total_tokens": 55
+        },
+        "nativeStopReason": "maxTokens"
+      },
+      {
+        "route": "/stream",
+        "finishReason": "length",
+        "usage": {
+          "prompt_tokens": 0,
+          "completion_tokens": 1,
+          "total_tokens": 1
+        },
+        "nativeStopReason": "maxTokens"
+      },
+      {
+        "route": "/json-stop",
+        "finishReason": "stop",
+        "usage": {
+          "prompt_tokens": 17,
+          "completion_tokens": 2,
+          "total_tokens": 19
+        },
+        "nativeStopReason": "customStopTrigger"
+      },
+      {
+        "route": "/stream-stop",
+        "finishReason": "stop",
+        "usage": {
+          "prompt_tokens": 0,
+          "completion_tokens": 2,
+          "total_tokens": 2
+        },
+        "nativeStopReason": "customStopTrigger"
+      }
+    ],
+    "priorHistoryPreserved": true,
+    "persistedSelfTest": true,
+    "actualUnload": true,
+    "originalSourceSha256": "2a31195d3769c0b0fd0a4906201666108834848db768af11de1d2cef7cd35e65",
+    "finishedAt": "2026-11-03T03:07:20.934Z"
+  },
+  "priorFailedAttempts": [
+    {
+      "classification": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "FAIL",
+      "startedAt": "2026-11-03T03:04:47.182Z",
+      "directory": "E:\\zero\\artifacts\\local-gguf-runtime\\1793675087182",
+      "scope": "Selected pinned model load/token-generation/history-preservation/unload; not semantic readiness, local chat routing or arbitrary architectures",
+      "error": "Expected values to be strictly equal:\n\n500 !== 200\n",
+      "finishedAt": "2026-11-03T03:04:48.024Z"
+    },
+    {
+      "classification": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "FAIL",
+      "startedAt": "2026-11-03T03:04:58.643Z",
+      "directory": "E:\\zero\\artifacts\\local-gguf-runtime\\1793675098642",
+      "scope": "Selected pinned model load/token-generation/history-preservation/unload; not semantic readiness, local chat routing or arbitrary architectures",
+      "error": "{\"error\":\"target is not defined\"}\n\n500 !== 200\n",
+      "finishedAt": "2026-11-03T03:04:59.490Z"
+    }
+  ]
+}

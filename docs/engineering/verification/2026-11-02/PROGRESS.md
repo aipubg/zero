@@ -1560,3 +1560,27 @@ Original endurance PID 16744/start identity remains live at 2026-11-03T02:59Z,
 about 5.107 hours; the recent checkpoint has over 7,000 successful captures and
 no capture failure. Still IN_PROGRESS/completed24Hours false/resources PARTIAL.
 This long process retains original loaded code; newer short gates do not upgrade it.
+
+### Correct native local-chat terminal reasons and token accounting
+
+Local GGUF chat used text-chunk counts for completion usage, character/4 estimates
+for prompt usage, omitted SSE terminal reason and always returned stop for JSON.
+It now uses native promptWithMeta stop reason, generated token-ID callbacks and
+native input token meter deltas. maxTokens is length; actual end/stop triggers map
+to stop; unknown termination or repetition watchdog cannot claim normal success.
+Stream cancellation emits an explicit error and ends without a fabricated DONE.
+Input usage explicitly describes actual evaluations: reused cached prefix tokens
+may be excluded, rather than pretending this is an uncached logical prompt count.
+
+[native-gguf-chat-terminal-accounting.json](native-gguf-chat-terminal-accounting.json)
+preserves the first two actual 500 failure attempts. Real HTTP execution exposed
+an undefined target variable in the previously untested chat path; catalog lookup
+now resolves it. The subsequent real pinned model test passes four HTTP cases:
+JSON and SSE one-token caps report length/maxTokens and exactly one generated token;
+JSON and SSE native custom stop triggers report stop/customStopTrigger. Usage sums
+match, prior self-test history/source SHA remain preserved, and actual unload works.
+No mocked inference replaced these native tests. Two selected runtime/preservation
+checks pass. This is terminal/accounting acceptance for selected native HTTP calls,
+not main chat UI routing, general semantic correctness or arbitrary tool use.
+Original endurance PID 16744 remains live with matching start identity at about
+5.262 hours, still IN_PROGRESS/completed24Hours false/resources PARTIAL.
