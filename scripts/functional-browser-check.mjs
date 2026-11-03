@@ -24,6 +24,7 @@ if (process.argv.includes('--gguf-runtime') && !process.argv.includes('--gguf'))
 if (process.argv.includes('--gguf-chat') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-chat requires --gguf-runtime');
 if (process.argv.includes('--gguf-tools') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-tools requires --gguf-runtime');
 if (process.argv.includes('--gguf-qwen') && !process.argv.includes('--gguf')) throw new Error('--gguf-qwen requires --gguf');
+if (process.argv.includes('--gguf-recall') && !process.argv.includes('--gguf-tools')) throw new Error('--gguf-recall requires --gguf-tools');
 // Exercise current source, never an older immutable UI generation left on disk.
 execFileSync(process.execPath, [path.join(root, 'app/zero-control-ui/build.mjs')], { cwd: root, stdio: 'pipe', windowsHide: true });
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
@@ -380,6 +381,24 @@ try {
       assert.equal(report.localToolAttempt.actualEffect, 'ZERO_LOCAL_TOOL_EFFECT', 'Actual local tool file effect is required; prose is not execution');
       const history = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
       assert.ok(history.messages.some(message => message.role === 'tool' && JSON.parse(message.content).verified === true), 'Persisted verified tool result required');
+      if (process.argv.includes('--gguf-recall')) {
+        const expected = createHash('sha256').update(fs.readFileSync(artifact)).digest('hex');
+        const beforeTools = history.messages.filter(message => message.role === 'tool').length;
+        const beforeReplies = chatResponses.length;
+        await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('Return only the sha256 value from the previous write_file tool result. Use the saved result; do not call tools.');
+        await page.locator('button.chat-send-btn--send').click();
+        const recallDeadline = Date.now() + 75000;
+        while (chatResponses.length === beforeReplies && Date.now() < recallDeadline) await new Promise(resolve => setTimeout(resolve, 100));
+        const recall = chatResponses.length > beforeReplies ? chatResponses.at(-1) : null;
+        report.localToolRecall = { expectedSha256: expected, response: recall };
+        assert.ok(recall, 'Second actual local UI turn must settle');
+        assert.equal(recall.ok, true, JSON.stringify(recall));
+        assert.equal(recall.payload.requestedModel, 'local-gguf/ui-proof');
+        assert.equal(recall.payload.content.trim(), expected);
+        const after = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
+        assert.equal(after.messages.filter(message => message.role === 'tool').length, beforeTools, 'Recall must not replay tools');
+        assert.equal(after.messages.at(-1).content, recall.payload.content);
+      }
       await page.goto(`${base}/settings/model-providers`); await card.waitFor();
     }
     let dialogs = 0; page.on('dialog', async dialog => { dialogs++; await dialog.dismiss(); });

@@ -1726,3 +1726,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Three CONTRACT plus actual native regression PASS, artifacts/local-gguf-runtime/1793677679786/report.json. Historical tool examples are controlled transcript inputs testing serialization, not claims of tool execution in those tests.
 - Existing actual browser --gguf --gguf-runtime artifacts/functional-browser/1793677654625/report.json PASS,nineworkflows. This run checks management/import/restart regression, not semantic recall of older tool results. Real multi-user tool recall acceptance remains unproven.
 - Inventory VALID; original endurance PID16744 independently alive. Full master requirements remain active.
+
+### Real second-user tool-history recall test exposes UI terminal-state bug
+- Added --gguf-recall requiring real tool workflow. After actual verified write, second composer/send asks only prior tool-result SHA256 (not supplied in question), independently computed from real disk bytes; requires same local model, exact answer, persisted history and no new tool result count.
+- Actual artifact1793677725935 FAIL Second actual local UI turn must settle; expected file was created with22bytes. No recall semantic pass claimed.
+- Investigation: rpcDiagnostics contains only ONE chat.send request/response. Screenshot2.png shows first assistant reply complete in history but UI still Lobstering after1m25s; second user message sits queued above composer. Thus this run did not reach second model generation and exposes frontend terminal-state/queued-delivery issue, not proof of missing model recall.
+- Added runner mode/digest; inventory VALID. Original artifacts preserved. Next required work is terminal chat event/UI state settlement and queued message delivery, then same strict recall test.
+- Endurance original PID16744 independently live; summary5.946h, completed24Hoursfalse/resourceAcceptancePARTIAL. Full goal remains active.
