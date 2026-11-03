@@ -1666,3 +1666,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Independent rerun1793676765963: actual file effect again present, but subsequent model turn supplied malformed arguments and request correctly failed Local tool arguments must be an object. Overall FAIL retained. Do not count early side effect as full successful completion.
 - Integration now reaches actual tools/results; continuation reliability/repeated calls and reconnect failure remain unresolved. Native prompt correction is verified progress, not production acceptance.
 - Endurance PID16744 original start independently live at2026-11-03T03:33Z;24h gate remains open.
+
+### Native role-preserving tool continuation; real local reliability remains FAIL
+- Added native history projection: original user turn, assistant model call and user-role raw <tool_response> content following pinned Qwen convention. Avoids JSON-escaping the entire continuation transcript and paths inside the original user prompt. Groups adjacent results, validates known pending call IDs, rejects duplicate/unattributed results and incomplete pending sets.
+- Added CONTRACT exact role/raw-content and invalid-ID checks. Native runtime +2contract leaves PASS, artifacts/local-gguf-runtime/1793676962393/report.json.
+- First actual browser1793676892603 FAIL: one write_file executed and final response returned, but model changed requested filename to actual-local-tool-0001.txt. Exact requested file absent; no pass manufactured from neighboring file.
+- Tool requests now default to temperature0 unless request/manifest explicitly specifies temperature. Actual rerun1793676941306 FAIL at60-second inference timeout, expected file absent. Deterministic sampling is not evidence of improved competence.
+- Native continuation integration is implemented; selected small model reliability, exact requested effects, interruption/restart continuity and general local agent competence remain unfinished. Existing failed artifacts retained.
+- Endurance original PID16744 independently observed alive;24-hour acceptance remains open.

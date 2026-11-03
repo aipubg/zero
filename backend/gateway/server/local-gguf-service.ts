@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
 import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
-import { localContinuationPrompt } from './local-gguf-continuation.mjs';
+import { localNativeContinuation } from './local-gguf-continuation.mjs';
 import { createRecognizedTextWrapper } from './local-chat-wrapper.mjs';
 import { parseGuideOrModelfile, type ParsedGuideConfig } from './local-gguf-parser.ts';
 
@@ -2030,7 +2030,7 @@ export class LocalGgufEngineService {
     try {
       // Load merged manifest for default parameters and system prompt
       const manifest = await this.loadManifest(modelId);
-      const effectiveTemperature = options.temperature ?? manifest?.parameters?.temperature ?? 0.7;
+      const effectiveTemperature = options.temperature ?? manifest?.parameters?.temperature ?? (options.tools?.length ? 0 : 0.7);
       const target = (await this.scanModels()).find(model => model.id === modelId || model.filename === modelId);
       if (!target) throw new Error('Loaded local model is missing from its catalog');
       const effectiveTopP = options.top_p ?? manifest?.parameters?.top_p ?? 0.9;
@@ -2101,7 +2101,8 @@ export class LocalGgufEngineService {
       if (!userPromptText.trim()) {
         userPromptText = 'Hello';
       }
-      userPromptText = localContinuationPrompt(userPromptText, messages.slice(lastUserIndex + 1));
+      const continuation = localNativeContinuation(userPromptText, messages.slice(lastUserIndex + 1));
+      userPromptText = continuation.prompt;
 
       // Build conversation history strictly from prior user and assistant turns
       let systemPromptFromChat = '';
@@ -2122,6 +2123,7 @@ export class LocalGgufEngineService {
       }
 
       // Combine system prompt: manifest's system prompt (Guide file) + any dynamic chat system prompt
+      chatHistory.push(...continuation.history);
       let effectiveSystemPrompt = [manifest?.systemPrompt, systemPromptFromChat].filter(Boolean).join('\n\n');
 
       // Universal Tool / Function Calling System Instructions
