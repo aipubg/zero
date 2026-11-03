@@ -1612,3 +1612,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Added actual Set Active click, exact namespaced assignment on disk, process stop/restart, effective model resolution and visible Active state after restart. Isolated prior binding restored before deleting the test model; owner files untouched.
 - Two passing subsequent runs: artifacts/functional-browser/1793675915667/report.json and 1793675942201/report.json, nine workflows each, including actual native UI self-test, settings persistence, source SHA, deletion without popup and reconnect. Runner inventory digest and scope updated, integrity VALID.
 - This proves UI assignment persistence and native self-test separately, not main chat local semantic answers or local tool execution. Those acceptance gates remain open. Endurance PID16744 independently observed live with original start time; full 24-hour acceptance not asserted.
+
+### Actual local native stream interruption and deadline recovery
+- REAL_OS native test now starts a genuine generated stream, reads an actual first chunk, cancels the reader, awaits the original engine queue, and verifies a subsequent native generation succeeds. Native log records AbortSignal interruption.
+- Added local transport deadline (default 60s, configurable timeoutMs), abort propagation to output and native engine, and cleanup on completion/failure. Previously local transport ignored the ModelFabric timeout option.
+- Real 1ms deadline test rejects with TimeoutError during an actual native request; waits for original queue settlement and verifies next native generation succeeds. No replacement fake inference.
+- Evidence artifacts/local-gguf-runtime/1793676010682/report.json records stream interruption and deadline recovery; all existing direct HTTP, ModelFabric JSON/SSE, assignment persistence, concurrent request, source/history preservation checks still pass. CPU/template fallback limitations remain.
+- Main local chat UI semantic and tool-loop acceptance still open; this change establishes transport recovery only.

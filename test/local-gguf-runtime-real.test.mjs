@@ -75,6 +75,18 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     const cancelled = new AbortController(); cancelled.abort();
     await assert.rejects(fabric.executeChat(localPayload, { signal: cancelled.signal }), { name: 'AbortError' });
     assert.equal((await fabric.executeChat(localPayload)).data.usage.completion_tokens, 1);
+    const interruptedStream = await fabric.executeChat({ ...localPayload, stream: true, max_tokens: 512 });
+    const interruptedReader = interruptedStream.stream.getReader();
+    const firstGenerated = await interruptedReader.read();
+    assert.equal(firstGenerated.done, false);
+    await interruptedReader.cancel();
+    await localChat.tail.catch(() => {});
+    assert.equal((await fabric.executeChat(localPayload)).data.usage.completion_tokens, 1);
+    report.localStreamCancellation = { actualNativeStreamStarted: true, readerCancelled: true, nativeQueueSettled: true, nextActualGenerationSucceeded: true };
+    await assert.rejects(fabric.executeChat({ ...localPayload, max_tokens: 512 }, { timeoutMs: 1 }), { name: 'TimeoutError' });
+    await localChat.tail.catch(() => {});
+    assert.equal((await fabric.executeChat(localPayload)).data.usage.completion_tokens, 1);
+    report.localDeadline = { actualNativeRequestTimedOut: true, nextActualGenerationSucceeded: true };
     report.modelFabricLocal = { actualJson: true, actualStream: true, cloudRequests: fabric.upstreamRequestCount, missingModelRejected: true };
     await service.unloadModel(true); assert.equal(service.getMemoryStatus().isLoaded, false);
     assert.equal(await checksum(), originalHash);

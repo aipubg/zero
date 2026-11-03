@@ -17,6 +17,10 @@ export class LocalChatTransport {
     const output = new PassThrough();
     const cancelled = new AbortController();
     const signal = options.signal ? AbortSignal.any([options.signal, cancelled.signal]) : cancelled.signal;
+    const deadline = setTimeout(() => cancelled.abort(new DOMException('Local inference timed out', 'TimeoutError')), options.timeoutMs ?? 60000);
+    deadline.unref();
+    const onAbort = () => output.destroy(signal.reason);
+    signal.addEventListener('abort', onAbort, { once: true });
     output.on('close', () => { if (!output.writableFinished) cancelled.abort(); });
     // ServerResponse-compatible writable surface consumed by the engine.
     output.setHeader = () => output;
@@ -30,6 +34,8 @@ export class LocalChatTransport {
       }, output);
     });
     this.tail = run;
+    const cleanup = () => { clearTimeout(deadline); signal.removeEventListener('abort', onAbort); };
+    run.then(cleanup, cleanup);
     run.catch(error => output.destroy(error));
     if (payload.stream) return { stream: Readable.toWeb(output), status: 200, headers: new Headers({ 'Content-Type': 'text/event-stream' }) };
     const chunks = []; let size = 0;
