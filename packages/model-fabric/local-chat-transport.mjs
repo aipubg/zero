@@ -5,10 +5,20 @@ import { PassThrough, Readable } from 'node:stream';
 export class LocalChatTransport {
   constructor(engine) { this.engine = engine; this.models = []; this.tail = Promise.resolve(); }
   async refresh() { this.models = await this.engine.scanModels(); return this.models; }
+  listModels() {
+    const status = this.engine.getMemoryStatus();
+    return this.models.map(model => {
+      const allocated = status.loadedModelId === model.id ? status.contextSize : null;
+      const configured = Math.max(512, Math.min(model.contextLength || 2048, 4096));
+      return { id: `local-gguf/${model.id}`, name: model.name, provider: 'local-gguf', reasoning: !!model.capabilities?.reasoning,
+        input: ['text'], contextWindow: allocated || configured, maxTokens: allocated || configured,
+        contextWindowSource: allocated ? 'native-allocation' : 'configured-runtime-cap; allocation may be smaller' };
+    });
+  }
   resolve(id) {
     const model = this.models.find(model => id === `local-gguf/${model.id}`);
     if (!model) return null;
-    return { provider: { id: 'local-gguf', models: this.models.map(m => ({ id: `local-gguf/${m.id}`, name: m.name })), local: true }, canonicalModelId: `local-gguf/${model.id}`, capabilities: { reasoning: !!model.capabilities?.reasoning, image: false, tools: true }, localModelId: model.id };
+    return { provider: { id: 'local-gguf', models: this.listModels(), local: true }, canonicalModelId: `local-gguf/${model.id}`, capabilities: { reasoning: !!model.capabilities?.reasoning, image: false, tools: true }, localModelId: model.id };
   }
   async execute(payload, options = {}) {
     if (!Array.isArray(payload.messages) || payload.messages.some(message =>

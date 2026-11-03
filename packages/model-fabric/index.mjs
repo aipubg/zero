@@ -85,7 +85,7 @@ export class ModelFabric {
   }
 
   listModels() {
-    const models = [];
+    const models = this.localChat?.listModels() || [];
     for (const provider of this.providers.values()) {
       if (provider.enabled === false) continue;
       if (Array.isArray(provider.models)) {
@@ -242,7 +242,8 @@ export class ModelFabric {
 
   calculateContextBudget(modelId, messages = []) {
     const resolution = this.resolveModel(modelId);
-    const contextWindow = 131072; // Default Nemotron/Modern LLM context
+    const localModel = resolution?.provider.local ? resolution.provider.models.find(model => model.id === resolution.canonicalModelId) : null;
+    const contextWindow = localModel?.contextWindow || 131072;
     let rawChars = 0;
     for (const msg of messages) {
       if (typeof msg.content === 'string') rawChars += msg.content.length;
@@ -263,6 +264,8 @@ export class ModelFabric {
       remainingTokens,
       maxCompletionTokens,
       withinBudget: estimatedPromptTokens < (contextWindow - 128),
+      accounting: 'Character-based estimate; excludes tool definitions and native template overhead',
+      contextWindowSource: localModel?.contextWindowSource || 'provider-default',
     };
   }
 

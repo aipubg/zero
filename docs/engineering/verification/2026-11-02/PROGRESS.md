@@ -1690,3 +1690,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Extended existing --gguf UI check: real Export Config download contains namespaced local assignment; actual Import Config file chooser submits it; host stopped/restarted and local effective model/Active state retained. Latest browser report printed with this commit; nine workflows PASS, including selected native UI runtime checks, removal/data preservation and reconnect.
 - Runner inventory SHA/mode updated; inventory integrity VALID, not release sign-off. Full endurance/voice/external prerequisites and original master scope remain open.
 - Exact browser evidence: artifacts/functional-browser/1793677221034/report.json (PASS, nine workflows, localAssignmentUIExportImportRestart=true).
+
+### Local catalog and context-budget honesty
+- ModelFabric listModels now includes actual registered namespaced local models. Text-only runtime entries advertise text input even if source model metadata has image flags.
+- Native status now reports actual allocated contextSize (null when no allocation). Local catalog uses current native allocation for loaded model; unloaded entries show configured runtime cap and explicitly note allocation may be smaller. Local context budget no longer inherits hardcoded131072 window.
+- Added real native assertions: selected loaded512-token model appears in catalog with native-allocation source and text-only input;4000-character prompt is out of budget with0completion tokens. Budget result explicitly labels character estimate and omitted tool/template overhead; no exact-token accounting claim.
+- Eleven selected native/settings/ModelFabric test leaves PASS, native evidence artifacts/local-gguf-runtime/1793677290354/report.json. Existing actual history replacement, JSON/SSE terminal, tool import, abort/deadline recovery still pass.
+- Actual browser --gguf --gguf-runtime artifacts/functional-browser/1793677307053/report.json PASS,nineworkflows, including config export/import/restart and UI runtime. No claim this run repeats local tool-generation acceptance.
+- Runner integrity VALID; original endurance PID16744 independently live,24-hour acceptance still incomplete. Full master objective remains active.

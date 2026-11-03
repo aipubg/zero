@@ -59,6 +59,14 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     const fabric = new ModelFabric({ providers: [], configPath, localChat, agentBindingsPath: bindingsPath });
     assert.equal(fabric.resolveModel('local-gguf/real-smol').provider.local, true);
     assert.equal(fabric.resolveModel('local-gguf/missing'), null);
+    const catalogEntry = fabric.listModels().find(model => model.id === 'local-gguf/real-smol');
+    assert.equal(catalogEntry.contextWindow, 512);
+    assert.equal(catalogEntry.contextWindowSource, 'native-allocation');
+    assert.deepEqual(catalogEntry.input, ['text']);
+    const oversizedBudget = fabric.calculateContextBudget('local-gguf/real-smol', [{ role: 'user', content: 'x'.repeat(4000) }]);
+    assert.equal(oversizedBudget.contextWindow, 512);
+    assert.equal(oversizedBudget.withinBudget, false);
+    assert.equal(oversizedBudget.maxCompletionTokens, 0);
     assignZeroModel(fabric, { modelId: 'local-gguf/real-smol' });
     const reopened = new ModelFabric({ providers: [], localChat, agentBindingsPath: bindingsPath });
     assert.equal(reopened.resolveAgentModel('zero').canonicalModelId, 'local-gguf/real-smol');

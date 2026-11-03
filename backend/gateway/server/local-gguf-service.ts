@@ -1448,11 +1448,13 @@ export class LocalGgufEngineService {
     loadedModelId: string | null;
     loadedModelFilename: string | null;
     isLoaded: boolean;
+    contextSize: number | null;
   } {
     return {
       loadedModelId: this.loadedModelId,
       loadedModelFilename: this.loadedModelFilename,
       isLoaded: !!this.activeModel,
+      contextSize: this.activeContext?.contextSize ?? null,
     };
   }
 
