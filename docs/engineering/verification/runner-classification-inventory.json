@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "3318927535367d3d3a81e5f9a8248acc009e85f6c004b3cd1618f6f3dc5931f3",
+      "sha256": "4dda8673cc4ccd25cf6c14a05a33c42c9d2a5ddffdee7ee37fa6df870d6f5a8d",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -17,7 +17,7 @@
         "--models: actual UI assignment, isolated settings restart and independently observed real upstream model request; provider-reported alias retained separately",
         "--providers: actual UI provider create/edit/delete with isolated persisted files, credential preservation and process restart; no service-execution claim",
         "--provider-probe: UI-triggered real external model-list retrieval, not inference acceptance",
-        "--gguf: actual GGUF catalog, UI settings save/removal, restart persistence, source SHA preservation and failed mount; no inference claim",
+        "--gguf: actual GGUF catalog, UI settings and namespaced model assignment with restart-visible active state, removal, source SHA preservation and failed mount; no chat inference claim",
         "--gguf-runtime (requires --gguf; REAL_OS): actual selected model UI load, native-token self-test and unload; no local chat routing or semantic readiness claim",
         "--agent-models: actual specialist UI assignment with restart persistence and unchanged coordinator defaults; no inference claim",
         "--agent-execution (requires --agent-models; REAL_EXTERNAL): actual assigned specialist read_file, independent upstream model observation and parent consolidation",

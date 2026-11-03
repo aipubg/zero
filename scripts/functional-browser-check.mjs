@@ -6,7 +6,7 @@ import path from 'node:path';
 import net from 'node:net';
 import http from 'node:http';
 import { Readable } from 'node:stream';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
@@ -21,6 +21,8 @@ if (process.argv.includes('--agent-execution') && !process.argv.includes('--agen
 if (process.argv.includes('--parallel-agents') && !process.argv.includes('--agent-execution')) throw new Error('--parallel-agents requires --agent-execution');
 if (process.argv.includes('--agent-recovery') && !process.argv.includes('--parallel-agents')) throw new Error('--agent-recovery requires --parallel-agents');
 if (process.argv.includes('--gguf-runtime') && !process.argv.includes('--gguf')) throw new Error('--gguf-runtime requires --gguf');
+// Exercise current source, never an older immutable UI generation left on disk.
+execFileSync(process.execPath, [path.join(root, 'app/zero-control-ui/build.mjs')], { cwd: root, stdio: 'pipe', windowsHide: true });
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
 const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.now()));
 fs.mkdirSync(evidence, { recursive: true });
@@ -298,6 +300,17 @@ try {
     await card.getByText('Persisted GGUF Settings', { exact: true }).waitFor();
     const restoredModel = (await rpc('zero.gateway.localGguf', { action: 'list' })).models[0];
     assert.equal(restoredModel.contextLength, 4096); assert.equal(restoredModel.capabilities.reasoning, false);
+    const bindingsFile = path.join(temporary, 'bindings.json');
+    const previousBindings = fs.readFileSync(bindingsFile);
+    await card.locator('.zero-chip-action').click();
+    await page.getByText('Active model set to "Persisted GGUF Settings"', { exact: true }).waitFor().catch(async error => {
+      throw new Error(`${error.message}; notice: ${await page.locator('.zero-providers-notice').allTextContents()}`);
+    });
+    assert.equal(JSON.parse(fs.readFileSync(bindingsFile, 'utf8')).agentBindings.zero.model, 'local-gguf/ui-proof');
+    assert.match(await card.locator('.zero-model-chip').innerText(), /✓ Active/);
+    await stop(); await start(); await page.reload(); await card.waitFor();
+    assert.equal((await rpc('zero.providers.list')).effectiveModel, 'local-gguf/ui-proof');
+    assert.match(await card.locator('.zero-model-chip').innerText(), /✓ Active/);
     let runtimeEvidence = null;
     if (process.argv.includes('--gguf-runtime')) {
       await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
@@ -316,6 +329,9 @@ try {
       await page.goto(`${base}/settings/model-providers`); await card.waitFor();
     }
     let dialogs = 0; page.on('dialog', async dialog => { dialogs++; await dialog.dismiss(); });
+    // Restore the isolated prior binding so later independent checks do not
+    // inherit a deliberately removed model. The owner configuration is untouched.
+    fs.writeFileSync(bindingsFile, previousBindings);
     await card.locator('.zero-chip-delete').click();
     await page.getByText(/Model .* removed\./).waitFor();
     assert.equal(dialogs, 0, 'Explicit removal click must not open a permission popup');
@@ -334,7 +350,7 @@ try {
     assert.equal(await page.getByText(/28\.4 tok\/s/).count(), 0);
     assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 0);
     await page.goto(`${base}/settings/model-providers`);
-    return { realGgufCatalog: true, actualUISettingsSaved: true, settingsPersistedAcrossProcess: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: Boolean(runtimeEvidence), runtimeEvidence };
+    return { realGgufCatalog: true, actualUISettingsSaved: true, settingsPersistedAcrossProcess: true, actualUIAssignment: true, assignmentPersistedAcrossProcess: true, activeStateVisibleAfterRestart: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: Boolean(runtimeEvidence), runtimeEvidence };
   });
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');
