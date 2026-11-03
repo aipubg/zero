@@ -1,0 +1,24 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "suiteStatus": "PASS",
+  "source": "artifacts/functional-browser/1793693930459/report.json",
+  "details": {
+    "runId": "cf87d95c-c095-4a9a-bf96-b73836be282f",
+    "taskId": "task_1793693936459_4jr3wm",
+    "actualTextDelta": true,
+    "actualUIStop": true,
+    "cancelledTask": true,
+    "partialBytes": 33,
+    "nextActualReply": "AFTER_STOP_62549"
+  },
+  "previousFailedSuite": "artifacts/functional-browser/1793693800507/report.json",
+  "limits": [
+    "Selected actual cloud model/browser path; not all providers or local Stop behavior",
+    "Voice barge-in is separate and unverified"
+  ]
+}

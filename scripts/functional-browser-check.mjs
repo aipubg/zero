@@ -25,6 +25,7 @@ if (process.argv.includes('--gguf-chat') && !process.argv.includes('--gguf-runti
 if (process.argv.includes('--gguf-tools') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-tools requires --gguf-runtime');
 if (process.argv.includes('--gguf-qwen') && !process.argv.includes('--gguf')) throw new Error('--gguf-qwen requires --gguf');
 if (process.argv.includes('--gguf-recall') && !process.argv.includes('--gguf-tools')) throw new Error('--gguf-recall requires --gguf-tools');
+if (process.argv.includes('--chat-abort') && !process.argv.includes('--external')) throw new Error('--chat-abort requires --external');
 // Exercise current source, never an older immutable UI generation left on disk.
 execFileSync(process.execPath, [path.join(root, 'app/zero-control-ui/build.mjs')], { cwd: root, stdio: 'pipe', windowsHide: true });
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
@@ -52,6 +53,7 @@ const workflowLabels = new Map([
   ['Specialist UI model assignment persists without changing coordinator defaults', process.argv.includes('--agent-execution') ? ['REAL_EXTERNAL'] : []],
   ['Interrupted external team resumes pinned models and preserves completed child evidence', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
+  ['Actual UI Stop cancels streamed generation and next chat turn recovers', ['REAL_EXTERNAL']],
   ['Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', ['REAL_OS']],
   ['Existing Skills page imports an actual pinned external GitHub bundle and persists it', ['REAL_EXTERNAL']],
   ['Skills filter changes visible results', []],
@@ -604,7 +606,7 @@ try {
     await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill(`Reply exactly ${marker} with no other text. Do not use tools.`);
     await page.locator('.zero-voice-toggle-btn').filter({ hasText: 'Voice: PARTIAL' }).waitFor();
     await page.locator('button.chat-send-btn--send').click();
-    const deadline = Date.now() + 60000;
+    const deadline = Date.now() + 90000;
     while (!chatResponses.length && Date.now() < deadline) {
       if ((await page.locator('body').innerText()).includes('Chat history request timed out')) break;
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -635,6 +637,39 @@ try {
     await page.reload();
     await page.getByText(marker, { exact: true }).last().waitFor();
     return { taskId: response.payload.taskId, secondTaskId: nextResponse.payload.taskId, secondRunId: nextResponse.payload.runId, secondReply: nextMarker, samePageSecondSend: true, durableRunIdentity: true, sessionKey: response.payload.sessionKey, reply: marker, persistedAfterReload: true };
+  });
+  if (process.argv.includes('--chat-abort')) await check('Actual UI Stop cancels streamed generation and next chat turn recovers', async () => {
+    await page.goto(`${base}/chat/zero`);
+    const beforeReplies = chatResponses.length; const beforeRequests = chatRequests.length;
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('Write a very long detailed numbered explanation of every integer from 1 to 1000. Start immediately with number 1 and continue without stopping. Do not use tools.');
+    await page.locator('button.chat-send-btn--send').click();
+    const deltaDeadline = Date.now() + 60000;
+    while (Date.now() < deltaDeadline && (chatRequests.length === beforeRequests || !chatLifecycle.some(event => event.runId === chatRequests.at(-1).idempotencyKey && event.state === 'delta'))) await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(chatRequests.length, beforeRequests + 1);
+    const request = chatRequests.at(-1);
+    assert.ok(chatLifecycle.some(event => event.runId === request.idempotencyKey && event.state === 'delta'), 'Actual provider text delta must precede Stop');
+    await page.getByRole('button', { name: 'Stop generating', exact: true }).click();
+    const abortDeadline = Date.now() + 20000;
+    while (chatResponses.length === beforeReplies && Date.now() < abortDeadline) await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(chatResponses.length, beforeReplies + 1);
+    assert.equal(chatResponses.at(-1).ok, false, 'Stopped generation must not claim successful completion');
+    const db = new DatabaseSync(path.join(temporary, 'data/zero-sessions.sqlite'), { readOnly: true });
+    let receipt; try { receipt = db.prepare('select task_id,status from zero_assistant_receipts where run_id=?').get(request.idempotencyKey); } finally { db.close(); }
+    assert.equal((await rpc('tasks.get', { id: receipt.task_id })).status, 'CANCELLED');
+    const history = await rpc('chat.history', { sessionKey: request.sessionKey });
+    const partial = history.messages.find(message => message.role === 'assistant' && message.__openclaw.runId === request.idempotencyKey && message.status === 'interrupted');
+    assert.ok(partial?.content.trim(), 'Actual partial text must persist as interrupted');
+    assert.equal(history.sessionInfo.hasActiveRun, false);
+    const marker = `AFTER_STOP_${port}`;
+    const previous = chatResponses.length;
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill(`Reply exactly ${marker}. Do not use tools.`);
+    await page.locator('button.chat-send-btn--send').click();
+    const recoveryDeadline = Date.now() + 90000;
+    while (chatResponses.length === previous && Date.now() < recoveryDeadline) await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(chatResponses.length, previous + 1);
+    assert.equal(chatResponses.at(-1).ok, true, JSON.stringify(chatResponses.at(-1).error));
+    assert.equal(chatResponses.at(-1).payload.content.trim(), marker);
+    return { runId: request.idempotencyKey, taskId: receipt.task_id, actualTextDelta: true, actualUIStop: true, cancelledTask: true, partialBytes: Buffer.byteLength(partial.content), nextActualReply: marker };
   });
   if (process.argv.includes('--devices')) await check('Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', async () => {
     await page.goto(`${base}/chat/zero`);
@@ -962,13 +997,14 @@ try {
     let replayEvidence = null;
     if (process.argv.includes('--external')) {
       const original = chatResponses.find(response => response.ok && response.payload?.taskId)?.payload;
-      assert.ok(original && chatRequests[0]?.idempotencyKey, 'Original UI request identity must be recorded');
+      const originalRequest = chatRequests.find(request => request.idempotencyKey === original?.runId);
+      assert.ok(original && originalRequest?.idempotencyKey, 'Completed UI request must match its actual recorded identity');
       const before = (await rpc('models.status')).upstreamRequestCount;
-      const replay = await rpc('chat.send', chatRequests[0]);
+      const replay = await rpc('chat.send', originalRequest);
       assert.equal(replay.taskId, original.taskId); assert.equal(replay.content, original.content);
       assert.equal((await rpc('models.status')).upstreamRequestCount, before);
       const history = await rpc('chat.history', { sessionKey: original.sessionKey });
-      assert.equal(history.messages.filter(message => message.role === 'user' && message.content === chatRequests[0].message).length, 1);
+      assert.equal(history.messages.filter(message => message.role === 'user' && message.content === originalRequest.message).length, 1);
       await page.getByText(original.content, { exact: true }).last().waitFor();
       replayEvidence = { taskId: replay.taskId, additionalModelCalls: 0, originalUserMessageCount: 1, replyVisibleAfterReconnect: true };
     }

@@ -1768,3 +1768,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Extended existing CONTRACT with real loopback HTTP partial stream, controlled notification adapter triggers actual AbortController after host sees delta. Partial text exact, receipt failed/taskCANCELLED, status/run ID persisted. New request in SAME session then completes via actual HTTP stream, original partial retained.
 - Five selected contract/integration leaves PASS. Notification adapter and provider content are controlled contract inputs, not genuine model/real browser Stop-button acceptance; do not substitute for that remaining gate.
 - Inventory VALID; current endurance PID16016 independently alive. Full voice, local strict recall, real UI cancellation and24h/external acceptance remain open.
+
+### Actual browser Stop and next-turn recovery accepted for selected real cloud route
+- Added --chat-abort requiring --external: actual provider text delta observed, current UI Stop generating clicked, chat RPC must fail rather than completed, durable taskCANCELLED, nonempty interrupted partial with same run ID, inactive history, then next actual UI message exact reply.
+- First real run1793693800507 selected Stop check PASS(10partialbytes/nextreply), overall FAIL because earlier cloud request exceeded test observation and later replay selected mismatched first request. Historical failure retained.
+- Replay now matches completed receipt.runId to original request.idempotencyKey rather than assuming chatRequests[0] succeeded. First cloud response observation90s matches later request windows; no exact outcome relaxed.
+- Rerun artifacts/functional-browser/1793693930459/report.json PASS,10workflows: two real consecutive cloud replies, actual Stop,33byte interrupted partial, CANCELLED task, next exact reply, restart/replay. Selected evidence real-ui-stop-recovery.json.
+- Runner classification mode/SHA updated, integrity VALID. This proves selected cloud/browser Stop and recovery, not voice acoustic barge-in, all provider cancellation or local exact-hash/no-repeat recall.
+- Endurance PID16016 independently alive;24h acceptance still open. Full master scope remains active.
