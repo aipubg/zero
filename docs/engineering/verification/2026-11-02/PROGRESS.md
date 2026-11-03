@@ -1597,3 +1597,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - All four selected test leaves pass, including the actual native load/generation/history/unload and four HTTP cases. Latest actual runtime artifact: artifacts/local-gguf-runtime/1793675617471/report.json.
 - Independently observed endurance PID 16744 live with original start time 2026-11-03 03:22:41 local; 24-hour acceptance not yet established.
 - Main ModelFabric/UI local inference routing and real local tool-loop acceptance remain open.
+
+### Main ModelFabric local native inference transport
+- Added in-process local transport backed by actual LocalGgufEngineService, serialized inference requests, native JSON/SSE output, abort propagation, strict local catalog resolution, and no credential lookup/cloud fallback. Local model IDs are explicitly namespaced local-gguf/<id> to avoid cloud collisions.
+- Native host initializes the local catalog and refreshes it for provider listing/assignment. Existing offline model Set Active actions/dropdowns now save namespaced IDs; current-active display follows those IDs. No UI redesign.
+- REAL_OS/INTEGRATION evidence artifacts/local-gguf-runtime/1793675777004/report.json: actual ModelFabric JSON generation and stream termination, persisted local assignment reopened, two simultaneous requests serialized successfully, pre-aborted request rejected and later native inference recovered; upstreamRequestCount zero. Existing native four HTTP cases/history/source preservation still pass.
+- First transport attempt failed because writeHead was absent; failed artifact retained (1793675692740). Corrected writable adapter passed afterward. CPU fallback/template warning remain visible.
+- Existing isolated browser runner --gguf --gguf-runtime passes nine workflows, evidence artifacts/functional-browser/1793675757052/report.json, including real UI load/self-test/unload, edit/delete persistence, scroll, search, reconnect. This run does NOT yet assert Set Active followed by actual local chat reply or tool execution.
+- Five existing ModelFabric tests also pass; source syntax checks pass. Local chat UI end-to-end, model tool competence, all administrative/inference concurrency interactions and full release acceptance remain open.

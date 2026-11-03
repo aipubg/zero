@@ -7,6 +7,9 @@ import { createHash } from 'node:crypto';
 import http from 'node:http';
 import { LocalGgufEngineService } from '../backend/gateway/server/local-gguf-service.ts';
 import { LocalInferenceRuntime } from '../packages/model-fabric/local-runtime.mjs';
+import { LocalChatTransport } from '../packages/model-fabric/local-chat-transport.mjs';
+import { ModelFabric } from '../packages/model-fabric/index.mjs';
+import { assignZeroModel } from '../services/host/model-settings.mjs';
 
 test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior history and unloads', { skip: process.platform !== 'win32' ? 'Windows native binary required' : false, timeout: 30000 }, async () => {
   const directory = path.resolve('artifacts/local-gguf-runtime', String(Date.now())); fs.mkdirSync(directory, { recursive: true });
@@ -48,6 +51,31 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
         chatResponses.push({ route, finishReason: completion.choices[0].finish_reason, usage: completion.usage, nativeStopReason: completion.nativeStopReason || completion.telemetry.nativeStopReason });
       }
     } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+    const localChat = new LocalChatTransport(service);
+    await localChat.refresh();
+    const bindingsPath = path.join(modelsDir, 'isolated-bindings.json');
+    const fabric = new ModelFabric({ providers: [], localChat, agentBindingsPath: bindingsPath });
+    assert.equal(fabric.resolveModel('local-gguf/real-smol').provider.local, true);
+    assert.equal(fabric.resolveModel('local-gguf/missing'), null);
+    assignZeroModel(fabric, { modelId: 'local-gguf/real-smol' });
+    const reopened = new ModelFabric({ providers: [], localChat, agentBindingsPath: bindingsPath });
+    assert.equal(reopened.resolveAgentModel('zero').canonicalModelId, 'local-gguf/real-smol');
+    const localPayload = { model: 'local-gguf/real-smol', messages: [{ role: 'user', content: 'Count to one hundred in detail.' }], max_tokens: 1, temperature: 0, keep_alive: -1 };
+    const direct = await fabric.executeChat(localPayload);
+    assert.equal(direct.data.choices[0].finish_reason, 'length');
+    assert.equal(direct.data.usage.completion_tokens, 1);
+    const stream = [];
+    for await (const chunk of fabric.streamChat(localPayload)) stream.push(chunk);
+    assert.equal(stream.at(-1).finish_reason, 'length');
+    assert.equal(stream.at(-1).done, true);
+    await assert.rejects(fabric.executeChat({ ...localPayload, model: 'local-gguf/missing' }), /unavailable/);
+    assert.equal(fabric.upstreamRequestCount, 0);
+    const simultaneous = await Promise.all([fabric.executeChat(localPayload), fabric.executeChat(localPayload)]);
+    assert.ok(simultaneous.every(result => result.data.usage.completion_tokens === 1));
+    const cancelled = new AbortController(); cancelled.abort();
+    await assert.rejects(fabric.executeChat(localPayload, { signal: cancelled.signal }), { name: 'AbortError' });
+    assert.equal((await fabric.executeChat(localPayload)).data.usage.completion_tokens, 1);
+    report.modelFabricLocal = { actualJson: true, actualStream: true, cloudRequests: fabric.upstreamRequestCount, missingModelRejected: true };
     await service.unloadModel(true); assert.equal(service.getMemoryStatus().isLoaded, false);
     assert.equal(await checksum(), originalHash);
     Object.assign(report, { status: 'PASS', result, chatResponses, priorHistoryPreserved: true, persistedSelfTest: true, actualUnload: true, originalSourceSha256: originalHash });

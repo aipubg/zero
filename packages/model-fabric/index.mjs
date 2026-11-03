@@ -32,6 +32,7 @@ export class ModelFabric {
       : Array.isArray(options.providers) ? null : (fs.existsSync(DEFAULT_CONFIG_PATH) ? DEFAULT_CONFIG_PATH : null);
     this.aliases = new Map(Object.entries({ ...DEFAULT_ALIASES, ...(options.aliases || {}) }));
     this.providers = new Map();
+    this.localChat = options.localChat || null;
     this.healthStats = new Map();
     this.upstreamRequestCount = 0;
     this.agentBindingsPath = Object.hasOwn(options, 'agentBindingsPath') ? options.agentBindingsPath
@@ -123,6 +124,7 @@ export class ModelFabric {
 
   resolveModel(modelId) {
     if (!modelId || typeof modelId !== 'string') return null;
+    if (modelId.trim().startsWith('local-gguf/')) return this.localChat?.resolve(modelId.trim()) || null;
     const clean = modelId.trim();
     const aliasResolved = this.aliases.get(clean.toLowerCase()) || clean;
 
@@ -294,6 +296,10 @@ export class ModelFabric {
   async executeChat(payload, options = {}) {
     assertModelImportComplete(this.configPath);
     const modelId = payload.model || 'zero-lead';
+    if (modelId.startsWith('local-gguf/')) {
+      if (!this.localChat) throw new Error('Local chat runtime unavailable');
+      return this.localChat.execute(payload, options);
+    }
     const resolution = this.resolveModel(modelId);
 
     if (!resolution) {

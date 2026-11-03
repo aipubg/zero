@@ -634,8 +634,8 @@ export function mountModelsPage(container, context = {}) {
     // 1. Offline GGUF models
     for (const m of offlineModels) {
       allModelOptions.push({
-        id: m.id,
-        rawId: m.id,
+        id: `local-gguf/${m.id}`,
+        rawId: `local-gguf/${m.id}`,
         name: `${getCleanDisplayName(m.name, m.id)} (Offline Native)`,
       });
     }
@@ -879,7 +879,7 @@ export function mountModelsPage(container, context = {}) {
       chipsContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;background:rgba(0,0,0,0.18);border-top:1px solid rgba(255,255,255,0.06);";
 
       for (const m of offlineModels) {
-        const isCurrentActive = systemDefaults.primary === m.id || agentBindings?.zero?.model === m.id;
+        const isCurrentActive = systemDefaults.primary === `local-gguf/${m.id}` || agentBindings?.zero?.model === `local-gguf/${m.id}`;
         const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
         chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "rgba(255,255,255,0.04)"};border:1px solid ${isCurrentActive ? "var(--accent)" : "rgba(255,255,255,0.08)"};color:${isCurrentActive ? "var(--accent)" : "inherit"};cursor:pointer;`;
 
@@ -907,7 +907,7 @@ export function mountModelsPage(container, context = {}) {
         chip.onclick = async (e) => {
           if (e.target.closest(".zero-chip-delete")) return;
           try {
-            await callGateway(host, "zero.providers.setActive", { modelId: m.id });
+            await callGateway(host, "zero.providers.setActive", { modelId: `local-gguf/${m.id}` });
             showNotice(`Active model set to "${getCleanDisplayName(m.name, m.id)}"`);
             await loadAllData();
           } catch (err) {
@@ -1938,7 +1938,7 @@ export function mountModelsPage(container, context = {}) {
         const setActBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Set Active");
         setActBtn.onclick = async () => {
           try {
-            await callGateway(host, "zero.providers.setActive", { modelId: m.id });
+            await callGateway(host, "zero.providers.setActive", { modelId: `local-gguf/${m.id}` });
             showNotice(`Active model set to "${m.name || m.id}"`);
             await loadAllData();
             switchTab(0);

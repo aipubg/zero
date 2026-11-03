@@ -21,6 +21,7 @@ import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvide
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { prepareToolBatch } from './tool-batch.mjs';
 import { LocalGgufEngineService } from '../../backend/gateway/server/local-gguf-service.ts';
+import { LocalChatTransport } from '../../packages/model-fabric/local-chat-transport.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -169,6 +170,7 @@ export class ZeroNativeHost {
     });
     this.observationLifecycle = createNativeObservationLifecycle({ observer: this.screenObserver, prefsPath: this.prefsPath });
     this.modelFabric = new ModelFabric({
+      localChat: new LocalChatTransport(this.localGguf),
       configPath: options.providersPath || process.env.ZERO_PROVIDERS_PATH || path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
       agentBindingsPath: options.agentBindingsPath || process.env.ZERO_AGENT_BINDINGS_PATH || path.join(REPO_ROOT, 'models', 'gateway-defaults.json'),
       aliases: { 'zero-lead': 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
@@ -296,6 +298,7 @@ export class ZeroNativeHost {
   }
 
   async start() {
+    await this.modelFabric.localChat.refresh();
     await this.pluginManager.initialize();
     await this.observationLifecycle.initialize();
     const wsModule = await loadWs();
@@ -1164,7 +1167,8 @@ export class ZeroNativeHost {
       }
 
       case 'zero.providers.list':
-        return { ...modelSettings(this.modelFabric), offlineModels: await this.localGguf.scanModels(), localModelsStatus: 'Actual registered GGUF catalog; inference compatibility requires execution', health: this.modelFabric.getHealthReport() };
+        await this.modelFabric.localChat.refresh();
+        return { ...modelSettings(this.modelFabric), offlineModels: this.modelFabric.localChat.models, localModelsStatus: 'Actual registered GGUF catalog; inference compatibility requires execution', health: this.modelFabric.getHealthReport() };
       case 'zero.gateway.localGguf': {
         const action = params.action || 'list';
         if (action === 'list' || action === 'scan') return { ok: true, models: await this.localGguf.scanModels() };
@@ -1184,6 +1188,7 @@ export class ZeroNativeHost {
         return importModelSettings(this.modelFabric, params);
 
       case 'zero.providers.setActive':
+        await this.modelFabric.localChat.refresh();
         return params.agentId ? assignAgentModel(this.modelFabric, params.agentId, params) : assignZeroModel(this.modelFabric, params);
 
       case 'zero.providers.configure':
