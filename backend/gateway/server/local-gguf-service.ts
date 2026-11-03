@@ -787,29 +787,27 @@ export class LocalGgufEngineService {
     const startTime = performance.now();
     let sampleOutput = '';
     let tokensGenerated = 0;
-
-    await this.loadModel(modelId);
-
-    if (!this.activeSession) {
-      throw new Error(`Inference engine session failed to mount for ${modelId}`);
-    }
+    let previousHistory: any[] | null = null;
 
     try {
+      await this.loadModel(modelId);
+      if (!this.activeSession) throw new Error(`Inference engine session failed to mount for ${modelId}`);
+      previousHistory = structuredClone(this.activeSession.getChatHistory());
       const testPrompt = 'Hi, please confirm you are ready by saying READY.';
       await this.activeSession.prompt(testPrompt, {
         maxTokens: 12,
         temperature: 0.2,
         onTextChunk: (chunk: string) => {
           sampleOutput += chunk;
-          tokensGenerated++;
         },
+        onToken: (tokens: number[]) => { tokensGenerated += tokens.length; },
       });
 
       const latencyMs = Math.round(performance.now() - startTime);
       const tokensPerSec = latencyMs > 0 ? parseFloat(((tokensGenerated / latencyMs) * 1000).toFixed(1)) : 0;
 
       if (tokensGenerated === 0) {
-        throw new Error('Inference engine produced 0 tokens during self-test verification.');
+        throw new Error('Inference engine reported 0 generated tokens during self-test verification.');
       }
 
       const result = {
@@ -818,6 +816,8 @@ export class LocalGgufEngineService {
         tokensPerSec,
         latencyMs,
         sampleOutput: sampleOutput.trim(),
+        tokenAccounting: 'Native generated token IDs; rate includes model loading and prompt evaluation',
+        verificationScope: 'Model loading and token generation only; not semantic correctness or general model compatibility',
         message: `Self-test passed: generated ${tokensGenerated} tokens at ${tokensPerSec} tok/s (${latencyMs}ms)`,
       };
 
@@ -860,9 +860,9 @@ export class LocalGgufEngineService {
       // CRITICAL: Always reset chat history after self-test so test tokens NEVER leak into user chat!
       try {
         if (typeof this.activeSession?.setChatHistory === 'function') {
-          this.activeSession.setChatHistory([]);
+          if (previousHistory) this.activeSession.setChatHistory(previousHistory);
         } else if (typeof this.activeSession?.resetChatHistory === 'function') {
-          this.activeSession.resetChatHistory();
+          if (previousHistory?.length === 0) this.activeSession.resetChatHistory();
         }
       } catch {}
     }
@@ -1256,10 +1256,10 @@ export class LocalGgufEngineService {
       // 1. Initialize Llama runtime with CPU fallback if GPU initialization fails
       if (!this.activeLlama) {
         try {
-          this.activeLlama = await getLlama({ gpu: 'auto' });
+          this.activeLlama = await getLlama({ gpu: 'auto', build: 'never', maxThreads: 2 });
         } catch (gpuErr: any) {
           console.warn('[LocalGguf] GPU auto initialization failed, falling back to CPU:', gpuErr?.message);
-          this.activeLlama = await getLlama({ gpu: false });
+          this.activeLlama = await getLlama({ gpu: false, build: 'never', maxThreads: 2 });
         }
       }
 
@@ -1271,7 +1271,7 @@ export class LocalGgufEngineService {
       } catch (loadErr: any) {
         if (this.activeLlama && this.activeLlama.gpu !== false) {
           console.warn(`[LocalGguf] Loading "${target.name}" on GPU failed, retrying on CPU:`, loadErr?.message);
-          this.activeLlama = await getLlama({ gpu: false });
+          this.activeLlama = await getLlama({ gpu: false, build: 'never', maxThreads: 2 });
           this.activeModel = await this.activeLlama.loadModel({
             modelPath: target.fullPath,
           });
@@ -1301,7 +1301,7 @@ export class LocalGgufEngineService {
       }
 
       const cpuCount = os.cpus?.()?.length || 4;
-      const optimalThreads = Math.max(4, cpuCount - 1);
+      const optimalThreads = Math.max(1, Math.min(2, cpuCount));
 
       try {
         this.activeContext = await this.activeModel.createContext({

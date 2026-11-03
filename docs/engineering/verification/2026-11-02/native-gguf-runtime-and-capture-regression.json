@@ -1,0 +1,691 @@
+{
+  "runtime": {
+    "classification": [
+      "REAL_OS",
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "startedAt": "2026-11-03T02:57:00.320Z",
+    "directory": "E:\\zero\\artifacts\\local-gguf-runtime\\1793674620319",
+    "scope": "Selected pinned model load/token-generation/history-preservation/unload; not semantic readiness, local chat routing or arbitrary architectures",
+    "result": {
+      "passed": true,
+      "tokensGenerated": 12,
+      "tokensPerSec": 96.8,
+      "latencyMs": 124,
+      "sampleOutput": "I am ready to read and answer any questions you may have",
+      "tokenAccounting": "Native generated token IDs; rate includes model loading and prompt evaluation",
+      "verificationScope": "Model loading and token generation only; not semantic correctness or general model compatibility",
+      "message": "Self-test passed: generated 12 tokens at 96.8 tok/s (124ms)"
+    },
+    "priorHistoryPreserved": true,
+    "persistedSelfTest": true,
+    "actualUnload": true,
+    "originalSourceSha256": "2a31195d3769c0b0fd0a4906201666108834848db768af11de1d2cef7cd35e65",
+    "finishedAt": "2026-11-03T02:57:01.276Z"
+  },
+  "browser": {
+    "classification": [
+      "REAL_BROWSER",
+      "INTEGRATION",
+      "REAL_OS",
+      "REAL_EXTERNAL"
+    ],
+    "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+    "startedAt": "2026-11-03T02:58:27.179Z",
+    "status": "PASS",
+    "evidence": "E:\\zero\\artifacts\\functional-browser\\1793674707168",
+    "checks": [
+      {
+        "name": "Chat connects, native plugin activates, composer accepts text",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 510,
+        "details": {
+          "pageErrors": []
+        }
+      },
+      {
+        "name": "Local GGUF catalog and UI removal persist without deleting user guides",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_OS"
+        ],
+        "status": "PASS",
+        "durationMs": 5405,
+        "details": {
+          "realGgufCatalog": true,
+          "actualUISettingsSaved": true,
+          "settingsPersistedAcrossProcess": true,
+          "actualUIRemoval": true,
+          "persistedAcrossProcess": true,
+          "permissionDialogs": 0,
+          "userGuidesPreserved": true,
+          "originalSourceUnchanged": true,
+          "originalSourceSha256": "2a31195d3769c0b0fd0a4906201666108834848db768af11de1d2cef7cd35e65",
+          "escapedIdentifierRejected": true,
+          "actualUIMountFailureVisible": true,
+          "failedMountNoRegistration": true,
+          "inferenceVerifiedByThisCheck": true,
+          "runtimeEvidence": {
+            "actualUILoad": true,
+            "selfTest": {
+              "ok": true,
+              "passed": true,
+              "tokensGenerated": 12,
+              "tokensPerSec": 59.1,
+              "latencyMs": 203,
+              "sampleOutput": "I am ready to read and answer any questions you may have",
+              "tokenAccounting": "Native generated token IDs; rate includes model loading and prompt evaluation",
+              "verificationScope": "Model loading and token generation only; not semantic correctness or general model compatibility",
+              "message": "Self-test passed: generated 12 tokens at 59.1 tok/s (203ms)"
+            },
+            "actualUIUnload": true,
+            "scope": "Selected model token generation only; not semantic readiness or local chat routing"
+          }
+        }
+      },
+      {
+        "name": "Memory search uses actual persisted records through the UI",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 196,
+        "details": {
+          "memoryId": "mem_semantic_1793674714241_fg8ye",
+          "marker": "Browser memory evidence 65472"
+        }
+      },
+      {
+        "name": "Skills filter changes visible results",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 171,
+        "details": {
+          "query": "web-research"
+        }
+      },
+      {
+        "name": "Skills details expose persisted enable/disable controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 972,
+        "details": {
+          "disabledPersisted": true,
+          "reenabled": true
+        }
+      },
+      {
+        "name": "Search form executes its configured provider and reports real outcome",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION",
+          "REAL_EXTERNAL"
+        ],
+        "status": "PASS",
+        "durationMs": 1476,
+        "details": {
+          "sources": 5,
+          "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+          "sourceHttpStatus": 200,
+          "sourceBytes": 1031660,
+          "verifiedClaims": false
+        }
+      },
+      {
+        "name": "Plugins current page exposes lifecycle controls",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1655,
+        "details": {
+          "installedPersisted": true,
+          "executed": true,
+          "platform": "win32",
+          "verified": false,
+          "disabledAcrossProcessRestart": true,
+          "reenabled": true,
+          "uninstalled": true
+        }
+      },
+      {
+        "name": "Actual wheel input increases About scrollTop",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 386,
+        "details": {
+          "before": 0,
+          "scrollHeight": 1033,
+          "clientHeight": 165,
+          "after": 500
+        }
+      },
+      {
+        "name": "Gateway reconnects after a real process stop/restart and memory remains",
+        "classification": [
+          "REAL_BROWSER",
+          "INTEGRATION"
+        ],
+        "status": "PASS",
+        "durationMs": 1183,
+        "details": {
+          "oldPid": 5644,
+          "newPid": 3132,
+          "memoryCount": 1,
+          "closedAt": 1793674719557,
+          "reconnectedAt": 1793674720452,
+          "completedRequestReplay": null
+        }
+      }
+    ],
+    "pageErrors": [],
+    "rpcDiagnostics": [
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.startup",
+        "fields": [
+          "sessionKey",
+          "toolResultMaxChars",
+          "limit",
+          "maxBytes"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.startup",
+        "ok": true,
+        "fields": [
+          "ok",
+          "sessionKey",
+          "sessionId",
+          "sessionInfo",
+          "messages",
+          "totalMessages",
+          "hasMore"
+        ]
+      },
+      {
+        "direction": "request",
+        "method": "chat.metadata",
+        "fields": [
+          "agentId",
+          "includeModels"
+        ]
+      },
+      {
+        "direction": "response",
+        "method": "chat.metadata",
+        "ok": true,
+        "fields": [
+          "commands"
+        ]
+      }
+    ],
+    "connections": [
+      {
+        "openedAt": 1793674708249,
+        "closedAt": null,
+        "connectedAt": 1793674708401,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674708888,
+        "closedAt": 1793674710114,
+        "connectedAt": 1793674708912,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674710627,
+        "closedAt": null,
+        "connectedAt": 1793674710675,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674712907,
+        "closedAt": 1793674713281,
+        "connectedAt": 1793674712937,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674713777,
+        "closedAt": null,
+        "connectedAt": 1793674713805,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674714104,
+        "closedAt": null,
+        "connectedAt": 1793674714134,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674714282,
+        "closedAt": null,
+        "connectedAt": 1793674714308,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674714523,
+        "closedAt": null,
+        "connectedAt": 1793674714546,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674715165,
+        "closedAt": null,
+        "connectedAt": 1793674715191,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674715783,
+        "closedAt": null,
+        "connectedAt": 1793674715805,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674717333,
+        "closedAt": null,
+        "connectedAt": 1793674717367,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674717769,
+        "closedAt": 1793674717997,
+        "connectedAt": 1793674717800,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674718483,
+        "closedAt": null,
+        "connectedAt": 1793674718513,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674719037,
+        "closedAt": null,
+        "connectedAt": 1793674719058,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674719216,
+        "closedAt": null,
+        "connectedAt": 1793674719238,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674719450,
+        "closedAt": 1793674719557,
+        "connectedAt": 1793674719515,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      },
+      {
+        "openedAt": 1793674720431,
+        "closedAt": null,
+        "connectedAt": 1793674720452,
+        "requestedScopes": [
+          "operator.admin",
+          "operator.read",
+          "operator.write",
+          "operator.approvals",
+          "operator.questions",
+          "operator.pairing"
+        ],
+        "role": "operator",
+        "scopes": [
+          "operator.admin",
+          "operator.write",
+          "operator.read",
+          "operator.approvals"
+        ]
+      }
+    ],
+    "finishedAt": "2026-11-03T02:58:40.744Z"
+  },
+  "driverRestoration": [
+    {
+      "name": "cua_driver_sdk.dll",
+      "status": "identical-preserved",
+      "sha256": "8d4ffbc583341d0bd5ea621e4577a3fe3aa286c3fcf04590c6f598d30b6a1919"
+    },
+    {
+      "name": "cua_driver_node_runtime.node",
+      "status": "identical-preserved",
+      "sha256": "48d75442de05ae674acf81342278585ef14724a7992b9a09d900e4e03d2c5a80"
+    },
+    {
+      "name": "package.json",
+      "status": "missing-file-restored",
+      "sha256": "4f2e0f3a6bb7a700100dca88ac860f71401e44d2206ef3097731262f152201c2"
+    },
+    {
+      "name": "node-runtime-NOTICE.md",
+      "status": "missing-file-restored",
+      "sha256": "66a466cc022b4bf4a41f678e4d31d9b82098cc55cc364d6e9295366dfd02cef2"
+    }
+  ],
+  "restoredCapture": {
+    "classification": [
+      "REAL_OS"
+    ],
+    "status": "PASS",
+    "startedAt": "2026-11-03T02:55:48.530Z",
+    "scope": "Real per-process CPU and memory counters; not a duration or whole-pipeline resource acceptance result",
+    "captureSource": "cua-driver",
+    "resourceUsage": {
+      "capture": {
+        "pid": 12876,
+        "cpuMs": 140,
+        "workingSetBytes": 90320896,
+        "peakWorkingSetBytes": 113074176,
+        "scope": "cumulative-node-process-including-embedded-cua",
+        "processTopology": "same-process",
+        "accounting": "Included in Node process total; do not add to Node CPU/RSS again"
+      },
+      "metadata": {
+        "pid": 6916,
+        "startedAt": "2026-11-03T02:55:48.6624260Z",
+        "cpuMs": 359.375,
+        "workingSetBytes": 100134912,
+        "peakWorkingSetBytes": 100274176,
+        "scope": "cumulative-native-action-daemon"
+      },
+      "ocr": {
+        "pid": 12224,
+        "startedAt": "2026-11-03T02:55:49.0119324Z",
+        "cpuMs": 375,
+        "workingSetBytes": 108613632,
+        "peakWorkingSetBytes": 129220608,
+        "scope": "whole-ocr-process-through-measurement"
+      }
+    },
+    "fullCaptureAccounting": true,
+    "remaining": [],
+    "finishedAt": "2026-11-03T02:55:49.382Z"
+  },
+  "priorFailures": {
+    "missingNativeRuntime": "NoBinaryFoundError before Windows CPU binary installation",
+    "driverReinstall": "ERR_PNPM_EPERM rename of @trycua/cua-driver-win32-x64-msvc@0.32.0 while its existing binary was in use",
+    "resolution": "Existing native hashes matched pinned lockfile package; only missing metadata files restored and dependency links repaired; fresh-process SDK capture passed"
+  }
+}

@@ -1520,3 +1520,43 @@ This certifies metadata settings, not model inference or advertised capabilities
 The real GGUF service preservation/backup test passes. Full arbitrary model runtime,
 local chat routing and HF download gates remain open. Endurance original PID 16744
 is still live; this source change is not hot-loaded or a 24-hour sign-off.
+
+### Install pinned native GGUF runtime and verify actual load/self-test/unload
+
+Backend now pins node-llama-cpp 3.22.2 with its optional Windows x64 CPU binary,
+and explicitly pins the existing CUA SDK 0.32.0/Windows platform binary so native
+feature dependencies are declared instead of relying solely on transitive hoisting.
+OpenClaw remains pinned 2026.10.6. GPU probing uses installed prebuilt binaries;
+CPU fallback has a two-thread budget and missing runtime never triggers an
+unbounded source compilation inside a user task. GPU execution is not certified.
+
+Self-test token counts now use actual generated token ID callbacks, not text
+chunks. Its measured rate explicitly includes loading/prompt evaluation. Load
+failure enters the persisted failed self-test path, and successful self-test
+restores the exact previous native chat history instead of clearing owner context.
+Success certifies selected model load/generation, not semantic readiness.
+
+[native-gguf-runtime-and-capture-regression.json](native-gguf-runtime-and-capture-regression.json)
+records an actual pinned SmolVLM run, native token count, original source SHA,
+prior-history restoration, persisted self-test and actual unload. The selected
+model's original Jinja template triggers library fallback; generic generation
+success is not certification of that template or all model architectures.
+Two actual runtime/preservation checks pass. Nine actual browser workflows also
+PASS, including UI Load RAM, Self-Test with native token telemetry and Unload RAM,
+plus settings/restart/removal/source preservation/failure paths. Full native
+ModelFabric chat routing, semantic conversation/tool use and HF remain separate.
+
+Dependency maintenance encountered optional-package native file locking: the
+installer's driver update failed with ERR_PNPM_EPERM while endurance held the DLL.
+The endurance process was never stopped. Fresh capture initially fell back to
+Windows GDI; this was not treated as equivalent SDK acceptance. The pinned npm
+driver tarball integrity matched the existing lockfile, both existing native
+binary SHA-256 hashes matched, and only missing metadata files were restored.
+Dependency links were repaired and a fresh process again loaded embedded CUA;
+actual SDK capture/OCR/resource provenance PASS is retained. No locked native
+binary was overwritten. Installation guidance is in backend/LOCAL_RUNTIME.md.
+
+Original endurance PID 16744/start identity remains live at 2026-11-03T02:59Z,
+about 5.107 hours; the recent checkpoint has over 7,000 successful captures and
+no capture failure. Still IN_PROGRESS/completed24Hours false/resources PARTIAL.
+This long process retains original loaded code; newer short gates do not upgrade it.

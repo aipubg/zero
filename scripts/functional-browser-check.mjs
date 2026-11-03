@@ -20,6 +20,7 @@ if (process.argv.includes('--plugin-crash') && !process.argv.includes('--externa
 if (process.argv.includes('--agent-execution') && !process.argv.includes('--agent-models')) throw new Error('--agent-execution requires --agent-models');
 if (process.argv.includes('--parallel-agents') && !process.argv.includes('--agent-execution')) throw new Error('--parallel-agents requires --agent-execution');
 if (process.argv.includes('--agent-recovery') && !process.argv.includes('--parallel-agents')) throw new Error('--agent-recovery requires --parallel-agents');
+if (process.argv.includes('--gguf-runtime') && !process.argv.includes('--gguf')) throw new Error('--gguf-runtime requires --gguf');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
 const evidence = path.join(root, 'artifacts', 'functional-browser', String(Date.now()));
 fs.mkdirSync(evidence, { recursive: true });
@@ -41,7 +42,7 @@ const workflowLabels = new Map([
   ['Provider UI creates, edits and deletes persisted settings without credential loss', []],
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
-  ['Local GGUF catalog and UI removal persist without deleting user guides', []],
+  ['Local GGUF catalog and UI removal persist without deleting user guides', process.argv.includes('--gguf-runtime') ? ['REAL_OS'] : []],
   ['Specialist UI model assignment persists without changing coordinator defaults', process.argv.includes('--agent-execution') ? ['REAL_EXTERNAL'] : []],
   ['Interrupted external team resumes pinned models and preserves completed child evidence', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
@@ -156,6 +157,7 @@ try {
   const connections = [];
   let searchResult = null;
   let providerProbeResult = null;
+  let ggufSelfTest = null;
   const modelImportResponses = [];
   const voiceRequests = [];
   const chatResponses = [];
@@ -164,7 +166,7 @@ try {
   page.on('websocket', socket => {
     const connection = { openedAt: Date.now(), closedAt: null, connectedAt: null, methods: new Map() };
     connections.push(connection);
-    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); if (connection.methods.get(frame.id) === 'zero.providers.test') providerProbeResult = frame; if (connection.methods.get(frame.id) === 'zero.gateway.config.save') modelImportResponses.push(frame); } catch {} });
+    socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); if (connection.methods.get(frame.id) === 'zero.providers.test') providerProbeResult = frame; if (connection.methods.get(frame.id) === 'zero.gateway.config.save') modelImportResponses.push(frame); if (connection.methods.get(frame.id) === 'zero.gateway.localGguf' && frame.payload?.tokensGenerated !== undefined) ggufSelfTest = frame; } catch {} });
     socket.on('framesent', ({ payload }) => { try { const frame = JSON.parse(payload); if (frame.id) connection.methods.set(frame.id, frame.method); if (frame.method === 'connect') connection.requestedScopes = frame.params?.scopes; if (frame.method?.startsWith('voice.microphone.')) voiceRequests.push({ method: frame.method, sessionId: frame.params?.sessionId }); } catch {} });
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); const method = connection.methods.get(frame.id); if (method === 'connect' && frame.ok === true) { connection.connectedAt = Date.now(); connection.role = frame.payload?.auth?.role; connection.scopes = frame.payload?.auth?.scopes; } if (method === 'webSearch.test') searchResult = frame; if (method === 'chat.send') chatResponses.push(frame); } catch {} });
     socket.on('close', () => { connection.closedAt = Date.now(); });
@@ -296,6 +298,23 @@ try {
     await card.getByText('Persisted GGUF Settings', { exact: true }).waitFor();
     const restoredModel = (await rpc('zero.gateway.localGguf', { action: 'list' })).models[0];
     assert.equal(restoredModel.contextLength, 4096); assert.equal(restoredModel.capabilities.reasoning, false);
+    let runtimeEvidence = null;
+    if (process.argv.includes('--gguf-runtime')) {
+      await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
+      const dialog = page.locator('.zero-modal-overlay.active');
+      await dialog.getByRole('button', { name: 'Load RAM', exact: true }).click();
+      await page.getByText(/Loaded .* into RAM\./).waitFor();
+      assert.equal((await rpc('zero.gateway.localGguf', { action: 'status' })).isLoaded, true);
+      await dialog.getByRole('button', { name: 'Self-Test', exact: true }).click();
+      await page.getByText(/Self-test passed! Speed:/).waitFor();
+      assert.ok(ggufSelfTest?.ok && ggufSelfTest.payload.passed);
+      assert.ok(ggufSelfTest.payload.tokensGenerated > 0); assert.match(ggufSelfTest.payload.tokenAccounting, /Native generated token IDs/);
+      await dialog.getByRole('button', { name: 'Unload RAM', exact: true }).click();
+      await page.getByText(/Unloaded .* from RAM\./).waitFor();
+      assert.equal((await rpc('zero.gateway.localGguf', { action: 'status' })).isLoaded, false);
+      runtimeEvidence = { actualUILoad: true, selfTest: ggufSelfTest.payload, actualUIUnload: true, scope: 'Selected model token generation only; not semantic readiness or local chat routing' };
+      await page.goto(`${base}/settings/model-providers`); await card.waitFor();
+    }
     let dialogs = 0; page.on('dialog', async dialog => { dialogs++; await dialog.dismiss(); });
     await card.locator('.zero-chip-delete').click();
     await page.getByText(/Model .* removed\./).waitFor();
@@ -315,7 +334,7 @@ try {
     assert.equal(await page.getByText(/28\.4 tok\/s/).count(), 0);
     assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 0);
     await page.goto(`${base}/settings/model-providers`);
-    return { realGgufCatalog: true, actualUISettingsSaved: true, settingsPersistedAcrossProcess: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: false };
+    return { realGgufCatalog: true, actualUISettingsSaved: true, settingsPersistedAcrossProcess: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: Boolean(runtimeEvidence), runtimeEvidence };
   });
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');
