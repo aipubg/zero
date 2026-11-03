@@ -1754,3 +1754,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Increased second-response observation window90s to cover backend60s idle deadline/transport cleanup, no relaxed reply assertions. Rerun1793693423410 PASS including exact first/second reply, durable IDs, reload and actual process restart/replay without original execution duplication. Requests completed quickly in rerun; first failed artifact retained.
 - Five session/receipt/tool continuity integration-contract leaves PASS. Runner SHA/scope updated; integrity VALID. No claim of provider endurance or local exact-hash/no-tool recall acceptance.
 - Current real endurance PID16016 independently live; checkpoint0.0418h62measuredframes0missing, completed24Hoursfalse/resourceAcceptancePARTIAL. Full master goal remains active.
+
+### Exhausted assistant tool loop no longer becomes completed task
+- Found native main assistant returned a completed turn after five consecutive tool-call responses without any final model stop response. Added explicit completedModelTurn gate; exhaustion records failed assistant_turn_limit step, throws truthful error, preserves all actual tool outputs and marks task/receipt FAILED.
+- Extended existing CONTRACT controlled HTTP provider fixture with endless valid read_file requests. Five actual file reads complete with verified results; sixth generation not requested; source bytes unchanged; task/receipt fail, terminal failure step persists. This proves execution/status contract, not real model competence.
+- Two selected contract/receipt leaves PASS. Actual browser --external artifacts/functional-browser/1793693543857/report.json PASS,nineworkflows, including two consecutive real cloud replies and restart/replay. Normal successful turns still complete.
+- Original local exact-hash/no-tool recall remains FAIL; no natural-language instruction enforcement claim added. No mock replaces that gate.
+- Inventory VALID, original current endurance PID16016 independently live. Full release/master requirements stay active.

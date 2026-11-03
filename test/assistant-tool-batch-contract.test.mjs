@@ -7,12 +7,12 @@ import http from 'node:http';
 import net from 'node:net';
 import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
 
-test('[CONTRACT] real HTTP streamed malformed batches fail before valid leading file writes', { timeout: 20000 }, async t => {
+test('[CONTRACT] malformed tool batches fail before writes and exhausted loops preserve effects without completion', { timeout: 20000 }, async t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-assistant-batch-'));
-  let mode; let target;
+  let mode; let target; let loopRequests = 0;
   const upstream = http.createServer(async (req, res) => {
     for await (const chunk of req) void chunk;
-    const calls = mode === 'empty' ? [] : [{ index: 0, id: mode === 'missing-id' ? undefined : 'first', type: 'function', function: { name: 'write_file', arguments: JSON.stringify({ path: target, content: 'MUST_NOT_BE_WRITTEN' }) } },
+    const calls = mode === 'endless' ? [{ index: 0, id: `loop-${++loopRequests}`, type: 'function', function: { name: 'read_file', arguments: JSON.stringify({ path: target }) } }] : mode === 'empty' ? [] : [{ index: 0, id: mode === 'missing-id' ? undefined : 'first', type: 'function', function: { name: 'write_file', arguments: JSON.stringify({ path: target, content: 'MUST_NOT_BE_WRITTEN' }) } },
       { index: 1, id: mode === 'duplicate' ? 'first' : 'second', type: 'function', function: { name: mode === 'undeclared' ? 'not_an_offered_tool' : 'read_file', arguments: mode === 'json' ? '{broken' : '{}' } }];
     res.writeHead(200, { 'content-type': 'text/event-stream' });
     res.end(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: calls }, finish_reason: 'tool_calls' }] })}\n\ndata: [DONE]\n\n`);
@@ -36,4 +36,14 @@ test('[CONTRACT] real HTTP streamed malformed batches fail before valid leading 
     assert.equal(failure.status, 'failed'); assert.equal(failure.toolResult.executed, false);
     assert.ok(!host.sessions.getTranscript(mode).some(message => message.tool_calls?.length));
   }
+  mode = 'endless'; target = path.join(root, 'real-read-target.txt');
+  fs.writeFileSync(target, 'PRESERVE_READ_EFFECT_EVIDENCE');
+  await assert.rejects(host._runAssistantRequest({ sessionKey: mode, runId: mode, userContent: 'Read requested file and finish', source: 'contract' }), /tool-turn limit/);
+  assert.equal(loopRequests, 5);
+  const receipt = host.sessions.db.prepare('select task_id,status from zero_assistant_receipts where run_id=?').get(mode);
+  assert.equal(receipt.status, 'failed'); assert.equal(host.tasks.getTask(receipt.task_id).status, 'FAILED');
+  const steps = host.tasks.getTaskSteps(receipt.task_id);
+  assert.equal(steps.filter(step => step.toolName === 'read_file' && step.toolResult.verified === true).length, 5);
+  assert.equal(steps.find(step => step.toolName === 'assistant_turn_limit').status, 'failed');
+  assert.equal(fs.readFileSync(target, 'utf8'), 'PRESERVE_READ_EFFECT_EVIDENCE');
 });

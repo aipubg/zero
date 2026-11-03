@@ -2072,6 +2072,7 @@ export class ZeroNativeHost {
       }
 
       let turns = 0;
+      let completedModelTurn = false;
       const maxTurns = 5;
       let finalContent = '';
       let observedProviderModel = null;
@@ -2192,6 +2193,7 @@ export class ZeroNativeHost {
             throw error;
           }
           finalContent = accumulatedContent;
+          completedModelTurn = true;
           if (!firstTokenTime) firstTokenTime = Date.now();
           break;
         }
@@ -2255,6 +2257,11 @@ export class ZeroNativeHost {
         }
       }
 
+      if (!completedModelTurn) {
+        const error = new Error('Assistant tool-turn limit reached before a final response; inspect persisted results before retrying');
+        recordTool('assistant_turn_limit', { maxTurns }, { ok: false, executed: false, error: error.message });
+        throw error;
+      }
       const failedActions = executedActions.filter((action, index) => actionFailed(action) && !executedActions.slice(index + 1).some(later =>
         !actionFailed(later) && later.execRes?.verified === true && later.action === action.action && isDeepStrictEqual(later.args, action.args)));
       // Truthful media widget card
