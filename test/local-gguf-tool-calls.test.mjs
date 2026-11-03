@@ -12,6 +12,14 @@ test('[CONTRACT] local generated requests use function wire objects and retain e
   assert.equal(parseLocalToolCalls('Ordinary prose'), undefined);
 });
 
+test('[CONTRACT] JSON strings retain literal envelope tags, escaped quotes and nested objects', () => {
+  const args = { content: '</tool_call><tool_call>{"quoted":"a\\b"}', nested: { list: [{ value: '}' }] } };
+  const envelope = `<tool_call>${JSON.stringify({ name: 'write', arguments: args })}</tool_call>`;
+  assert.deepEqual(JSON.parse(parseLocalToolCalls(envelope)[0].function.arguments), args);
+  assert.notEqual(parseLocalToolCalls(envelope)[0].id, parseLocalToolCalls(envelope)[0].id);
+  assert.throws(() => parseLocalToolCalls(envelope + '</tool_call>'));
+});
+
 test('[CONTRACT] malformed and incomplete requests fail the entire parsed batch', () => {
   const valid = '<tool_call>{"name":"read","arguments":{}}</tool_call>';
   for (const invalid of ['<tool_call>{', '<tool_call>bad</tool_call>', '<tool_call>{"arguments":{}}</tool_call>', '<tool_call>{"name":"x","arguments":[]}</tool_call>', '<tool_call>{"name":"x"}</tool_call>']) {

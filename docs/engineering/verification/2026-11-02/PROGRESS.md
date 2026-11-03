@@ -1650,3 +1650,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Added --gguf-qwen to select separately provisioned actual weights for the SAME real UI/tool outcome tests; no assertion relaxation. Browser execution awaits successful artifact hash validation; tool competence is UNVERIFIED.
 - Source syntax and runner inventory integrity VALID. This is preparatory implementation plus live external wait, not successful provisioning or local tool acceptance.
 - Endurance PID16744 independently revalidated with original start via Get-Process and CIM; latest summary5.601h,8154measuredframes,0missingframes, completed24Hoursfalse, resourceAcceptancePARTIAL.
+
+### JSON-aware local call envelopes and real pinned Qwen outcome
+- Fixed regex parser that truncated tool arguments containing literal </tool_call> text. Parser now scans JSON quoting/escapes/braces before envelope termination, rejects stray closing tags and malformed batches, retains nested arguments and gives UUID call IDs. CONTRACT covers literal nested tags, escaped quotes, nested object/list data and distinct IDs; existing malformed batch cases still pass.
+- Four selected leaves pass including actual native runtime test; artifacts/local-gguf-runtime/1793676610863/report.json. Parsing tests do not establish model tool competence.
+- Original download session25666 completed successfully without restart. Official pinned Qwen artifact522186592bytes and SHA verified; provisioning evidence copied to local-qwen-provisioning.json. No owner assignment changed.
+- Actual browser --gguf --gguf-runtime --gguf-qwen --gguf-tools artifact1793676627047 FAIL: actual Qwen generated a bash write_file code block, no executable tool call and no file effect. Strict effect assertion caught it despite chat RPC ok=true. Do not execute arbitrary prose/code blocks to manufacture a pass.
+- Real local tool acceptance remains unresolved for both selected small models. Follow-up needs appropriate model/tool protocol integration and real effects; no synthetic handler evidence accepted.
+- Endurance original PID16744 independently observed live; no24hcompletion claim.

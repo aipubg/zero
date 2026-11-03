@@ -1,0 +1,12 @@
+{
+  "classification": "REAL_EXTERNAL",
+  "status": "DOWNLOADED_AND_HASH_VERIFIED",
+  "inference": "NOT_RUN",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+  "revision": "9217f5db79a29953eb74d5343926648285ec7e67",
+  "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q5_k_m.gguf",
+  "size": 522186592,
+  "sha256": "041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55",
+  "filename": "artifacts\\local-runtime\\qwen2.5-0.5b\\qwen2.5-0.5b-instruct-q5_k_m.gguf",
+  "verifiedAt": "2026-11-03T03:29:54.066Z"
+}
