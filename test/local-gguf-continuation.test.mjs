@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localContinuationPrompt, localNativeContinuation } from '../backend/gateway/server/local-gguf-continuation.mjs';
+import { localContinuationPrompt, localNativeContinuation, localHistoricalTurns } from '../backend/gateway/server/local-gguf-continuation.mjs';
 
 test('[CONTRACT] local continuation retains ordered calls, null assistant content and actual tool results', () => {
   const messages = [
@@ -14,6 +14,17 @@ test('[CONTRACT] local continuation retains ordered calls, null assistant conten
   assert.equal(localContinuationPrompt('Hello'), 'Hello');
   assert.throws(() => localContinuationPrompt('x', [{ role: 'tool', content: 'unattributed' }]));
   assert.throws(() => localContinuationPrompt('x', [{ role: 'system', content: 'late system' }]));
+});
+
+test('[CONTRACT] earlier null-content calls and failed results survive a later user turn', () => {
+  const result = localHistoricalTurns([{ role: 'system', content: 'Keep history' }, { role: 'user', content: 'Read x' }, { role: 'assistant', content: null, tool_calls: [{ id: 'a', function: { name: 'read_file', arguments: '{"path":"x"}' } }] }, { role: 'tool', tool_call_id: 'a', content: '{"ok":false,"error":"missing"}' }, { role: 'assistant', content: 'Missing file' }]);
+  assert.equal(result.systemPrompt, 'Keep history');
+  assert.deepEqual(result.history.map(turn => turn.type), ['user', 'model', 'user', 'model']);
+  assert.match(result.history[1].response[0], /read_file/);
+  assert.equal(result.history[2].text, '<tool_response>\n{"ok":false,"error":"missing"}\n</tool_response>');
+  assert.throws(() => localHistoricalTurns([{ role: 'tool', tool_call_id: 'unknown', content: 'ok' }]));
+  const withProse = localHistoricalTurns([{ role: 'assistant', content: 'Reading now', tool_calls: [{ id: 'b', function: { name: 'read_file', arguments: '{"path":"x"}' } }] }]);
+  assert.match(withProse.history[0].response[0], /Reading now\n<tool_call>/);
 });
 
 test('[CONTRACT] native continuation preserves roles and raw tool result without re-escaping paths', () => {

@@ -1719,3 +1719,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Native integration tests7invalid payloads, invalid timeout and unsupported required choice; usage remains0 before actual generation. Actual none request with declared sentinel tool still generates real token, native history contains no sentinel definition. Existing actual native sequence/usage/history/abort/unload/reload tests pass.
 - Seven selected ModelFabric/native leaves PASS; latest native artifact artifacts/local-gguf-runtime/1793677565163/report.json. Unexpected model-generated call under none rejection is implemented but not independently induced with real model in this run; no claim of that behavioral test.
 - No permissions popup introduced. Inventory VALID, original endurance PID16744 independently alive; remaining full acceptance stays open.
+
+### Preserve earlier local tool turns across subsequent user messages
+- Prior-to-latest-user projection previously dropped all tool-role results and null-content assistant calls. Added historical role projection that retains tool-call envelopes, exact failed/success result text and model responses; system instructions remain separately combined.
+- Historical result IDs must match known calls; malformed/unattributed histories fail explicitly. Incomplete historical calls remain visible instead of invented results. Assistant prose plus separate tool_calls now retains both, rather than dropping calls when prose is nonempty. Existing XML call content avoids duplicate rendering.
+- Three CONTRACT plus actual native regression PASS, artifacts/local-gguf-runtime/1793677679786/report.json. Historical tool examples are controlled transcript inputs testing serialization, not claims of tool execution in those tests.
+- Existing actual browser --gguf --gguf-runtime artifacts/functional-browser/1793677654625/report.json PASS,nineworkflows. This run checks management/import/restart regression, not semantic recall of older tool results. Real multi-user tool recall acceptance remains unproven.
+- Inventory VALID; original endurance PID16744 independently alive. Full master requirements remain active.

@@ -27,10 +27,10 @@ export function localNativeContinuation(userText, followingMessages = []) {
         if (!call.id || pending.has(call.id)) throw new Error('Invalid local continuation tool identity');
         pending.add(call.id);
       }
-      const text = message.content || calls.map(call => {
+      const text = message.content?.includes('<tool_call>') ? message.content : [message.content || '', calls.map(call => {
         const fn = call.function;
         return `<tool_call>\n${JSON.stringify({ name: fn.name, arguments: typeof fn.arguments === 'string' ? JSON.parse(fn.arguments) : fn.arguments })}\n</tool_call>`;
-      }).join('\n');
+      }).join('\n')].filter(Boolean).join('\n');
       history.push({ type: 'model', response: [text] });
     } else if (message.role === 'tool') {
       if (!pending.delete(message.tool_call_id)) throw new Error('Unattributed or duplicate local tool result');
@@ -42,4 +42,26 @@ export function localNativeContinuation(userText, followingMessages = []) {
   }
   if (pending.size || history.at(-1)?.type !== 'user') throw new Error('Local continuation requires all pending tool results');
   return { history: history.slice(0, -1), prompt: history.at(-1).text };
+}
+
+export function localHistoricalTurns(messages) {
+  const history = []; const systems = []; const calls = new Set();
+  for (const message of messages) {
+    const text = typeof message.content === 'string' ? message.content : Array.isArray(message.content) ? message.content.map(part => typeof part === 'string' ? part : part.text || '').join('\n') : '';
+    if (message.role === 'system') { if (text.trim()) systems.push(text); }
+    else if (message.role === 'user') history.push({ type: 'user', text });
+    else if (message.role === 'assistant') {
+      const requested = message.tool_calls || [];
+      for (const call of requested) {
+        if (!call.id || calls.has(call.id)) throw new Error('Invalid historical local tool identity');
+        calls.add(call.id);
+      }
+      const response = text.includes('<tool_call>') ? text : [text, requested.map(call => `<tool_call>\n${JSON.stringify({ name: call.function.name, arguments: typeof call.function.arguments === 'string' ? JSON.parse(call.function.arguments) : call.function.arguments })}\n</tool_call>`).join('\n')].filter(Boolean).join('\n');
+      if (response) history.push({ type: 'model', response: [response] });
+    } else if (message.role === 'tool') {
+      if (!calls.delete(message.tool_call_id)) throw new Error('Unattributed historical local tool result');
+      history.push({ type: 'user', text: `<tool_response>\n${text}\n</tool_response>` });
+    } else throw new Error(`Unsupported historical local role: ${message.role}`);
+  }
+  return { history, systemPrompt: systems.join('\n\n') };
 }

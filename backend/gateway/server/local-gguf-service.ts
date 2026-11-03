@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
 import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
-import { localNativeContinuation } from './local-gguf-continuation.mjs';
+import { localNativeContinuation, localHistoricalTurns } from './local-gguf-continuation.mjs';
 import { createRecognizedTextWrapper } from './local-chat-wrapper.mjs';
 import { parseGuideOrModelfile, type ParsedGuideConfig } from './local-gguf-parser.ts';
 
@@ -2103,23 +2103,9 @@ export class LocalGgufEngineService {
       const continuation = localNativeContinuation(userPromptText, messages.slice(lastUserIndex + 1));
       userPromptText = continuation.prompt;
 
-      // Build conversation history strictly from prior user and assistant turns
-      let systemPromptFromChat = '';
-      const chatHistory: Array<{ type: 'user' | 'model'; text?: string; response?: string[] }> = [];
-
-      for (let i = 0; i < lastUserIndex; i++) {
-        const m = messages[i];
-        const text = typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? m.content.map(p => typeof p === 'string' ? p : p.text || '').join('\n') : '';
-        if (!text.trim()) continue;
-
-        if (m.role === 'system') {
-          systemPromptFromChat += (systemPromptFromChat ? '\n\n' : '') + text;
-        } else if (m.role === 'user') {
-          chatHistory.push({ type: 'user', text });
-        } else if (m.role === 'assistant') {
-          chatHistory.push({ type: 'model', response: [text] });
-        }
-      }
+      const previousTurns = localHistoricalTurns(messages.slice(0, lastUserIndex));
+      const systemPromptFromChat = previousTurns.systemPrompt;
+      const chatHistory = previousTurns.history;
 
       // Combine system prompt: manifest's system prompt (Guide file) + any dynamic chat system prompt
       chatHistory.push(...continuation.history);
