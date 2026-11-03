@@ -1084,10 +1084,12 @@ export class ZeroNativeHost {
         if (method === 'chat.startup' && !this.sessions.getSession(sessionKey)) this.sessions.createSession(sessionKey, 'New Conversation', { agentId: params.agentId || 'zero' });
         const limit = Math.min(1000, Math.max(1, Number(params.limit ?? 100)));
         const offset = Number(params.offset ?? 0);
-        const messages = this.sessions.getTranscript(sessionKey, { limit, offset }).map(message => ({ ...message, timestamp: message.createdAt }));
+        const messages = this.sessions.getTranscript(sessionKey, { limit, offset }).map(message => ({ ...message, timestamp: message.createdAt,
+          __openclaw: { id: message.id, seq: message.seq, ...(message.runId ? { runId: message.runId, idempotencyKey: message.runId } : {}) } }));
         const totalMessages = this.sessions.countMessages(sessionKey);
         const hasMore = offset + messages.length < totalMessages;
-        return { ok: true, sessionKey, sessionId: sessionKey, sessionInfo: { sessionId: sessionKey }, messages, totalMessages, hasMore, ...(hasMore ? { nextOffset: offset + messages.length } : {}) };
+        const hasActiveRun = this.activeTurns.has(sessionKey);
+        return { ok: true, sessionKey, sessionId: sessionKey, sessionInfo: { sessionId: sessionKey, hasActiveRun, status: hasActiveRun ? 'running' : 'idle' }, messages, totalMessages, hasMore, ...(hasMore ? { nextOffset: offset + messages.length } : {}) };
       }
 
       case 'agent':
@@ -1956,12 +1958,12 @@ export class ZeroNativeHost {
       const combinedSignal = AbortSignal.any([this.tasks.getSignal(task.id), ...(signal ? [signal] : [])]);
       try {
         combinedSignal.throwIfAborted();
-        this.sessions.appendMessage(sessionKey, options.resumeTaskId ? { role: 'system', content: `Resume interrupted task ${task.id}. Original goal: ${userContent}. Existing effects may already have happened. Inspect prior tool results and actual files/state before repeating any action. Continue remaining work and report unresolved effects honestly.` } : { role: 'user', content: userContent });
+        this.sessions.appendMessage(sessionKey, options.resumeTaskId ? { role: 'system', runId: options.runId, content: `Resume interrupted task ${task.id}. Original goal: ${userContent}. Existing effects may already have happened. Inspect prior tool results and actual files/state before repeating any action. Continue remaining work and report unresolved effects honestly.` } : { role: 'user', runId: options.runId, content: userContent });
         this.tasks.recordStep(task.id, { stepNumber: this.tasks.getTaskSteps(task.id).length + 1, toolName: options.resumeTaskId ? 'assistant_resume' : 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
         const result = await this._executeAgentTurn({ ...options, taskId: task.id, signal: combinedSignal });
         combinedSignal.throwIfAborted();
         if (!result?.ok) throw new Error(result?.error || 'Assistant turn failed');
-        const complete = { ...result, taskId: task.id, sessionKey, runId: options.runId };
+        const complete = { ...result, status: 'ok', taskId: task.id, sessionKey, runId: options.runId };
         this.tasks.completeTask(task.id, { content: result.content, source, sessionKey, verified: false });
         return complete;
       } catch (error) {
@@ -2306,8 +2308,8 @@ export class ZeroNativeHost {
 
       abortController.signal.throwIfAborted();
       if (!finalContent.trim()) throw new Error('Assistant turn ended without a final response');
-      const persistedReply = this.sessions.appendMessage(sessionKey, { role: 'assistant', content: finalContent });
-      publishChat({ state: 'final', message: { id: persistedReply.id, role: 'assistant', content: [{ type: 'text', text: finalContent }], timestamp: persistedReply.createdAt } });
+      const persistedReply = this.sessions.appendMessage(sessionKey, { role: 'assistant', runId, content: finalContent });
+      publishChat({ state: 'final', message: { id: persistedReply.id, role: 'assistant', __openclaw: { id: persistedReply.id, seq: persistedReply.seq, runId }, content: [{ type: 'text', text: finalContent }], timestamp: persistedReply.createdAt } });
 
       if (ws && ws.readyState === 1) {
         const ttftMs = (firstTokenTime || Date.now()) - turnStartTime;

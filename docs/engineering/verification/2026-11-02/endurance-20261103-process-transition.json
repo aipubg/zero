@@ -1,0 +1,20 @@
+{
+  "previous": {
+    "pid": 16744,
+    "lastSummary": "artifacts/screen-intelligence/endurance-combined-20261102T215241Z/summary.json",
+    "lastElapsedHours": 7.811418147305555,
+    "liveProcessAbsent": true,
+    "status": "INTERRUPTED",
+    "completed24Hours": false
+  },
+  "current": {
+    "processStartedAt": "2026-11-03T08:06:38.0947583Z",
+    "localVisionEnabled": true,
+    "directory": "E:\\zero\\artifacts\\screen-intelligence\\endurance-combined-20261103T080638Z",
+    "completed24Hours": false,
+    "requestedHours": 24,
+    "pid": 16016,
+    "status": "IN_PROGRESS"
+  },
+  "reason": "Original process absent in both Get-Process and CIM; not restarted on observation timeout alone"
+}
