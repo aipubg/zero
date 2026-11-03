@@ -1733,3 +1733,9 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Investigation: rpcDiagnostics contains only ONE chat.send request/response. Screenshot2.png shows first assistant reply complete in history but UI still Lobstering after1m25s; second user message sits queued above composer. Thus this run did not reach second model generation and exposes frontend terminal-state/queued-delivery issue, not proof of missing model recall.
 - Added runner mode/digest; inventory VALID. Original artifacts preserved. Next required work is terminal chat event/UI state settlement and queued message delivery, then same strict recall test.
 - Endurance original PID16744 independently live; summary5.946h, completed24Hoursfalse/resourceAcceptancePARTIAL. Full goal remains active.
+
+### UI queued-message terminal-state investigation; failed timing experiment reverted
+- Read actual served pinned frontend lifecycle reducer/outbox code and native event/RPC path. Tested deferring final chat event until next event-loop turn after RPC receipt processing.
+- Actual experiment artifact1793677995386 FAIL: first request completed in isolated receipt DB, second UI turn did not arrive. Deferral alone did not fix stuck UI. Reverted speculative host timing change; no unverified product fix retained.
+- Added browser diagnostic chatLifecycle sequence (state/runId/sessionKey/seq/receivedAt and RPC runId/status only, no message text) for causal event/ack matching. Runner digest refreshed, inventory VALID.
+- Started instrumented same strict real UI recall run; ongoing process handle to inspect next, not a PASS claim. Need diagnose receipt/lifecycle matching before changing product behavior. Earlier failure screenshot and exact tool effect retained.

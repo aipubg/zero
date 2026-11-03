@@ -169,7 +169,13 @@ try {
   const chatResponses = [];
   const chatRequests = [];
   const rpcDiagnostics = [];
+  const chatLifecycle = [];
   page.on('websocket', socket => {
+    socket.on('framereceived', ({ payload }) => { try {
+      const frame = JSON.parse(payload);
+      if (frame.event === 'chat') chatLifecycle.push({ event: 'chat', state: frame.payload?.state, runId: frame.payload?.runId, sessionKey: frame.payload?.sessionKey, seq: frame.payload?.seq, receivedAt: Date.now() });
+      if (frame.type === 'res' && frame.payload?.runId) chatLifecycle.push({ event: 'rpc-result', runId: frame.payload.runId, status: frame.payload.status, receivedAt: Date.now() });
+    } catch {} });
     const connection = { openedAt: Date.now(), closedAt: null, connectedAt: null, methods: new Map() };
     connections.push(connection);
     socket.on('framereceived', ({ payload }) => { try { const frame = JSON.parse(payload); if (connection.methods.get(frame.id) === 'zero.providers.test') providerProbeResult = frame; if (connection.methods.get(frame.id) === 'zero.gateway.config.save') modelImportResponses.push(frame); if (connection.methods.get(frame.id) === 'zero.gateway.localGguf' && frame.payload?.tokensGenerated !== undefined) ggufSelfTest = frame; } catch {} });
@@ -955,6 +961,7 @@ try {
   });
   report.pageErrors = pageErrors;
   report.rpcDiagnostics = rpcDiagnostics;
+  report.chatLifecycle = chatLifecycle;
   report.connections = connections.map(({ openedAt, closedAt, connectedAt, requestedScopes, role, scopes }) => ({ openedAt, closedAt, connectedAt, requestedScopes, role, scopes }));
   report.status = report.checks.every(check => check.status === 'PASS') && pageErrors.length === 0 ? 'PASS' : 'FAIL';
 } catch (error) { report.status = 'FAIL'; report.error = error.stack; }

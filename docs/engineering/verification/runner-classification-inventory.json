@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "1494a3c6571d00bc444820ecdf3e96d4a7e6f413728649ba317f63d901876f9f",
+      "sha256": "1d70a6259ce2ffd6b41eab085c1e39c2f9252da8d8603ada390f25730ce9da0c",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
