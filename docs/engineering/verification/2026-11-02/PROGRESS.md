@@ -1584,3 +1584,9 @@ checks pass. This is terminal/accounting acceptance for selected native HTTP cal
 not main chat UI routing, general semantic correctness or arbitrary tool use.
 Original endurance PID 16744 remains live with matching start identity at about
 5.262 hours, still IN_PROGRESS/completed24Hours false/resources PARTIAL.
+
+### Native GGUF tool-call wire contract correction
+- Local generated tool envelopes now become OpenAI function objects with JSON-string arguments; streamed entries include indexes. Multiple calls are retained, malformed/incomplete batches fail rather than silently becoming ordinary completion.
+- CONTRACT: two parser tests pass, including Unicode arguments, multiple calls and five malformed/incomplete forms. These prove parsing, not model tool competence or execution.
+- REAL_OS / INTEGRATION: pinned native GGUF test passes again, including four actual HTTP generation terminal/accounting cases. Evidence: artifacts/local-gguf-runtime/1793675551878/report.json. CPU fallback and original Jinja-template fallback warning remain visible.
+- Main ModelFabric local routing and actual local assistant tool execution remain unfinished. Speaker audibility was separately confirmed by the owner; microphone semantic conversation and acoustic barge-in remain unverified. Mobile/cloud prerequisites remain unavailable.

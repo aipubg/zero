@@ -4,6 +4,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
+import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
 import { parseGuideOrModelfile, type ParsedGuideConfig } from './local-gguf-parser.ts';
 
 // Types for Local GGUF Engine
@@ -2334,25 +2335,12 @@ export class LocalGgufEngineService {
         const tokensPerSec = totalTimeMs > 0 ? parseFloat(((tokenCount / totalTimeMs) * 1000).toFixed(1)) : 0;
 
         // Parse tool calls if generated
-        let streamToolCalls: any = undefined;
-        const toolMatch = fullContent.match(/<tool_call>([\s\S]*?)<\/tool_call>/);
-        if (toolMatch) {
-          try {
-            const parsed = JSON.parse(toolMatch[1].trim());
-            streamToolCalls = [
-              {
-                id: `call-${Date.now()}`,
-                name: parsed.name,
-                arguments: parsed.arguments || {},
-              },
-            ];
-          } catch {}
-        }
+        const streamToolCalls = parseLocalToolCalls(fullContent);
 
         if (!res.writableEnded) {
           res.write(
             `data: ${JSON.stringify({
-              choices: [{ delta: streamToolCalls ? { tool_calls: streamToolCalls } : {}, finish_reason: finishReason(nativeStopReason, Boolean(streamToolCalls), loopBroken) }],
+              choices: [{ delta: streamToolCalls ? { tool_calls: streamToolCalls.map((call, index) => ({ index, ...call })) } : {}, finish_reason: finishReason(nativeStopReason, Boolean(streamToolCalls), loopBroken) }],
               toolCalls: streamToolCalls,
               usage: {
                 prompt_tokens: tokenMeter.diff(meterBefore).usedInputTokens,
@@ -2448,20 +2436,7 @@ export class LocalGgufEngineService {
       }
 
       // Parse tool calls in non-stream content
-      let nonStreamToolCalls: any = undefined;
-      const toolMatch = nonStreamContent.match(/<tool_call>([\s\S]*?)<\/tool_call>/);
-      if (toolMatch) {
-        try {
-          const parsed = JSON.parse(toolMatch[1].trim());
-          nonStreamToolCalls = [
-            {
-              id: `call-${Date.now()}`,
-              name: parsed.name,
-              arguments: parsed.arguments || {},
-            },
-          ];
-        } catch {}
-      }
+      const nonStreamToolCalls = parseLocalToolCalls(nonStreamContent);
 
       const latencyMs = Math.round(performance.now() - startTime);
 
