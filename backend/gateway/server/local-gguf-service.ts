@@ -129,7 +129,6 @@ export class LocalGgufEngineService {
   private loadedAt: number | null = null;
   private keepAliveExpiresAt: number | null = null;
   private keepAliveSeconds: number = 300;
-  private cachedSessionHistory: Array<{ type: 'system' | 'user' | 'model'; text?: string; response?: string[] }> = [];
   private activeDownload: DownloadProgress | null = null;
   private downloadAbortController: AbortController | null = null;
 
@@ -1381,7 +1380,6 @@ export class LocalGgufEngineService {
     this.loadedModelSizeBytes = target.sizeBytes;
     this.loadedModelContextSize = this.activeContext?.contextSize || 2048;
     this.loadedAt = Date.now();
-    this.cachedSessionHistory = [];
   }
 
   /**
@@ -1433,7 +1431,6 @@ export class LocalGgufEngineService {
     this.loadedModelSizeBytes = 0;
     this.loadedAt = null;
     this.keepAliveExpiresAt = null;
-    this.cachedSessionHistory = [];
 
     if (global.gc) {
       try {
@@ -2191,31 +2188,10 @@ export class LocalGgufEngineService {
         history.push(item);
       }
 
-      // Prompt Prefix KV-Cache Reuse: compare against warm cached session prefix
-      let isPrefixMatch = false;
-      if (
-        this.activeSession &&
-        !this.activeSession.disposed &&
-        this.cachedSessionHistory.length > 0 &&
-        history.length === this.cachedSessionHistory.length + 1
-      ) {
-        isPrefixMatch = true;
-        for (let i = 0; i < this.cachedSessionHistory.length; i++) {
-          const a = this.cachedSessionHistory[i];
-          const b = history[i];
-          if (a.type !== b.type || a.text !== b.text) {
-            isPrefixMatch = false;
-            break;
-          }
-        }
-      }
-
-      if (isPrefixMatch) {
-        console.log(`[LocalGguf] KV-Cache Prefix Reuse: Match found (${this.cachedSessionHistory.length} turns). Reusing prompt prefix!`);
-      } else {
-        this.activeSession.setChatHistory(history);
-        this.cachedSessionHistory = [...history];
-      }
+      // The wire transcript is authoritative. Let the native SDK reconcile its
+      // own token cache; skipping setChatHistory can retain stale model turns
+      // or discard newly appended history, including completed tool effects.
+      this.activeSession.setChatHistory(history);
 
       // Handle Streaming Response (SSE OpenAI-compatible)
       const tokenMeter = this.activeSession.sequence.tokenMeter;

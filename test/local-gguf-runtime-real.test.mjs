@@ -88,6 +88,13 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     await localChat.tail.catch(() => {});
     assert.equal((await fabric.executeChat(localPayload)).data.usage.completion_tokens, 1);
     report.localDeadline = { actualNativeRequestTimedOut: true, nextActualGenerationSucceeded: true };
+    await fabric.executeChat({ ...localPayload, messages: [{ role: 'user', content: 'Earlier user' }, { role: 'assistant', content: 'OLD_CONTEXT' }, { role: 'user', content: 'First request' }] });
+    await fabric.executeChat({ ...localPayload, messages: [{ role: 'user', content: 'Earlier user' }, { role: 'assistant', content: 'NEW_CONTEXT' }, { role: 'user', content: 'Additional history turn' }, { role: 'user', content: 'Second request' }] });
+    const currentHistory = service.activeSession.getChatHistory();
+    assert.ok(currentHistory.some(turn => turn.type === 'model' && turn.response.includes('NEW_CONTEXT')), 'Authoritative changed assistant history must replace old cached model response');
+    assert.ok(currentHistory.some(turn => turn.type === 'user' && turn.text.includes('Additional history turn')), 'New history suffix must not be dropped by cache reuse');
+    assert.equal(currentHistory.some(turn => turn.type === 'model' && turn.response.includes('OLD_CONTEXT')), false);
+    report.authoritativeHistoryReplacement = true;
     report.modelFabricLocal = { actualJson: true, actualStream: true, cloudRequests: fabric.upstreamRequestCount, missingModelRejected: true };
     await service.unloadModel(true); assert.equal(service.getMemoryStatus().isLoaded, false);
     assert.equal(await checksum(), originalHash);

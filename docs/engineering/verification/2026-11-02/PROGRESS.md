@@ -1674,3 +1674,11 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Tool requests now default to temperature0 unless request/manifest explicitly specifies temperature. Actual rerun1793676941306 FAIL at60-second inference timeout, expected file absent. Deterministic sampling is not evidence of improved competence.
 - Native continuation integration is implemented; selected small model reliability, exact requested effects, interruption/restart continuity and general local agent competence remain unfinished. Existing failed artifacts retained.
 - Endurance original PID16744 independently observed alive;24-hour acceptance remains open.
+
+### Authoritative native history replaces incorrect prefix cache; selected real local tool suite PASS
+- Reproduced actual bug with real native inference: cached-history heuristic ignored changed model response arrays and skipped newly appended history when only prefix type/text matched. Artifact1793677081692 FAIL asserted NEW_CONTEXT must replace OLD_CONTEXT; native log incorrectly claimed prefix match.
+- Removed heuristic and unused duplicate cached history. Always give full authoritative wire-derived history to SDK; SDK retains responsibility for safe token-cache reconciliation. Added real sequential inference assertions for changed assistant response, additional user history and absence of stale old response.
+- Native real test PASS artifact1793677122220, plus wrapper/continuation contract checks pass; inventory VALID.
+- Actual UI --gguf --gguf-runtime --gguf-qwen --gguf-tools artifact1793677103373 PASS, nine workflows. Correct requested path contains exact ZERO_LOCAL_TOOL_EFFECT, selected model local-gguf/ui-proof, one actual write_file result verified with SHA, successful final assistant turn; reconnect composer check also passes.
+- Summary local-qwen-history-replacement-pass.json links failing reproduction and passing native/browser evidence. Prior failures retained. Selected workflow achieved, not arbitrary local model reliability or full production acceptance.
+- Original endurance PID16744 independently live; 24-hour, remaining voice/mobile/cloud/general acceptance still open.

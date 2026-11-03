@@ -1,0 +1,34 @@
+{
+  "classification": [
+    "REAL_OS",
+    "REAL_BROWSER",
+    "INTEGRATION"
+  ],
+  "suiteStatus": "PASS",
+  "artifact": "artifacts/functional-browser/1793677103373/report.json",
+  "workflowCount": 9,
+  "requestedModel": "local-gguf/ui-proof",
+  "actualEffect": "ZERO_LOCAL_TOOL_EFFECT",
+  "taskId": "task_1793677112393_to0ufx",
+  "toolCount": 1,
+  "toolEvidence": [
+    {
+      "capability": "write_file",
+      "verified": true,
+      "evidence": {
+        "bytes": 22,
+        "sha256": "94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4"
+      }
+    }
+  ],
+  "nativeReproduction": {
+    "before": "artifacts/local-gguf-runtime/1793677081692/report.json",
+    "beforeStatus": "FAIL",
+    "after": "artifacts/local-gguf-runtime/1793677122220/report.json",
+    "afterStatus": "PASS"
+  },
+  "limits": [
+    "Selected pinned CPU model and selected workflow only",
+    "Prior failed runs retained; not general reliability or production sign-off"
+  ]
+}
