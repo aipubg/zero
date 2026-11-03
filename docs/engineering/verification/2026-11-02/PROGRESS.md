@@ -1712,3 +1712,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - REAL_OS test starts genuine stream, schedules queued actual unload, cancels reader, observes unload completion and actual isLoadedfalse, then verifies real inference reload and successful generation. Native artifact1793677445274 PASS; no dummy native context.
 - Actual browser --gguf --gguf-runtime artifact1793677472203 PASS,nineworkflows, including actual management controls, metadata/import/export persistence, removal/user-data preservation and reconnect. No claim that every possible management race has been stress-tested.
 - Inventory VALID; original endurance PID16744 independently observed live. General endurance/release acceptance remains incomplete.
+
+### Local generation parameter validation and explicit tool-choice support
+- Local ModelFabric transport now rejects invalid/nonfinite/fractional token limits, invalid temperature/top_p/seed, and invalid timer bounds before native request admission. Prevents zero/negative limits silently reaching native generation and timer overflow behavior.
+- Only implemented tool_choice auto/none accepted; required or named forcing explicitly unsupported instead of ignored. none omits definitions from native prompt, and parsed unexpected tool calls are rejected in both JSON/SSE service paths before tool request delivery.
+- Native integration tests7invalid payloads, invalid timeout and unsupported required choice; usage remains0 before actual generation. Actual none request with declared sentinel tool still generates real token, native history contains no sentinel definition. Existing actual native sequence/usage/history/abort/unload/reload tests pass.
+- Seven selected ModelFabric/native leaves PASS; latest native artifact artifacts/local-gguf-runtime/1793677565163/report.json. Unexpected model-generated call under none rejection is implemented but not independently induced with real model in this run; no claim of that behavioral test.
+- No permissions popup introduced. Inventory VALID, original endurance PID16744 independently alive; remaining full acceptance stays open.

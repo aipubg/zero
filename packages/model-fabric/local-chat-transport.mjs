@@ -27,6 +27,15 @@ export class LocalChatTransport {
     return { provider: { id: 'local-gguf', models: this.listModels(), local: true }, canonicalModelId: `local-gguf/${model.id}`, capabilities: { reasoning: !!model.capabilities?.reasoning, image: false, tools: true }, localModelId: model.id };
   }
   async execute(payload, options = {}) {
+    for (const [field, minimum, maximum, integer] of [
+      ['max_tokens', 1, 2147483647, true], ['temperature', 0, 2, false],
+      ['top_p', 0, 1, false], ['seed', 0, 4294967295, true],
+    ]) {
+      const value = payload[field];
+      if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum || (integer && !Number.isInteger(value)))) throw new Error(`Invalid local generation setting: ${field}`);
+    }
+    if (options.timeoutMs !== undefined && (!Number.isInteger(options.timeoutMs) || options.timeoutMs < 1 || options.timeoutMs > 2147483647)) throw new Error('Invalid local inference timeout');
+    if (payload.tool_choice !== undefined && !['auto', 'none'].includes(payload.tool_choice)) throw new Error('Local runtime supports only auto or none tool_choice');
     if (!Array.isArray(payload.messages) || payload.messages.some(message =>
       Array.isArray(message.content) && message.content.some(part => typeof part !== 'string' && (part?.type !== 'text' || typeof part.text !== 'string')))) {
       throw new Error('Local chat transport supports text messages only; use the vision runtime for images');
@@ -52,6 +61,7 @@ export class LocalChatTransport {
       if (!this.resolve(payload.model)) throw new Error(`Local model unavailable: ${payload.model}`);
       await this.engine.executeChat(resolution.localModelId, payload.messages, {
         ...payload, maxTokens: payload.max_tokens, responseFormat: payload.response_format,
+        tools: payload.tool_choice === 'none' ? [] : payload.tools,
         toolChoice: payload.tool_choice, signal,
       }, output);
     });

@@ -76,7 +76,14 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     assert.throws(() => importModelSettings(fabric, { providers: [], defaults: { primary: 'local-gguf/missing' } }), /unavailable/);
     assert.deepEqual([fs.readFileSync(configPath), fs.readFileSync(bindingsPath)], beforeInvalidImport);
     const localPayload = { model: 'local-gguf/real-smol', messages: [{ role: 'user', content: 'Count to one hundred in detail.' }], max_tokens: 1, temperature: 0, keep_alive: -1 };
-    const direct = await fabric.executeChat(localPayload);
+    for (const invalid of [{ max_tokens: 0 }, { max_tokens: -1 }, { max_tokens: 1.5 }, { temperature: NaN }, { temperature: '0.5' }, { top_p: 2 }, { seed: -1 }]) {
+      await assert.rejects(fabric.executeChat({ ...localPayload, ...invalid }), /Invalid local generation setting/);
+    }
+    await assert.rejects(fabric.executeChat(localPayload, { timeoutMs: 0 }), /Invalid local inference timeout/);
+    await assert.rejects(fabric.executeChat({ ...localPayload, tool_choice: 'required' }), /supports only auto or none/);
+    assert.equal(fabric.getUsageReport().totalRequests, 0);
+    const direct = await fabric.executeChat({ ...localPayload, tool_choice: 'none', tools: [{ type: 'function', function: { name: 'should_not_be_exposed', parameters: { type: 'object' } } }] });
+    assert.equal(JSON.stringify(service.activeSession.getChatHistory()).includes('should_not_be_exposed'), false);
     assert.equal(direct.data.choices[0].finish_reason, 'length');
     assert.equal(direct.data.usage.completion_tokens, 1);
     assert.equal(fabric.getUsageReport().totalRequests, 1);

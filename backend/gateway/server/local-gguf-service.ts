@@ -2323,6 +2323,7 @@ export class LocalGgufEngineService {
 
         // Parse tool calls if generated
         const streamToolCalls = parseLocalToolCalls(fullContent);
+        if (options.toolChoice === 'none' && streamToolCalls) throw new Error('Local model requested tools while tool_choice is none');
 
         if (!res.writableEnded) {
           res.write(
@@ -2424,6 +2425,7 @@ export class LocalGgufEngineService {
 
       // Parse tool calls in non-stream content
       const nonStreamToolCalls = parseLocalToolCalls(nonStreamContent);
+      if (options.toolChoice === 'none' && nonStreamToolCalls) throw new Error('Local model requested tools while tool_choice is none');
 
       const latencyMs = Math.round(performance.now() - startTime);
 
