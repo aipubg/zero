@@ -301,7 +301,9 @@ export class ModelFabric {
     const modelId = payload.model || 'zero-lead';
     if (modelId.startsWith('local-gguf/')) {
       if (!this.localChat) throw new Error('Local chat runtime unavailable');
-      return this.localChat.execute(payload, options);
+      const result = await this.localChat.execute(payload, options);
+      if (result.data?.usage) this.recordUsage(modelId, result.data.usage.prompt_tokens, result.data.usage.completion_tokens);
+      return result;
     }
     const resolution = this.resolveModel(modelId);
 
@@ -441,7 +443,7 @@ export class ModelFabric {
               // Reasoning is a separate channel, never assistant prose or speech.
               const deltaContent = typeof choice?.delta?.content === 'string' ? choice.delta.content : null;
               if (json.usage) {
-                this.recordUsage(json.model || 'streamed-model', json.usage.prompt_tokens, json.usage.completion_tokens);
+                this.recordUsage(json.model || payload.model || 'streamed-model', json.usage.prompt_tokens, json.usage.completion_tokens);
               }
               yield {
                 delta: deltaContent,

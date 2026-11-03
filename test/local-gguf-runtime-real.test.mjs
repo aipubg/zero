@@ -79,10 +79,18 @@ test('[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior h
     const direct = await fabric.executeChat(localPayload);
     assert.equal(direct.data.choices[0].finish_reason, 'length');
     assert.equal(direct.data.usage.completion_tokens, 1);
+    assert.equal(fabric.getUsageReport().totalRequests, 1);
+    assert.equal(fabric.getUsageReport().byModel['local-gguf/real-smol'].completionTokens, 1);
     const stream = [];
     for await (const chunk of fabric.streamChat(localPayload)) stream.push(chunk);
     assert.equal(stream.at(-1).finish_reason, 'length');
     assert.equal(stream.at(-1).done, true);
+    const metered = fabric.getUsageReport();
+    assert.equal(metered.totalRequests, 2);
+    assert.equal(metered.byModel['local-gguf/real-smol'].requests, 2);
+    assert.equal(metered.byModel['local-gguf/real-smol'].completionTokens, 2);
+    assert.equal(metered.byModel['streamed-model'], undefined);
+    report.selectedLocalUsage = { requests: metered.totalRequests, model: 'local-gguf/real-smol', ...metered.byModel['local-gguf/real-smol'], accounting: 'Native evaluated input and emitted completion IDs; not uncached logical prompt size' };
     await assert.rejects(fabric.executeChat({ ...localPayload, model: 'local-gguf/missing' }), /unavailable/);
     assert.equal(fabric.upstreamRequestCount, 0);
     await assert.rejects(fabric.executeChat({ ...localPayload, messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,AA==' } }] }] }), /text messages only/);

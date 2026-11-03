@@ -1698,3 +1698,10 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Eleven selected native/settings/ModelFabric test leaves PASS, native evidence artifacts/local-gguf-runtime/1793677290354/report.json. Existing actual history replacement, JSON/SSE terminal, tool import, abort/deadline recovery still pass.
 - Actual browser --gguf --gguf-runtime artifacts/functional-browser/1793677307053/report.json PASS,nineworkflows, including config export/import/restart and UI runtime. No claim this run repeats local tool-generation acceptance.
 - Runner integrity VALID; original endurance PID16744 independently live,24-hour acceptance still incomplete. Full master objective remains active.
+
+### Local JSON/SSE usage attributed to actual selected model
+- Local nonstream execution previously returned without recording real response usage; local streaming responses without model field were counted under generic streamed-model. Now actual local JSON usage is recorded once by namespaced requested ID, and SSE fallback attribution uses requested model when provider omits ID.
+- Native test executes real JSON and streamed one-token generations, independently asserts2requests/2completion IDs under local-gguf/real-smol, no generic streamed-model entry. Selected measured usage snapshot persisted in artifacts/local-gguf-runtime/1793677385315/report.json.
+- Seven selected ModelFabric/native leaves pass; native evidence still includes real import/history replacement, context allocation, terminal reasons, abort/deadline recovery and source preservation. Inventory VALID; no entire-release claim.
+- Counts represent completed responses with reported usage, not every aborted/failed attempt. Native input counts are evaluated-token deltas and may exclude cached prefix; no billing or logical-prompt equivalence claim. Existing cloud JSON accounting is outside this specific correction.
+- Original endurance PID16744 independently revalidated live; remaining24h/voice/external acceptance gates open.
