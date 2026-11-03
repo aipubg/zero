@@ -616,9 +616,25 @@ try {
     await page.getByText(marker, { exact: true }).last().waitFor();
     const history = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
     assert.equal(history.messages.at(-1).content.trim(), marker);
+    assert.equal(history.messages.at(-1).__openclaw.runId, response.payload.runId);
+    assert.equal(history.sessionInfo.hasActiveRun, false);
+    const nextMarker = `${marker}_SECOND`;
+    const beforeReplies = chatResponses.length;
+    await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill(`Reply exactly ${nextMarker} with no other text. Do not use tools.`);
+    await page.locator('button.chat-send-btn--send').click();
+    const nextDeadline = Date.now() + 90000;
+    while (chatResponses.length === beforeReplies && Date.now() < nextDeadline) await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(chatResponses.length, beforeReplies + 1, 'Second UI message must leave queue and receive a real gateway response');
+    const nextResponse = chatResponses.at(-1);
+    assert.equal(nextResponse.ok, true, JSON.stringify(nextResponse.error));
+    assert.equal(nextResponse.payload.content.trim(), nextMarker);
+    const nextHistory = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
+    assert.equal(nextHistory.messages.at(-1).__openclaw.runId, nextResponse.payload.runId);
+    assert.equal(nextHistory.messages.at(-1).content.trim(), nextMarker);
+    assert.ok(nextHistory.messages.some(message => message.role === 'user' && message.__openclaw.runId === nextResponse.payload.runId));
     await page.reload();
     await page.getByText(marker, { exact: true }).last().waitFor();
-    return { taskId: response.payload.taskId, sessionKey: response.payload.sessionKey, reply: marker, persistedAfterReload: true };
+    return { taskId: response.payload.taskId, secondTaskId: nextResponse.payload.taskId, secondRunId: nextResponse.payload.runId, secondReply: nextMarker, samePageSecondSend: true, durableRunIdentity: true, sessionKey: response.payload.sessionKey, reply: marker, persistedAfterReload: true };
   });
   if (process.argv.includes('--devices')) await check('Voice toolbar starts the selected chat microphone, stops it and clears on disconnect', async () => {
     await page.goto(`${base}/chat/zero`);

@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "1d70a6259ce2ffd6b41eab085c1e39c2f9252da8d8603ada390f25730ce9da0c",
+      "sha256": "91d502aec119a08fdbe0931811b9fb360dcfa3c772506f45c32957baa5ba241a",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -13,7 +13,7 @@
       ],
       "scope": "Isolated UI interactions and persisted effects; optional native devices, capture, model and external skill execution.",
       "modes": [
-        "--external",
+        "--external: two consecutive actual cloud UI sends on the same page, exact replies, durable transcript run IDs and restart/replay recovery",
         "--models: actual UI assignment, isolated settings restart and independently observed real upstream model request; provider-reported alias retained separately",
         "--providers: actual UI provider create/edit/delete with isolated persisted files, credential preservation and process restart; no service-execution claim",
         "--provider-probe: UI-triggered real external model-list retrieval, not inference acceptance",
