@@ -15,3 +15,11 @@
 - Existing25voice unit/contract checks passed alongside first probe; actual successful selection test rerun independently. No raw microphone saved. UI/API layout preserved; no persisted device preference or UI selector claimed.
 - Actual browser --devices artifacts/functional-browser/1794245683019/report.json PASS,nineworkflows including real microphone toolbar start/stop/disconnect and restart. This tests default UI route; explicit index route proved by native test, not a UI selection control.
 - Runner integrity VALID. Endurance PID24180 independently live. Existing owner config changes remain excluded. Human STT, acoustic barge-in, local strict recall and full24h/master acceptance still open.
+
+## Microphone ownership outlives removed session until native close
+- Found session map ownership gap: stopSession removes its entry synchronously while native capture cancellation/handle close remains pending. A new session could acquire the microphone before old native teardown.
+- Added engine-wide microphone operation ownership, released only on actual job settlement. Start waits for an already-cancelled owner to finish; active owner still rejects concurrent acquisition. Deleted sessions cannot hide an outstanding native operation.
+- Added UNIT deferred-native-close regression, explicitly not hardware proof. Existing26voice unit/contract checks PASS.
+- REAL_OS actual native selection/recovery artifact1794245891812 PASS: invalid index releases session ownership, valid first capture starts, stopSession removes it, second session waits/opens actual device and receives real PCM bytes. No raw audio saved. Evidence voice-microphone-session-recovery.json.
+- Existing actual browser --devices artifact1794245918908 PASS,nineworkflows including real UI capture start/stop/disconnect and reconnect. No human recognition/barge-in acceptance claim.
+- Runner integrity VALID; current endurance PID24180 independently alive. Owner configuration edits remain untouched/excluded. Full objective still active.

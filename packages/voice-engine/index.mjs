@@ -16,6 +16,7 @@ export class VoiceEngine extends EventEmitter {
     this.backend = options.backend ?? new WindowsSpeechBackend();
     this.playback = options.playback ?? true;
     this.sessions = new Map();
+    this.microphoneOperation = null;
     this.availability = this.backend.availability ?? { checked: false };
     this._availabilityPending = null;
   }
@@ -187,14 +188,21 @@ export class VoiceEngine extends EventEmitter {
   async startMicrophone(sessionId, options = {}) {
     const session = this._session(sessionId);
     if (session.microphone) throw new VoiceError('VOICE_BUSY', 'This session already has a microphone capture');
+    const previous = this.microphoneOperation;
+    if (previous?.controller.signal.aborted) {
+      try { await previous.done; } catch (error) { if (error.code !== 'VOICE_CANCELLED') throw error; }
+    }
+    if (this.microphoneOperation) throw new VoiceError('VOICE_MICROPHONE_BUSY', 'The microphone is already assigned to another voice session');
     for (const other of this.sessions.values()) {
       if (other.microphone) throw new VoiceError('VOICE_MICROPHONE_BUSY', 'The microphone is already assigned to another voice session');
     }
     const operation = this._operation(options.signal);
+    this.microphoneOperation = operation;
     session.microphone = operation;
     operation.started = false;
     const cleanup = () => {
       operation.release();
+      if (this.microphoneOperation === operation) this.microphoneOperation = null;
       if (session.microphone === operation) {
         session.microphone = null;
         this.emit('voice:microphone_stopped', { sessionId });

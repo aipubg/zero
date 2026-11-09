@@ -380,6 +380,21 @@ test('native capture streams PCM only after explicit start and handles split pro
   assert.deepEqual(Buffer.concat(received), samples);
 });
 
+test('[UNIT] a new session waits for cancelled microphone native ownership to finish', async t => {
+  const first = deferred(); const second = deferred(); let opens = 0;
+  const engine = new VoiceEngine({ backend: backend({ startMicrophone: () => ({ ready: Promise.resolve({}), done: ++opens === 1 ? first.promise : second.promise }) }) });
+  t.after(() => { first.resolve(); second.resolve(); engine.close(); });
+  engine.startSession('first'); await engine.startMicrophone('first');
+  engine.stopSession('first'); engine.startSession('second');
+  const pending = engine.startMicrophone('second');
+  await Promise.resolve();
+  assert.equal(opens, 1, 'Native capture must not reopen while previous handle teardown is pending');
+  first.reject(cancelled()); await pending;
+  assert.equal(opens, 2);
+  assert.equal(engine.getStatus().sessions.find(session => session.sessionId === 'second').microphoneActive, true);
+  second.resolve(); await engine.stopMicrophone('second');
+});
+
 test('invalid synthesis, format and capture options fail before any native process', async () => {
   const native = new WindowsSpeechBackend({ spawn: () => assert.fail('Must not spawn') });
   await assert.rejects(native.synthesize(''), { code: 'VOICE_INVALID_TEXT' });
