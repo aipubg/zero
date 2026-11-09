@@ -16,8 +16,9 @@ export class AgentDesktop {
   constructor({ binary = path.join(root, 'artifacts/agent-desktop-runtime/bin/agent-desktop.exe'), stateDir = path.join(process.env.ZERO_DATA_DIR || path.join(root, '.zero-data'), 'agent-desktop') } = {}) {
     this.binary = path.resolve(binary); this.stateDir = path.resolve(stateDir);
   }
-  async execute({ command, args = [], input, headed = false }, signal) {
+  async execute({ command, args = [], input, headed = false, onStarted }, signal) {
     if (typeof headed !== 'boolean') throw new Error('headed must be a boolean');
+    if (onStarted !== undefined && typeof onStarted !== 'function') throw new Error('onStarted must be a function');
     if (!commands.has(command) || !Array.isArray(args) || args.length > 128 || args.some(arg => typeof arg !== 'string' || arg.includes('\0') || arg.length > 32768)) throw new Error('Invalid agent-desktop command or arguments');
     if (input !== undefined && (typeof input !== 'string' || Buffer.byteLength(input) > 128 * 1024 || !['type', 'set-value', 'clipboard-set'].includes(command))) throw new Error('Desktop stdin accepts at most 128 KiB of text for text commands');
     signal?.throwIfAborted();
@@ -26,23 +27,26 @@ export class AgentDesktop {
     if (createHash('sha256').update(await fs.promises.readFile(this.binary)).digest('hex') !== AGENT_DESKTOP_SHA256) throw new Error('agent-desktop binary differs from pinned verified release');
     fs.mkdirSync(this.stateDir, { recursive: true });
     const argv = [...(headed ? ['--headed'] : []), command, ...args, ...(input !== undefined ? ['--stdin'] : [])];
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       const child = spawn(this.binary, argv, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'], signal, env: { ...process.env, AGENT_DESKTOP_HOME: this.stateDir } });
-      let stdout = ''; let stderr = ''; let overflow = false;
+      let stdout = ''; let stderr = ''; let overflow = false; let spawnError; let started = false;
+      const failure = (code, message, delivered) => ({ ok: false, command, backend: 'agent-desktop', verified: false, error: { code, message }, disposition: { delivery: delivered ? 'unknown' : 'not_delivered', retry: delivered ? 'unsafe' : 'safe' }, requiresObservation: delivered });
+      child.once('spawn', () => { started = true; try { onStarted?.({ pid: child.pid }); } catch (error) { spawnError = error; child.kill(); } });
       const timer = setTimeout(() => { overflow = true; child.kill(); }, 90000);
       child.stdout.on('data', data => { stdout += data; if (Buffer.byteLength(stdout) > 16 * 1024 * 1024) { overflow = true; child.kill(); } });
       child.stderr.on('data', data => { if (stderr.length < 16384) stderr += data; });
-      child.on('error', error => { clearTimeout(timer); reject(error); });
+      child.on('error', error => { spawnError = error; });
       child.on('close', code => {
         clearTimeout(timer);
-        if (signal?.aborted) { reject(signal.reason || new Error('Desktop operation cancelled; inspect live state before retry')); return; }
-        if (overflow) { reject(new Error('Desktop command exceeded time/output limit; delivery unknown, inspect before retry')); return; }
+        if (signal?.aborted) { resolve(failure('DESKTOP_CANCELLED', 'Desktop command cancelled; inspect live state before another action', started)); return; }
+        if (overflow) { resolve(failure('DESKTOP_LIMIT_EXCEEDED', 'Desktop command exceeded time/output limit; inspect live state before another action', started)); return; }
+        if (spawnError) { resolve(failure('DESKTOP_PROCESS_FAILED', 'Desktop command process failed', started)); return; }
         try {
           const result = JSON.parse(stdout.trim());
           if (typeof result.ok !== 'boolean' || result.command !== command || (code !== 0 && result.ok)) throw new Error('Invalid desktop protocol response');
           const disposition = result.data?.disposition || result.error?.disposition;
-          resolve({ ...result, backend: 'agent-desktop', runtimeVersion: AGENT_DESKTOP_VERSION, verified: disposition?.delivery === 'delivered_verified', ...(disposition?.delivery === 'delivered_verified' ? { evidence: { disposition } } : {}), ...(disposition ? { disposition } : {}), ...(DESKTOP_OBSERVATIONS.has(command) && result.ok ? { observed: true } : {}) });
-        } catch (error) { reject(new Error(`agent-desktop protocol failure: ${error.message}; delivery unknown${stderr ? '; native diagnostics available' : ''}`)); }
+          resolve({ ...result, backend: 'agent-desktop', runtimeVersion: AGENT_DESKTOP_VERSION, verified: result.ok && disposition?.delivery === 'delivered_verified', requiresObservation: Boolean(disposition && disposition.delivery !== 'delivered_verified' && disposition.retry !== 'safe'), ...(result.ok && disposition?.delivery === 'delivered_verified' ? { evidence: { disposition } } : {}), ...(disposition ? { disposition } : {}), ...(DESKTOP_OBSERVATIONS.has(command) && result.ok ? { observed: true } : {}) });
+        } catch (error) { resolve(failure('DESKTOP_PROTOCOL_FAILED', `Native protocol failure: ${error.message}; inspect live state${stderr ? '; native diagnostics available' : ''}`, started)); }
       });
       child.stdin.on('error', () => {}); child.stdin.end(input || '');
     });

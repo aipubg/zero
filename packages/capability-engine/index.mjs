@@ -333,7 +333,7 @@ export class CapabilityEngine {
 
     // 6. After-State Verification
     let afterState = null;
-    let verified = Boolean(execResult.verified);
+    let verified = execResult.ok !== false && Boolean(execResult.verified);
     try {
       if (execResult.ok && ['open_app', 'launch_app', 'focus_window'].includes(action)) {
         afterState = await this.operator.execute('get_window_state', {}, null).catch(() => null);
@@ -351,20 +351,24 @@ export class CapabilityEngine {
     let outcome = execResult.outcome;
     if (isCancelled) {
       outcome = 'CANCELLED';
+      verified = false;
+    } else if (execResult.ok === false) {
+      verified = false;
+      outcome = ['FAILED', 'BLOCKED', 'CANCELLED', 'UNVERIFIED'].includes(outcome) ? outcome : 'FAILED';
     } else if (!outcome) {
       outcome = executed ? (verified ? 'COMPLETED' : 'UNVERIFIED') : 'FAILED';
     }
 
     const finalResult = {
-      ok: executed,
+      ok: executed && execResult.ok !== false && !isCancelled,
       executed,
       verified,
-      completed: outcome === 'COMPLETED',
+      completed: outcome === 'COMPLETED' && execResult.ok !== false && !isCancelled,
       outcome,
       capability: toolName,
       action,
       data: execResult,
-      ...(action === 'desktop' ? { backend: execResult.backend, desktop: execResult.data, disposition: execResult.disposition, evidence: execResult.evidence } : {}),
+      ...(action === 'desktop' ? { backend: execResult.backend, desktop: execResult.data, disposition: execResult.disposition, evidence: execResult.evidence, requiresObservation: execResult.requiresObservation === true } : {}),
       window: execResult.window || afterState?.window,
       before: beforeState?.window?.title,
       after: afterState?.window?.title || execResult.window?.title,

@@ -1,0 +1,18 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "actualSpawnedPid": 21580,
+  "cancelledCommand": "DESKTOP_CANCELLED",
+  "capabilityOutcome": "CANCELLED",
+  "disposition": {
+    "delivery": "unknown",
+    "retry": "unsafe"
+  },
+  "requiresObservation": true,
+  "verified": false,
+  "recoveredStatus": true,
+  "scope": "Real CLI process cancellation through actual capability engine, not proof that a physical action was interrupted before delivery"
+}

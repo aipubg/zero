@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { AgentDesktop } from '../packages/agent-runtime/agent-desktop.mjs';
 import { ComputerOperator } from '../app/zero-control-ui/src/computer/operator.js';
-import { canonicalCapabilityEngine } from '../packages/capability-engine/index.mjs';
+import { canonicalCapabilityEngine, CapabilityEngine } from '../packages/capability-engine/index.mjs';
 import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
 
 test('[REAL_OS] primary agent-desktop backend sets native field and invokes button with independent effect readback', { skip: process.env.ZERO_AGENT_DESKTOP_TESTS !== '1', timeout: 60000 }, async () => {
@@ -84,6 +84,28 @@ test('[REAL_OS] primary agent-desktop backend sets native field and invokes butt
     await host.close();
     if (child.exitCode === null) { const closed = once(child, 'exit'); child.kill(); await closed; }
     fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify(report, null, 2));
+    assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir())); assert.ok(path.basename(directory).startsWith('zero-agent-desktop-'));
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('[REAL_OS] cancelled real desktop command settles before returning unknown delivery and recovers for observation', { skip: process.env.ZERO_AGENT_DESKTOP_TESTS !== '1', timeout: 15000 }, async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-agent-desktop-'));
+  const adapter = new AgentDesktop({ stateDir: path.join(directory, 'state') });
+  const engine = new CapabilityEngine({ operator: new ComputerOperator({ agentDesktop: adapter }) });
+  const controller = new AbortController(); let actualPid;
+  try {
+    const result = await engine.execute({ toolName: 'zero_computer_action', args: { action: 'desktop', command: 'wait', args: ['5000'], onStarted: ({ pid }) => { actualPid = pid; controller.abort(); } }, signal: controller.signal });
+    assert.ok(actualPid > 0);
+    assert.equal(result.ok, false); assert.equal(result.verified, false);
+    assert.equal(result.data.error.code, 'DESKTOP_CANCELLED');
+    assert.equal(result.outcome, 'CANCELLED');
+    assert.deepEqual(result.disposition, { delivery: 'unknown', retry: 'unsafe' });
+    assert.equal(result.requiresObservation, true);
+    assert.equal((await adapter.execute({ command: 'status' })).ok, true);
+    const evidence = path.resolve('artifacts/agent-desktop-cancellation', String(Date.now())); fs.mkdirSync(evidence, { recursive: true });
+    fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ classification: ['REAL_OS', 'INTEGRATION'], status: 'PASS', actualSpawnedPid: actualPid, cancelledCommand: result.data.error.code, capabilityOutcome: result.outcome, disposition: result.disposition, requiresObservation: result.requiresObservation, verified: result.verified, recoveredStatus: true, scope: 'Real CLI process cancellation through actual capability engine, not proof that a physical action was interrupted before delivery' }, null, 2));
+  } finally {
     assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir())); assert.ok(path.basename(directory).startsWith('zero-agent-desktop-'));
     fs.rmSync(directory, { recursive: true, force: true });
   }
