@@ -110,6 +110,8 @@ async function loadWs() {
 
 export class ZeroNativeHost {
   constructor(options = {}) {
+    this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 32);
+    if (!Number.isInteger(this.maxAssistantTurns) || this.maxAssistantTurns < 1 || this.maxAssistantTurns > 128) throw new Error('maxAssistantTurns must be an integer between 1 and 128');
     this.port = options.port || Number(process.env.ZERO_PORT || process.env.PORT || 18789);
     this.host = options.host || '127.0.0.1';
     this.configPath = options.configPath || process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
@@ -2083,7 +2085,7 @@ export class ZeroNativeHost {
 
       let turns = 0;
       let completedModelTurn = false;
-      const maxTurns = 5;
+      const maxTurns = this.maxAssistantTurns;
       let finalContent = '';
       let observedProviderModel = null;
       let mediaResult = null;

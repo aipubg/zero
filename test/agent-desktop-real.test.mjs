@@ -10,7 +10,7 @@ import { ComputerOperator } from '../app/zero-control-ui/src/computer/operator.j
 import { canonicalCapabilityEngine, CapabilityEngine } from '../packages/capability-engine/index.mjs';
 import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
 
-test('[REAL_OS] primary agent-desktop backend sets native field and invokes button with independent effect readback', { skip: process.env.ZERO_AGENT_DESKTOP_TESTS !== '1', timeout: 60000 }, async () => {
+test('[REAL_OS] primary agent-desktop backend sets native field and invokes button with independent effect readback', { skip: process.env.ZERO_AGENT_DESKTOP_TESTS !== '1', timeout: 180000 }, async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-agent-desktop-'));
   const evidence = path.resolve('artifacts/agent-desktop-verification', String(Date.now())); fs.mkdirSync(evidence, { recursive: true });
   const title = 'ZERO AgentDesktop Verification ' + crypto.randomUUID();
@@ -77,6 +77,21 @@ test('[REAL_OS] primary agent-desktop backend sets native field and invokes butt
       assert.ok(steps.some(step => (step.toolName || step.tool_name) === 'desktop_control'), 'Actual model must invoke the primary desktop backend');
       report.classification.push('REAL_EXTERNAL');
       report.actualModelPrimaryBackend = { taskId: request.taskId, status: host.tasks.getTask(request.taskId).status, exactModelObservedFieldReturned: true, presentationCardsRemainInContent: request.content.includes('zero-ui:progress'), scope: 'Exact raw model readback; existing rendered content retains application progress card' };
+      if (process.env.ZERO_AGENT_DESKTOP_MULTI_STEP_TESTS === '1') {
+        const target = 'ZERO_MODEL_NATIVE_EFFECT';
+        const changed = await host._runAssistantRequest({ sessionKey: 'native-desktop-multi', userContent: `Use only desktop_control to operate window ${windowId}. First snapshot it. Set the field named ZERO verification input to exactly ${target} using set-value with the qualified field ref in args and the text in input. Take a fresh snapshot, then click the button named ZERO verification apply exactly once. Finally take another fresh snapshot and report the actual Applied counter shown in the window. Do not use file/process tools or assume the result.`, clientSession: { role: 'admin', scopes: ['operator.admin', 'operator.write'] }, source: 'chat' });
+        assert.equal(changed.ok, true, JSON.stringify(changed));
+        const independent = JSON.parse(fs.readFileSync(output, 'utf8').replace(/^\uFEFF/, ''));
+        assert.deepEqual(independent, { text: target, clicks: 2 });
+        const actions = host.tasks.getTaskSteps(changed.taskId).filter(step => (step.toolName || step.tool_name) !== 'assistant_input');
+        assert.ok(actions.every(step => (step.toolName || step.tool_name) === 'desktop_control'));
+        const commands = actions.map(step => step.toolArgs?.command);
+        assert.ok(commands.includes('set-value')); assert.ok(commands.includes('click'));
+        const lastClick = commands.lastIndexOf('click');
+        assert.ok(commands.slice(lastClick + 1).some(command => ['snapshot', 'get'].includes(command)), 'Actual model must observe again after click');
+        assert.match(changed.modelContent, /Applied\s*2/i);
+        report.actualModelMultiStep = { taskId: changed.taskId, status: host.tasks.getTask(changed.taskId).status, commands, independentEffect: independent, actualPostActionObservation: true, turnBudget: host.maxAssistantTurns };
+      }
     }
   } catch (error) { report.status = 'FAIL'; report.error = error.message; throw error; }
   finally {
