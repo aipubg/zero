@@ -1,0 +1,16 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "authenticatedFields": 7,
+  "actualSQLiteSnapshot": true,
+  "actualWindowsDpapiKey": true,
+  "restoredRecordRetrieved": true,
+  "plaintextAbsentInDatabase": true,
+  "omittedKeyRejectedBeforeDestinationCreation": true,
+  "tamperedAuthenticatedCiphertextRejectedDespiteValidFileHash": true,
+  "inputSource": "Controlled storage record, not actual screen capture",
+  "cleanMachineRecovery": "NOT_RUN; same original Windows identity"
+}

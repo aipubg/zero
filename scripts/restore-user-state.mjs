@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { ProtectedFields, encryptedPrefix } from '../packages/screen-intelligence/protected-fields.mjs';
 
 async function digest(filename) {
   const hash = createHash('sha256');
@@ -37,6 +38,25 @@ export async function restoreUserState(backupDirectory, destination) {
     }
     entries.push({ ...record, parts, source });
   }
+  let authenticatedFields = 0;
+  for (const entry of entries.filter(entry => /\.(sqlite|db)$/i.test(entry.file))) {
+    const db = new DatabaseSync(entry.source, { readOnly: true });
+    let protection;
+    try {
+      if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='semantic_observations'").get()) continue;
+      for (const row of db.prepare('SELECT * FROM semantic_observations').iterate()) {
+        for (const [column, value] of Object.entries(row)) {
+          if (typeof value !== 'string' || !value.startsWith(encryptedPrefix)) continue;
+          if (!protection) {
+            if (!entries.some(key => key.source === entry.source + '.key.dpapi')) throw new Error('Encrypted backup is missing its manifest-verified paired key');
+            protection = new ProtectedFields({ keyPath: entry.source + '.key.dpapi', hasCiphertext: true });
+          }
+          protection.open(column, row.observation_id, value);
+          authenticatedFields++;
+        }
+      }
+    } finally { protection?.destroy(); db.close(); }
+  }
   // Exclusive destination creation occurs only after the complete input validates.
   await fs.promises.mkdir(target);
   try {
@@ -46,7 +66,7 @@ export async function restoreUserState(backupDirectory, destination) {
       await fs.promises.copyFile(entry.source, output, fs.constants.COPYFILE_EXCL);
       if (await digest(output) !== entry.sha256) throw new Error('Restored file hash mismatch');
     }
-    return { status: 'RESTORED', destination: target, files: entries.length, hashesVerified: true, sqliteIntegrity: 'ok', activation: 'NOT_RUN; restored files are not automatically activated', encryptedData: 'Paired key files copied if present; decryption requires original Windows identity and separate validation' };
+    return { status: 'RESTORED', destination: target, files: entries.length, hashesVerified: true, sqliteIntegrity: 'ok', authenticatedFields, activation: 'NOT_RUN; restored files are not automatically activated', encryptedData: authenticatedFields ? 'All encrypted observation fields authenticated using original Windows identity before restore' : 'No encrypted observation fields found; decryption NOT_RUN' };
   } catch (error) {
     // Preserve partial output for diagnosis; never delete concurrent user files.
     error.message = `Restore incomplete; new destination retained for inspection: ${error.message}`;
