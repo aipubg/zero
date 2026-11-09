@@ -1,0 +1,11 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "FAIL",
+  "inputSource": "Actual local Windows synthesis in RAM; not microphone speech",
+  "error": "{\"code\":\"missing_api_key\",\"message\":\"Missing API key for provider 'nv'. Set environment variable or configure in .env.\"}",
+  "finishedAt": "2026-11-09T18:15:58.929Z"
+}

@@ -1,0 +1,22 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "inputSource": "Actual local Windows synthesis in RAM; not microphone speech",
+  "actualTranscript": "The boys engine can now speak real words",
+  "spokenAssistantContent": "That’s exciting! Here’s a short demonstration of the engine speaking real words:\n\n**“Hello, world!”**",
+  "synthesizedReplyBytes": 260000,
+  "played": false,
+  "taskId": "task_1794248212196_zq5el2",
+  "voiceTaskStatus": "COMPLETED",
+  "typedFollowup": "Your previous message said that **the voice engine can now speak real words**.",
+  "persistedMessages": 4,
+  "completedVoiceTurns": 1,
+  "cloudRequests": 2,
+  "humanMicrophone": "UNVERIFIED",
+  "acousticBargeIn": "UNVERIFIED",
+  "finishedAt": "2026-11-09T18:17:01.744Z"
+}
