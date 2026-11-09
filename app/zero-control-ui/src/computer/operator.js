@@ -13,8 +13,10 @@
 import { ObservationCoordinator } from "./observation-coordinator.js";
 import * as Driver from "./windows-driver.js";
 import { modeManager } from "../../../../rules/mode-manager.mjs";
+import { AgentDesktop, DESKTOP_OBSERVATIONS } from "../../../../packages/agent-runtime/agent-desktop.mjs";
 
 export const COMPUTER_ACTIONS = Object.freeze([
+  "desktop",
   "screenshot",
   "get_screen_size",
   "get_cursor",
@@ -71,7 +73,8 @@ export const OBSERVATION_ACTIONS = Object.freeze([
 ]);
 
 export class ComputerOperator {
-  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false } = {}) {
+  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false, agentDesktop = new AgentDesktop() } = {}) {
+    this.agentDesktop = agentDesktop;
     this.getPolicyState = getPolicyState;
     this.logger = logger;
     this.humanHold = false;
@@ -165,7 +168,7 @@ export class ComputerOperator {
     }
 
     // Evaluate safety against human hold and freshness
-    const safety = this.evaluateSafety(normalizedAction);
+    const safety = this.evaluateSafety(normalizedAction === "desktop" && DESKTOP_OBSERVATIONS.has(params.command) ? "get_elements" : normalizedAction);
     if (!safety.allowed) {
       return {
         ok: false,
@@ -178,6 +181,8 @@ export class ComputerOperator {
 
     try {
       switch (normalizedAction) {
+        case "desktop":
+          return await this.agentDesktop.execute(params, signal);
         case "screenshot": {
           const shot = await Driver.captureScreen({
             format: params.format ?? "png",

@@ -10,11 +10,13 @@
  */
 
 import { ComputerOperator } from '../../app/zero-control-ui/src/computer/operator.js';
+import { DESKTOP_OBSERVATIONS } from '../agent-runtime/agent-desktop.mjs';
 
 export const CAPABILITY_DEFINITIONS = Object.freeze({
   'zero_computer_action': {
     description: 'Execute native Windows OS actions: open_app, type_text, press_key, mouse_move, left_click, scroll, wait, screenshot, list_windows, list_apps, get_window_state, get_screen_size, play, open_url.',
     allowedActions: [
+      'desktop',
       'open_app', 'launch_app', 'type_text', 'type', 'press_key', 'press', 'hotkey',
       'mouse_move', 'move', 'left_click', 'click', 'right_click', 'double_click',
       'mouse_drag', 'drag', 'scroll', 'wait', 'screenshot', 'list_windows', 'list_apps',
@@ -251,7 +253,8 @@ export class CapabilityEngine {
     }
 
     // 2. Deterministic Safety & Human Takeover Enforcement
-    const safety = this.operator.evaluateSafety(action);
+    const desktopObservation = action === 'desktop' && DESKTOP_OBSERVATIONS.has(params.command);
+    const safety = this.operator.evaluateSafety(desktopObservation ? 'get_elements' : action);
     if (!safety.allowed) {
       const holdResult = {
         ok: false,
@@ -272,7 +275,7 @@ export class CapabilityEngine {
 
 
     // 3. Desktop Lease Coordination
-    const isDesktopAction = ['type_text', 'type', 'press_key', 'press', 'hotkey', 'mouse_move', 'move', 'left_click', 'click', 'right_click', 'double_click', 'mouse_drag', 'drag', 'focus_window', 'control_window'].includes(action);
+    const isDesktopAction = (action === 'desktop' && !desktopObservation) || ['type_text', 'type', 'press_key', 'press', 'hotkey', 'mouse_move', 'move', 'left_click', 'click', 'right_click', 'double_click', 'mouse_drag', 'drag', 'focus_window', 'control_window'].includes(action);
     let leaseAcquiredLocally = false;
     if (this.leaseManager && isDesktopAction) {
       const leaseRes = await this.leaseManager.acquireLease(agentId, {
@@ -361,6 +364,7 @@ export class CapabilityEngine {
       capability: toolName,
       action,
       data: execResult,
+      ...(action === 'desktop' ? { backend: execResult.backend, desktop: execResult.data, disposition: execResult.disposition, evidence: execResult.evidence } : {}),
       window: execResult.window || afterState?.window,
       before: beforeState?.window?.title,
       after: afterState?.window?.title || execResult.window?.title,

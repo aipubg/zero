@@ -1,0 +1,34 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "scope": "Owned native Windows Forms fixture; not general application accuracy benchmark",
+  "backend": "agent-desktop",
+  "runtimeVersion": "1.2.0",
+  "actualCanonicalHostRegisteredTool": true,
+  "actualUnicodeEffect": {
+    "text": "ZERO सत्यापित input",
+    "clicks": 1
+  },
+  "nativeSetDisposition": {
+    "delivery": "delivered_verified",
+    "retry": "unsafe"
+  },
+  "nativeClickDisposition": {
+    "delivery": "delivered_unverified",
+    "retry": "unsafe"
+  },
+  "malformedRefRejectedWithoutSecondClick": true,
+  "manualHoldPreserved": true,
+  "observationDuringHold": true,
+  "actualModelPrimaryBackend": {
+    "taskId": "task_1794265103870_99vlz3",
+    "status": "COMPLETED",
+    "exactModelObservedFieldReturned": true,
+    "presentationCardsRemainInContent": true,
+    "scope": "Exact raw model readback; existing rendered content retains application progress card"
+  }
+}

@@ -1,0 +1,457 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "classificationMeaning": "Selected workflow scope; labels do not imply a passing outcome or product acceptance.",
+  "startedAt": "2026-11-09T22:53:50.363Z",
+  "status": "PASS",
+  "evidence": "E:\\zero\\artifacts\\functional-browser\\1794264830354",
+  "checks": [
+    {
+      "name": "Chat connects, native plugin activates, composer accepts text",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 474,
+      "details": {
+        "pageErrors": []
+      }
+    },
+    {
+      "name": "Memory search uses actual persisted records through the UI",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 256,
+      "details": {
+        "memoryId": "mem_semantic_1794264831742_pwh15",
+        "marker": "Browser memory evidence 62813"
+      }
+    },
+    {
+      "name": "Skills filter changes visible results",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 200,
+      "details": {
+        "query": "web-research"
+      }
+    },
+    {
+      "name": "Skills details expose persisted enable/disable controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 861,
+      "details": {
+        "disabledPersisted": true,
+        "reenabled": true
+      }
+    },
+    {
+      "name": "Search form executes its configured provider and reports real outcome",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "status": "PASS",
+      "durationMs": 1970,
+      "details": {
+        "sources": 5,
+        "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+        "sourceHttpStatus": 200,
+        "sourceBytes": 1030411,
+        "verifiedClaims": false
+      }
+    },
+    {
+      "name": "Plugins current page exposes lifecycle controls",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 2097,
+      "details": {
+        "installedPersisted": true,
+        "executed": true,
+        "platform": "win32",
+        "verified": false,
+        "disabledAcrossProcessRestart": true,
+        "reenabled": true,
+        "uninstalled": true
+      }
+    },
+    {
+      "name": "Actual wheel input increases About scrollTop",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 521,
+      "details": {
+        "before": 0,
+        "scrollHeight": 1033,
+        "clientHeight": 165,
+        "after": 500
+      }
+    },
+    {
+      "name": "Gateway reconnects after a real process stop/restart and memory remains",
+      "classification": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "durationMs": 1355,
+      "details": {
+        "oldPid": 14140,
+        "newPid": 16528,
+        "memoryCount": 1,
+        "closedAt": 1794264838261,
+        "reconnectedAt": 1794264839114,
+        "completedRequestReplay": null
+      }
+    }
+  ],
+  "pageErrors": [],
+  "rpcDiagnostics": [
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.startup",
+      "fields": [
+        "sessionKey",
+        "toolResultMaxChars",
+        "limit",
+        "maxBytes"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.startup",
+      "ok": true,
+      "fields": [
+        "ok",
+        "sessionKey",
+        "sessionId",
+        "sessionInfo",
+        "messages",
+        "totalMessages",
+        "hasMore"
+      ]
+    },
+    {
+      "direction": "request",
+      "method": "chat.metadata",
+      "fields": [
+        "agentId",
+        "includeModels"
+      ]
+    },
+    {
+      "direction": "response",
+      "method": "chat.metadata",
+      "ok": true,
+      "fields": [
+        "commands"
+      ]
+    }
+  ],
+  "chatLifecycle": [],
+  "connections": [
+    {
+      "openedAt": 1794264831291,
+      "closedAt": null,
+      "connectedAt": 1794264831442,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264831789,
+      "closedAt": null,
+      "connectedAt": 1794264831818,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264832071,
+      "closedAt": null,
+      "connectedAt": 1794264832107,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264832692,
+      "closedAt": null,
+      "connectedAt": 1794264832720,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264833256,
+      "closedAt": null,
+      "connectedAt": 1794264833277,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264835354,
+      "closedAt": null,
+      "connectedAt": 1794264835410,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264835944,
+      "closedAt": 1794264836280,
+      "connectedAt": 1794264835998,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264836778,
+      "closedAt": null,
+      "connectedAt": 1794264836830,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264837485,
+      "closedAt": null,
+      "connectedAt": 1794264837533,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264837733,
+      "closedAt": null,
+      "connectedAt": 1794264837781,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264838042,
+      "closedAt": 1794264838261,
+      "connectedAt": 1794264838170,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    },
+    {
+      "openedAt": 1794264839092,
+      "closedAt": null,
+      "connectedAt": 1794264839114,
+      "requestedScopes": [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.questions",
+        "operator.pairing"
+      ],
+      "role": "operator",
+      "scopes": [
+        "operator.admin",
+        "operator.write",
+        "operator.read",
+        "operator.approvals"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-09T22:53:59.526Z"
+}

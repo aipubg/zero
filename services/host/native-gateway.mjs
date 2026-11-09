@@ -53,6 +53,7 @@ import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
+import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/agent-runtime/agent-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
 import { createScreenObserver } from '../../packages/screen-intelligence/index.mjs';
@@ -228,6 +229,7 @@ export class ZeroNativeHost {
 
     const tool = (name, description, parameters, handler) => canonicalCapabilityEngine.registerCapability({ name, description, parameters, handler });
     registerLocalTools(canonicalCapabilityEngine, { cwd: REPO_ROOT });
+    tool('desktop_control', 'PRIMARY desktop control backend: agent-desktop native accessibility. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Read a fresh snapshot after actions. Prefer semantic set-value with input text over physical typing. Old coordinate tools are compatibility fallbacks. Never retry an uncertain delivery; inspect live state. Read skills get desktop and skills get platform for supported commands.', { type: 'object', properties: { command: { type: 'string', enum: DESKTOP_COMMANDS }, args: { type: 'array', description: 'CLI tokens, NOT a shell string. snapshot example: ["--window-id","w-123"]. get example: ["@snapshot:e1","--property","value"]. click/set-value: ["@snapshot:e1"]. skills guide: ["get","desktop"]. Reuse refs only from returned snapshots.', items: { type: 'string' } }, input: { type: 'string', description: 'Text to insert for set-value/type/clipboard-set ONLY. Never put refs, flags or read instructions here. Omit for snapshot/get/click.' }, headed: { type: 'boolean', description: 'Permit physical keyboard/cursor input when explicitly needed; semantic actions default false.' } }, required: ['command'], additionalProperties: false }, (args, signal) => canonicalCapabilityEngine.execute({ toolName: 'zero_computer_action', args: { ...args, action: 'desktop' }, signal }));
     tool('research_search', 'Retrieve real search results and provenance. Retrieved sources are not independently verified.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => this.researchEngine.searchEngine.search(args.query, args));
     tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
     tool('memory_remember', 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string', enum: Object.values(MEMORY_LAYERS), default: 'semantic' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
@@ -1257,7 +1259,7 @@ export class ZeroNativeHost {
           const result = await this._dispatchRpc(`zero-policy.computer-hold.${requestedAction}`, params, clientSession, ws, isReferenceWire);
           return { ...result, held: this.computerHold.held, owned: this.computerHold.heldBy === clientSession?.clientId, scope: 'global', resumeSnapshotRequired: false };
         }
-        const isObservation = ['screenshot', 'get_screen_size', 'get_cursor', 'get_cursor_position', 'get_window_state', 'list_windows', 'list_apps', 'get_elements', 'get_uia_elements', 'clipboard_get', 'wait'].includes(requestedAction);
+        const isObservation = (['desktop_control', 'desktop'].includes(requestedAction) && DESKTOP_OBSERVATIONS.has(params.command)) || ['screenshot', 'get_screen_size', 'get_cursor', 'get_cursor_position', 'get_window_state', 'list_windows', 'list_apps', 'get_elements', 'get_uia_elements', 'clipboard_get', 'wait'].includes(requestedAction);
         if (this.computerHold.held && !isObservation) {
           return { ok: false, error: 'Action refused: Human takeover hold is currently active.' };
         }
@@ -2008,7 +2010,7 @@ export class ZeroNativeHost {
         type: 'function',
         function: {
           name: 'zero_computer_action',
-          description: 'Directly execute Windows OS computer actions: open_app, launch_app, type_text, play, browser, open_url, press_key, mouse_move, left_click, list_windows, list_apps, get_window_state, get_screen_size.',
+          description: 'Compatibility Windows actions. Prefer desktop_control for primary accessibility snapshots and qualified-ref interaction. Use these legacy actions for explicitly needed coordinate or existing browser workflows.',
           parameters: {
             type: 'object',
             required: ['action'],
@@ -2268,6 +2270,7 @@ export class ZeroNativeHost {
       }
       const failedActions = executedActions.filter((action, index) => actionFailed(action) && !executedActions.slice(index + 1).some(later =>
         !actionFailed(later) && later.execRes?.verified === true && later.action === action.action && isDeepStrictEqual(later.args, action.args)));
+      const modelContent = finalContent;
       // Truthful media widget card
       if (mediaResult && !finalContent.includes('zero-ui:media')) {
         const isPlaying = mediaResult.playbackState === 'PLAYING';
@@ -2365,6 +2368,7 @@ export class ZeroNativeHost {
         role: 'assistant',
         content: finalContent,
         requestedModel: model || null,
+        modelContent,
         providerModel: observedProviderModel,
         messages: this.sessions.getTranscript(sessionKey),
       };
