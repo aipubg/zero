@@ -1,0 +1,220 @@
+{
+  "classification": [
+    "INTEGRATION",
+    "REAL_OS"
+  ],
+  "status": "RESTORED",
+  "sourceBackup": "E:\\zero\\.backup\\functional-correction-1793599149884",
+  "destination": "E:\\zero\\artifacts\\restore-user-state\\1794248470823\\restored",
+  "files": 21,
+  "hashesVerified": true,
+  "sqliteIntegrity": "ok",
+  "activation": "NOT_RUN; restored files are not automatically activated",
+  "encryptedData": "Paired key files copied if present; decryption requires original Windows identity and separate validation",
+  "databases": [
+    {
+      "file": ".zero-data\\screen-observations.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "semantic_observations",
+          "rows": 0
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492293399.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_tasks",
+          "rows": 0
+        },
+        {
+          "table": "zero_task_steps",
+          "rows": 0
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492369804.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_tasks",
+          "rows": 1
+        },
+        {
+          "table": "zero_task_steps",
+          "rows": 0
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\test-recovery-1793492461400.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_tasks",
+          "rows": 1
+        },
+        {
+          "table": "zero_task_steps",
+          "rows": 1
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-artifacts.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_artifacts",
+          "rows": 8
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-automation.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_cron_jobs",
+          "rows": 12
+        },
+        {
+          "table": "zero_cron_runs",
+          "rows": 6706
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-devices.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_paired_devices",
+          "rows": 1
+        },
+        {
+          "table": "zero_device_notifications",
+          "rows": 3
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-event-automation.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_event_rules",
+          "rows": 5
+        },
+        {
+          "table": "zero_connectors",
+          "rows": 2
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-memory.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_memories",
+          "rows": 2
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-plugins.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_installed_plugins",
+          "rows": 3
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-sessions.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_sessions",
+          "rows": 22
+        },
+        {
+          "table": "zero_messages",
+          "rows": 55
+        },
+        {
+          "table": "zero_events",
+          "rows": 55
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-tasks.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_tasks",
+          "rows": 73
+        },
+        {
+          "table": "zero_task_steps",
+          "rows": 40
+        },
+        {
+          "table": "zero_task_checkpoints",
+          "rows": 13
+        },
+        {
+          "table": "zero_idempotency_keys",
+          "rows": 0
+        },
+        {
+          "table": "zero_agent_messages",
+          "rows": 50
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-unified-memory.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_unified_memories",
+          "rows": 21
+        }
+      ]
+    },
+    {
+      "file": ".zero-data\\zero-workspaces.sqlite",
+      "integrity": "ok",
+      "tables": [
+        {
+          "table": "zero_workspaces",
+          "rows": 4
+        },
+        {
+          "table": "zero_projects",
+          "rows": 8
+        },
+        {
+          "table": "zero_workers",
+          "rows": 9
+        },
+        {
+          "table": "zero_task_handoffs",
+          "rows": 4
+        }
+      ]
+    }
+  ],
+  "encryption": [],
+  "scope": "Existing actual backup restored to isolated NEW destination; actual SQLite tables reopened and encrypted fields authenticated when present. Live host activation/clean-machine recovery NOT_RUN.",
+  "verificationStatus": "PASS",
+  "encryptedFieldVerification": "NOT_RUN; selected historical backup contains no encrypted sample"
+}
