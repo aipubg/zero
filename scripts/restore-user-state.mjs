@@ -23,7 +23,7 @@ export async function restoreUserState(backupDirectory, destination) {
     const parts = record.file.replaceAll('\\', '/').split('/');
     if (parts.some(part => !part || part === '.' || part === '..' || /[<>:"|?*\x00-\x1f]/.test(part) || /[. ]$/.test(part) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(part))) throw new Error('Unsafe backup file path');
     const relative = parts.join('/');
-    if (!/^(\.zero-data|models)\/[^/]+$|^zero-system\/config\/[^/]+$/.test(relative)) throw new Error('Unsupported backup file location');
+    if (!/^(\.zero-data|models)\/[^/]+$|^zero-system\/config\/[^/]+$|^skills\/.+/.test(relative)) throw new Error('Unsupported backup file location');
     if (seen.has(relative.toLowerCase())) throw new Error('Duplicate backup destination');
     seen.add(relative.toLowerCase());
     if (!Number.isSafeInteger(record.bytes) || record.bytes < 0 || !/^[a-f0-9]{64}$/.test(record.sha256)) throw new Error('Invalid backup integrity metadata');
@@ -31,7 +31,7 @@ export async function restoreUserState(backupDirectory, destination) {
     const contained = path.relative(sourceRoot, source);
     if (contained.startsWith('..') || path.isAbsolute(contained)) throw new Error('Backup source escapes backup directory');
     if (!fs.statSync(source).isFile() || fs.statSync(source).size !== record.bytes || await digest(source) !== record.sha256) throw new Error('Backup hash/size mismatch');
-    if (/\.(sqlite|db)$/i.test(relative)) {
+    if (/^\.zero-data\/[^/]+\.(sqlite|db)$/i.test(relative)) {
       const db = new DatabaseSync(source, { readOnly: true });
       try { if (db.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') throw new Error('Backup SQLite integrity failed'); }
       finally { db.close(); }
@@ -39,7 +39,7 @@ export async function restoreUserState(backupDirectory, destination) {
     entries.push({ ...record, parts, source });
   }
   let authenticatedFields = 0;
-  for (const entry of entries.filter(entry => /\.(sqlite|db)$/i.test(entry.file))) {
+  for (const entry of entries.filter(entry => /^\.zero-data[/\\][^/\\]+\.(sqlite|db)$/i.test(entry.file))) {
     const db = new DatabaseSync(entry.source, { readOnly: true });
     let protection;
     try {

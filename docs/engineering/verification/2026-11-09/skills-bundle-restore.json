@@ -1,0 +1,12 @@
+{
+  "classification": [
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "backup": "E:\\zero\\.backup\\functional-correction-1794248916175",
+  "restoredDisabledState": true,
+  "restoredConfig": true,
+  "nestedScriptBytesPreserved": true,
+  "actualRestoredScriptOutput": "RESTORED_SKILL_SCRIPT",
+  "scope": "Controlled skill backup/restore with direct Node script execution; not external skill/task acceptance or plugin bundle recovery"
+}
