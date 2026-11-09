@@ -43,3 +43,22 @@ test('[INTEGRATION] download streams actual HTTP bytes, rejects corrupt/truncate
     await fs.rm(directory, { recursive: true, force: true });
   }
 });
+
+test('[INTEGRATION] actual stalled HTTP body times out and leaves no published or temporary file', { timeout: 40000 }, async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'zero-download-'));
+  const server = http.createServer((request, response) => { response.write('GGUF'); });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    await assert.rejects(downloadVerifiedGguf({
+      url: `http://127.0.0.1:${server.address().port}`,
+      destination: path.join(directory, 'stalled.gguf'), sizeBytes: 8, sha256: '0'.repeat(64),
+    }), /30 seconds/);
+    assert.deepEqual(await fs.readdir(directory), []);
+  } finally {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+    assert.equal(path.dirname(directory), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(directory).startsWith('zero-download-'));
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});

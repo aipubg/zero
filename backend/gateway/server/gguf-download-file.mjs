@@ -49,8 +49,9 @@ export async function downloadVerifiedGguf({ url, destination, sizeBytes, sha256
     transferSignal.throwIfAborted();
     await handle.sync();
     await handle.close(); handle = null;
-    // COPYFILE_EXCL also closes the race after the initial existence check.
-    await fs.promises.copyFile(temporary, destination, fs.constants.COPYFILE_EXCL);
+    // Same-directory hard link publishes all verified bytes atomically, refuses
+    // existing names and prevents scans from observing a partially copied GGUF.
+    await fs.promises.link(temporary, destination);
     return { filename: path.basename(destination), sizeBytes: bytes, sha256: actualSha256, verified: true };
   } finally {
     clearTimeout(timer);

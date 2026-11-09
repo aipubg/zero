@@ -14,8 +14,8 @@ test('[REAL_EXTERNAL] official GGUF download completes with independent disk has
   const evidence = path.resolve('artifacts/huggingface-download', String(Date.now()));
   fs.mkdirSync(evidence, { recursive: true });
   const report = { classification: ['REAL_EXTERNAL', 'INTEGRATION'], status: 'RUNNING', startedAt: new Date().toISOString(), inference: 'NOT_RUN' };
+  const service = new LocalGgufEngineService({ modelsDir: directory });
   try {
-    const service = new LocalGgufEngineService({ modelsDir: directory });
     const repo = 'Qwen/Qwen2.5-0.5B-Instruct-GGUF';
     const filename = 'qwen2.5-0.5b-instruct-q5_k_m.gguf';
     const started = await service.startHuggingFaceDownload(repo, filename);
@@ -37,8 +37,29 @@ test('[REAL_EXTERNAL] official GGUF download completes with independent disk has
     assert.equal(fs.statSync(destination).size, completed.totalBytes);
     assert.equal(fs.readdirSync(directory).some(name => name.endsWith('.download')), false);
     Object.assign(report, { status: 'PASS', completed, independentDiskSha256: actualSha256, existingFilePreserved: true });
+    if (process.env.ZERO_HF_INFERENCE_TESTS === '1') {
+      report.classification.push('REAL_OS');
+      const modelId = filename.replace(/\.gguf$/, '');
+      const models = await service.scanModels();
+      assert.equal(models.find(model => model.id === modelId)?.fullPath, destination);
+      // Bound actual allocation independently of the model's advertised context.
+      await service.saveManifest({ id: modelId, filename, modelPath: destination, zeroCopy: false, parameters: { num_ctx: 512 } });
+      await service.loadModel(modelId);
+      assert.equal(service.getMemoryStatus().isLoaded, true);
+      const result = await service.runSelfTest(modelId);
+      assert.equal(result.passed, true, JSON.stringify(result));
+      assert.ok(result.tokensGenerated > 0 && result.tokensGenerated <= 12);
+      assert.ok(result.sampleOutput.trim());
+      report.inference = { status: 'PASS', scope: 'Newly downloaded bytes scanned, loaded and generated actual native tokens; semantic chat/tool accuracy not established', result };
+      await service.unloadModel(true);
+      assert.equal(service.getMemoryStatus().isLoaded, false);
+    }
   } catch (error) { report.status = 'FAIL'; report.error = error.message; throw error; }
   finally {
+    service.cancelDownload();
+    const cleanupDeadline = Date.now() + 10000;
+    while (service.getDownloadProgress()?.status === 'downloading' && Date.now() < cleanupDeadline) await new Promise(resolve => setTimeout(resolve, 50));
+    await service.unloadModel(true);
     report.finishedAt = new Date().toISOString();
     fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify(report, null, 2));
     assert.equal(path.dirname(directory), path.resolve(os.tmpdir()));
