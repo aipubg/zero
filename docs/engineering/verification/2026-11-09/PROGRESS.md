@@ -64,3 +64,10 @@
 - Repository validation CONTRACT passes; runner classification catalog validity is not test execution or release approval.
 - Historical official ledger explicitly superseded; earlier release recommendation and dependency-independence claim withdrawn. Old test counts preserved as historical, not current acceptance.
 - User confirmed speaking expected phrase during first microphone probe; failed recognition remains FAIL. No successful human STT/barge-in claim. Owner configuration edits preserved/excluded; full objective remains open.
+
+## Verified-byte download primitive; canonical integration still pending
+- Added gguf-download-file.mjs: exclusive unique temporary file, streamed size cap, complete byte-count/SHA-256/GGUF-header verification, partial-write handling, cancellation checks and COPYFILE_EXCL publication. Existing destination is preserved. Temporary files are cleaned after failure/cancellation.
+- INTEGRATION test/gguf-download-file-integration.test.mjs PASS: real loopback HTTP bytes written and compared byte-for-byte; existing file preserved; incorrect SHA, truncated response, oversize response and actual pending-response cancellation rejected with temporary cleanup. Controlled transfer fixture is not a loadable model and does not establish external download or inference acceptance.
+- Catalog CONTRACT also PASS. These are two selected checks, not a full acceptance run.
+- Native canonical hf-download remains NOT_CONNECTED. Legacy service still needs migration to this primitive and official pinned metadata before exposure; no secure end-to-end downloader claim. An attempted migration script could not run because python command is unavailable; service source remained unchanged and its import check alone is not functional evidence.
+- Actual endurance process24180 independently alive with original start time. Complete24hour gate remains unproven.
