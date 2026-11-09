@@ -1,0 +1,12 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "authenticatedRows": 2,
+  "validBackup": "E:\\zero\\.backup\\functional-correction-1794248802477",
+  "olderCorruptRowRejected": true,
+  "latestRowUntouched": true,
+  "inputSource": "Controlled real DPAPI-encrypted storage records, not continuous screen capture"
+}

@@ -40,15 +40,21 @@ for (const record of records.filter(record => /\.(sqlite|db)$/.test(record.file)
   let protection;
   try {
     if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='semantic_observations'").get()) continue;
-    const row = db.prepare('SELECT * FROM semantic_observations ORDER BY timestamp DESC LIMIT 1').get();
-    if (!row || !Object.values(row).some(value => typeof value === 'string' && value.startsWith(encryptedPrefix))) continue;
-    if (!fs.existsSync(filename + '.key.dpapi')) throw new Error('Encrypted snapshot is missing its paired DPAPI key');
-    protection = new ProtectedFields({ keyPath: filename + '.key.dpapi', hasCiphertext: true });
     let authenticatedFields = 0;
-    for (const [column, value] of Object.entries(row)) {
-      if (typeof value === 'string' && value.startsWith(encryptedPrefix)) { protection.open(column, row.observation_id, value); authenticatedFields++; }
+    let authenticatedRows = 0;
+    for (const row of db.prepare('SELECT * FROM semantic_observations').iterate()) {
+      let encrypted = false;
+      for (const [column, value] of Object.entries(row)) {
+        if (typeof value !== 'string' || !value.startsWith(encryptedPrefix)) continue;
+        if (!protection) {
+          if (!fs.existsSync(filename + '.key.dpapi')) throw new Error('Encrypted snapshot is missing its paired DPAPI key');
+          protection = new ProtectedFields({ keyPath: filename + '.key.dpapi', hasCiphertext: true });
+        }
+        protection.open(column, row.observation_id, value); authenticatedFields++; encrypted = true;
+      }
+      if (encrypted) authenticatedRows++;
     }
-    encryptedSnapshots.push({ file: record.file, pairedKeyCopied: true, authenticatedFields });
+    if (authenticatedFields) encryptedSnapshots.push({ file: record.file, pairedKeyCopied: true, authenticatedFields, authenticatedRows });
   } finally { protection?.destroy(); db.close(); }
 }
 fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({ createdAt: new Date().toISOString(), stateDirectory, files: records, encryptedSnapshots }, null, 2));
