@@ -71,8 +71,14 @@ separate user-initiated hardware test.
 
 Availability now reports WinMM input/output names, channel counts and current
 session device indices. These indices can change after reconnecting a headset;
-capture/playback currently use the Windows default mapper. Enumeration does not
+playback and capture without `deviceId` use the Windows default mapper. Enumeration does not
 establish microphone permission, speech recognition or audible playback.
+
+`WindowsSpeechBackend.startMicrophone`, `VoiceEngine.startMicrophone` and
+`voice.microphone.start` accept an optional current input `deviceId`. An unavailable
+index fails instead of silently choosing another input. The actual selected index
+is reported on readiness/start. This does not persist a device preference or add
+a selector to the existing UI.
 
 Two opt-in hardware probes keep captured audio in RAM and omit ambient transcripts
 from their JSON reports under `artifacts/`:

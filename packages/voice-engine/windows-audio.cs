@@ -132,10 +132,11 @@ namespace Zero.Voice {
             }
         }
 
-        public static void Capture(int sampleRate, int durationMs) {
+        public static void Capture(int sampleRate, int durationMs, int deviceId) {
+            if (deviceId < -1 || (deviceId >= 0 && (uint)deviceId >= waveInGetNumDevs())) throw new ArgumentOutOfRangeException("deviceId", "Requested recording device is unavailable");
             IntPtr handle;
             Format format = Pcm(sampleRate);
-            Check(waveInOpen(out handle, uint.MaxValue, ref format, IntPtr.Zero, IntPtr.Zero, 0), "waveInOpen");
+            Check(waveInOpen(out handle, deviceId < 0 ? uint.MaxValue : (uint)deviceId, ref format, IntPtr.Zero, IntPtr.Zero, 0), "waveInOpen");
             IntPtr[] headers = new IntPtr[8];
             bool[] prepared = new bool[8];
             try {
@@ -147,7 +148,7 @@ namespace Zero.Voice {
                     Check(waveInAddBuffer(handle, headers[i], HeaderSize), "waveInAddBuffer");
                 }
                 Check(waveInStart(handle), "waveInStart");
-                Console.WriteLine("{\"type\":\"ready\"}");
+                Console.WriteLine("{\"type\":\"ready\",\"deviceId\":" + deviceId + "}");
                 Stopwatch elapsed = Stopwatch.StartNew();
                 int index = 0;
                 while (!cancelled && (durationMs == 0 || elapsed.ElapsedMilliseconds < durationMs)) {

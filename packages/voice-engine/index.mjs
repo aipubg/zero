@@ -211,8 +211,9 @@ export class VoiceEngine extends EventEmitter {
       this._checkOperation(session, operation);
       if (session.microphone !== operation) throw new VoiceError('VOICE_CAPTURE_ENDED', 'Microphone capture ended before becoming ready');
       operation.started = true;
-      this.emit('voice:microphone_started', { sessionId, sampleRate: this.sampleRate });
-      return { ok: true, sessionId, microphoneActive: true, sampleRate: this.sampleRate, encoding: 'pcm_s16le', channels: 1 };
+      const selectedDevice = options.deviceId === undefined ? {} : { deviceId: options.deviceId };
+      this.emit('voice:microphone_started', { sessionId, sampleRate: this.sampleRate, ...selectedDevice });
+      return { ok: true, sessionId, microphoneActive: true, sampleRate: this.sampleRate, encoding: 'pcm_s16le', channels: 1, ...selectedDevice };
     } catch (error) {
       operation.controller.abort();
       if (!operation.done) { this._reportError(session, 'microphone', error); cleanup(); }

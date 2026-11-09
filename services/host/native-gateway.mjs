@@ -1679,7 +1679,7 @@ export class ZeroNativeHost {
       case 'voice.microphone.start':
         await this._attachVoice(params, clientSession, ws, isReferenceWire);
         this.voiceEngine.startSession(params.sessionId);
-        return await this.voiceEngine.startMicrophone(params.sessionId);
+        return await this.voiceEngine.startMicrophone(params.sessionId, { deviceId: params.deviceId });
 
       case 'voice.microphone.stop':
         await this.voiceConversation.detach(params.sessionId);

@@ -8,3 +8,10 @@
 - Endurance PID16016 absent in Get-Process/CIM and runner inventory. Last checkpoint0.478242h, not24h. New actual24h capture/OCR/localvision PID24180 launched2026-11-09T17:31:32Z, independently live with initial checkpoint; all prior artifacts retained. Current statusIN_PROGRESS/resourceAcceptancePARTIAL. See endurance-process-transition.json.
 - Existing owner edits in models/gateway-defaults.json, zero-system/config/zero.json and zero.template.json are preserved and excluded from this commit. No user data deletion or new approval popup.
 - Runner classification integrity VALID. Full master acceptance, human voice interaction, barge-in, local exact recall, mobile/cloud prerequisites and24h gate remain open.
+
+## Explicit current microphone selection
+- Added optional deviceId throughout Windows backend, VoiceEngine and native voice.microphone.start RPC. Native WinMM validates current index against actual device count; missing device fails rather than choosing default. Omission retains mapper behavior. Readiness/start reports selected index.
+- Actual REAL_OS probe1794245643946 FAIL:900ms capture produced no frames. Preserved. Increased capture observation to3seconds, not reduced assertions. Probe1794245658484 PASS:actual enumerated device opened, PCM frames observed/cleared in RAM, unavailable index255 rejected. Evidence voice-device-selection.json. No speech-recognition claim.
+- Existing25voice unit/contract checks passed alongside first probe; actual successful selection test rerun independently. No raw microphone saved. UI/API layout preserved; no persisted device preference or UI selector claimed.
+- Actual browser --devices artifacts/functional-browser/1794245683019/report.json PASS,nineworkflows including real microphone toolbar start/stop/disconnect and restart. This tests default UI route; explicit index route proved by native test, not a UI selection control.
+- Runner integrity VALID. Endurance PID24180 independently live. Existing owner config changes remain excluded. Human STT, acoustic barge-in, local strict recall and full24h/master acceptance still open.

@@ -76,7 +76,9 @@ try {
     } elseif ($Operation -eq 'capture') {
         Load-NativeAudio
         [Zero.Voice.NativeAudio]::ListenForCancellation()
-        [Zero.Voice.NativeAudio]::Capture([int]$request.sampleRate, [int]$request.durationMs)
+        $deviceId = -1
+        if ($null -ne $request.deviceId) { $deviceId = [int]$request.deviceId }
+        [Zero.Voice.NativeAudio]::Capture([int]$request.sampleRate, [int]$request.durationMs, $deviceId)
         Send-Message @{ type = 'result'; captured = $true }
     }
 } catch {

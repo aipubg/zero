@@ -197,9 +197,10 @@ export class WindowsSpeechBackend {
     return job.done;
   }
 
-  startMicrophone({ sampleRate = 16000, signal, onFrame, durationMs = 0 } = {}) {
+  startMicrophone({ sampleRate = 16000, signal, onFrame, durationMs = 0, deviceId } = {}) {
     validateFormat(sampleRate);
     if (!Number.isInteger(durationMs) || durationMs < 0 || durationMs > 3600000) throw new VoiceError('VOICE_INVALID_DURATION', 'Microphone duration must be 0 (until stopped) or at most one hour');
-    return this._run('capture', { sampleRate, durationMs }, { signal, onFrame, timeoutMs: durationMs ? durationMs + 30000 : 3600000 });
+    if (deviceId !== undefined && (!Number.isInteger(deviceId) || deviceId < 0 || deviceId > 255)) throw new VoiceError('VOICE_INVALID_DEVICE', 'Expected an enumerated recording device index from 0 to 255');
+    return this._run('capture', { sampleRate, durationMs, deviceId }, { signal, onFrame, timeoutMs: durationMs ? durationMs + 30000 : 3600000 });
   }
 }
