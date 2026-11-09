@@ -41,10 +41,10 @@ for (const relative of ['.zero-data', 'zero-system/config', 'models']) {
 async function copySkills(directory, relative = 'skills') {
   if (!fs.existsSync(directory)) return;
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === '.git') continue;
+    if (entry.name === '.git' || entry.name === '.bin') continue;
     const source = path.join(directory, entry.name);
     const file = path.join(relative, entry.name);
-    if (entry.isSymbolicLink()) throw new Error('Skill backup cannot follow symbolic links');
+    if (entry.isSymbolicLink()) throw new Error('Bundle backup cannot follow symbolic links');
     if (entry.isDirectory()) { await copySkills(source, file); continue; }
     if (!entry.isFile()) throw new Error('Skill backup requires regular files');
     const destination = path.join(target, file);
@@ -56,8 +56,9 @@ async function copySkills(directory, relative = 'skills') {
   }
 }
 await copySkills(path.resolve(skillsDirectory));
+await copySkills(path.join(stateDirectory, 'plugin-sdk'), path.join('.zero-data', 'plugin-sdk'));
 const encryptedSnapshots = [];
-for (const record of records.filter(record => /\.(sqlite|db)$/.test(record.file))) {
+for (const record of records.filter(record => /^\.zero-data[/\\][^/\\]+\.(sqlite|db)$/.test(record.file))) {
   const filename = path.join(target, record.file);
   const db = new DatabaseSync(filename, { readOnly: true });
   let protection;
@@ -80,5 +81,5 @@ for (const record of records.filter(record => /\.(sqlite|db)$/.test(record.file)
     if (authenticatedFields) encryptedSnapshots.push({ file: record.file, pairedKeyCopied: true, authenticatedFields, authenticatedRows });
   } finally { protection?.destroy(); db.close(); }
 }
-fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({ createdAt: new Date().toISOString(), stateDirectory, skillsDirectory, coverage: { skills: 'Recursive files and persisted settings; .git excluded, links rejected', plugins: 'Registration database only; executable bundles not yet covered', modelBinaries: 'NOT_INCLUDED' }, files: records, encryptedSnapshots }, null, 2));
+fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({ createdAt: new Date().toISOString(), stateDirectory, skillsDirectory, coverage: { skills: 'Recursive files and persisted settings; .git/.bin excluded, links rejected', plugins: 'Registration database plus managed plugin-sdk bundles/data; .git/.bin excluded, links rejected; external custom plugin roots not included', modelBinaries: 'NOT_INCLUDED' }, files: records, encryptedSnapshots }, null, 2));
 console.log(JSON.stringify({ backupDirectory: target, files: records.length, sqliteIntegrity: 'ok', encryptedSnapshots }));

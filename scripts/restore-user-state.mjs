@@ -23,7 +23,7 @@ export async function restoreUserState(backupDirectory, destination) {
     const parts = record.file.replaceAll('\\', '/').split('/');
     if (parts.some(part => !part || part === '.' || part === '..' || /[<>:"|?*\x00-\x1f]/.test(part) || /[. ]$/.test(part) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(part))) throw new Error('Unsafe backup file path');
     const relative = parts.join('/');
-    if (!/^(\.zero-data|models)\/[^/]+$|^zero-system\/config\/[^/]+$|^skills\/.+/.test(relative)) throw new Error('Unsupported backup file location');
+    if (!/^(\.zero-data|models)\/[^/]+$|^zero-system\/config\/[^/]+$|^skills\/.+|^\.zero-data\/plugin-sdk\/.+/.test(relative)) throw new Error('Unsupported backup file location');
     if (seen.has(relative.toLowerCase())) throw new Error('Duplicate backup destination');
     seen.add(relative.toLowerCase());
     if (!Number.isSafeInteger(record.bytes) || record.bytes < 0 || !/^[a-f0-9]{64}$/.test(record.sha256)) throw new Error('Invalid backup integrity metadata');
@@ -66,7 +66,28 @@ export async function restoreUserState(backupDirectory, destination) {
       await fs.promises.copyFile(entry.source, output, fs.constants.COPYFILE_EXCL);
       if (await digest(output) !== entry.sha256) throw new Error('Restored file hash mismatch');
     }
-    return { status: 'RESTORED', destination: target, files: entries.length, hashesVerified: true, sqliteIntegrity: 'ok', authenticatedFields, activation: 'NOT_RUN; restored files are not automatically activated', encryptedData: authenticatedFields ? 'All encrypted observation fields authenticated using original Windows identity before restore' : 'No encrypted observation fields found; decryption NOT_RUN' };
+    const relocatedPluginSources = [];
+    const pluginDbPath = path.join(target, '.zero-data', 'zero-plugins.sqlite');
+    if (fs.existsSync(pluginDbPath) && typeof manifest.stateDirectory === 'string' && path.isAbsolute(manifest.stateDirectory)) {
+      const db = new DatabaseSync(pluginDbPath);
+      try {
+        if (db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zero_installed_plugins'").get() && db.prepare('PRAGMA table_info(zero_installed_plugins)').all().some(column => column.name === 'source')) {
+          for (const row of db.prepare('SELECT id,source FROM zero_installed_plugins WHERE source IS NOT NULL').all()) {
+            const source = JSON.parse(row.source);
+            if (!source.root || !source.revision) continue;
+            const original = path.join(manifest.stateDirectory, 'plugin-sdk', 'releases', source.revision);
+            if (path.resolve(source.root) !== path.resolve(original) || path.basename(source.revision) !== source.revision) throw new Error('Plugin source is outside backed-up managed revisions');
+            const marker = path.join('.zero-data', 'plugin-sdk', 'releases', source.revision, '.zero-plugin-revision');
+            if (!entries.some(entry => entry.parts.join('/') === marker.replaceAll('\\', '/'))) throw new Error('Plugin bundle ownership marker missing from backup');
+            const relocated = path.join(target, '.zero-data', 'plugin-sdk', 'releases', source.revision);
+            if (fs.readFileSync(path.join(relocated, '.zero-plugin-revision'), 'utf8') !== source.revision) throw new Error('Plugin bundle ownership marker mismatch');
+            db.prepare('UPDATE zero_installed_plugins SET source=? WHERE id=?').run(JSON.stringify({ ...source, root: relocated }), row.id);
+            relocatedPluginSources.push(row.id);
+          }
+        }
+      } finally { db.close(); }
+    }
+    return { status: 'RESTORED', destination: target, files: entries.length, hashesVerified: true, hashScope: 'Copied backup bytes verified before explicit plugin path migration', relocatedPluginSources, sqliteIntegrity: 'ok', authenticatedFields, activation: 'NOT_RUN; restored files are not automatically activated', encryptedData: authenticatedFields ? 'All encrypted observation fields authenticated using original Windows identity before restore' : 'No encrypted observation fields found; decryption NOT_RUN' };
   } catch (error) {
     // Preserve partial output for diagnosis; never delete concurrent user files.
     error.message = `Restore incomplete; new destination retained for inspection: ${error.message}`;

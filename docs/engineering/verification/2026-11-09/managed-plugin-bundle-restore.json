@@ -1,0 +1,15 @@
+{
+  "classification": [
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "backup": "E:\\zero\\.backup\\functional-correction-1794249066784",
+  "relocatedPluginSources": [
+    "restore-plugin"
+  ],
+  "originalPluginDataPreservedBeforeExecution": true,
+  "oldAbsoluteBundlePathUnavailable": true,
+  "actualRegisteredHandlerResult": 33,
+  "actualRestoredDataFileReadback": true,
+  "scope": "Controlled actual executable plugin package; external/npm/MCP portability not established"
+}
