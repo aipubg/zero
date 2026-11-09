@@ -65,7 +65,21 @@ test('[REAL_OS] primary agent-desktop backend sets native field and invokes butt
     operator.setHumanHold(true);
     assert.equal((await engine.execute({ toolName: 'zero_computer_action', args: { action: 'desktop', command: 'click', args: [button.ref_id] } })).ok, false);
     assert.equal((await call('status')).ok, true);
-    Object.assign(report, { status: 'PASS', backend: 'agent-desktop', runtimeVersion: '1.2.0', actualCanonicalHostRegisteredTool: true, actualUnicodeEffect: effect, nativeSetDisposition: set.disposition, nativeClickDisposition: click.disposition, malformedRefRejectedWithoutSecondClick: true, manualHoldPreserved: true, observationDuringHold: true });
+    operator.setHumanHold(false);
+    const fresh = await call('snapshot', ['--window-id', windowId]);
+    const freshField = walk(fresh.data.tree).find(node => node.name === 'ZERO verification input' && node.ref_id);
+    assert.ok(freshField);
+    const leaseEvents = [];
+    const acquired = event => leaseEvents.push('acquired:' + event.holder);
+    const released = event => leaseEvents.push('released:' + event.holder);
+    host.leaseManager.on('acquired', acquired); host.leaseManager.on('released', released);
+    try {
+      const results = await Promise.all(['native-one', 'native-two'].map(agentId => engine.execute({ agentId, toolName: 'desktop_control', args: { command: 'set-value', args: [freshField.ref_id], input: text } })));
+      assert.ok(results.every(result => result.ok));
+      assert.deepEqual(leaseEvents, ['acquired:native-one', 'released:native-one', 'acquired:native-two', 'released:native-two']);
+      assert.equal(host.leaseManager.isHeld(), false);
+    } finally { host.leaseManager.off('acquired', acquired); host.leaseManager.off('released', released); }
+    Object.assign(report, { status: 'PASS', backend: 'agent-desktop', runtimeVersion: '1.2.0', actualCanonicalHostRegisteredTool: true, actualUnicodeEffect: effect, nativeSetDisposition: set.disposition, nativeClickDisposition: click.disposition, malformedRefRejectedWithoutSecondClick: true, manualHoldPreserved: true, observationDuringHold: true, actualCallerLeaseOrder: leaseEvents, leaseReleasedAfterNativeSettlement: true });
     if (process.env.ZERO_AGENT_DESKTOP_MODEL_TESTS === '1') {
       operator.setHumanHold(false);
       if (fs.existsSync(path.resolve('.env'))) process.loadEnvFile(path.resolve('.env'));

@@ -208,7 +208,7 @@ export class CapabilityEngine {
         return disabledResult;
       }
       try {
-        const customRes = await customDef.handler(params, signal);
+        const customRes = await customDef.handler(params, signal, { agentId, capability: toolName, auditId });
         const durationMs = Date.now() - startedAt;
         const returned = typeof customRes === 'object' && customRes !== null ? customRes : {};
         const ok = returned.ok !== false;
@@ -280,8 +280,9 @@ export class CapabilityEngine {
     if (this.leaseManager && isDesktopAction) {
       const leaseRes = await this.leaseManager.acquireLease(agentId, {
         reason: `Executing action ${action}`,
-        timeoutMs: 15000,
+        timeoutMs: Math.max(15000, Number(timeoutMs) + 5000),
         waitMs: 5000,
+        signal,
       });
       if (!leaseRes.acquired) {
         const leaseContentionResult = {
@@ -301,6 +302,7 @@ export class CapabilityEngine {
       }
     }
 
+    try {
     // 4. Before-State Observation
     let beforeState = null;
     try {
@@ -389,6 +391,9 @@ export class CapabilityEngine {
 
     this._recordAudit(agentId, toolName, params, outcome, finalResult);
     return finalResult;
+    } finally {
+      if (leaseAcquiredLocally) this.leaseManager.releaseLease(agentId);
+    }
   }
 
   _recordAudit(agentId, toolName, params, decision, outcome) {
