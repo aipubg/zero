@@ -1,0 +1,37 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "inputSource": "Actual headset microphone; no raw audio saved",
+  "humanMicrophone": "PASS",
+  "captureMethod": "Native host VoiceEngine capture, explicit end-of-utterance; not automatic VAD turn acceptance",
+  "recognitionBackend": "WhisperSpeechBackend",
+  "capture": {
+    "state": "stopped",
+    "deviceId": 0,
+    "frames": 999,
+    "bytes": 959040,
+    "lastFrameAt": 1794267721279,
+    "lastFrameRms": 803.1166646778869,
+    "maxFrameRms": 3489.3594182886923,
+    "speechRecognition": "unverified"
+  },
+  "actualTranscript": "Hello zero Hello Please remember blue bird and answer Fly Please remember blue bird and answer fly Please remember blue bird and answer fly Please remember blue bird and answer fly",
+  "spokenAssistantContent": "Fly\n\n```zero-ui:progress\n{\n  \"title\": \"Zero Computer Execution\",\n  \"step\": 1,\n  \"totalSteps\": 1,\n  \"status\": \"unverified\",\n  \"outcome\": \"UNVERIFIED\",\n  \"details\": \"Desktop Action UNVERIFIED\",\n  \"logs\": [\n    \"⚠ memory_remember (UNVERIFIED)\"\n  ]\n}\n```\n\nNote: One or more requested actions returned status UNVERIFIED.",
+  "synthesizedReplyBytes": 198560,
+  "played": true,
+  "taskId": "task_1794267724760_z9dhju",
+  "voiceTaskStatus": "COMPLETED",
+  "typedFollowup": "You asked me to “remember blue bird”. So the two words are **blue** and **bird**.",
+  "persistedMessages": 6,
+  "completedVoiceTurns": 1,
+  "cloudRequests": 3,
+  "acousticBargeIn": "UNVERIFIED",
+  "finishedAt": "2026-11-09T23:42:16.484Z",
+  "artifact": "artifacts/voice-conversation-real/1794267690210/report.json",
+  "userAudiblePlaybackConfirmation": "User confirmed reply clearly audible in headphones",
+  "scope": "Actual human microphone -> selected offline Whisper -> actual shared external assistant -> native headphone playback -> same-chat typed recall; explicit end of utterance, not automatic VAD or barge-in acceptance"
+}

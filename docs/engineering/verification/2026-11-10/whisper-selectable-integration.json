@@ -1,0 +1,85 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "selectedBackend": "WhisperSpeechBackend",
+  "defaultBackendChanged": false,
+  "native": {
+    "classification": [
+      "REAL_OS",
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "runtime": "whisper.cpp 1.8.3",
+    "inputSource": "Actual Windows TTS; not human microphone",
+    "hostVoiceEngineChanged": false,
+    "actualTranscript": "The voice engine can now speak real words.",
+    "zeroEngineStdinTranscript": "The voice engine can now speak real words.",
+    "realSpawnCancellation": true,
+    "afterCancellationRecovery": true,
+    "unknownLanguageRejected": true,
+    "expectedWordsMatched": true,
+    "cpuThreads": 2,
+    "gpu": false,
+    "pcmBytes": 100320,
+    "humanMicrophone": "UNVERIFIED"
+  },
+  "sharedConversation": {
+    "classification": [
+      "REAL_OS",
+      "INTEGRATION",
+      "REAL_EXTERNAL"
+    ],
+    "status": "PASS",
+    "inputSource": "Actual local Windows synthesis in RAM; not microphone speech",
+    "recognitionBackend": "WhisperSpeechBackend",
+    "actualTranscript": "The voice engine can now speak real words.",
+    "spokenAssistantContent": "Got it—our voice engine can now produce natural‑sounding, real‑world words. If there’s something specific you’d like me to say or a demo you have in mind, just let me know!",
+    "synthesizedReplyBytes": 361600,
+    "played": false,
+    "taskId": "task_1794267496906_apd3kc",
+    "voiceTaskStatus": "COMPLETED",
+    "typedFollowup": "Your previous message stated that the voice engine can now speak real words.",
+    "persistedMessages": 4,
+    "completedVoiceTurns": 1,
+    "cloudRequests": 2,
+    "humanMicrophone": "UNVERIFIED",
+    "acousticBargeIn": "UNVERIFIED",
+    "finishedAt": "2026-11-09T23:38:20.030Z"
+  },
+  "initialIntegrationFailures": [
+    {
+      "artifact": "artifacts/whisper-native/1794267363193/report.json",
+      "reason": "stdin input basename suppressed stdout segment callback; actual empty transcript assertion failed; fixed by non-file-producing output basename"
+    },
+    {
+      "artifact": "artifacts/whisper-native/1794267391443/report.json",
+      "reason": "unsupported language native early exit masked by write EOF; fixed precedence and explicit zero-exit diagnostic rejection"
+    }
+  ],
+  "microphoneAttempt": {
+    "classification": [
+      "REAL_OS"
+    ],
+    "status": "FAIL",
+    "expectedPhrase": "Hello Zero, please remember blue bird.",
+    "rawMicrophoneSaved": false,
+    "transcriptOmitted": true,
+    "scope": "Prompted real microphone STT only; not full chat/voice continuity or barge-in",
+    "recognitionBackend": "whisper",
+    "readyAt": "2026-11-09T23:37:43.759Z",
+    "frames": 1306,
+    "pcmBytes": 1253760,
+    "segments": 0,
+    "expectedWordsDetected": [],
+    "expectedMeaningRecognized": false,
+    "error": "Prompted microphone phrase not recognized",
+    "finishedAt": "2026-11-09T23:38:27.253Z",
+    "artifact": "artifacts/voice-human-microphone/1794267463466/report.json",
+    "userClarification": "User subsequently confirmed the test sentence was not spoken",
+    "acceptance": "NOT_ESTABLISHED; original failed assertion retained; no recognizer accuracy conclusion from absent prompted speech"
+  },
+  "acousticBargeIn": "UNVERIFIED"
+}

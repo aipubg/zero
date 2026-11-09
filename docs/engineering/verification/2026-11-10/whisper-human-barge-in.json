@@ -1,0 +1,40 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "FAIL",
+  "rawMicrophoneSaved": false,
+  "transcriptOmitted": true,
+  "backend": "whisper.cpp",
+  "echoCancellation": false,
+  "scope": "Actual microphone energy VAD interruption during native headphone playback, adjacent prompted speech recognition and subsequent playback recovery; not intent-aware or noise-resistant barge-in accuracy",
+  "playbackObservedAt": 1794267824014,
+  "capture": {
+    "state": "cancelled",
+    "deviceId": 0,
+    "frames": 710,
+    "bytes": 681600,
+    "lastFrameAt": 1794267845851,
+    "lastFrameRms": 415.35653861070574,
+    "maxFrameRms": 2209.3966347361293,
+    "speechRecognition": "unverified"
+  },
+  "expectedInterruptionWordsRecognized": false,
+  "error": "Adjacent microphone audio must include actual prompted interruption words, absent from playback\n\nfalse !== true\n",
+  "interruption": {
+    "observedAt": 1794267840808,
+    "event": {
+      "sessionId": "human-interrupt",
+      "droppedCount": 1092,
+      "droppedBytes": 1047840,
+      "energy": 0.04673005879719732,
+      "zcr": 0.09166666666666666,
+      "timestamp": 1794267840805
+    }
+  },
+  "artifact": "artifacts/voice-human-barge-in/1794267823252/report.json",
+  "userObservation": "User confirmed saying the target phrase and playback stopped while speaking",
+  "nativePlaybackEvidence": "Test advanced past exact VOICE_CANCELLED and playbackActive=false assertions before failing semantic phrase assertion",
+  "acceptance": "PARTIAL: actual playback interruption plus user confirmation; strict adjacent-phrase recognition FAIL and recovery step NOT_RUN; overall original FAIL retained"
+}

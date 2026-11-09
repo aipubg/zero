@@ -1,0 +1,35 @@
+{
+  "classification": [
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "expectedPhrase": "Hello Zero, please remember blue bird.",
+  "rawMicrophoneSaved": false,
+  "transcriptOmitted": true,
+  "scope": "Actual human headset microphone to pinned offline Whisper STT, all six expected words detected; not end-to-end conversation, VAD automatic turn completion or acoustic barge-in",
+  "recognitionBackend": "whisper",
+  "deviceId": 0,
+  "readyAt": "2026-11-09T23:39:24.293Z",
+  "audibleCuePlayed": true,
+  "frames": 1307,
+  "pcmBytes": 1254720,
+  "inputLevels": {
+    "rms": 0.178392194920271,
+    "peak": 1,
+    "nonzeroSamples": 523654
+  },
+  "segments": 0,
+  "expectedWordsDetected": [
+    "hello",
+    "zero",
+    "please",
+    "remember",
+    "blue",
+    "bird"
+  ],
+  "expectedMeaningRecognized": true,
+  "finishedAt": "2026-11-09T23:40:07.898Z",
+  "artifact": "artifacts/voice-human-microphone/1794267563738/report.json",
+  "device": "Headset (Rockerz 480)",
+  "priorAttempt": "1794267463466 assertion FAIL retained; user confirmed sentence was not spoken in that attempt"
+}

@@ -112,6 +112,8 @@ export class ZeroNativeHost {
   constructor(options = {}) {
     this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 32);
     if (!Number.isInteger(this.maxAssistantTurns) || this.maxAssistantTurns < 1 || this.maxAssistantTurns > 128) throw new Error('maxAssistantTurns must be an integer between 1 and 128');
+    this.voiceRecognitionBackend = options.voiceRecognitionBackend ?? process.env.ZERO_VOICE_RECOGNITION_BACKEND;
+    if (this.voiceRecognitionBackend !== undefined && !['windows', 'whisper'].includes(this.voiceRecognitionBackend)) throw new Error('Unknown voice recognition backend');
     this.port = options.port || Number(process.env.ZERO_PORT || process.env.PORT || 18789);
     this.host = options.host || '127.0.0.1';
     this.configPath = options.configPath || process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
@@ -218,6 +220,7 @@ export class ZeroNativeHost {
     });
     this.voiceEngine = new VoiceEngine({
       modelFabric: this.modelFabric,
+      recognitionBackend: this.voiceRecognitionBackend,
     });
     this.voiceConversation = new VoiceConversation({ engine: this.voiceEngine,
       executeTurn: ({ sessionId, text, signal, context }) => this._runAssistantRequest({ sessionKey: sessionId, userContent: text, source: 'voice', signal, ...context }),

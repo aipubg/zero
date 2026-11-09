@@ -15,6 +15,8 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
   const output = path.resolve('artifacts/voice-conversation-real', String(Date.now())); fs.mkdirSync(output, { recursive: true });
   const report = { classification: ['REAL_OS', 'INTEGRATION', 'REAL_EXTERNAL'], status: 'RUNNING', inputSource: 'Actual local Windows synthesis in RAM; not microphone speech' };
   let host; let socket; let audio;
+  const human = process.env.ZERO_VOICE_HUMAN_CONVERSATION === '1';
+  if (human) Object.assign(report, { inputSource: 'Actual headset microphone; no raw audio saved', humanMicrophone: 'RUNNING', captureMethod: 'Native host VoiceEngine capture, explicit end-of-utterance; not automatic VAD turn acceptance' });
   const pending = new Map();
   const call = (method, params) => new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
@@ -30,6 +32,8 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
     const providersPath = path.join(temporary, 'providers.json'); fs.copyFileSync(path.resolve('models/gateway-providers.json'), providersPath);
     fs.copyFileSync(path.resolve('models/gateway-defaults.json'), path.join(temporary, 'bindings.json'));
     host = new ZeroNativeHost({ port, dataDir: path.join(temporary, 'data'), prefsPath: path.join(temporary, 'prefs.json'), skillsDir: path.join(temporary, 'skills'), providersPath, agentBindingsPath: path.join(temporary, 'bindings.json'), localModelsDir: path.join(temporary, 'local-models'), localVision: false });
+    report.recognitionBackend = host.voiceEngine.backend.constructor.name;
+    if (process.env.ZERO_VOICE_RECOGNITION_BACKEND === 'whisper') assert.equal(report.recognitionBackend, 'WhisperSpeechBackend');
     await host.start();
     const auth = await fetch(`http://127.0.0.1:${port}/api/auth/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'admin' }) });
     const { token } = await auth.json();
@@ -37,30 +41,41 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
     socket.addEventListener('message', event => { const frame = JSON.parse(event.data); if (pending.has(frame.id)) { pending.get(frame.id)(frame); pending.delete(frame.id); } });
     await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
     await call('connect', { minProtocol: 4, token });
-    // Generate genuine local speech in RAM. This is not a human microphone test.
     host.voiceEngine.startSession('spoken-chat');
-    audio = await new WindowsSpeechBackend().synthesize('The voice engine can now speak real words.');
-    await call('voice.chunk', { sessionId: 'spoken-chat', chunk: audio.pcm.toString('base64') });
-    const spoken = await call('voice.turn', { sessionId: 'spoken-chat', language: 'en-US', playback: false });
+    if (human) {
+      const cue = await new WindowsSpeechBackend().synthesize('The headset microphone is now listening. Say the sentence shown in the chat.');
+      await host.voiceEngine.startMicrophone('spoken-chat', { deviceId: 0, durationMs: 30000 });
+      console.log('HUMAN_CONVERSATION_READY: Please remember blue bird and answer briefly.');
+      await host.voiceEngine.backend.play(cue.pcm); cue.pcm.fill(0);
+      await new Promise(resolve => setTimeout(resolve, 25000));
+      await host.voiceEngine.stopMicrophone('spoken-chat');
+      report.capture = host.voiceEngine.getStatus().sessions[0].capture;
+      assert.ok(report.capture.frames > 0 && report.capture.bytes > 32000);
+    } else {
+      // Generate genuine local speech in RAM; not a human microphone test.
+      audio = await new WindowsSpeechBackend().synthesize('The voice engine can now speak real words.');
+      await call('voice.chunk', { sessionId: 'spoken-chat', chunk: audio.pcm.toString('base64') });
+    }
+    const spoken = await call('voice.turn', { sessionId: 'spoken-chat', language: 'en-US', playback: human });
     assert.equal(spoken.ok, true, JSON.stringify(spoken));
-    assert.match(spoken.transcript, /speak real words/i);
+    assert.match(spoken.transcript, human ? /remember\s+blue\s*bird/i : /speak real words/i);
     assert.ok(spoken.content.trim()); assert.ok(spoken.pcmByteLength > 3200);
-    assert.equal(spoken.played, false);
+    assert.equal(spoken.played, human);
     const voiceTask = host.tasks.getTask(spoken.taskId);
     assert.equal(voiceTask?.status, 'COMPLETED');
     const first = await call('chat.history', { sessionKey: 'spoken-chat' });
     assert.ok(first.messages.some(message => message.role === 'user' && message.content === spoken.transcript));
     assert.ok(first.messages.some(message => message.role === 'assistant' && message.content === spoken.content));
-    const typed = await call('chat.send', { sessionKey: 'spoken-chat', message: 'What did my previous message say the voice engine can do? Answer briefly using the previous conversation.', idempotencyKey: 'typed-after-voice' });
+    const typed = await call('chat.send', { sessionKey: 'spoken-chat', message: human ? 'What two words did I ask you to remember in my previous message? Answer briefly using that conversation.' : 'What did my previous message say the voice engine can do? Answer briefly using the previous conversation.', idempotencyKey: 'typed-after-voice' });
     assert.equal(typed.ok, true, JSON.stringify(typed));
     const history = await call('chat.history', { sessionKey: 'spoken-chat' });
     const replies = history.messages.filter(message => message.role === 'assistant');
     assert.ok(replies.length >= 2);
-    assert.match(replies.at(-1).content, /speak real words/i);
+    assert.match(replies.at(-1).content, human ? /blue\s*bird/i : /speak real words/i);
     const status = await call('voice.conversation.status', { sessionId: 'spoken-chat' });
     assert.equal(status.completedTurns, 1);
     assert.equal(status.state, 'listening');
-    Object.assign(report, { status: 'PASS', actualTranscript: spoken.transcript, spokenAssistantContent: spoken.content, synthesizedReplyBytes: spoken.pcmByteLength, played: spoken.played, taskId: spoken.taskId, voiceTaskStatus: voiceTask.status, typedFollowup: replies.at(-1).content, persistedMessages: history.messages.length, completedVoiceTurns: status.completedTurns, cloudRequests: host.modelFabric.upstreamRequestCount, humanMicrophone: 'UNVERIFIED', acousticBargeIn: 'UNVERIFIED' });
+    Object.assign(report, { status: 'PASS', actualTranscript: spoken.transcript, spokenAssistantContent: spoken.content, synthesizedReplyBytes: spoken.pcmByteLength, played: spoken.played, taskId: spoken.taskId, voiceTaskStatus: voiceTask.status, typedFollowup: replies.at(-1).content, persistedMessages: history.messages.length, completedVoiceTurns: status.completedTurns, cloudRequests: host.modelFabric.upstreamRequestCount, humanMicrophone: human ? 'PASS' : 'UNVERIFIED', acousticBargeIn: 'UNVERIFIED' });
     assert.ok(report.cloudRequests >= 2);
     if (process.env.ZERO_VOICE_INTERRUPT_TESTS === '1') {
       // Upload before attaching to avoid VAD scheduling an automatic duplicate.

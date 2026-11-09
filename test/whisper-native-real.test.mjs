@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { WindowsSpeechBackend } from '../packages/voice-engine/windows-speech.mjs';
 import { WHISPER_VERSION, WHISPER_NATIVE_FILES } from '../packages/voice-engine/whisper-assets.mjs';
+import { VoiceEngine, WhisperSpeechBackend } from '../packages/voice-engine/index.mjs';
 
 test('[REAL_OS] pinned Whisper CPU decodes actual Windows synthesized speech', {
   skip: process.platform !== 'win32' || process.env.ZERO_WHISPER_TESTS !== '1', timeout: 150000,
@@ -40,6 +41,25 @@ test('[REAL_OS] pinned Whisper CPU decodes actual Windows synthesized speech', {
     report.actualTranscript = stdout.trim();
     const normalize = value => value.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
     assert.equal(normalize(stdout), normalize(phrase));
+    // Exercise ZERO's actual selectable backend using binary stdin, not a WAV file.
+    const engine = new VoiceEngine({ recognitionBackend: 'whisper', playback: false });
+    assert.ok(engine.backend instanceof WhisperSpeechBackend);
+    try {
+      engine.startSession('whisper-proof');
+      engine.ingestChunk('whisper-proof', audio.pcm);
+      const actual = await engine.transcribe('whisper-proof', { language: 'en-US' });
+      assert.equal(normalize(actual.text), normalize(phrase));
+      assert.equal(actual.nativeLanguage, 'en');
+      assert.equal(actual.backend, 'whisper.cpp');
+      const controller = new AbortController();
+      let started = false;
+      await assert.rejects(engine.backend.transcribe(audio.pcm, { signal: controller.signal, onStarted: () => { started = true; controller.abort(); } }), { code: 'VOICE_CANCELLED' });
+      assert.equal(started, true, 'Real decoder must spawn before cancellation');
+      const recovered = await engine.backend.transcribe(audio.pcm, { language: 'en-US' });
+      assert.equal(normalize(recovered.text), normalize(phrase));
+      await assert.rejects(engine.backend.transcribe(audio.pcm, { language: 'zz-ZZ' }), /language|unknown|unsupported/i);
+      Object.assign(report, { zeroEngineStdinTranscript: actual.text, realSpawnCancellation: true, afterCancellationRecovery: true, unknownLanguageRejected: true });
+    } finally { engine.close(); }
     Object.assign(report, { status: 'PASS', expectedWordsMatched: true, cpuThreads: 2, gpu: false, pcmBytes: audio.pcm.length, humanMicrophone: 'UNVERIFIED' });
   } catch (error) {
     Object.assign(report, { status: 'FAIL', error: error.message });

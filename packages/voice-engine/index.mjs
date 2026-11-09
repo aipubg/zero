@@ -3,8 +3,9 @@ import { VoiceActivityDetector } from './vad.mjs';
 import { AudioRouter } from './audio-router.mjs';
 import { SpeechTurnManager, VOICE_STATES } from './speech-turn.mjs';
 import { WindowsSpeechBackend, VoiceError, abortError, validateFormat, validatePcm } from './windows-speech.mjs';
+import { WhisperSpeechBackend } from './whisper-speech.mjs';
 
-export { VoiceActivityDetector, AudioRouter, SpeechTurnManager, VOICE_STATES, WindowsSpeechBackend, VoiceError };
+export { VoiceActivityDetector, AudioRouter, SpeechTurnManager, VOICE_STATES, WindowsSpeechBackend, WhisperSpeechBackend, VoiceError };
 
 /** PCM16 mono sessions. Session creation never opens a microphone. */
 export class VoiceEngine extends EventEmitter {
@@ -13,7 +14,8 @@ export class VoiceEngine extends EventEmitter {
     this.modelFabric = options.modelFabric || null;
     this.sampleRate = options.sampleRate ?? 16000;
     validateFormat(this.sampleRate);
-    this.backend = options.backend ?? new WindowsSpeechBackend();
+    if (options.recognitionBackend !== undefined && !['windows', 'whisper'].includes(options.recognitionBackend)) throw new VoiceError('VOICE_BACKEND_UNAVAILABLE', 'Unknown recognition backend');
+    this.backend = options.backend ?? (options.recognitionBackend === 'whisper' ? new WhisperSpeechBackend() : new WindowsSpeechBackend());
     this.playback = options.playback ?? true;
     this.sessions = new Map();
     this.microphoneOperation = null;
