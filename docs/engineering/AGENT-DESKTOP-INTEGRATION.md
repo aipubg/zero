@@ -10,6 +10,8 @@ The tool accepts `command`, an array of CLI `args`, optional text `input` and bo
 
 No automatic retry or coordinate fallback occurs after a failed or uncertain native action. Delivery/retry disposition is retained. `delivered_verified` is distinct from merely delivered input. A failed reference is not converted into success. Read live state before deciding whether another action is needed.
 
+Desktop RPC failures retain native code and delivery metadata: reference-wire errors expose `error.code` and `error.details`; JSON-RPC errors preserve the legacy error-code contract and carry native code/disposition in `error.data`. A real 60-second native wait, cancelled by the capability's 30-second deadline, verified unknown/unsafe delivery and successful subsequent status observation. This is CLI/RPC cancellation evidence, not proof a physical input was stopped before delivery.
+
 ## Verified scope — 10 November 2026
 
 - Actual owned Windows Forms window: semantic Unicode set-value, fresh snapshot, one button invocation, independent application-file readback with expected text and exactly one click. Invalid unqualified ref rejected without another click. Manual hold preserved.

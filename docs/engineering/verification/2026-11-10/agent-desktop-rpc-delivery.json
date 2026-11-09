@@ -1,0 +1,49 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "scope": "Actual native CLI and authenticated RPC errors; no physical input action",
+  "invalidReference": {
+    "code": "INVALID_ARGS",
+    "message": "Invalid ref_id '@e1': expected @<snapshot_id>:e<N>",
+    "details": {
+      "backend": "agent-desktop",
+      "nativeCode": "INVALID_ARGS",
+      "disposition": {
+        "delivery": "not_delivered",
+        "retry": "safe"
+      },
+      "requiresObservation": false
+    }
+  },
+  "legacyError": {
+    "code": -32603,
+    "message": "Invalid ref_id '@e1': expected @<snapshot_id>:e<N>",
+    "data": {
+      "backend": "agent-desktop",
+      "nativeCode": "INVALID_ARGS",
+      "disposition": {
+        "delivery": "not_delivered",
+        "retry": "safe"
+      },
+      "requiresObservation": false
+    }
+  },
+  "actualDeadlineCancellation": {
+    "code": "DESKTOP_CANCELLED",
+    "message": "Desktop command cancelled; inspect live state before another action",
+    "details": {
+      "backend": "agent-desktop",
+      "nativeCode": "DESKTOP_CANCELLED",
+      "disposition": {
+        "delivery": "unknown",
+        "retry": "unsafe"
+      },
+      "requiresObservation": true
+    }
+  },
+  "recoveredStatus": true,
+  "finishedAt": "2026-11-09T23:08:51.990Z"
+}

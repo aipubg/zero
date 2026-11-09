@@ -820,17 +820,21 @@ export class ZeroNativeHost {
       try {
         const responseResult = await this._dispatchRpc(method, params, clientSession, ws, parsed.isReferenceWire);
         if (responseResult && typeof responseResult === 'object' && responseResult.ok === false) {
+          const failureCode = responseResult.code || responseResult.error?.code;
+          const failureMessage = typeof responseResult.error === 'string' ? responseResult.error : responseResult.error?.message || 'Operation failed';
+          const deliveryDetails = responseResult.backend === 'agent-desktop' && responseResult.disposition
+            ? { backend: 'agent-desktop', nativeCode: failureCode, disposition: responseResult.disposition, requiresObservation: responseResult.requiresObservation === true } : undefined;
           if (parsed.isReferenceWire) {
             ws.send(JSON.stringify({
               type: 'res',
               id,
               ok: false,
-              error: { code: String(responseResult.code || 'OPERATION_FAILED'), message: typeof responseResult.error === 'string' ? responseResult.error : responseResult.error?.message || 'Operation failed' },
-              code: responseResult.code,
+              error: { code: String(failureCode || 'OPERATION_FAILED'), message: failureMessage, ...(deliveryDetails ? { details: deliveryDetails } : {}) },
+              code: failureCode,
             }));
           } else {
             const code = responseResult.code || RPC_ERROR_CODES.INTERNAL_ERROR;
-            ws.send(JSON.stringify(createError(id, code, responseResult.error || 'Operation failed')));
+            ws.send(JSON.stringify(createError(id, code, failureMessage, deliveryDetails)));
           }
           return;
         }
