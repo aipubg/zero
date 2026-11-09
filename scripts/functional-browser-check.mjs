@@ -50,7 +50,7 @@ const workflowLabels = new Map([
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
   ['Local GGUF catalog and UI removal persist without deleting user guides', process.argv.includes('--gguf-runtime') ? ['REAL_OS'] : []],
-  ['Models UI retrieves pinned Hugging Face file metadata', ['REAL_EXTERNAL']],
+  ['Models UI retrieves pinned Hugging Face file metadata', process.argv.includes('--hf-complete') ? ['REAL_EXTERNAL', 'REAL_OS'] : ['REAL_EXTERNAL']],
   ['Specialist UI model assignment persists without changing coordinator defaults', process.argv.includes('--agent-execution') ? ['REAL_EXTERNAL'] : []],
   ['Interrupted external team resumes pinned models and preserves completed child evidence', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
@@ -436,7 +436,7 @@ try {
     await page.goto(`${base}/settings/model-providers`);
     return { realGgufCatalog: true, actualUISettingsSaved: true, settingsPersistedAcrossProcess: true, actualUIAssignment: true, assignmentPersistedAcrossProcess: true, localAssignmentUIExportImportRestart: true, activeStateVisibleAfterRestart: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: Boolean(runtimeEvidence), runtimeEvidence };
   });
-  if (process.argv.includes('--hf-search')) await check('Models UI retrieves pinned Hugging Face file metadata', async () => {
+  if (process.argv.includes('--hf-search') || process.argv.includes('--hf-complete')) await check('Models UI retrieves pinned Hugging Face file metadata', async () => {
     await page.goto(`${base}/settings/model-providers`);
     await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
     await page.getByRole('button', { name: 'Hugging Face Downloader', exact: true }).click();
@@ -451,15 +451,48 @@ try {
     assert.equal(file.retrieved, true); assert.equal(file.verified, false);
     assert.ok(file.downloadUrl.includes(`/resolve/${file.revision}/`));
     await row.getByRole('button', { name: 'Download', exact: true }).click();
+    let completion = null;
+    let observedTransfer;
+    if (process.argv.includes('--hf-complete')) {
+      await row.getByText(/completed: 522186592\/522186592 bytes/).waitFor({ timeout: 240000 });
+      observedTransfer = await row.textContent();
+      const destination = path.join(temporary, 'local-models', file.filename);
+      const hash = createHash('sha256');
+      for await (const chunk of fs.createReadStream(destination)) hash.update(chunk);
+      const actualSha256 = hash.digest('hex'); assert.equal(actualSha256, file.sha256);
+      const card = page.locator('.zero-provider-card--gguf');
+      await card.waitFor(); // Parent list must refresh without navigating/reloading.
+      assert.match(await card.innerText(), /Qwen2\.5/i);
+      await page.locator('.zero-modal-overlay.active .zero-modal__close').click();
+      await stop(); await start(); await page.reload(); await card.waitFor();
+      const models = (await rpc('zero.gateway.localGguf', { action: 'list' })).models;
+      assert.ok(models.some(model => model.filename === file.filename));
+      await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
+      const dialog = page.locator('.zero-modal-overlay.active');
+      await dialog.getByRole('button', { name: 'Load RAM', exact: true }).click();
+      await page.getByText(/Loaded .* into RAM\./).waitFor({ timeout: 60000 });
+      assert.equal((await rpc('zero.gateway.localGguf', { action: 'status' })).isLoaded, true);
+      await dialog.getByRole('button', { name: 'Self-Test', exact: true }).click();
+      await page.getByText(/Self-test passed! Speed:/).waitFor({ timeout: 30000 });
+      assert.ok(ggufSelfTest?.ok && ggufSelfTest.payload.tokensGenerated > 0);
+      await dialog.getByRole('button', { name: 'Unload RAM', exact: true }).click();
+      await page.getByText(/Unloaded .* from RAM\./).waitFor();
+      completion = { actualSha256, parentListRefreshed: true, actualHostRestart: true, catalogPersisted: true, actualUILoadAndNativeGeneration: ggufSelfTest.payload, actualUIUnload: true, semanticAccuracy: 'NOT_VERIFIED' };
+      await page.goto(`${base}/settings/model-providers`);
+      return { actualUISearch: true, selectedFile: file, observedTransfer, completion, inference: 'Native token generation only' };
+    }
     await row.getByText(/downloading: [1-9][0-9]*\//).waitFor({ timeout: 30000 });
-    const observedTransfer = await row.textContent();
-    await row.getByRole('button', { name: 'Cancel download', exact: true }).click();
-    await row.getByText(/cancelled:/).waitFor({ timeout: 15000 });
+    observedTransfer = await row.textContent();
+    await page.locator('.zero-modal-overlay.active .zero-modal__close').click();
+    await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
+    await page.getByRole('button', { name: 'Hugging Face Downloader', exact: true }).click();
+    await page.getByRole('button', { name: 'Cancel current download', exact: true }).click();
+    await page.locator('.zero-hf-current-transfer').getByText(/cancelled,/).waitFor({ timeout: 15000 });
     await input.fill('https://example.invalid/owner/repo');
     await page.getByRole('button', { name: 'Search Files', exact: true }).click();
     await page.getByText(/Search failed:.*official Hugging Face/).waitFor();
     await page.goto(`${base}/settings/model-providers`);
-    return { actualUISearch: true, filesRetrieved: hfSearchResult.payload.files.length, selectedFile: file, foreignRepositoryRejected: true, observedTransfer, downloadStatus: 'Actual external bytes observed through UI, then cancellation settled', completeDownload: 'NOT_RUN', inference: 'NOT_RUN' };
+    return { actualUISearch: true, filesRetrieved: hfSearchResult.payload.files.length, selectedFile: file, foreignRepositoryRejected: true, observedTransfer, downloadStatus: 'Actual external bytes observed through UI, modal closed/reopened, current download cancellation settled', completeDownload: 'NOT_RUN', inference: 'NOT_RUN' };
   });
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');

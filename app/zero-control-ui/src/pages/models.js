@@ -2047,6 +2047,30 @@ export function mountModelsPage(container, context = {}) {
     // Tab 3: Hugging Face Downloader
     function renderHfDownloaderTab() {
       const container = element("div", null);
+      const currentTransfer = element("div", "zero-hf-current-transfer");
+      const currentState = element("span", null, "");
+      const cancelCurrent = element("button", "zero-providers-btn zero-providers-btn--subtle", "Cancel current download");
+      cancelCurrent.hidden = true;
+      cancelCurrent.onclick = async () => {
+        try { await callGateway(host, "zero.gateway.localGguf", { action: "hf-cancel" }); }
+        catch (error) { showNotice(error.message, true); }
+      };
+      currentTransfer.append(currentState, cancelCurrent);
+      // Reopening the modal must retain control over a still-running transfer.
+      void (async () => {
+        try {
+          do {
+            const result = await callGateway(host, "zero.gateway.localGguf", { action: "hf-progress" });
+            if (disposed || !container.isConnected || !modalOverlay.classList.contains("active")) break;
+            const progress = result?.progress;
+            currentState.textContent = progress ? `${progress.filename}: ${progress.status}, ${progress.downloadedBytes}/${progress.totalBytes} bytes` : "";
+            cancelCurrent.hidden = progress?.status !== "downloading";
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } while (!disposed && container.isConnected && modalOverlay.classList.contains("active"));
+        } catch (error) {
+          if (!disposed && container.isConnected) currentState.textContent = `Download status unavailable: ${error.message}`;
+        }
+      })();
 
       const searchField = element("div", "zero-modal__field");
       searchField.append(element("label", "zero-modal__label", "Hugging Face Repository (owner/repo)"));
@@ -2096,14 +2120,17 @@ export function mountModelsPage(container, context = {}) {
                   const started = await callGateway(host, "zero.gateway.localGguf", { action: "hf-download", filename: f.filename, repo, revision: f.revision });
                   cancelBtn.hidden = false;
                   showNotice(`Started download for ${f.filename}...`);
-                  while (!disposed && modalOverlay.isConnected) {
+                  while (!disposed && row.isConnected && modalOverlay.classList.contains("active")) {
                     const result = await callGateway(host, "zero.gateway.localGguf", { action: "hf-progress" });
                     const progress = result?.progress;
                     if (!progress || progress.id !== started?.progress?.id) throw new Error("Download status changed");
                     downloadState.textContent = `${progress.status}: ${progress.downloadedBytes}/${progress.totalBytes} bytes`;
                     if (progress.status !== "downloading") {
                       if (progress.status === "error") throw new Error(progress.error || "Download failed");
-                      if (progress.status === "completed") showNotice("Download SHA-256 verified. Model setup and inference have not run.");
+                      if (progress.status === "completed") {
+                        showNotice("Download SHA-256 verified. Model setup and inference have not run.");
+                        await loadAllData();
+                      }
                       break;
                     }
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -2123,7 +2150,7 @@ export function mountModelsPage(container, context = {}) {
         }
       };
 
-      container.append(searchField, filesList);
+      container.append(currentTransfer, searchField, filesList);
       body.append(container);
     }
 
