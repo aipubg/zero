@@ -1,4 +1,8 @@
-# Current execution tracker correction — 2026-11-02
+# Current execution checkpoint — 2026-11-10
+
+**Product PARTIAL; production acceptance BLOCKED.** See the [current 46-clause correction matrix](verification/CURRENT-ACCEPTANCE.md) for scoped evidence and remaining gates, and the [November9/10 progress log](verification/2026-11-09/PROGRESS.md) for verified changes. The older checkpoint below is historical; its missing-evidence statements must not override newer linked results. Full master scope remains active; no completion percentage or production sign-off is established.
+
+# Historical checkpoint correction — 2026-11-02
 
 Latest authoritative checkpoint: [functional corrections and evidence](verification/2026-11-02/PROGRESS.md).
 The master goal remains active and PARTIAL. Eight actual UI workflows and real

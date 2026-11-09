@@ -1,4 +1,8 @@
-# Current feature-verification notice — 2026-11-01
+# Current feature-verification checkpoint — 2026-11-10
+
+**Product PARTIAL; production acceptance BLOCKED.** The [current correction matrix](verification/CURRENT-ACCEPTANCE.md) maps the mandatory outcomes to actual workflow evidence and open gates. The [November9/10 progress log](verification/2026-11-09/PROGRESS.md) records recent implementation and verification. Dated notices and inventory rows below are historical; source presence, old counts and metadata do not establish current product acceptance.
+
+# Historical feature-verification notice — 2026-11-01
 
 **Product PARTIAL; release BLOCKED.** The inventory below is a historical baseline, not fresh independent verification of every listed feature. Individual e2e/RPC baseline claims were not re-audited here. Current phase/48-requirement coverage and gaps are recorded in the [classification audit](verification/CLASSIFICATION-AUDIT.md) and [per-leaf JSON inventory](verification/test-classification-inventory.json). Metadata, HTTP success, synthetic fixtures and local worker/device registrations must not be promoted into real-workflow completion. Physical mobile/device/cloud-worker gates are BLOCKED; reported UI smoke improved after the asset-path fix, with no chat trim crash and key surfaces rendered, while persistence/reconnect acceptance remains unverified.
 

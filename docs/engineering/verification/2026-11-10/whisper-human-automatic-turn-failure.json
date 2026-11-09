@@ -1,0 +1,17 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "FAIL",
+  "inputSource": "Actual headset microphone; no raw audio saved",
+  "humanMicrophone": "RUNNING",
+  "captureMethod": "Actual microphone RPC and automatic VAD speech_end; no voice.turn RPC or microphone stop before completed playback",
+  "recognitionBackend": "WhisperSpeechBackend",
+  "error": "No matching automatic human voice turn completed within 60 seconds",
+  "finishedAt": "2026-11-09T23:52:57.737Z",
+  "artifact": "artifacts/voice-conversation-real/1794268316965/report.json",
+  "userObservation": "User confirmed speaking entire phrase and hearing the reply cut off",
+  "acceptance": "FAIL: no matching automatic turn completed in60seconds; root cause not yet established; manual-end-of-utterance human conversation PASS remains a different scope"
+}

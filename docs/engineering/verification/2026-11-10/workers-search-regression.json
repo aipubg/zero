@@ -1,0 +1,16 @@
+{
+  "classification": [
+    "CONTRACT",
+    "INTEGRATION",
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "tests": 21,
+  "failed": 0,
+  "artifact": "artifacts/current-workers-search-tests.log",
+  "sources": {
+    "test/runtime-workers.integration.test.mjs": "59d588cb21e6d9eff82862fc95a68a19a0ac38c4130210175e91f5b2d704462c",
+    "test/search-provenance.test.mjs": "c1da0b5035159c0b0aa68e3a4ea16b093b5c78b708ecd579a48c1a240817bcd5"
+  },
+  "scope": "Actual local child process/SQLite restart outcomes and loopback HTTP cancellation, plus supplied-adapter and search contract cases; no remote worker or external search-provider outage proof"
+}

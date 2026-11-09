@@ -3,13 +3,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { WindowsSpeechBackend } from '../packages/voice-engine/windows-speech.mjs';
+import { WhisperSpeechBackend } from '../packages/voice-engine/whisper-speech.mjs';
 
 test('[REAL_OS] actual speaker to microphone acoustic speech recognition probe', {
   skip: process.platform !== 'win32' || process.env.ZERO_VOICE_ACOUSTIC_TESTS !== '1', timeout: 150000,
 }, async () => {
   const directory = path.resolve('artifacts/voice-acoustic', String(Date.now())); fs.mkdirSync(directory, { recursive: true });
   const report = { classification: ['REAL_OS'], status: 'RUNNING', scope: 'Actual speaker/microphone acoustic path and selected phrase recognition; not human conversation or barge-in', rawMicrophoneSaved: false, humanConversation: 'UNVERIFIED', bargeIn: 'UNVERIFIED' };
-  const backend = new WindowsSpeechBackend(); const frames = []; let capture; let audio;
+  const selection = process.env.ZERO_VOICE_RECOGNITION_BACKEND || 'windows';
+  if (!['windows', 'whisper'].includes(selection)) throw new Error('Unknown voice recognition backend');
+  report.recognitionBackend = selection;
+  const backend = selection === 'whisper' ? new WhisperSpeechBackend() : new WindowsSpeechBackend(); const frames = []; let capture; let audio;
   try {
     audio = await backend.synthesize('The voice engine can now speak real words.', { sampleRate: 16000 });
     capture = backend.startMicrophone({ sampleRate: 16000, durationMs: 10000, onFrame: pcm => frames.push(pcm) });

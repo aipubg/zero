@@ -1,0 +1,22 @@
+{
+  "classification": [
+    "REAL_OS"
+  ],
+  "status": "FAIL",
+  "scope": "Actual speaker/microphone acoustic path and selected phrase recognition; not human conversation or barge-in",
+  "rawMicrophoneSaved": false,
+  "humanConversation": "UNVERIFIED",
+  "bargeIn": "UNVERIFIED",
+  "recognitionBackend": "whisper",
+  "microphoneFrames": 332,
+  "microphoneBytes": 318720,
+  "rms": 341.8431595342834,
+  "expectedWordAgreement": 0,
+  "expectedPhraseRecognized": false,
+  "recognizedSegmentCount": 0,
+  "transcriptOmitted": true,
+  "error": "Expected acoustic phrase not recognized; inspect device routing before claiming microphone STT",
+  "finishedAt": "2026-11-09T23:54:28.935Z",
+  "artifact": "artifacts/voice-acoustic/1794268456516/report.json",
+  "interpretation": "Target playback phrase was not recovered from microphone; no positive echo diagnosis or recognizer accuracy claim. User had been instructed to remain quiet. Original acoustic assertion FAIL retained."
+}

@@ -1,4 +1,8 @@
-# Current implementation/verification distinction — 2026-11-01
+# Current implementation/verification checkpoint — 2026-11-10
+
+**Product PARTIAL; production acceptance BLOCKED.** Actual workflow evidence and explicit gaps are mapped in the [current correction matrix](verification/CURRENT-ACCEPTANCE.md). See the [November9/10 progress log](verification/2026-11-09/PROGRESS.md). Genuine headset conversation and native primary desktop actions now have scoped evidence; full voice interruption, automatic turns, endurance, external-device and release gates remain open. The dated statements below are historical, not current results.
+
+# Historical implementation/verification distinction — 2026-11-01
 
 **Product PARTIAL; release acceptance BLOCKED.** Historical dashboards below are retained but do not establish current production completion. The [current classification audit](verification/CLASSIFICATION-AUDIT.md) separates implementation claims, scoped assertion results and independent workflow verification. Current phase sources contain 89 leaves; requirements contain 48. All legacy assertions were NOT_RUN by this audit.
 

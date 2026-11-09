@@ -1,0 +1,75 @@
+# Current acceptance checkpoint — 10 November 2026
+
+**Product PARTIAL. Production acceptance BLOCKED. No completion percentage established.** This checkpoint supersedes dated status summaries, not the full master roadmap. The table covers the user's 46 mandatory functional correction clauses; the original product vision and release requirements remain in scope. An evidence link establishes only its recorded workflow, version and environment, not universal correctness or a fresh run of every test at current HEAD.
+
+`EVIDENCED` means the named outcome has real scoped evidence. `PARTIAL` means an explicit part or breadth remains open. `BLOCKED` means required external prerequisites are unavailable. Historical failures stay failures. Classification inventory validity means coverage metadata integrity; it never means tests ran or release passed.
+
+Newest combined browser run: [16 workflows PASS, provider catalog probe HTTP502 FAIL](2026-11-10/combined-real-ui-regression.json); overall FAIL retained. New [automatic human voice turn test FAIL](2026-11-10/whisper-human-automatic-turn-failure.json): user spoke the phrase and heard the response cut off; no matching complete automatic turn within60seconds. Manual-ended human conversation remains a separate PASS. [21 local worker/search regression checks PASS](2026-11-10/workers-search-regression.json); loopback/provider fixtures are not remote service proof.
+
+Evidence keys used below:
+
+- **UI:** [actual persisted UI/reconnect/scroll/search](2026-11-02/browser-per-workflow-classification.json); [recent nine-workflow regression and actual 3B tool recall](2026-11-10/qwen-3b-real-ui-recall.json).
+- **Skills:** [actual external bundle/task/artifact/UI lifecycle](2026-11-02/skills-external-ui-execution.json); [backup/restore bundle execution](2026-11-09/skills-bundle-restore.json).
+- **Plugins:** [actual external MCP UI execution](2026-11-02/external-mcp-ui-real-pass.json); [UI refresh/restart/toggle/uninstall](2026-11-02/external-mcp-ui-refresh-restart.json); [restored actual external handler](2026-11-09/third-party-mcp-restore.json).
+- **Agents:** [actual parallel model/tool outputs and consolidation](2026-11-02/parallel-agents-ui-live.json); [killed-process child recovery](2026-11-02/team-resume-regression-live-ui.json).
+- **Screen:** [actual changed frames, local inference and encrypted memory reopen](2026-11-02/local-vision-screen-memory.json); [retrieval through ZERO](2026-11-02/screen-recall-through-zero.json).
+- **Voice:** [actual human headset speech](2026-11-10/whisper-headset-microphone.json); [actual human shared conversation, playback and typed recall](2026-11-10/whisper-human-conversation.json); [stronger interruption test FAIL with partial native/user evidence](2026-11-10/whisper-human-barge-in.json).
+- **Desktop:** [pinned primary agent-desktop and actual model workflow](2026-11-10/agent-desktop-model-multistep.json); [real cancellation](2026-11-10/agent-desktop-cancellation.json); [RPC delivery honesty](2026-11-10/agent-desktop-rpc-delivery.json).
+- **Preservation:** [actual isolated backup restore](2026-11-09/actual-backup-isolated-restore.json); [encrypted-record validation](2026-11-09/backup-all-encrypted-records.json); [new host process and actual chat after restore](2026-11-09/restored-host-process-chat.json).
+
+## Mandatory correction matrix
+
+| Clause | Required outcome | Current scope/status | Evidence and remaining limit |
+|---|---|---|---|
+| Honesty 1 | Classify all acceptance tests using the seven exact labels | PARTIAL | Original 137 leaves and 13 runner entrypoints inventoried; newer test titles/scopes carry labels, but exhaustive repository-wide coverage is not established. |
+| Honesty 2 | Replace weak assertions with intended-outcome tests | PARTIAL | UI, Skills, Plugins, Agents, Screen, Voice and Desktop provide actual effects; legacy source/existence assertions remain explicitly insufficient. |
+| Honesty 3 | Remove misleading production-completion claims | PARTIAL | Current notices withdraw historical sign-off; exhaustive remaining claim scan/release audit still required. |
+| Honesty 4 | Preserve failing/blocked scenarios without PASS conversion | EVIDENCED | Voice interruption FAIL, prior local-model recall failures, interrupted endurance and external prerequisites retained. No global pass inference. |
+| Honesty 5 | Preserve user data and working features | PARTIAL | Preservation plus selected actual regressions; universal no-regression/clean-machine proof remains open. Owner configuration edits excluded from commits. |
+| UI 1 | Actual interactions on every important screen | PARTIAL | Named correction surfaces have actual workflows; all-screen/all-state regression breadth not established. |
+| UI 2 | Real scrollTop changes | EVIDENCED | UI records actual wheel input and measured increasing About scrollTop. Not every scrollable container. |
+| UI 3 | Skills, Plugins, Memory, Search, Models, Agents via forms/clicks/persistence | EVIDENCED | UI, Skills, Plugins, Agents; actual HF model lifecycle also in 2026-11-09/huggingface-full-ui-lifecycle.json. Selected workflows, not every setting permutation. |
+| UI 4 | Real gateway connection/reconnection | EVIDENCED | UI old/new process IDs and actual rendered reconnection with persisted memory. Long-expiry renewal remains a separate release concern. |
+| UI 5 | CSS/text/HTTP200 alone insufficient | EVIDENCED | Cited workflow tests assert actual effects, disk state, replies and scroll movement. Old weak tests are not acceptance substitutes. |
+| Search 1 | No synthesized verified citations | EVIDENCED | UI retrieved source details retain verifiedClaims=false; search provenance contract assertions are separate from retrieval proof. |
+| Search 2 | Distinguish actual retrieval from query links | EVIDENCED | UI source URLs/provider provenance; packages/research-engine/search.mjs. Query links are not retrieved evidence. |
+| Search 3 | Explicit unavailable/empty/failed states | EVIDENCED | test/search-provenance.test.mjs covers malformed/stalled responses; UI reports real provider outcome. CONTRACT/INTEGRATION scope, not live outage proof. |
+| Search 4 | URL and citation provenance testing | EVIDENCED | UI independently retrieves actual Wikipedia source bytes; source claims remain unverified. |
+| Screen 1 | ScreenObserver.start drives Windows capture loop | EVIDENCED | Screen actual capture and local inference; sustained job is a separate gate. |
+| Screen 2 | Real frames and metadata | EVIDENCED | Screen plus actual ZERO title recall; no dummy frame substitution. |
+| Screen 3 | Local OCR and validated local vision | PARTIAL | Actual selected local model inference/OCR pipeline; selected scenes validated, general recognition accuracy not established. |
+| Screen 4 | Five-minute bounded RAM buffer | EVIDENCED | Actual capture resource samples enforce 300000ms/262144000-byte owned-buffer bounds; process/model RAM is separately measured. |
+| Screen 5 | Events reach persistent observation memory | EVIDENCED | Screen encrypted SQLite persistence/reopen; not an event inserted manually. |
+| Screen 6 | Real screen changes and ZERO retrieval | EVIDENCED | Screen controlled visible changes plus actual registered recall tool/result. |
+| Screen 7 | Real 24-hour CPU/RAM endurance | PARTIAL | Original PID24180 independently live on this checkpoint; latest inspected runtime exceeded6hours, not24. No completed24Hours claim. |
+| Screen 8 | Dummy buffers do not count as continuous capture | EVIDENCED | Native capture/OCR counters and owned process measurements retained separately from buffer unit tests. |
+| Skills/plugins 1 | Install compatible external Skill | EVIDENCED | Skills pins actual anthropics frontend-design source revision. |
+| Skills/plugins 2 | Execute through ZERO task/capability system | EVIDENCED | Skills actual external model task/tool execution, not metadata listing. |
+| Skills/plugins 3 | Real output and independent result | EVIDENCED | Skills actual HTML artifact with independently clicked counter. |
+| Skills/plugins 4 | Install executable external Plugin | EVIDENCED | Plugins actual pinned MCP filesystem package, not handwritten registration only. |
+| Skills/plugins 5 | Invoke registered handler and verify effect | EVIDENCED | Plugins independently checked Unicode file effect through registered handler. |
+| Skills/plugins 6 | Restart persistence/enable/disable/uninstall | EVIDENCED | Skills and Plugins actual process restarts/toggles/removal; preservation includes managed bundle relocation. Not every plugin format. |
+| Skills/plugins 7 | Operations through current UI | EVIDENCED | Skills and Plugins current browser buttons/forms/results. |
+| Agents 1 | Two independent specialist agents | EVIDENCED | Agents separate coder/researcher execution and independent results. |
+| Agents 2 | Confirm assigned model used | PARTIAL | Actual outgoing provider model IDs match assignments; opaque provider-internal alias mapping is not independently certified. |
+| Agents 3 | Real subtasks and tool results | EVIDENCED | Agents independent actual file reads, hashes and durable tool results. |
+| Agents 4 | Parent-child exchange and consolidation | EVIDENCED | Agents durable messages and both actual results in parent synthesis. |
+| Agents 5 | Parallel execution/interruption/recovery | EVIDENCED | Agents overlapping upstream calls and actual killed/restarted child recovery. No exactly-once mid-tool guarantee. |
+| Agents 6 | Profiles/DAG plans alone insufficient | EVIDENCED | Actual model/tool/process evidence used; DAG/unit tests remain narrow. |
+| Voice 1 | Real speech synthesis replaces tone | EVIDENCED | Native Windows TTS and user-confirmed audible human-conversation reply. |
+| Voice 2 | Real STT replaces placeholders | EVIDENCED | Pinned offline Whisper actual human headset phrase, not fabricated text. Optional explicit backend; Windows default retained. |
+| Voice 3 | Actual microphone capture/processing | EVIDENCED | Voice device0 Rockerz480 actual native PCM and expected words; raw microphone audio not saved. |
+| Voice 4 | Real synthesized output device playback | EVIDENCED | Voice actual native playback completion plus user's clear-audio confirmation. |
+| Voice 5 | Interruptions/barge-in/chat continuity | PARTIAL | Human conversation and typed recall PASS; native microphone interruption/user confirmation exists, but stronger adjacent-word barge-in test and automatic VAD human conversation test remain FAIL. |
+| Voice 6 | Keep PARTIAL until genuine interaction | PARTIAL | Genuine selected spoken interaction now evidenced, but full voice feature remains PARTIAL pending automatic turns and complete interruption gates. |
+| Workers 1 | Real worker execution | PARTIAL | test/runtime-workers.integration.test.mjs actual local child process/file/stdout evidence; real remote/cloud worker unavailable. |
+| Workers 2 | Actual remote handoff/result return | BLOCKED | User confirms Windows-PC-only testing; loopback/local process execution cannot prove remote target. |
+| Workers 3 | Real supported mobile operations | BLOCKED | No supported physical companion available. Registry/pairing metadata are insufficient. |
+| Workers 4 | Restart recovery with stopped/restarted process | PARTIAL | Actual host/team restart evidence and local worker process tests; external worker/device recovery unavailable. |
+| Workers 5 | Unavailable prerequisites explicitly blocked | EVIDENCED | Remote/cloud/mobile gates remain BLOCKED, not simulated PASS. |
+
+## Open acceptance gates
+
+No overall production sign-off, clean-machine installation, exhaustive regression or independent full-product review has passed. Physical mobile/cloud/remote targets are unavailable. The 24-hour process remains unfinished. Full voice automatic-turn and interruption acceptance remains open. General desktop/app/model accuracy is not established by selected native UIA fixtures or local inference. No new permission popup was introduced; owner authorization, existing human hold and internal execution leases remain distinct concerns.
+
+Current change log: [November9/10 progress](2026-11-09/PROGRESS.md). Earlier [November2 progress](2026-11-02/PROGRESS.md) and [classification audit](CLASSIFICATION-AUDIT.md) remain dated evidence; they are not current blanket status tables.
