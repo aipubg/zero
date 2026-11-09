@@ -1,0 +1,16 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "actualNativeReady": true,
+  "cancelledOldRecognition": true,
+  "nextRecognition": {
+    "language": "en-US",
+    "pcmByteLength": 100320,
+    "expectedPhraseMatched": true
+  },
+  "inputSource": "Real Windows synthesized speech, not human microphone",
+  "acousticBargeIn": "UNVERIFIED"
+}

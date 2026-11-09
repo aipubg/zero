@@ -34,6 +34,31 @@ function engineFor(t, overrides, options) {
   return engine;
 }
 
+test('[UNIT] next recognition waits for cancelled native operation settlement and retains new input', async t => {
+  const closing = deferred(); let calls = 0;
+  const engine = engineFor(t, { transcribe: async pcm => {
+    if (++calls === 1) { await closing.promise; throw cancelled(); }
+    assert.deepEqual(pcm, samples);
+    return { text: 'new utterance', transcribed: true };
+  } });
+  engine.ingestChunk('session', samples);
+  const controller = new AbortController();
+  const old = engine.transcribe('session', { signal: controller.signal });
+  const rejected = assert.rejects(old, { code: 'VOICE_CANCELLED' });
+  controller.abort();
+  engine.ingestChunk('session', samples);
+  const next = engine.transcribe('session');
+  // Attach immediately so a regression rejection remains observed.
+  const observed = next.then(value => ({ value }), error => ({ error }));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls, 1);
+  closing.resolve(); await rejected;
+  const outcome = await observed;
+  assert.equal(outcome.error, undefined, outcome.error?.message);
+  assert.equal(outcome.value.text, 'new utterance');
+  assert.equal(calls, 2);
+});
+
 test('session creation enumerates capabilities without opening microphone/output', async t => {
   const engine = engineFor(t, { play: () => assert.fail('Playback is opt-in to speech') });
   await engine.refreshAvailability();

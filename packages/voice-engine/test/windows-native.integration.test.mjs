@@ -133,4 +133,31 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
       await writeFile(join(evidenceDirectory, 'report.json'), JSON.stringify({ classification: ['REAL_OS'], status: 'PASS', actualNativeStarted: started, nativeRecognizeCompletedCancelled: nativeCancelled, nativeOnlyCancellationRejected: true, forcedKills, recoveredLanguage: recovered.language, inputSource: 'Actual synthesized PCM, not microphone speech', acousticBargeIn: 'UNVERIFIED' }, null, 2));
     } finally { longPcm.fill(0); }
   });
+  await t.test('[REAL_OS] next engine recognition waits for actual cancelled native recognizer teardown', async () => {
+    const engine = new VoiceEngine({ backend, playback: false });
+    const controller = new AbortController();
+    let next; let started = false;
+    try {
+      engine.startSession('native-handoff');
+      engine.ingestChunk('native-handoff', audio.pcm);
+      await assert.rejects(engine.transcribe('native-handoff', {
+        language: 'en-US', signal: controller.signal,
+        onStarted: () => {
+          started = true;
+          controller.abort();
+          engine.ingestChunk('native-handoff', audio.pcm);
+          next = engine.transcribe('native-handoff', { language: 'en-US' });
+          next.catch(() => {});
+        },
+      }), { code: 'VOICE_CANCELLED' });
+      assert.equal(started, true);
+      const result = await next;
+      assertRecognizedPhrase(result.text);
+      assert.equal(result.pcmByteLength, audio.pcm.length);
+      assert.equal(engine.getStatus().sessions[0].transcriptionActive, false);
+      const evidenceDirectory = join('artifacts', 'voice-native-handoff', String(Date.now()));
+      await mkdir(evidenceDirectory, { recursive: true });
+      await writeFile(join(evidenceDirectory, 'report.json'), JSON.stringify({ classification: ['REAL_OS', 'INTEGRATION'], status: 'PASS', actualNativeReady: started, cancelledOldRecognition: true, nextRecognition: { language: result.language, pcmByteLength: result.pcmByteLength, expectedPhraseMatched: true }, inputSource: 'Real Windows synthesized speech, not human microphone', acousticBargeIn: 'UNVERIFIED' }, null, 2));
+    } finally { await engine.close(); }
+  });
 });

@@ -158,11 +158,16 @@ export class VoiceEngine extends EventEmitter {
 
   async transcribe(sessionId, options = {}) {
     const session = this._session(sessionId);
+    const previous = session.transcription;
+    if (previous?.controller.signal.aborted) await previous.done;
+    if (!session.active || this.sessions.get(sessionId) !== session) throw abortError();
     if (session.transcription) throw new VoiceError('VOICE_BUSY', 'A transcription is already running for this session');
     if (options.signal?.aborted) throw abortError();
     const pcm = session.router.drainInputBuffer();
     if (!pcm.length) return { ok: true, sessionId, text: '', empty: true, transcribed: false, pcmByteLength: 0 };
     const operation = this._operation(options.signal);
+    let settled;
+    operation.done = new Promise(resolve => { settled = resolve; });
     session.transcription = operation;
     try {
       const result = await this.backend.transcribe(pcm, { ...options, sampleRate: this.sampleRate, signal: operation.controller.signal });
@@ -181,6 +186,7 @@ export class VoiceEngine extends EventEmitter {
     } finally {
       operation.release();
       if (session.transcription === operation) session.transcription = null;
+      settled();
       if (session.active && session.turnManager.state === VOICE_STATES.PROCESSING) session.turnManager.transitionTo(VOICE_STATES.IDLE, { reason: 'transcription_complete' });
     }
   }
