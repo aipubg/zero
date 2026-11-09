@@ -1,0 +1,27 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-09T18:03:35.796Z",
+  "inference": "NOT_RUN",
+  "completed": {
+    "id": "dl-71e6d789-f44d-4d87-b5cd-67c062b286bb",
+    "filename": "qwen2.5-0.5b-instruct-q5_k_m.gguf",
+    "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q5_k_m.gguf",
+    "totalBytes": 522186592,
+    "downloadedBytes": 522186592,
+    "percentage": 100,
+    "speedMBs": 0,
+    "etaSeconds": 0,
+    "status": "completed",
+    "startedAt": 1794247416245,
+    "verified": true,
+    "sha256": "041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55"
+  },
+  "independentDiskSha256": "041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55",
+  "existingFilePreserved": true,
+  "finishedAt": "2026-11-09T18:05:27.378Z"
+}

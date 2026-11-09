@@ -79,3 +79,9 @@
 - Selected actual loopback-transfer INTEGRATION plus catalog CONTRACT checks PASS after deadline/cleanup changes. Classification inventory VALID, not all-suite execution.
 - Full actual external transfer test started separately under unified exec session93503, artifact directory artifacts/huggingface-download/1794247415796. Last authoritative poll still running, temporary destination length0; complete transfer/hash gate remains IN_PROGRESS, not PASS. Do not restart solely because observation returned no output. This process began before the added no-progress deadline; it retains its original550second test poll bound.
 - Endurance PID24180 independently alive. Latest observed summary0.545hours, completed24Hoursfalse, resourceAcceptancePARTIAL. Human STT/barge-in, strict local recall and unavailable mobile/cloud gates remain unresolved. Owner config edits excluded.
+
+## Full actual external GGUF transfer completed
+- Authoritative unified session93503 exited0: REAL_EXTERNAL official Qwen download test PASS in111.6seconds. Supersedes the preceding IN_PROGRESS observation; no restart was performed.
+- Actual522186592bytes downloaded from pinned official resolve URL. Independently reread disk SHA-256 equals041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55 and reported verified SHA. Second download rejected existing destination, size preserved, no .download residue. Test-owned model cleaned after evidence capture; no owner model altered.
+- Evidence huggingface-complete-download.json. This service test establishes complete real transfer and independent disk verification. Browser workflow separately establishes actual UI progress/cancel, not UI completion or inference. Newly added30second stall deadline was not present in the already-running full transfer process; covered afterward only by selected regression checks, not this full transfer run.
+- Full master acceptance remains open; no production sign-off.
