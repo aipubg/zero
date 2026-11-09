@@ -1,0 +1,12 @@
+{
+  "classification": [
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "actualNativeStarted": true,
+  "nativeRecognizeCompletedCancelled": true,
+  "forcedKills": 0,
+  "recoveredLanguage": "en-US",
+  "inputSource": "Actual synthesized PCM, not microphone speech",
+  "acousticBargeIn": "UNVERIFIED"
+}

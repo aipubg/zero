@@ -4,6 +4,7 @@ using System.IO;
 using System.Speech.AudioFormat;
 using System.Speech.Recognition;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Zero.Voice {
     public class RecognizedSegment {
@@ -14,6 +15,7 @@ namespace Zero.Voice {
     }
     public class RecognitionResult {
         public string language;
+        public bool cancelled;
         public RecognizedSegment[] segments;
     }
     public static class Recognition {
@@ -32,6 +34,7 @@ namespace Zero.Voice {
             using (ManualResetEvent completed = new ManualResetEvent(false)) {
                 List<RecognizedSegment> segments = new List<RecognizedSegment>();
                 Exception failure = null;
+                bool wasCancelled = false;
                 engine.LoadGrammar(new DictationGrammar());
                 engine.SetInputToAudioStream(stream, new SpeechAudioFormatInfo(sampleRate, AudioBitsPerSample.Sixteen, AudioChannel.Mono));
                 engine.SpeechRecognized += (sender, args) => {
@@ -41,8 +44,16 @@ namespace Zero.Voice {
                         durationMs = args.Result.Audio.Duration.TotalMilliseconds
                     });
                 };
-                engine.RecognizeCompleted += (sender, args) => { failure = args.Error; completed.Set(); };
+                engine.RecognizeCompleted += (sender, args) => { failure = args.Error; wasCancelled = args.Cancelled; completed.Set(); };
                 engine.RecognizeAsync(RecognizeMode.Multiple);
+                Console.WriteLine("{\"type\":\"ready\"}");
+                Task.Run(() => {
+                    string command = Console.In.ReadLine();
+                    if (command == "cancel") {
+                        try { engine.RecognizeAsyncCancel(); }
+                        catch (InvalidOperationException) { /* Already complete or disposed. */ }
+                    }
+                });
                 if (!completed.WaitOne(110000)) {
                     engine.RecognizeAsyncCancel();
                     // Keep the event alive until the engine has dispatched cancellation.
@@ -50,7 +61,7 @@ namespace Zero.Voice {
                     throw new TimeoutException("Windows speech recognition timed out");
                 }
                 if (failure != null) throw failure;
-                return new RecognitionResult { language = selected.Culture.Name, segments = segments.ToArray() };
+                return new RecognitionResult { language = selected.Culture.Name, cancelled = wasCancelled, segments = segments.ToArray() };
             }
         }
     }

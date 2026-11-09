@@ -181,11 +181,13 @@ export class WindowsSpeechBackend {
     return { pcm, sampleRate, channels: 1, bitsPerSample: 16, voice: result.voice };
   }
 
-  async transcribe(pcm, { sampleRate = 16000, signal, language } = {}) {
+  async transcribe(pcm, { sampleRate = 16000, signal, language, onStarted } = {}) {
     validateFormat(sampleRate);
     validatePcm(pcm);
     if (!pcm.length) return { text: '', segments: [], transcribed: false, reason: 'empty_audio' };
-    return this._run('transcribe', { pcm: Buffer.from(pcm).toString('base64'), sampleRate, language }, { signal, timeoutMs: 120000 }).done;
+    const job = this._run('transcribe', { pcm: Buffer.from(pcm).toString('base64'), sampleRate, language }, { signal, timeoutMs: 120000 });
+    job.ready.then(() => onStarted?.(), () => {});
+    return job.done;
   }
 
   async play(pcm, { sampleRate = 16000, signal, onStarted } = {}) {

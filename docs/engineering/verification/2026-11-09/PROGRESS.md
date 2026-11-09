@@ -37,3 +37,10 @@
 -30existing voice native/unit/contract checks PASS. Genuine native recognition reported en-US; selected phrase had probabilistic voice/boys substitution retained in test output, not rewritten.
 - New REAL_OS/INTEGRATION actual authenticated WebSocket test artifacts/voice-language-rpc/1794246256010/report.json PASS: real Windows TTS PCM uploaded, zz-ZZ rejected, exact input bytes restored, same input recognized with en-US and reported culture, buffer drained, cloudRequests0. No mock recognizer or provider. Manual isolated engine session prevents automatic conversation execution; not full voice conversation or microphone proof.
 - Evidence voice-language-rpc.json, documentation updated. Inventory VALID; endurance PID24180 independently live. Human STT, barge-in, local strict recall and24h/master gates remain open.
+
+## Actual recognizer cancellation without process kill
+- Windows STT helper previously ignored stdin cancellation while recognizing; JS500ms process kill was its cancellation fallback. Native recognizer now reports readiness, listens for fixed cancel command and calls RecognizeAsyncCancel. RecognizeCompleted.Cancelled propagated in native result; JS cancellation still rejects late results.
+- Backend transcribe supports onStarted hook from actual native readiness. Hard-kill fallback retained for startup/unresponsive helpers; no claim every cancellation avoids it.
+- REAL_OS test starts genuine Windows recognition on long synthesized PCM, aborts on native ready, observes RecognizeCompleted cancelledtrue from real subprocess stdout and forcedKills0 via instrumented real spawn. Next real transcription succeeds with correct installed language. PCM cleared afterward. Evidence artifacts/voice-native-cancellation/1794246472706/report.json and voice-native-cancellation.json.
+-32selected native/unit/contract/RPC checks PASS; subsequent evidence-writing native run5checks PASS. Input was real synthesized speech, not human microphone; does not prove acoustic barge-in or full spoken conversation.
+- Runner integrity VALID; endurance PID24180 independently live. Owner configs untouched; remaining master acceptance gates open.

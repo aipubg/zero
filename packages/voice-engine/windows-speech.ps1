@@ -67,7 +67,7 @@ try {
         $recognized = [Zero.Voice.Recognition]::Transcribe([Convert]::FromBase64String($request.pcm), [int]$request.sampleRate, [string]$request.language)
         $segments = @($recognized.segments)
         $text = ($segments | ForEach-Object { $_.text }) -join ' '
-        Send-Message @{ type = 'result'; language = $recognized.language; text = $text; segments = $segments; transcribed = ($text.Length -gt 0); reason = $(if ($text.Length -eq 0) { 'no_speech_recognized' } else { $null }) }
+        Send-Message @{ type = 'result'; language = $recognized.language; cancelled = $recognized.cancelled; text = $text; segments = $segments; transcribed = ($text.Length -gt 0); reason = $(if ($text.Length -eq 0) { 'no_speech_recognized' } else { $null }) }
     } elseif ($Operation -eq 'play') {
         Load-NativeAudio
         [Zero.Voice.NativeAudio]::ListenForCancellation()

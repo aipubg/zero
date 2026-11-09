@@ -89,6 +89,10 @@ Explicit `voice.transcribe` RPCs forward the requested `language` to the install
 Windows recognizer. Successful results report the actual recognizer culture;
 an unavailable culture fails and retains buffered input for correction/retry.
 Omitting the language selects an installed recognizer and reports its culture.
+Native STT readiness can be observed with the backend's `onStarted` callback.
+Cancellation requests `RecognizeAsyncCancel` and reports the recognizer's actual
+cancelled completion; process termination remains a fallback for an unresponsive
+helper. A cancelled operation never publishes a successful transcript.
 
 Two opt-in hardware probes keep captured audio in RAM and omit ambient transcripts
 from their JSON reports under `artifacts/`:

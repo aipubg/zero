@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { VoiceEngine, WindowsSpeechBackend } from '../index.mjs';
+import { spawn } from 'node:child_process';
 
 function assertRecognizedPhrase(text) {
   // Dictation is probabilistic; assess word agreement rather than force an exact
@@ -97,5 +98,34 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
     const rejection = assert.rejects(speech, { code: 'VOICE_CANCELLED' });
     setTimeout(() => controller.abort(), 50);
     await rejection;
+  });
+  await t.test('[REAL_OS] actual recognizer cancels after native readiness without hard kill and recovers', async () => {
+    let forcedKills = 0; let nativeCancelled = false;
+    const instrumented = new WindowsSpeechBackend({ spawn: (...args) => {
+      const child = spawn(...args); const originalKill = child.kill.bind(child);
+      let diagnostic = '';
+      child.stdout.on('data', chunk => {
+        diagnostic += chunk.toString();
+        let end;
+        while ((end = diagnostic.indexOf('\n')) !== -1) {
+          const line = diagnostic.slice(0, end); diagnostic = diagnostic.slice(end + 1);
+          try { const frame = JSON.parse(line); if (frame.type === 'result' && frame.cancelled === true) nativeCancelled = true; } catch {}
+        }
+      });
+      child.kill = (...killArgs) => { forcedKills++; return originalKill(...killArgs); };
+      return child;
+    } });
+    const controller = new AbortController(); let started = false;
+    const longPcm = Buffer.concat(Array.from({ length: 32 }, () => audio.pcm));
+    try {
+      await assert.rejects(instrumented.transcribe(longPcm, { language: 'en-US', signal: controller.signal, onStarted: () => { started = true; controller.abort(); } }), { code: 'VOICE_CANCELLED' });
+      assert.equal(started, true); assert.equal(forcedKills, 0, 'Graceful native cancellation must finish before kill fallback');
+      assert.equal(nativeCancelled, true, 'Native RecognizeCompleted must confirm cancellation, not natural completion');
+      const recovered = await instrumented.transcribe(audio.pcm, { language: 'en-US' });
+      assertRecognizedPhrase(recovered.text); assert.equal(recovered.language, 'en-US');
+      const evidenceDirectory = join('artifacts', 'voice-native-cancellation', String(Date.now()));
+      await mkdir(evidenceDirectory, { recursive: true });
+      await writeFile(join(evidenceDirectory, 'report.json'), JSON.stringify({ classification: ['REAL_OS'], status: 'PASS', actualNativeStarted: started, nativeRecognizeCompletedCancelled: nativeCancelled, forcedKills, recoveredLanguage: recovered.language, inputSource: 'Actual synthesized PCM, not microphone speech', acousticBargeIn: 'UNVERIFIED' }, null, 2));
+    } finally { longPcm.fill(0); }
   });
 });
