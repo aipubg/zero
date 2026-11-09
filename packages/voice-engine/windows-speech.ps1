@@ -34,10 +34,12 @@ try {
         } catch { $recognition.reason = $_.Exception.GetBaseException().Message }
         try {
             Load-NativeAudio
-            $inputs = [Zero.Voice.NativeAudio]::waveInGetNumDevs()
-            $outputs = [Zero.Voice.NativeAudio]::waveOutGetNumDevs()
-            $microphone = @{ available = ($inputs -gt 0); deviceCount = $inputs; permission = 'not-checked'; verified = $false }
-            $output = @{ available = ($outputs -gt 0); deviceCount = $outputs; verified = $false }
+            $inputDevices = @([Zero.Voice.NativeAudio]::GetInputs())
+            $outputDevices = @([Zero.Voice.NativeAudio]::GetOutputs())
+            $inputs = $inputDevices.Count
+            $outputs = $outputDevices.Count
+            $microphone = @{ available = ($inputs -gt 0); deviceCount = $inputs; devices = $inputDevices; selection = 'windows-default-mapper'; permission = 'not-checked'; verified = $false }
+            $output = @{ available = ($outputs -gt 0); deviceCount = $outputs; devices = $outputDevices; selection = 'windows-default-mapper'; verified = $false }
             if (!$microphone.available) { $microphone.reason = 'No Windows recording devices detected' }
             if (!$output.available) { $output.reason = 'No Windows playback devices detected' }
         } catch {

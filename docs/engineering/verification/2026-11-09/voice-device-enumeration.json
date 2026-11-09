@@ -1,0 +1,49 @@
+{
+  "classification": [
+    "REAL_OS"
+  ],
+  "status": "ENUMERATED",
+  "verifiedAt": "2026-11-09T17:31:50.064Z",
+  "microphone": {
+    "deviceCount": 1,
+    "selection": "windows-default-mapper",
+    "available": true,
+    "devices": [
+      {
+        "id": 0,
+        "name": "Headset (Rockerz 480)",
+        "channels": 2
+      }
+    ],
+    "permission": "not-checked",
+    "verified": false
+  },
+  "output": {
+    "verified": false,
+    "selection": "windows-default-mapper",
+    "devices": [
+      {
+        "id": 0,
+        "name": "Headphones (Rockerz 480)",
+        "channels": 2
+      },
+      {
+        "id": 1,
+        "name": "LG FHD (HD Audio Driver for Dis",
+        "channels": 2
+      }
+    ],
+    "deviceCount": 2,
+    "available": true
+  },
+  "recognition": {
+    "available": true,
+    "languages": [
+      "en-US"
+    ]
+  },
+  "spokenInteraction": "PARTIAL; earlier prompted microphone phrase failed",
+  "references": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/mmeapi/ns-mmeapi-waveincapsw"
+  ]
+}

@@ -6,7 +6,53 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Zero.Voice {
+    public class AudioDeviceInfo {
+        public uint id;
+        public string name;
+        public ushort channels;
+    }
     public static class NativeAudio {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        struct InputCaps {
+            public ushort manufacturer, product;
+            public uint version;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string name;
+            public uint formats;
+            public ushort channels, reserved;
+        }
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        struct OutputCaps {
+            public ushort manufacturer, product;
+            public uint version;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string name;
+            public uint formats;
+            public ushort channels, reserved;
+            public uint support;
+        }
+        [DllImport("winmm.dll", CharSet = CharSet.Unicode)] static extern uint waveInGetDevCapsW(UIntPtr device, out InputCaps caps, uint size);
+        [DllImport("winmm.dll", CharSet = CharSet.Unicode)] static extern uint waveOutGetDevCapsW(UIntPtr device, out OutputCaps caps, uint size);
+        public static AudioDeviceInfo[] GetInputs() {
+            uint count = waveInGetNumDevs();
+            if (count > 256) throw new InvalidOperationException("Unexpected recording device count");
+            AudioDeviceInfo[] devices = new AudioDeviceInfo[count];
+            for (uint i = 0; i < count; i++) {
+                InputCaps caps;
+                Check(waveInGetDevCapsW(new UIntPtr(i), out caps, (uint)Marshal.SizeOf(typeof(InputCaps))), "waveInGetDevCapsW");
+                devices[i] = new AudioDeviceInfo { id = i, name = caps.name, channels = caps.channels };
+            }
+            return devices;
+        }
+        public static AudioDeviceInfo[] GetOutputs() {
+            uint count = waveOutGetNumDevs();
+            if (count > 256) throw new InvalidOperationException("Unexpected playback device count");
+            AudioDeviceInfo[] devices = new AudioDeviceInfo[count];
+            for (uint i = 0; i < count; i++) {
+                OutputCaps caps;
+                Check(waveOutGetDevCapsW(new UIntPtr(i), out caps, (uint)Marshal.SizeOf(typeof(OutputCaps))), "waveOutGetDevCapsW");
+                devices[i] = new AudioDeviceInfo { id = i, name = caps.name, channels = caps.channels };
+            }
+            return devices;
+        }
         [StructLayout(LayoutKind.Sequential, Pack = 2)]
         struct Format {
             public ushort tag, channels;

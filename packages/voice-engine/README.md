@@ -68,3 +68,23 @@ The opt-in integration suite uses real synthesis and recognition in memory and
 creates a temporary WAV proof file. It never opens a microphone or speakers.
 Actual microphone permissions, audible playback, and acoustic barge-in require a
 separate user-initiated hardware test.
+
+Availability now reports WinMM input/output names, channel counts and current
+session device indices. These indices can change after reconnecting a headset;
+capture/playback currently use the Windows default mapper. Enumeration does not
+establish microphone permission, speech recognition or audible playback.
+
+Two opt-in hardware probes keep captured audio in RAM and omit ambient transcripts
+from their JSON reports under `artifacts/`:
+
+```powershell
+$env:ZERO_VOICE_ACOUSTIC_TESTS = '1'
+node --test test/voice-acoustic-real.test.mjs
+$env:ZERO_VOICE_HUMAN_TESTS = '1'
+node --test test/voice-human-microphone-real.test.mjs
+```
+
+The first plays a phrase and checks acoustic microphone reception; headphones
+may isolate that signal from the microphone. The second opens a 40-second input
+window and requires the prompted phrase. Neither proves full voice/chat
+continuity or acoustic barge-in. Preserve failed reports as failures.

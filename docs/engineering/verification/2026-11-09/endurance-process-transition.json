@@ -1,0 +1,21 @@
+{
+  "previous": {
+    "pid": 16016,
+    "source": "artifacts/screen-intelligence/endurance-combined-20261103T080638Z/summary.json",
+    "lastElapsedHours": 0.47824238208333336,
+    "status": "INTERRUPTED",
+    "processAbsentInGetProcessAndCim": true,
+    "completed24Hours": false
+  },
+  "current": {
+    "completed24Hours": false,
+    "pid": 24180,
+    "requestedHours": 24,
+    "localVisionEnabled": true,
+    "processStartedAt": "2026-11-09T17:31:32.5223466Z",
+    "directory": "E:\\zero\\artifacts\\screen-intelligence\\endurance-combined-20261109T173132Z",
+    "status": "IN_PROGRESS",
+    "resourceAcceptance": "PARTIAL"
+  },
+  "reason": "Original handle/process missing; matching runner inventory empty. Not restarted on observation timeout alone."
+}

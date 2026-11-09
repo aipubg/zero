@@ -17,7 +17,7 @@ function assertRecognizedPhrase(text) {
 
 // These tests use real installed Windows speech engines. They never open a
 // microphone or a speaker. Set ZERO_VOICE_NATIVE_TESTS=1 to explicitly opt in.
-test('real Windows synthesis and recognition, with a WAV proof artifact', {
+test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifact', {
   skip: process.platform !== 'win32' || process.env.ZERO_VOICE_NATIVE_TESTS !== '1',
   timeout: 120000,
 }, async t => {
@@ -26,6 +26,12 @@ test('real Windows synthesis and recognition, with a WAV proof artifact', {
   assert.equal(availability.checked, true);
   assert.equal(availability.microphone.permission, 'not-checked');
   assert.equal(availability.output.verified, false);
+  assert.equal(availability.microphone.devices.length, availability.microphone.deviceCount);
+  assert.equal(availability.output.devices.length, availability.output.deviceCount);
+  for (const device of [...availability.microphone.devices, ...availability.output.devices]) {
+    assert.ok(Number.isInteger(device.id)); assert.ok(device.name.trim()); assert.ok(device.channels > 0);
+  }
+  assert.equal(availability.microphone.selection, 'windows-default-mapper');
   assert.equal(availability.synthesis.available, true, availability.synthesis.reason);
 
   const phrase = 'The voice engine can now speak real words.';
