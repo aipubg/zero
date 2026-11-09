@@ -50,3 +50,9 @@
 - Extended real native cancellation probe: sends cancel directly to actual helper stdin after actual recognizer readiness, WITHOUT aborting JS signal. Native RecognizeCompleted.Cancelledtrue observed, VOICE_CANCELLED returned, hard-kill count0, next actual recognition succeeds. Evidence artifacts/voice-native-cancellation/1794246570230/report.json and voice-native-only-cancellation.json.
 -32selected native/unit/RPC checks PASS before extra UNIT regression;27voice unit/contract checks PASS afterward. Unit cancelled adapter result emits no transcript and retains original buffered input for explicit retry; no fake result substitutes real native gate.
 - Inventory VALID; endurance PID24180 independently live. Human speech, acoustic barge-in, local strict recall and full24h/master acceptance remain open.
+
+## Real RPC concurrent-input ordering during recognition failure and retry
+- Extended actual authenticated WebSocket language test to send new PCM silence while original native recognition request is pending. A real voice.status RPC confirms transcriptionActive before newer input is sent.
+- Missing recognizer request fails explicitly; independently inspected restored buffer equals original real synthesized speech followed by new silence byte-for-byte. No reorder/loss accepted. Retry en-US transcribes same combined byte count, then drains buffer. No cloud call or microphone/speaker access.
+- Actual REAL_OS/INTEGRATION artifact artifacts/voice-language-rpc/1794246732980/report.json PASS; evidence voice-concurrent-input-retry.json. Controlled input is generated Windows speech plus actual PCM silence, not human conversation acceptance.
+- Runner inventory VALID. Endurance PID24180 independently live; latest checkpoint0.3365h489measuredframes0missing, completed24Hoursfalse/resourceAcceptancePARTIAL. No24hclaim; all remaining master gates preserved.

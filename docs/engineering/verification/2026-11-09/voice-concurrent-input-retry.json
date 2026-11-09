@@ -1,0 +1,15 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "inputSource": "Actual local Windows synthesis in RAM; not microphone speech",
+  "selectedLanguage": "en-US",
+  "missingLanguageRejected": true,
+  "inputPreservedOnFailure": true,
+  "concurrentInputByteOrderPreserved": true,
+  "actualRecognizedPhrase": "The boys engine can now speak real words",
+  "cloudRequests": 0,
+  "finishedAt": "2026-11-09T17:52:14.558Z"
+}

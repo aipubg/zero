@@ -39,13 +39,22 @@ test('[REAL_OS] actual voice RPC honors language and preserves input after missi
     host.voiceEngine.startSession('language-proof');
     audio = await new WindowsSpeechBackend().synthesize('The voice engine can now speak real words.');
     await call('voice.chunk', { sessionId: 'language-proof', chunk: audio.pcm.toString('base64') });
-    await assert.rejects(call('voice.transcribe', { sessionId: 'language-proof', language: 'zz-ZZ' }), /recognizer installed/);
-    assert.equal(host.voiceEngine.getStatus().sessions[0].router.bufferedInputBytes, audio.pcm.length);
+    const rejected = assert.rejects(call('voice.transcribe', { sessionId: 'language-proof', language: 'zz-ZZ' }), /recognizer installed/);
+    const during = await call('voice.status', {});
+    assert.equal(during.sessions.find(session => session.sessionId === 'language-proof').transcriptionActive, true, 'New input must arrive while original native recognition request is actually pending');
+    const subsequentSilence = Buffer.alloc(16000);
+    await call('voice.chunk', { sessionId: 'language-proof', chunk: subsequentSilence.toString('base64') });
+    await rejected;
+    const expectedInput = Buffer.concat([audio.pcm, subsequentSilence]);
+    assert.equal(host.voiceEngine.getStatus().sessions[0].router.bufferedInputBytes, expectedInput.length);
+    const actualInput = Buffer.concat(host.voiceEngine.sessions.get('language-proof').router._inputChunks);
+    try { assert.deepEqual(actualInput, expectedInput, 'Restored failed input must precede newly received audio byte-for-byte'); }
+    finally { actualInput.fill(0); expectedInput.fill(0); }
     const result = await call('voice.transcribe', { sessionId: 'language-proof', language: 'en-US' });
     assert.equal(result.language, 'en-US'); assert.equal(result.transcribed, true); assert.match(result.text, /speak real words/i);
-    assert.equal(result.pcmByteLength, audio.pcm.length);
+    assert.equal(result.pcmByteLength, audio.pcm.length + subsequentSilence.length);
     assert.equal(host.voiceEngine.getStatus().sessions[0].router.bufferedInputBytes, 0);
-    report.status = 'PASS'; report.selectedLanguage = result.language; report.missingLanguageRejected = true; report.inputPreservedOnFailure = true; report.actualRecognizedPhrase = result.text; report.cloudRequests = host.modelFabric.upstreamRequestCount;
+    report.status = 'PASS'; report.selectedLanguage = result.language; report.missingLanguageRejected = true; report.inputPreservedOnFailure = true; report.concurrentInputByteOrderPreserved = true; report.actualRecognizedPhrase = result.text; report.cloudRequests = host.modelFabric.upstreamRequestCount;
     assert.equal(report.cloudRequests, 0);
   } catch (error) { report.status = 'FAIL'; report.error = error.message; throw error; }
   finally {
