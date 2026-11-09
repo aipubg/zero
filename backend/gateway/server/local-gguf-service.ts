@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
 import { retrieveGgufCatalog } from './local-gguf-catalog.mjs';
+import { downloadVerifiedGguf } from './gguf-download-file.mjs';
 import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
 import { localNativeContinuation, localHistoricalTurns } from './local-gguf-continuation.mjs';
 import { createRecognizedTextWrapper } from './local-chat-wrapper.mjs';
@@ -103,6 +104,8 @@ export interface DownloadProgress {
   status: 'downloading' | 'completed' | 'cancelled' | 'error';
   error?: string;
   startedAt: number;
+  verified?: boolean;
+  sha256?: string;
 }
 
 export interface PipelineProgressEvent {
@@ -1715,158 +1718,67 @@ export class LocalGgufEngineService {
   /**
    * Start streaming download from Hugging Face with progress tracking
    */
+  public async startHuggingFaceDownload(repo: string, filename: string, revision?: string): Promise<DownloadProgress> {
+    const files = await retrieveGgufCatalog(repo);
+    const file = files.find(entry => entry.filename === filename);
+    if (!file || !file.sha256) throw new Error('Selected GGUF requires retrieved size and SHA-256 metadata');
+    if (revision !== undefined && file.revision !== revision) throw new Error('Repository revision changed; search again before downloading');
+    return this.beginVerifiedDownload(file);
+  }
+
   public async startDownload(url: string, targetFilename?: string, repo?: string): Promise<DownloadProgress> {
-    if (this.activeDownload && this.activeDownload.status === 'downloading') {
-      throw new Error('Another model download is currently in progress. Please wait or cancel it first.');
-    }
+    if (!repo) throw new Error('Official Hugging Face repository required');
+    const files = await retrieveGgufCatalog(repo);
+    const file = files.find(entry => entry.downloadUrl === url && (!targetFilename || entry.filename === targetFilename));
+    if (!file || !file.sha256) throw new Error('Download must match pinned official GGUF metadata');
+    return this.beginVerifiedDownload(file);
+  }
 
-    let filename = targetFilename;
-    if (!filename) {
-      const urlObj = new URL(url);
-      filename = path.basename(urlObj.pathname);
-    }
-    if (!filename.toLowerCase().endsWith('.gguf')) {
-      filename = `${filename}.gguf`;
-    }
-
-    const tempFilePath = path.join(this.modelsDir, `${filename}.download`);
-    const finalFilePath = path.join(this.modelsDir, filename);
-
-    this.downloadAbortController = new AbortController();
-
+  private beginVerifiedDownload(file: any): DownloadProgress {
+    if (this.downloadAbortController) throw new Error('Another model download is still active');
+    const filename = path.basename(file.filename);
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*\.gguf$/i.test(filename) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])\./i.test(filename)) throw new Error('Unsupported local GGUF filename');
+    const destination = path.join(this.modelsDir, filename);
+    if (fs.existsSync(destination)) throw new Error('Destination already exists; existing model preserved');
+    const controller = new AbortController();
+    this.downloadAbortController = controller;
     const progress: DownloadProgress = {
-      id: `dl-${Date.now()}`,
-      filename,
-      repo,
-      url,
-      totalBytes: 0,
-      downloadedBytes: 0,
-      percentage: 0,
-      speedMBs: 0,
-      etaSeconds: 0,
-      status: 'downloading',
-      startedAt: Date.now(),
+      id: 'dl-' + crypto.randomUUID(), filename, repo: file.repo, url: file.downloadUrl,
+      totalBytes: file.sizeBytes, downloadedBytes: 0, percentage: 0, speedMBs: 0,
+      etaSeconds: 0, status: 'downloading', startedAt: Date.now(),
     };
-
     this.activeDownload = progress;
-
-    (async () => {
+    void (async () => {
       try {
-        console.log(`[LocalGguf] Starting download from ${url} -> ${filename}`);
-        const response = await fetch(url, {
-          signal: this.downloadAbortController?.signal,
+        await downloadVerifiedGguf({ url: file.downloadUrl, destination, sizeBytes: file.sizeBytes,
+          sha256: file.sha256, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(2 * 60 * 60 * 1000)]),
+          onProgress: (bytes: number) => {
+            progress.downloadedBytes = bytes;
+            progress.percentage = Math.min(99.9, bytes / file.sizeBytes * 100);
+            const elapsed = Math.max(0.001, (Date.now() - progress.startedAt) / 1000);
+            progress.speedMBs = bytes / 1048576 / elapsed;
+            progress.etaSeconds = bytes ? Math.ceil((file.sizeBytes - bytes) / (bytes / elapsed)) : 0;
+          },
         });
-
-        if (!response.ok) {
-          throw new Error(`Download failed with HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const contentLength = response.headers.get('content-length');
-        if (contentLength) {
-          progress.totalBytes = parseInt(contentLength, 10);
-        }
-
-        if (!response.body) {
-          throw new Error('Readable stream not available on download response.');
-        }
-
-        const fileStream = fs.createWriteStream(tempFilePath);
-        let lastReportTime = Date.now();
-        let bytesSinceLastReport = 0;
-
-        const reader = response.body.getReader();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          fileStream.write(value);
-          progress.downloadedBytes += value.length;
-          bytesSinceLastReport += value.length;
-
-          const now = Date.now();
-          const elapsed = (now - lastReportTime) / 1000;
-
-          if (elapsed >= 0.5) {
-            const speed = (bytesSinceLastReport / (1024 * 1024)) / elapsed;
-            progress.speedMBs = parseFloat(speed.toFixed(2));
-
-            if (progress.totalBytes > 0) {
-              progress.percentage = parseFloat(
-                ((progress.downloadedBytes / progress.totalBytes) * 100).toFixed(1)
-              );
-              const remainingBytes = progress.totalBytes - progress.downloadedBytes;
-              progress.etaSeconds = speed > 0 ? Math.round((remainingBytes / (1024 * 1024)) / speed) : 0;
-            }
-
-            lastReportTime = now;
-            bytesSinceLastReport = 0;
-          }
-        }
-
-        await new Promise<void>((resolve, reject) => {
-          fileStream.end((err?: Error | null) => {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-
-        // Rename from .download to final filename
-        if (fs.existsSync(tempFilePath)) {
-          if (fs.existsSync(finalFilePath)) {
-            await fs.promises.unlink(finalFilePath);
-          }
-          await fs.promises.rename(tempFilePath, finalFilePath);
-        }
-
-        progress.status = 'completed';
-        progress.percentage = 100;
-        progress.speedMBs = 0;
-        progress.etaSeconds = 0;
-        console.log(`[LocalGguf] Download complete: ${filename}`);
-
-        // Trigger Auto-Setup Pipeline for the newly downloaded model
-        try {
-          await this.runSetupPipeline({ filename });
-        } catch (setupErr) {
-          console.warn('[LocalGguf] Auto-setup after download note:', setupErr);
-        }
-      } catch (err: any) {
-        if (err.name === 'AbortError' || this.downloadAbortController?.signal.aborted) {
-          progress.status = 'cancelled';
-          console.log(`[LocalGguf] Download cancelled: ${filename}`);
-        } else {
-          progress.status = 'error';
-          progress.error = err.message || 'Unknown download error';
-          console.error(`[LocalGguf] Download failed: ${filename}`, err);
-        }
-
-        try {
-          if (fs.existsSync(tempFilePath)) {
-            await fs.promises.unlink(tempFilePath);
-          }
-        } catch {}
+        progress.status = 'completed'; progress.percentage = 100;
+        progress.verified = true; progress.sha256 = file.sha256;
+        // Verified download is not inference or automatic setup acceptance.
+      } catch (error: any) {
+        progress.status = controller.signal.aborted ? 'cancelled' : 'error';
+        if (progress.status === 'error') progress.error = error.message || 'GGUF download failed';
       } finally {
-        this.downloadAbortController = null;
+        progress.speedMBs = 0; progress.etaSeconds = 0;
+        if (this.downloadAbortController === controller) this.downloadAbortController = null;
       }
     })();
-
     return progress;
   }
 
-  /**
-   * Cancel active download
-   */
   public cancelDownload(): boolean {
-    if (this.downloadAbortController) {
-      this.downloadAbortController.abort();
-      this.downloadAbortController = null;
-      if (this.activeDownload) {
-        this.activeDownload.status = 'cancelled';
-      }
-      return true;
-    }
-    return false;
+    if (!this.downloadAbortController) return false;
+    this.downloadAbortController.abort();
+    // Ownership remains held until actual network/file cleanup settles.
+    return true;
   }
 
   /**

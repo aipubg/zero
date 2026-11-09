@@ -7,17 +7,27 @@ export async function downloadVerifiedGguf({ url, destination, sizeBytes, sha256
   if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 4 || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error('Expected GGUF size and SHA-256 required');
   if (fs.existsSync(destination)) throw new Error('Destination already exists');
   const temporary = `${destination}.${crypto.randomUUID()}.download`;
+  const stalled = new AbortController();
+  let timer;
+  const arm = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => stalled.abort(new Error('GGUF transfer made no progress for 30 seconds')), 30000);
+    timer.unref?.();
+  };
+  const transferSignal = signal ? AbortSignal.any([signal, stalled.signal]) : stalled.signal;
   let handle;
   try {
-    signal?.throwIfAborted();
+    transferSignal.throwIfAborted();
     handle = await fs.promises.open(temporary, 'wx');
-    const response = await fetch(url, { signal });
+    arm();
+    const response = await fetch(url, { signal: transferSignal });
     if (!response.ok || !response.body) throw new Error(`GGUF download HTTP ${response.status}`);
     const hash = crypto.createHash('sha256');
     let bytes = 0;
     let magic = Buffer.alloc(0);
     for await (const chunk of response.body) {
-      signal?.throwIfAborted();
+      transferSignal.throwIfAborted();
+      arm();
       bytes += chunk.length;
       if (bytes > sizeBytes) throw new Error('GGUF download exceeds expected size');
       if (magic.length < 4) magic = Buffer.concat([magic, chunk]).subarray(0, 4);
@@ -35,14 +45,16 @@ export async function downloadVerifiedGguf({ url, destination, sizeBytes, sha256
     if (magic.toString('ascii') !== 'GGUF') throw new Error('Downloaded file is not GGUF');
     const actualSha256 = hash.digest('hex');
     if (actualSha256 !== sha256) throw new Error('GGUF download SHA-256 mismatch');
-    signal?.throwIfAborted();
+    clearTimeout(timer);
+    transferSignal.throwIfAborted();
     await handle.sync();
     await handle.close(); handle = null;
     // COPYFILE_EXCL also closes the race after the initial existence check.
     await fs.promises.copyFile(temporary, destination, fs.constants.COPYFILE_EXCL);
     return { filename: path.basename(destination), sizeBytes: bytes, sha256: actualSha256, verified: true };
   } finally {
-    await handle?.close();
-    await fs.promises.rm(temporary, { force: true });
+    clearTimeout(timer);
+    try { await handle?.close(); }
+    finally { await fs.promises.rm(temporary, { force: true }); }
   }
 }

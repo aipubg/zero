@@ -2083,13 +2083,35 @@ export function mountModelsPage(container, context = {}) {
                 element("span", null, `${f.filename} (${f.sizeFormatted})`)
               );
               const dlBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Download");
+              const downloadState = element("span", null, "");
+              const cancelBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Cancel download");
+              cancelBtn.hidden = true;
+              cancelBtn.onclick = async () => {
+                try { await callGateway(host, "zero.gateway.localGguf", { action: "hf-cancel" }); }
+                catch (error) { showNotice(error.message, true); }
+              };
               dlBtn.onclick = async () => {
                 try {
-                  await callGateway(host, "zero.gateway.localGguf", { action: "hf-download", filename: f.filename, repo });
+                  dlBtn.disabled = true;
+                  const started = await callGateway(host, "zero.gateway.localGguf", { action: "hf-download", filename: f.filename, repo, revision: f.revision });
+                  cancelBtn.hidden = false;
                   showNotice(`Started download for ${f.filename}...`);
+                  while (!disposed && modalOverlay.isConnected) {
+                    const result = await callGateway(host, "zero.gateway.localGguf", { action: "hf-progress" });
+                    const progress = result?.progress;
+                    if (!progress || progress.id !== started?.progress?.id) throw new Error("Download status changed");
+                    downloadState.textContent = `${progress.status}: ${progress.downloadedBytes}/${progress.totalBytes} bytes`;
+                    if (progress.status !== "downloading") {
+                      if (progress.status === "error") throw new Error(progress.error || "Download failed");
+                      if (progress.status === "completed") showNotice("Download SHA-256 verified. Model setup and inference have not run.");
+                      break;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                  }
                 } catch (error) { showNotice(`Download failed: ${error.message}`, true); }
+                finally { dlBtn.disabled = false; cancelBtn.hidden = true; }
               };
-              row.append(dlBtn);
+              row.append(downloadState, dlBtn, cancelBtn);
               filesList.append(row);
             }
           }

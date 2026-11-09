@@ -451,12 +451,15 @@ try {
     assert.equal(file.retrieved, true); assert.equal(file.verified, false);
     assert.ok(file.downloadUrl.includes(`/resolve/${file.revision}/`));
     await row.getByRole('button', { name: 'Download', exact: true }).click();
-    await page.getByText(/Download failed:.*hf-download/).waitFor();
+    await row.getByText(/downloading: [1-9][0-9]*\//).waitFor({ timeout: 30000 });
+    const observedTransfer = await row.textContent();
+    await row.getByRole('button', { name: 'Cancel download', exact: true }).click();
+    await row.getByText(/cancelled:/).waitFor({ timeout: 15000 });
     await input.fill('https://example.invalid/owner/repo');
     await page.getByRole('button', { name: 'Search Files', exact: true }).click();
     await page.getByText(/Search failed:.*official Hugging Face/).waitFor();
     await page.goto(`${base}/settings/model-providers`);
-    return { actualUISearch: true, filesRetrieved: hfSearchResult.payload.files.length, selectedFile: file, foreignRepositoryRejected: true, downloadStatus: 'NOT_CONNECTED; actual UI error verified', inference: 'NOT_RUN' };
+    return { actualUISearch: true, filesRetrieved: hfSearchResult.payload.files.length, selectedFile: file, foreignRepositoryRejected: true, observedTransfer, downloadStatus: 'Actual external bytes observed through UI, then cancellation settled', completeDownload: 'NOT_RUN', inference: 'NOT_RUN' };
   });
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');

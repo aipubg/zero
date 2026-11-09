@@ -1177,6 +1177,9 @@ export class ZeroNativeHost {
         if (action === 'status') return { ok: true, ...this.localGguf.getMemoryStatus() };
         if (action === 'ps') return { ok: true, models: this.localGguf.getRunningProcesses(), measurement: 'Engine-reported allocations, not OS resource measurements' };
         if (action === 'hf-search') return { ok: true, files: await this.localGguf.searchHuggingFace(params.repo) };
+        if (action === 'hf-download') return { ok: true, progress: await this.localGguf.startHuggingFaceDownload(params.repo, params.filename, params.revision) };
+        if (action === 'hf-progress') return { ok: true, progress: this.localGguf.getDownloadProgress() };
+        if (action === 'hf-cancel') return { ok: true, cancelled: this.localGguf.cancelDownload() };
         return this.modelFabric.localChat.exclusive(async () => {
         if (action === 'delete') { if (params.all === true) await this.localGguf.deleteAllModels(); else await this.localGguf.deleteModel(params.modelId); return { ok: true }; }
         if (action === 'load') { await this.localGguf.loadModel(params.modelId); return { ok: true, ...this.localGguf.getMemoryStatus() }; }
