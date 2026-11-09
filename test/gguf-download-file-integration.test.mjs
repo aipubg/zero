@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import crypto from 'node:crypto';
-import { downloadVerifiedGguf } from '../backend/gateway/server/gguf-download-file.mjs';
+import { downloadVerifiedFile, downloadVerifiedGguf } from '../backend/gateway/server/gguf-download-file.mjs';
 
 test('[INTEGRATION] download streams actual HTTP bytes, rejects corrupt/truncated content and preserves existing files', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'zero-download-'));
@@ -13,7 +13,8 @@ test('[INTEGRATION] download streams actual HTTP bytes, rejects corrupt/truncate
   const bytes = Buffer.concat([Buffer.from('GGUF'), crypto.randomBytes(65536)]);
   const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
   const server = http.createServer((request, response) => {
-    if (request.url === '/short') response.end(bytes.subarray(0, 8));
+    if (request.url === '/other') response.end('OTHERBIN');
+    else if (request.url === '/short') response.end(bytes.subarray(0, 8));
     else if (request.url === '/slow') { response.write(bytes.subarray(0, 4)); }
     else response.end(bytes);
   });
@@ -32,6 +33,13 @@ test('[INTEGRATION] download streams actual HTTP bytes, rejects corrupt/truncate
     await assert.rejects(downloadVerifiedGguf({ ...options, sha256: '0'.repeat(64) }), /SHA-256 mismatch/);
     await assert.rejects(downloadVerifiedGguf({ ...options, url: `${base}/short` }), /size mismatch/);
     await assert.rejects(downloadVerifiedGguf({ ...options, sizeBytes: 8 }), /exceeds expected/);
+    // Generic binary transfer may accept any pinned bytes; the model wrapper
+    // must still enforce GGUF even when a caller supplies a different header.
+    const other = { ...options, url: `${base}/other`, sizeBytes: 8, sha256: crypto.createHash('sha256').update('OTHERBIN').digest('hex') };
+    await downloadVerifiedFile(other);
+    assert.equal(await fs.readFile(destination, 'utf8'), 'OTHERBIN');
+    await fs.unlink(destination);
+    await assert.rejects(downloadVerifiedGguf({ ...other, header: Buffer.from('OTHER') }), /header mismatch/);
     await assert.rejects(downloadVerifiedGguf({ ...options, url: `${base}/slow`, signal: AbortSignal.timeout(100) }), /abort|timeout/i);
     assert.deepEqual(await fs.readdir(directory), []);
   } finally {

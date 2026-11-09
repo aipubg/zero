@@ -3,15 +3,15 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 // Publishes only complete, hash-checked bytes. Existing files are never replaced.
-export async function downloadVerifiedGguf({ url, destination, sizeBytes, sha256, signal, onProgress }) {
-  if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 4 || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error('Expected GGUF size and SHA-256 required');
+export async function downloadVerifiedFile({ url, destination, sizeBytes, sha256, signal, onProgress, header }) {
+  if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 4 || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error('Expected artifact size and SHA-256 required');
   if (fs.existsSync(destination)) throw new Error('Destination already exists');
   const temporary = `${destination}.${crypto.randomUUID()}.download`;
   const stalled = new AbortController();
   let timer;
   const arm = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => stalled.abort(new Error('GGUF transfer made no progress for 30 seconds')), 30000);
+    timer = setTimeout(() => stalled.abort(new Error('Artifact transfer made no progress for 30 seconds')), 30000);
     timer.unref?.();
   };
   const transferSignal = signal ? AbortSignal.any([signal, stalled.signal]) : stalled.signal;
@@ -21,7 +21,7 @@ export async function downloadVerifiedGguf({ url, destination, sizeBytes, sha256
     handle = await fs.promises.open(temporary, 'wx');
     arm();
     const response = await fetch(url, { signal: transferSignal });
-    if (!response.ok || !response.body) throw new Error(`GGUF download HTTP ${response.status}`);
+    if (!response.ok || !response.body) throw new Error(`Artifact download HTTP ${response.status}`);
     const hash = crypto.createHash('sha256');
     let bytes = 0;
     let magic = Buffer.alloc(0);
@@ -29,22 +29,22 @@ export async function downloadVerifiedGguf({ url, destination, sizeBytes, sha256
       transferSignal.throwIfAborted();
       arm();
       bytes += chunk.length;
-      if (bytes > sizeBytes) throw new Error('GGUF download exceeds expected size');
-      if (magic.length < 4) magic = Buffer.concat([magic, chunk]).subarray(0, 4);
+      if (bytes > sizeBytes) throw new Error('Artifact download exceeds expected size');
+      if (header && magic.length < header.length) magic = Buffer.concat([magic, chunk]).subarray(0, header.length);
       hash.update(chunk);
       // FileHandle.write may legally write fewer bytes than requested.
       let offset = 0;
       while (offset < chunk.length) {
         const result = await handle.write(chunk, offset, chunk.length - offset);
-        if (!result.bytesWritten) throw new Error('GGUF write made no progress');
+        if (!result.bytesWritten) throw new Error('Artifact write made no progress');
         offset += result.bytesWritten;
       }
       onProgress?.(bytes);
     }
-    if (bytes !== sizeBytes) throw new Error('GGUF download size mismatch');
-    if (magic.toString('ascii') !== 'GGUF') throw new Error('Downloaded file is not GGUF');
+    if (bytes !== sizeBytes) throw new Error('Artifact download size mismatch');
+    if (header && !magic.equals(Buffer.from(header))) throw new Error('Downloaded file header mismatch');
     const actualSha256 = hash.digest('hex');
-    if (actualSha256 !== sha256) throw new Error('GGUF download SHA-256 mismatch');
+    if (actualSha256 !== sha256) throw new Error('Artifact download SHA-256 mismatch');
     clearTimeout(timer);
     transferSignal.throwIfAborted();
     await handle.sync();
@@ -58,4 +58,8 @@ export async function downloadVerifiedGguf({ url, destination, sizeBytes, sha256
     try { await handle?.close(); }
     finally { await fs.promises.rm(temporary, { force: true }); }
   }
+}
+
+export function downloadVerifiedGguf(options) {
+  return downloadVerifiedFile({ ...options, header: Buffer.from('GGUF') });
 }
