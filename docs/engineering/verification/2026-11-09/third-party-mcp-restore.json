@@ -1,0 +1,18 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION",
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "scope": "Same-machine pinned third-party package restore; original filesystem allowlist retained, not arbitrary MCP or clean-machine portability",
+  "backup": "E:\\zero\\.backup\\functional-correction-1794249156997",
+  "oldPid": 14376,
+  "newPid": 8456,
+  "package": "@modelcontextprotocol/server-filesystem@2.0.1",
+  "relocatedSource": true,
+  "originalBundlePathUnavailable": true,
+  "registeredToolExecuted": true,
+  "unicodeFileReadback": true,
+  "priorUserFilePreserved": true
+}
