@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "092c85bee14527f30e2e8d5a1beea3ffd9e545b9e5f018601a72563d24995d83",
+      "sha256": "d44ea9ef6d69313139f0ed02b202e2cb1384e4904ba8265476b516410f30d6f5",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -37,7 +37,8 @@
         "--gguf-recall (requires --gguf-tools; REAL_OS): second actual UI user turn must return exact independently computed prior tool-result SHA256 without new tool calls, persist answer and retain selected model",
         "--chat-abort (requires --external): actual provider text delta, real UI Stop click, cancelled task/interrupted persisted partial and next exact UI reply",
         "--hf-search: actual official metadata, pinned identity, real bytes, modal close/reopen and settled cancellation through existing UI; no completion/inference claim",
-        "--hf-complete: actual UI external full transfer, independent disk SHA, immediate parent catalog refresh, real host restart/persisted catalog and actual UI native load/token-generation/unload; no semantic chat/tool accuracy claim"
+        "--hf-complete: actual UI external full transfer, independent disk SHA, immediate parent catalog refresh, real host restart/persisted catalog and actual UI native load/token-generation/unload; no semantic chat/tool accuracy claim",
+        "--gguf-qwen-3b (requires --gguf): select separately provisioned pinned official 3B weights for unchanged actual local UI/tool/recall gates; model capability requires execution, not installer/catalog success"
       ],
       "execution": "NOT_RUN_BY_INVENTORY"
     },

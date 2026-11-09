@@ -24,6 +24,7 @@ if (process.argv.includes('--gguf-runtime') && !process.argv.includes('--gguf'))
 if (process.argv.includes('--gguf-chat') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-chat requires --gguf-runtime');
 if (process.argv.includes('--gguf-tools') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-tools requires --gguf-runtime');
 if (process.argv.includes('--gguf-qwen') && !process.argv.includes('--gguf')) throw new Error('--gguf-qwen requires --gguf');
+if (process.argv.includes('--gguf-qwen-3b') && !process.argv.includes('--gguf')) throw new Error('--gguf-qwen-3b requires --gguf');
 if (process.argv.includes('--gguf-recall') && !process.argv.includes('--gguf-tools')) throw new Error('--gguf-recall requires --gguf-tools');
 if (process.argv.includes('--chat-abort') && !process.argv.includes('--external')) throw new Error('--chat-abort requires --external');
 // Exercise current source, never an older immutable UI generation left on disk.
@@ -293,7 +294,9 @@ try {
   });
   if (process.argv.includes('--gguf')) await check('Local GGUF catalog and UI removal persist without deleting user guides', async () => {
     const modelsDir = path.join(temporary, 'local-models'); fs.mkdirSync(modelsDir, { recursive: true });
-    const source = process.argv.includes('--gguf-qwen')
+    const source = process.argv.includes('--gguf-qwen-3b')
+      ? path.join(root, 'artifacts/local-runtime/qwen2.5-3b/qwen2.5-3b-instruct-q5_k_m.gguf')
+      : process.argv.includes('--gguf-qwen')
       ? path.join(root, 'artifacts/local-runtime/qwen2.5-0.5b/qwen2.5-0.5b-instruct-q5_k_m.gguf')
       : path.join(root, 'models/SmolVLM-256M/SmolVLM-256M-Instruct-Q8_0.gguf');
     const checksum = async file => { const hash = createHash('sha256'); for await (const chunk of fs.createReadStream(file)) hash.update(chunk); return hash.digest('hex'); };
