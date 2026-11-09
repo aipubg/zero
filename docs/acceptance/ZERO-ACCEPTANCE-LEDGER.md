@@ -1,4 +1,6 @@
-# Zero AI — Official Acceptance & Verification Ledger
+# Zero AI — Historical Acceptance & Verification Ledger
+
+**SUPERSEDED — not a current release approval.** The November 1 counts and scope statements below are historical reports, not current functional acceptance. The release recommendation is withdrawn: product PARTIAL, production release BLOCKED pending real workflow gates. Component assertions cannot establish browser, OS, external-service or endurance outcomes. See [current correction evidence](../engineering/verification/2026-11-09/PROGRESS.md) for executed outcomes and unresolved gates. Historical results are retained without conversion to current PASS.
 
 **Repository:** `https://github.com/aipubg/zero.git`  
 **Evaluation Date:** 2026-11-01  
@@ -6,7 +8,7 @@
 **Historical Release Baseline:** `v2026.11.01-release` (`153891722c5ae4055cf5a0f943fbf7a820bca2dd` - preserved untouched)  
 **Corrective Branch:** `fix/security-integrity-hotfix`  
 **Status:** **24 PASS / 0 FAIL / 1 BLOCKED / 0 NOT_RUN**  
-**Release Gate Recommendation:** Supported as **Zero Local AI Desktop & Agent Automation Platform v2026.11.02** (Standalone Windows Automation & Cloud Model Fabric Scope). External Telegram/Discord channel messaging is classified as **BLOCKED / OPTIONAL INTEGRATION** pending user-supplied bot credentials.
+**Historical release recommendation:** Withdrawn; the earlier standalone-platform recommendation does not satisfy the mandatory functional correction gates. External Telegram/Discord messaging also requires actual configured service execution.
 
 ---
 
@@ -121,4 +123,4 @@ Total Acceptance Scenarios:  25
 - Output targets:
   - `dist/web/assets/zero-control-ui.js` (114,126 bytes)
   - `dist/web/assets/zero-control-ui.css` (40,702 bytes)
-- Independence: 100% first-party code, zero runtime reliance on legacy bundlers or external packages.
+- Historical independence claim withdrawn: current native capture and local inference use external packages. Source ownership and removal of a legacy bundler do not establish dependency independence or functional acceptance.

@@ -4,6 +4,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import busboy from 'busboy';
+import { retrieveGgufCatalog } from './local-gguf-catalog.mjs';
 import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
 import { localNativeContinuation, localHistoricalTurns } from './local-gguf-continuation.mjs';
 import { createRecognizedTextWrapper } from './local-chat-wrapper.mjs';
@@ -1707,35 +1708,8 @@ export class LocalGgufEngineService {
     quantization: string;
     downloadUrl: string;
   }>> {
-    const cleanRepo = repoId.trim().replace(/^https?:\/\/huggingface\.co\//i, '').replace(/\/+$/, '');
-    const treeApiUrl = `https://huggingface.co/api/models/${cleanRepo}/tree/main`;
-
-    const res = await fetch(treeApiUrl);
-    if (!res.ok) {
-      throw new Error(`Hugging Face repository "${cleanRepo}" not found or private (HTTP ${res.status}).`);
-    }
-
-    const tree = await res.json();
-    if (!Array.isArray(tree)) {
-      throw new Error('Unexpected Hugging Face API response structure.');
-    }
-
-    const ggufFiles = tree.filter((item: any) => item.path && item.path.toLowerCase().endsWith('.gguf'));
-
-    return ggufFiles.map((f: any) => {
-      const filename = path.basename(f.path);
-      const sizeBytes = f.size || f.lfs?.size || 0;
-      const quantization = this.extractQuantization(filename);
-      const downloadUrl = `https://huggingface.co/${cleanRepo}/resolve/main/${f.path}`;
-
-      return {
-        filename,
-        sizeBytes,
-        sizeFormatted: this.formatBytes(sizeBytes),
-        quantization,
-        downloadUrl,
-      };
-    });
+    const files = await retrieveGgufCatalog(repoId);
+    return files.map(file => ({ ...file, sizeFormatted: this.formatBytes(file.sizeBytes), quantization: this.extractQuantization(file.filename) }));
   }
 
   /**

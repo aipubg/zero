@@ -1176,6 +1176,7 @@ export class ZeroNativeHost {
         if (action === 'list' || action === 'scan') return { ok: true, models: await this.localGguf.scanModels() };
         if (action === 'status') return { ok: true, ...this.localGguf.getMemoryStatus() };
         if (action === 'ps') return { ok: true, models: this.localGguf.getRunningProcesses(), measurement: 'Engine-reported allocations, not OS resource measurements' };
+        if (action === 'hf-search') return { ok: true, files: await this.localGguf.searchHuggingFace(params.repo) };
         return this.modelFabric.localChat.exclusive(async () => {
         if (action === 'delete') { if (params.all === true) await this.localGguf.deleteAllModels(); else await this.localGguf.deleteModel(params.modelId); return { ok: true }; }
         if (action === 'load') { await this.localGguf.loadModel(params.modelId); return { ok: true, ...this.localGguf.getMemoryStatus() }; }

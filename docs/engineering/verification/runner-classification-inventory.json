@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "0ddfca01ca1fcc0ed40b7bf783c42025e29546107582eabc5790d04047a1d3de",
+      "sha256": "e9bf9fc1ea62b078f7502fafec321c600fcdd3aa3956afa7eed6fd15d65afc52",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -35,7 +35,8 @@
         "--gguf-tools (requires --gguf-runtime; REAL_OS): actual UI local write_file request, exact independent disk effect and persisted verified tool result; absent effects FAIL even if chat returns success",
         "--gguf-qwen (requires --gguf): select separately provisioned pinned official Qwen weights for the same actual UI chat/tool acceptance; no mock response or relaxed assertions",
         "--gguf-recall (requires --gguf-tools; REAL_OS): second actual UI user turn must return exact independently computed prior tool-result SHA256 without new tool calls, persist answer and retain selected model",
-        "--chat-abort (requires --external): actual provider text delta, real UI Stop click, cancelled task/interrupted persisted partial and next exact UI reply"
+        "--chat-abort (requires --external): actual provider text delta, real UI Stop click, cancelled task/interrupted persisted partial and next exact UI reply",
+        "--hf-search: actual existing UI retrieves official pinned GGUF metadata/provenance, rejects foreign repo URL, explicitly reports unconnected download; no inference/download acceptance"
       ],
       "execution": "NOT_RUN_BY_INVENTORY"
     },

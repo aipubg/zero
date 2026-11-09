@@ -50,6 +50,7 @@ const workflowLabels = new Map([
   ['Provider Test Connection retrieves the actual external model catalog', ['REAL_EXTERNAL']],
   ['Provider config UI import/export preserves credentials and recovers interrupted two-file updates', []],
   ['Local GGUF catalog and UI removal persist without deleting user guides', process.argv.includes('--gguf-runtime') ? ['REAL_OS'] : []],
+  ['Models UI retrieves pinned Hugging Face file metadata', ['REAL_EXTERNAL']],
   ['Specialist UI model assignment persists without changing coordinator defaults', process.argv.includes('--agent-execution') ? ['REAL_EXTERNAL'] : []],
   ['Interrupted external team resumes pinned models and preserves completed child evidence', ['REAL_EXTERNAL']],
   ['Chat sends through the UI, displays actual model reply and persists it', ['REAL_EXTERNAL']],
@@ -166,6 +167,7 @@ try {
   let searchResult = null;
   let providerProbeResult = null;
   let ggufSelfTest = null;
+  let hfSearchResult = null;
   const modelImportResponses = [];
   const voiceRequests = [];
   const chatResponses = [];
@@ -175,6 +177,7 @@ try {
   page.on('websocket', socket => {
     socket.on('framereceived', ({ payload }) => { try {
       const frame = JSON.parse(payload);
+      if (frame.type === 'res' && Array.isArray(frame.payload?.files)) hfSearchResult = frame;
       if (frame.event === 'chat') chatLifecycle.push({ event: 'chat', state: frame.payload?.state, runId: frame.payload?.runId, sessionKey: frame.payload?.sessionKey, seq: frame.payload?.seq, receivedAt: Date.now() });
       if (frame.type === 'res' && frame.payload?.runId) chatLifecycle.push({ event: 'rpc-result', runId: frame.payload.runId, status: frame.payload.status, receivedAt: Date.now() });
     } catch {} });
@@ -432,6 +435,28 @@ try {
     assert.equal((await rpc('zero.gateway.localGguf', { action: 'list' })).models.length, 0);
     await page.goto(`${base}/settings/model-providers`);
     return { realGgufCatalog: true, actualUISettingsSaved: true, settingsPersistedAcrossProcess: true, actualUIAssignment: true, assignmentPersistedAcrossProcess: true, localAssignmentUIExportImportRestart: true, activeStateVisibleAfterRestart: true, actualUIRemoval: true, persistedAcrossProcess: true, permissionDialogs: dialogs, userGuidesPreserved: true, originalSourceUnchanged: true, originalSourceSha256: originalHash, escapedIdentifierRejected: true, actualUIMountFailureVisible: true, failedMountNoRegistration: true, inferenceVerifiedByThisCheck: Boolean(runtimeEvidence), runtimeEvidence };
+  });
+  if (process.argv.includes('--hf-search')) await check('Models UI retrieves pinned Hugging Face file metadata', async () => {
+    await page.goto(`${base}/settings/model-providers`);
+    await page.getByRole('button', { name: 'Import GGUF', exact: true }).click();
+    await page.getByRole('button', { name: 'Hugging Face Downloader', exact: true }).click();
+    const input = page.getByPlaceholder('e.g. Qwen/Qwen2.5-Coder-7B-Instruct-GGUF', { exact: true });
+    await input.fill('Qwen/Qwen2.5-0.5B-Instruct-GGUF'); hfSearchResult = null;
+    await page.getByRole('button', { name: 'Search Files', exact: true }).click();
+    const row = page.locator('.zero-hf-files-list > div').filter({ hasText: 'qwen2.5-0.5b-instruct-q5_k_m.gguf' });
+    await row.waitFor({ timeout: 20000 });
+    assert.equal(hfSearchResult?.ok, true);
+    const file = hfSearchResult.payload.files.find(file => file.filename === 'qwen2.5-0.5b-instruct-q5_k_m.gguf');
+    assert.equal(file.sizeBytes, 522186592); assert.match(file.revision, /^[a-f0-9]{40}$/); assert.match(file.sha256, /^[a-f0-9]{64}$/);
+    assert.equal(file.retrieved, true); assert.equal(file.verified, false);
+    assert.ok(file.downloadUrl.includes(`/resolve/${file.revision}/`));
+    await row.getByRole('button', { name: 'Download', exact: true }).click();
+    await page.getByText(/Download failed:.*hf-download/).waitFor();
+    await input.fill('https://example.invalid/owner/repo');
+    await page.getByRole('button', { name: 'Search Files', exact: true }).click();
+    await page.getByText(/Search failed:.*official Hugging Face/).waitFor();
+    await page.goto(`${base}/settings/model-providers`);
+    return { actualUISearch: true, filesRetrieved: hfSearchResult.payload.files.length, selectedFile: file, foreignRepositoryRejected: true, downloadStatus: 'NOT_CONNECTED; actual UI error verified', inference: 'NOT_RUN' };
   });
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');

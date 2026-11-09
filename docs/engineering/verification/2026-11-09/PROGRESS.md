@@ -56,3 +56,11 @@
 - Missing recognizer request fails explicitly; independently inspected restored buffer equals original real synthesized speech followed by new silence byte-for-byte. No reorder/loss accepted. Retry en-US transcribes same combined byte count, then drains buffer. No cloud call or microphone/speaker access.
 - Actual REAL_OS/INTEGRATION artifact artifacts/voice-language-rpc/1794246732980/report.json PASS; evidence voice-concurrent-input-retry.json. Controlled input is generated Windows speech plus actual PCM silence, not human conversation acceptance.
 - Runner inventory VALID. Endurance PID24180 independently live; latest checkpoint0.3365h489measuredframes0missing, completed24Hoursfalse/resourceAcceptancePARTIAL. No24hclaim; all remaining master gates preserved.
+
+## Real Hugging Face catalog through existing Models UI
+- Canonical native hf-search now retrieves official repository metadata with bounded body/deadline, validates repository/path/size/hash and pins download URLs to the returned immutable revision. Retrieved metadata is explicitly verified:false; no downloaded-byte verification claim.
+- REAL_BROWSER/INTEGRATION/REAL_EXTERNAL actual Search Files click returned nine Qwen GGUF files. Selected q5_k_m size522186592, revision9217f5db79a29953eb74d5343926648285ec7e67 and metadata SHA041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55. Foreign repository URL rejected through actual form.
+- Artifact artifacts/functional-browser/1794246929764/report.json PASS nine selected workflows; copied huggingface-ui-search.json. Actual Download click exposes NOT_CONNECTED hf-download failure; UI no longer falsely announces Started download before successful RPC. Download execution and inference NOT_RUN for this workflow.
+- Repository validation CONTRACT passes; runner classification catalog validity is not test execution or release approval.
+- Historical official ledger explicitly superseded; earlier release recommendation and dependency-independence claim withdrawn. Old test counts preserved as historical, not current acceptance.
+- User confirmed speaking expected phrase during first microphone probe; failed recognition remains FAIL. No successful human STT/barge-in claim. Owner configuration edits preserved/excluded; full objective remains open.

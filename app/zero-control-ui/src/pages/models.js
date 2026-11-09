@@ -2084,8 +2084,10 @@ export function mountModelsPage(container, context = {}) {
               );
               const dlBtn = element("button", "zero-providers-btn zero-providers-btn--subtle", "Download");
               dlBtn.onclick = async () => {
-                showNotice(`Started download for ${f.filename}...`);
-                await callGateway(host, "zero.gateway.localGguf", { action: "hf-download", filename: f.filename, repo });
+                try {
+                  await callGateway(host, "zero.gateway.localGguf", { action: "hf-download", filename: f.filename, repo });
+                  showNotice(`Started download for ${f.filename}...`);
+                } catch (error) { showNotice(`Download failed: ${error.message}`, true); }
               };
               row.append(dlBtn);
               filesList.append(row);
