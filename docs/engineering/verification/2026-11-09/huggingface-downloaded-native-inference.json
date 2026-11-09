@@ -1,0 +1,41 @@
+{
+  "classification": [
+    "REAL_EXTERNAL",
+    "INTEGRATION",
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "startedAt": "2026-11-09T18:06:34.515Z",
+  "inference": {
+    "status": "PASS",
+    "scope": "Newly downloaded bytes scanned, loaded and generated actual native tokens; semantic chat/tool accuracy not established",
+    "result": {
+      "passed": true,
+      "tokensGenerated": 1,
+      "tokensPerSec": 1.5,
+      "latencyMs": 681,
+      "sampleOutput": "READY",
+      "tokenAccounting": "Native generated token IDs; rate includes model loading and prompt evaluation",
+      "verificationScope": "Model loading and token generation only; not semantic correctness or general model compatibility",
+      "message": "Self-test passed: generated 1 tokens at 1.5 tok/s (681ms)"
+    }
+  },
+  "completed": {
+    "id": "dl-247a430b-21cb-4efe-ad95-320dcb0a1514",
+    "filename": "qwen2.5-0.5b-instruct-q5_k_m.gguf",
+    "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q5_k_m.gguf",
+    "totalBytes": 522186592,
+    "downloadedBytes": 522186592,
+    "percentage": 100,
+    "speedMBs": 0,
+    "etaSeconds": 0,
+    "status": "completed",
+    "startedAt": 1794247594956,
+    "verified": true,
+    "sha256": "041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55"
+  },
+  "independentDiskSha256": "041474553fcabfc2a2d67903f9d2c2e50bd92528e670da4f33b5d0ce6e59fd55",
+  "existingFilePreserved": true,
+  "finishedAt": "2026-11-09T18:08:36.547Z"
+}
