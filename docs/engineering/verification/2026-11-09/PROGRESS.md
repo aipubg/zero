@@ -44,3 +44,9 @@
 - REAL_OS test starts genuine Windows recognition on long synthesized PCM, aborts on native ready, observes RecognizeCompleted cancelledtrue from real subprocess stdout and forcedKills0 via instrumented real spawn. Next real transcription succeeds with correct installed language. PCM cleared afterward. Evidence artifacts/voice-native-cancellation/1794246472706/report.json and voice-native-cancellation.json.
 -32selected native/unit/contract/RPC checks PASS; subsequent evidence-writing native run5checks PASS. Input was real synthesized speech, not human microphone; does not prove acoustic barge-in or full spoken conversation.
 - Runner integrity VALID; endurance PID24180 independently live. Owner configs untouched; remaining master acceptance gates open.
+
+## Native-only cancellation cannot become successful transcript
+- Windows backend and generic VoiceEngine now reject result.cancelledtrue even when JS AbortSignal was not independently aborted. Prevents a cancelled native completion carrying partial text from being published as successful transcription.
+- Extended real native cancellation probe: sends cancel directly to actual helper stdin after actual recognizer readiness, WITHOUT aborting JS signal. Native RecognizeCompleted.Cancelledtrue observed, VOICE_CANCELLED returned, hard-kill count0, next actual recognition succeeds. Evidence artifacts/voice-native-cancellation/1794246570230/report.json and voice-native-only-cancellation.json.
+-32selected native/unit/RPC checks PASS before extra UNIT regression;27voice unit/contract checks PASS afterward. Unit cancelled adapter result emits no transcript and retains original buffered input for explicit retry; no fake result substitutes real native gate.
+- Inventory VALID; endurance PID24180 independently live. Human speech, acoustic barge-in, local strict recall and full24h/master acceptance remain open.

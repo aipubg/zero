@@ -187,7 +187,9 @@ export class WindowsSpeechBackend {
     if (!pcm.length) return { text: '', segments: [], transcribed: false, reason: 'empty_audio' };
     const job = this._run('transcribe', { pcm: Buffer.from(pcm).toString('base64'), sampleRate, language }, { signal, timeoutMs: 120000 });
     job.ready.then(() => onStarted?.(), () => {});
-    return job.done;
+    const result = await job.done;
+    if (result.cancelled === true) throw abortError();
+    return result;
   }
 
   async play(pcm, { sampleRate = 16000, signal, onStarted } = {}) {

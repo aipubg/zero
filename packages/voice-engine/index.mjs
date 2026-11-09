@@ -167,6 +167,7 @@ export class VoiceEngine extends EventEmitter {
     try {
       const result = await this.backend.transcribe(pcm, { ...options, sampleRate: this.sampleRate, signal: operation.controller.signal });
       this._checkOperation(session, operation);
+      if (result?.cancelled === true) throw abortError();
       if (result?.ok === false) throw new VoiceError('VOICE_TRANSCRIPTION_FAILED', result.error || 'Speech transcription failed');
       if (typeof result.text !== 'string') throw new VoiceError('VOICE_BACKEND_PROTOCOL', 'Recognizer returned no text field');
       const response = { ...result, ok: true, sessionId, pcmByteLength: pcm.length, transcribed: Boolean(result.text.trim()) };

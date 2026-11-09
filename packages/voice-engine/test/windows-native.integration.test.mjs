@@ -100,9 +100,10 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
     await rejection;
   });
   await t.test('[REAL_OS] actual recognizer cancels after native readiness without hard kill and recovers', async () => {
-    let forcedKills = 0; let nativeCancelled = false;
+    let forcedKills = 0; let nativeCancelled = false; let nativeChild;
     const instrumented = new WindowsSpeechBackend({ spawn: (...args) => {
       const child = spawn(...args); const originalKill = child.kill.bind(child);
+      nativeChild = child;
       let diagnostic = '';
       child.stdout.on('data', chunk => {
         diagnostic += chunk.toString();
@@ -121,11 +122,15 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
       await assert.rejects(instrumented.transcribe(longPcm, { language: 'en-US', signal: controller.signal, onStarted: () => { started = true; controller.abort(); } }), { code: 'VOICE_CANCELLED' });
       assert.equal(started, true); assert.equal(forcedKills, 0, 'Graceful native cancellation must finish before kill fallback');
       assert.equal(nativeCancelled, true, 'Native RecognizeCompleted must confirm cancellation, not natural completion');
+      nativeCancelled = false;
+      await assert.rejects(instrumented.transcribe(longPcm, { language: 'en-US', onStarted: () => nativeChild.stdin.write('cancel\n') }), { code: 'VOICE_CANCELLED' });
+      assert.equal(nativeCancelled, true, 'Native-only cancelled result must be rejected even without an aborted JS signal');
+      assert.equal(forcedKills, 0);
       const recovered = await instrumented.transcribe(audio.pcm, { language: 'en-US' });
       assertRecognizedPhrase(recovered.text); assert.equal(recovered.language, 'en-US');
       const evidenceDirectory = join('artifacts', 'voice-native-cancellation', String(Date.now()));
       await mkdir(evidenceDirectory, { recursive: true });
-      await writeFile(join(evidenceDirectory, 'report.json'), JSON.stringify({ classification: ['REAL_OS'], status: 'PASS', actualNativeStarted: started, nativeRecognizeCompletedCancelled: nativeCancelled, forcedKills, recoveredLanguage: recovered.language, inputSource: 'Actual synthesized PCM, not microphone speech', acousticBargeIn: 'UNVERIFIED' }, null, 2));
+      await writeFile(join(evidenceDirectory, 'report.json'), JSON.stringify({ classification: ['REAL_OS'], status: 'PASS', actualNativeStarted: started, nativeRecognizeCompletedCancelled: nativeCancelled, nativeOnlyCancellationRejected: true, forcedKills, recoveredLanguage: recovered.language, inputSource: 'Actual synthesized PCM, not microphone speech', acousticBargeIn: 'UNVERIFIED' }, null, 2));
     } finally { longPcm.fill(0); }
   });
 });

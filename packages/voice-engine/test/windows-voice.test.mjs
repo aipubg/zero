@@ -360,6 +360,15 @@ test('new user speech cancels obsolete STT without publishing a late transcript'
   assert.equal(engine.getStatus().sessions[0].state, 'listening');
 });
 
+test('[UNIT] cancelled recognizer result never publishes transcript and preserves retry input', async t => {
+  const engine = engineFor(t, { transcribe: async () => ({ text: 'Must not publish', cancelled: true }) });
+  let transcripts = 0; engine.on('voice:transcript', () => transcripts++);
+  engine.ingestChunk('session', samples);
+  await assert.rejects(engine.transcribe('session'), { code: 'VOICE_CANCELLED' });
+  assert.equal(transcripts, 0);
+  assert.equal(engine.getStatus().sessions[0].router.bufferedInputBytes, samples.length);
+});
+
 test('native capture streams PCM only after explicit start and handles split protocol lines', async () => {
   const received = [];
   let child;
