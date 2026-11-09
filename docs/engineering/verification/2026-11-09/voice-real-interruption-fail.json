@@ -1,0 +1,23 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "FAIL",
+  "inputSource": "Actual local Windows synthesis in RAM; not microphone speech",
+  "actualTranscript": "The boys engine can now speak real words",
+  "spokenAssistantContent": "That’s awesome! 🎉  \n\nIf you’d like, I can type out a sentence, launch a simple text‑to‑speech app, or even play a short audio clip so you can hear the words in action. Just let me know what you’d like to try!",
+  "synthesizedReplyBytes": 512160,
+  "played": false,
+  "taskId": "task_1794248292817_sqg20m",
+  "voiceTaskStatus": "COMPLETED",
+  "typedFollowup": "The previous message said the boy’s engine can now **speak real words**.",
+  "persistedMessages": 4,
+  "completedVoiceTurns": 1,
+  "cloudRequests": 2,
+  "humanMicrophone": "UNVERIFIED",
+  "acousticBargeIn": "UNVERIFIED",
+  "error": "{\"code\":\"OPERATION_FAILED\",\"message\":\"Operation failed\"}\n+ actual - expected\n\n+ Error: {\"code\":\"OPERATION_FAILED\",\"message\":\"Operation failed\"}\n+     at file:///E:/zero/test/voice-conversation-real.test.mjs:22:81\n+     at WebSocket.<anonymous> (file:///E:/zero/test/voice-conversation-real.test.mjs:37:139)\n+     at [nodejs.internal.kHybridDispatch] (node:internal/event_target:869:20)\n+     at WebSocket.dispatchEvent (node:internal/event_target:810:26)\n+     at fireEvent (node:internal/deps/undici/undici:14494:14)\n+     at #onMessage (node:internal/deps/undici/undici:15834:9)\n+     at Object.onMessage (node:internal/deps/undici/undici:15541:76)\n+     at websocketMessageReceived (node:internal/deps/undici/undici:14498:15)\n+     at ByteParser.run (node:internal/deps/undici/undici:15217:19)\n+     at ByteParser._write (node:internal/deps/undici/undici:15084:14)\n- undefined\n",
+  "finishedAt": "2026-11-09T18:18:20.877Z"
+}

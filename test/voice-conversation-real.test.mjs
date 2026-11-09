@@ -62,6 +62,40 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
     assert.equal(status.state, 'listening');
     Object.assign(report, { status: 'PASS', actualTranscript: spoken.transcript, spokenAssistantContent: spoken.content, synthesizedReplyBytes: spoken.pcmByteLength, played: spoken.played, taskId: spoken.taskId, voiceTaskStatus: voiceTask.status, typedFollowup: replies.at(-1).content, persistedMessages: history.messages.length, completedVoiceTurns: status.completedTurns, cloudRequests: host.modelFabric.upstreamRequestCount, humanMicrophone: 'UNVERIFIED', acousticBargeIn: 'UNVERIFIED' });
     assert.ok(report.cloudRequests >= 2);
+    if (process.env.ZERO_VOICE_INTERRUPT_TESTS === '1') {
+      // Upload before attaching to avoid VAD scheduling an automatic duplicate.
+      await host.voiceConversation.detach('spoken-chat');
+      await call('voice.chunk', { sessionId: 'spoken-chat', chunk: audio.pcm.toString('base64') });
+      const beforeRequests = host.modelFabric.upstreamRequestCount;
+      let publishedAudio = 0;
+      const onAudio = () => { publishedAudio++; };
+      host.voiceEngine.on('voice:audio', onAudio);
+      const interrupted = call('voice.turn', { sessionId: 'spoken-chat', language: 'en-US', playback: false });
+      const observed = interrupted.then(value => ({ value }), error => ({ error }));
+      try {
+        const deadline = Date.now() + 20000;
+        let executing;
+        while (Date.now() < deadline) {
+          const current = await call('voice.conversation.status', { sessionId: 'spoken-chat' });
+          if (current.state === 'executing' && host.modelFabric.upstreamRequestCount > beforeRequests && host.activeTurns.has('spoken-chat')) { executing = true; break; }
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        assert.equal(executing, true, 'Interrupt only after actual upstream request and live assistant execution');
+        const receipt = host.sessions.db.prepare("SELECT task_id FROM zero_assistant_receipts WHERE session_id=? AND status='running' LIMIT 1").get('spoken-chat');
+        assert.ok(receipt?.task_id);
+        const recovered = await call('chat.send', { sessionKey: 'spoken-chat', message: 'Reply with exactly VOICE_RECOVERED and nothing else.', idempotencyKey: 'interrupt-voice-with-chat' });
+        assert.equal(recovered.ok, true, JSON.stringify(recovered));
+        const stopped = await observed;
+        assert.ok(stopped.error, 'Cancelled voice turn must be a failed RPC, not a successful response');
+        assert.match(stopped.error.message, /VOICE_CANCELLED/);
+        const interruptedTask = host.tasks.getTask(receipt.task_id);
+        assert.equal(interruptedTask.status, 'CANCELLED');
+        const after = await call('chat.history', { sessionKey: 'spoken-chat' });
+        assert.equal(after.messages.filter(message => message.role === 'assistant').at(-1).content.trim(), 'VOICE_RECOVERED');
+        assert.equal(publishedAudio, 0, 'Cancelled voice reply must not publish late synthesized PCM');
+        report.interruption = { actualUpstreamStarted: true, oldVoiceCancelled: true, oldTaskStatus: interruptedTask.status, typedRecovery: 'VOICE_RECOVERED', lateAudioFrames: publishedAudio, scope: 'Typed interruption of actual external voice turn; not microphone acoustic barge-in' };
+      } finally { host.voiceEngine.off('voice:audio', onAudio); }
+    }
 
   } catch (error) { report.status = 'FAIL'; report.error = error.message; throw error; }
   finally {

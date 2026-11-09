@@ -34,7 +34,11 @@ test('[CONTRACT] interruption cancels an in-flight shared turn and prevents late
   const signal = await started;
   voice.emit('voice:speech_start', { sessionId: 'chat' });
   assert.equal(signal.aborted, true);
-  assert.equal((await pending).cancelled, true);
+  const cancelled = await pending;
+  assert.equal(cancelled.cancelled, true);
+  assert.equal(cancelled.ok, false);
+  assert.equal(cancelled.code, 'VOICE_CANCELLED');
+  assert.match(cancelled.error, /interrupted|cancelled/);
   release({ ok: true, content: 'Late reply' });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(spoken, 0);

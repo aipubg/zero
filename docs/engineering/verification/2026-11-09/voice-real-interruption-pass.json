@@ -1,0 +1,30 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "inputSource": "Actual local Windows synthesis in RAM; not microphone speech",
+  "actualTranscript": "The boys engine can now speak real words",
+  "spokenAssistantContent": "That's great news! It sounds like the boys' engine has made some impressive progress with its speech capabilities. If there's anything specific you'd like it to say or any tasks you want to try out, just let me know!",
+  "synthesizedReplyBytes": 447680,
+  "played": false,
+  "taskId": "task_1794248326733_od1gbv",
+  "voiceTaskStatus": "COMPLETED",
+  "typedFollowup": "Your previous message stated that **the boys' engine can now speak real words**.",
+  "persistedMessages": 4,
+  "completedVoiceTurns": 1,
+  "cloudRequests": 2,
+  "humanMicrophone": "UNVERIFIED",
+  "acousticBargeIn": "UNVERIFIED",
+  "interruption": {
+    "actualUpstreamStarted": true,
+    "oldVoiceCancelled": true,
+    "oldTaskStatus": "CANCELLED",
+    "typedRecovery": "VOICE_RECOVERED",
+    "lateAudioFrames": 0,
+    "scope": "Typed interruption of actual external voice turn; not microphone acoustic barge-in"
+  },
+  "finishedAt": "2026-11-09T18:19:02.654Z"
+}

@@ -77,7 +77,7 @@ export class VoiceConversation extends EventEmitter {
         this.emit('turn-complete', output);
         return output;
       } catch (error) {
-        if (controller.signal.aborted || error.name === 'AbortError') return { ok: false, cancelled: true, sessionId };
+        if (controller.signal.aborted || error.name === 'AbortError') return { ok: false, cancelled: true, code: 'VOICE_CANCELLED', error: 'Voice turn was interrupted or cancelled', sessionId };
         binding.lastError = error.message; binding.state = 'error';
         this.emit('turn-error', { sessionId, error: error.message });
         throw error;
