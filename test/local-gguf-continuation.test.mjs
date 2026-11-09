@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localContinuationPrompt, localNativeContinuation, localHistoricalTurns } from '../backend/gateway/server/local-gguf-continuation.mjs';
+import { localContinuationPrompt, localNativeContinuation, localHistoricalTurns, fitLocalHistoricalTurns } from '../backend/gateway/server/local-gguf-continuation.mjs';
 
 test('[CONTRACT] local continuation retains ordered calls, null assistant content and actual tool results', () => {
   const messages = [
@@ -14,6 +14,24 @@ test('[CONTRACT] local continuation retains ordered calls, null assistant conten
   assert.equal(localContinuationPrompt('Hello'), 'Hello');
   assert.throws(() => localContinuationPrompt('x', [{ role: 'tool', content: 'unattributed' }]));
   assert.throws(() => localContinuationPrompt('x', [{ role: 'system', content: 'late system' }]));
+});
+
+test('[CONTRACT] context pruning removes complete user/tool groups and preserves current continuation', () => {
+  const old = [
+    { role: 'user', content: 'Old request ' + 'x'.repeat(1000) },
+    { role: 'assistant', content: null, tool_calls: [{ id: 'old-call', function: { name: 'write_file', arguments: '{}' } }] },
+    { role: 'tool', tool_call_id: 'old-call', content: 'OLD_RESULT' },
+    { role: 'assistant', content: 'Old confirmation' },
+  ];
+  const recent = [{ role: 'user', content: 'Recent question' }, { role: 'assistant', content: 'Recent answer' }];
+  const current = [{ type: 'user', text: 'Current request' }, { type: 'model', response: ['<tool_call>current</tool_call>'] }];
+  const fitted = fitLocalHistoricalTurns([...old, ...recent], current, 20, 100);
+  assert.equal(fitted.droppedTurns, 1);
+  assert.deepEqual(fitted.history, [...localHistoricalTurns(recent).history, ...current]);
+  assert.equal(JSON.stringify(fitted.history).includes('OLD_RESULT'), false);
+  const over = fitLocalHistoricalTurns(old, current, 500, 1);
+  assert.deepEqual(over.history, current);
+  assert.equal(over.exceedsEstimate, true);
 });
 
 test('[CONTRACT] earlier null-content calls and failed results survive a later user turn', () => {

@@ -65,3 +65,23 @@ export function localHistoricalTurns(messages) {
   }
   return { history, systemPrompt: systems.join('\n\n') };
 }
+
+// Real user messages delimit completed wire turns; tool_response's native user
+// role is not a new user turn and must never be independently trimmed.
+export function fitLocalHistoricalTurns(messages, currentHistory, baseTokens, budget) {
+  const groups = [];
+  for (const message of messages) {
+    if (message.role === 'system') continue;
+    if (message.role === 'user' || !groups.length) groups.push([]);
+    groups.at(-1).push(message);
+  }
+  const nativeGroups = groups.map(group => localHistoricalTurns(group).history);
+  const cost = history => history.reduce((total, item) => total + Math.ceil((item.text || '').length / 3.5) + (item.response || []).reduce((sum, text) => sum + Math.ceil(text.length / 3.5), 0), 0);
+  let tokens = baseTokens + cost(currentHistory) + nativeGroups.reduce((sum, group) => sum + cost(group), 0);
+  let droppedTurns = 0;
+  while (tokens > budget && nativeGroups.length) {
+    tokens -= cost(nativeGroups.shift());
+    droppedTurns++;
+  }
+  return { history: [...nativeGroups.flat(), ...currentHistory], droppedTurns, estimatedTokens: tokens, exceedsEstimate: tokens > budget };
+}

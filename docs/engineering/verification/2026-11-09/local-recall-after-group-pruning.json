@@ -1,0 +1,159 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "INTEGRATION",
+    "REAL_OS",
+    "REAL_EXTERNAL"
+  ],
+  "status": "FAIL",
+  "artifact": "artifacts/functional-browser/1794249286298/report.json",
+  "checks": [
+    {
+      "name": "Chat connects, native plugin activates, composer accepts text",
+      "status": "PASS"
+    },
+    {
+      "name": "Local GGUF catalog and UI removal persist without deleting user guides",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'The tool was executed successfully. The tool file was created with the content \"ZERO_LOCAL_TOOL_EFFECT\". The tool was executed on C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt.\\n' +\n+   '\\n' +\n+   'The tool was executed with the specified code, no changes were made, and the file was written. The data and evidence of the tool execution are provided in the tool response.\\n' +\n+   '\\n' +\n+   '```zero-ui:progress\\n' +\n+   '{\\n' +\n+   '  \"title\": \"Zero Computer Execution\",\\n' +\n+   '  \"step\": 1,\\n' +\n+   '  \"totalSteps\": 1,\\n' +\n+   '  \"status\": \"completed\",\\n' +\n+   '  \"outcome\": \"COMPLETED\",\\n' +\n+   '  \"details\": \"Desktop Action COMPLETED\",\\n' +\n+   '  \"logs\": [\\n' +\n+   '    \"✔ write_file (COMPLETED)\"\\n' +\n+   '  ]\\n' +\n+   '}\\n' +\n+   '```'\n- '94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4'\n"
+    },
+    {
+      "name": "Memory search uses actual persisted records through the UI",
+      "status": "PASS"
+    },
+    {
+      "name": "Skills filter changes visible results",
+      "status": "PASS"
+    },
+    {
+      "name": "Skills details expose persisted enable/disable controls",
+      "status": "PASS"
+    },
+    {
+      "name": "Search form executes its configured provider and reports real outcome",
+      "status": "PASS"
+    },
+    {
+      "name": "Plugins current page exposes lifecycle controls",
+      "status": "PASS"
+    },
+    {
+      "name": "Actual wheel input increases About scrollTop",
+      "status": "PASS"
+    },
+    {
+      "name": "Gateway reconnects after a real process stop/restart and memory remains",
+      "status": "PASS"
+    }
+  ],
+  "localToolRecall": {
+    "expectedSha256": "94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4",
+    "response": {
+      "type": "res",
+      "id": "49:bd96994f-3720-401c-a6fe-fbae31561496",
+      "ok": true,
+      "payload": {
+        "ok": true,
+        "role": "assistant",
+        "content": "The tool was executed successfully. The tool file was created with the content \"ZERO_LOCAL_TOOL_EFFECT\". The tool was executed on C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-functional-browser-dNIL6t\\actual-local-tool.txt.\n\nThe tool was executed with the specified code, no changes were made, and the file was written. The data and evidence of the tool execution are provided in the tool response.\n\n```zero-ui:progress\n{\n  \"title\": \"Zero Computer Execution\",\n  \"step\": 1,\n  \"totalSteps\": 1,\n  \"status\": \"completed\",\n  \"outcome\": \"COMPLETED\",\n  \"details\": \"Desktop Action COMPLETED\",\n  \"logs\": [\n    \"✔ write_file (COMPLETED)\"\n  ]\n}\n```",
+        "requestedModel": "local-gguf/ui-proof",
+        "providerModel": null,
+        "messages": [
+          {
+            "id": "msg_1794249298211_ylvmis",
+            "role": "user",
+            "content": "Use write_file to create \"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\" with content exactly ZERO_LOCAL_TOOL_EFFECT. Execute the tool; do not merely describe a call. After the tool result, give a short confirmation.",
+            "createdAt": 1794249298211,
+            "seq": 1,
+            "runId": "bf3e0eaa-8786-469d-a5ae-1c3d4678553c"
+          },
+          {
+            "id": "msg_1794249306565_h91yzr",
+            "role": "assistant",
+            "content": "<tool_call>\n{\"name\": \"write_file\", \"arguments\": {\"path\": \"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\", \"content\": \"ZERO_LOCAL_TOOL_EFFECT\"}}\n</tool_call>",
+            "tool_calls": [
+              {
+                "id": "call-b5bb63cf-703a-4545-b5e5-d0be8a1207bd",
+                "type": "function",
+                "function": {
+                  "name": "write_file",
+                  "arguments": "{\"path\":\"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\",\"content\":\"ZERO_LOCAL_TOOL_EFFECT\"}"
+                }
+              }
+            ],
+            "createdAt": 1794249306565,
+            "seq": 2,
+            "runId": "bf3e0eaa-8786-469d-a5ae-1c3d4678553c"
+          },
+          {
+            "id": "msg_1794249306577_t54ttj",
+            "role": "tool",
+            "content": "{\"ok\":true,\"path\":\"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\",\"verified\":true,\"evidence\":{\"bytes\":22,\"sha256\":\"94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4\"},\"executed\":true,\"completed\":true,\"outcome\":\"COMPLETED\",\"capability\":\"write_file\",\"data\":{\"ok\":true,\"path\":\"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\",\"verified\":true,\"evidence\":{\"bytes\":22,\"sha256\":\"94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4\"}},\"durationMs\":2,\"auditId\":\"audit_1794249306573_vefc5q\"}",
+            "tool_call_id": "call-b5bb63cf-703a-4545-b5e5-d0be8a1207bd",
+            "createdAt": 1794249306577,
+            "seq": 3,
+            "runId": "bf3e0eaa-8786-469d-a5ae-1c3d4678553c"
+          },
+          {
+            "id": "msg_1794249310438_7iawze",
+            "role": "assistant",
+            "content": "The tool was executed successfully. The tool file was created with the content \"ZERO_LOCAL_TOOL_EFFECT\". The tool was executed on C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-functional-browser-dNIL6t\\actual-local-tool.txt.\n\nThe tool was executed with the specified code, no changes were made, and the file was written. The data and evidence of the tool execution are provided in the tool response.\n\n```zero-ui:progress\n{\n  \"title\": \"Zero Computer Execution\",\n  \"step\": 1,\n  \"totalSteps\": 1,\n  \"status\": \"completed\",\n  \"outcome\": \"COMPLETED\",\n  \"details\": \"Desktop Action COMPLETED\",\n  \"logs\": [\n    \"✔ write_file (COMPLETED)\"\n  ]\n}\n```",
+            "createdAt": 1794249310438,
+            "seq": 4,
+            "runId": "bf3e0eaa-8786-469d-a5ae-1c3d4678553c"
+          },
+          {
+            "id": "msg_1794249310727_tank9x",
+            "role": "user",
+            "content": "Return only the sha256 value from the previous write_file tool result. Use the saved result; do not call tools.",
+            "createdAt": 1794249310727,
+            "seq": 5,
+            "runId": "5c80d47d-edc2-4adc-b4b3-790b654fb61f"
+          },
+          {
+            "id": "msg_1794249314548_w6dkur",
+            "role": "assistant",
+            "content": "<tool_call>\n{\"name\": \"write_file\", \"arguments\": {\"path\": \"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\", \"content\": \"ZERO_LOCAL_TOOL_EFFECT\", \"checksum\": \"94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4\"}}\n</tool_call>",
+            "tool_calls": [
+              {
+                "id": "call-19e5fff5-e55d-4e89-9f59-1c6ed1a2d498",
+                "type": "function",
+                "function": {
+                  "name": "write_file",
+                  "arguments": "{\"path\":\"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\",\"content\":\"ZERO_LOCAL_TOOL_EFFECT\",\"checksum\":\"94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4\"}"
+                }
+              }
+            ],
+            "createdAt": 1794249314548,
+            "seq": 6,
+            "runId": "5c80d47d-edc2-4adc-b4b3-790b654fb61f"
+          },
+          {
+            "id": "msg_1794249314557_ylfew1",
+            "role": "tool",
+            "content": "{\"ok\":true,\"path\":\"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\",\"verified\":true,\"evidence\":{\"bytes\":22,\"sha256\":\"94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4\"},\"executed\":true,\"completed\":true,\"outcome\":\"COMPLETED\",\"capability\":\"write_file\",\"data\":{\"ok\":true,\"path\":\"C:\\\\Users\\\\PROFES~1\\\\AppData\\\\Local\\\\Temp\\\\zero-functional-browser-dNIL6t\\\\actual-local-tool.txt\",\"verified\":true,\"evidence\":{\"bytes\":22,\"sha256\":\"94fc739b76a3ed2bbc3a1d0b2fd6d0b2d04c551b00f94d72d043256b318c89c4\"}},\"durationMs\":1,\"auditId\":\"audit_1794249314554_ne55z8\"}",
+            "tool_call_id": "call-19e5fff5-e55d-4e89-9f59-1c6ed1a2d498",
+            "createdAt": 1794249314557,
+            "seq": 7,
+            "runId": "5c80d47d-edc2-4adc-b4b3-790b654fb61f"
+          },
+          {
+            "id": "msg_1794249320228_qy1t80",
+            "role": "assistant",
+            "content": "The tool was executed successfully. The tool file was created with the content \"ZERO_LOCAL_TOOL_EFFECT\". The tool was executed on C:\\Users\\PROFES~1\\AppData\\Local\\Temp\\zero-functional-browser-dNIL6t\\actual-local-tool.txt.\n\nThe tool was executed with the specified code, no changes were made, and the file was written. The data and evidence of the tool execution are provided in the tool response.\n\n```zero-ui:progress\n{\n  \"title\": \"Zero Computer Execution\",\n  \"step\": 1,\n  \"totalSteps\": 1,\n  \"status\": \"completed\",\n  \"outcome\": \"COMPLETED\",\n  \"details\": \"Desktop Action COMPLETED\",\n  \"logs\": [\n    \"✔ write_file (COMPLETED)\"\n  ]\n}\n```",
+            "createdAt": 1794249320228,
+            "seq": 8,
+            "runId": "5c80d47d-edc2-4adc-b4b3-790b654fb61f"
+          }
+        ],
+        "status": "ok",
+        "taskId": "task_1794249310718_ecsrnk",
+        "sessionKey": "agent:zero:main",
+        "runId": "5c80d47d-edc2-4adc-b4b3-790b654fb61f"
+      }
+    }
+  },
+  "actualInitialFileEffect": "ZERO_LOCAL_TOOL_EFFECT",
+  "initialToolMessages": 1,
+  "recallToolMessages": 2
+}

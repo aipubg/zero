@@ -7,7 +7,7 @@ import busboy from 'busboy';
 import { retrieveGgufCatalog } from './local-gguf-catalog.mjs';
 import { downloadVerifiedGguf } from './gguf-download-file.mjs';
 import { parseLocalToolCalls } from './local-gguf-tool-calls.mjs';
-import { localNativeContinuation, localHistoricalTurns } from './local-gguf-continuation.mjs';
+import { localNativeContinuation, localHistoricalTurns, fitLocalHistoricalTurns } from './local-gguf-continuation.mjs';
 import { createRecognizedTextWrapper } from './local-chat-wrapper.mjs';
 import { parseGuideOrModelfile, type ParsedGuideConfig } from './local-gguf-parser.ts';
 
@@ -1991,10 +1991,8 @@ export class LocalGgufEngineService {
 
       const previousTurns = localHistoricalTurns(messages.slice(0, lastUserIndex));
       const systemPromptFromChat = previousTurns.systemPrompt;
-      const chatHistory = previousTurns.history;
 
       // Combine system prompt: manifest's system prompt (Guide file) + any dynamic chat system prompt
-      chatHistory.push(...continuation.history);
       let effectiveSystemPrompt = [manifest?.systemPrompt, systemPromptFromChat].filter(Boolean).join('\n\n');
 
       // Universal Tool / Function Calling System Instructions
@@ -2034,24 +2032,10 @@ export class LocalGgufEngineService {
       const estimateTokens = (str: string) => Math.ceil((str || '').length / 3.5);
 
       const baseTokens = estimateTokens(effectiveSystemPrompt) + estimateTokens(userPromptText);
-      let droppedCount = 0;
-      const prunedChatHistory = [...chatHistory];
-
-      while (prunedChatHistory.length > 0) {
-        let turnsTokens = 0;
-        for (const item of prunedChatHistory) {
-          turnsTokens += estimateTokens(item.text || '') + (item.response ? item.response.reduce((acc, r) => acc + estimateTokens(r), 0) : 0);
-        }
-        if (baseTokens + turnsTokens <= maxHistoryTokens) {
-          break;
-        }
-        prunedChatHistory.shift();
-        droppedCount++;
-      }
-
-      if (droppedCount > 0) {
-        console.log(`[LocalGguf] Sliding Window: Trimmed ${droppedCount} oldest turns to fit within ${maxHistoryTokens} tokens of context ${safeContextSize}.`);
-      }
+      const fitted = fitLocalHistoricalTurns(messages.slice(0, lastUserIndex), continuation.history, baseTokens, maxHistoryTokens);
+      const prunedChatHistory = fitted.history;
+      if (fitted.droppedTurns) console.log(`[LocalGguf] Sliding Window: Trimmed ${fitted.droppedTurns} complete historical user turns.`);
+      if (fitted.exceedsEstimate) console.warn('[LocalGguf] Current turn exceeds approximate context budget; preserved current tool results for native context handling.');
 
       // Configure chat session history: system prompt turn followed strictly by previous user/model turns
       const history: Array<{ type: 'system' | 'user' | 'model'; text?: string; response?: string[] }> = [];
