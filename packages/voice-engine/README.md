@@ -80,6 +80,11 @@ index fails instead of silently choosing another input. The actual selected inde
 is reported on readiness/start. This does not persist a device preference or add
 a selector to the existing UI.
 
+Session status includes the latest capture's lifecycle state, selected index,
+frame/byte counts, last-frame timestamp and PCM16 RMS signal measurements. These
+are input diagnostics; `speechRecognition: unverified` means capture alone has
+not established that words were understood. No sample audio is stored in status.
+
 Two opt-in hardware probes keep captured audio in RAM and omit ambient transcripts
 from their JSON reports under `artifacts/`:
 

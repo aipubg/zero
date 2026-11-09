@@ -30,6 +30,7 @@ test('[REAL_OS] explicit enumerated microphone opens and unavailable index fails
     engine.startSession('first'); engine.startSession('second');
     await assert.rejects(engine.startMicrophone('first', { deviceId: 255 }), { code: 'VOICE_CAPTURE_FAILED' });
     assert.equal(engine.getStatus().sessions.some(session => session.microphoneActive), false);
+    assert.equal(engine.getStatus().sessions.find(session => session.sessionId === 'first').capture.state, 'failed');
     await engine.startMicrophone('first', { deviceId: device.id });
     engine.stopSession('first');
     const secondStopped = new Promise(resolve => engine.on('voice:microphone_stopped', event => { if (event.sessionId === 'second') resolve(); }));
@@ -38,6 +39,12 @@ test('[REAL_OS] explicit enumerated microphone opens and unavailable index fails
     await secondStopped;
     const secondStatus = engine.getStatus().sessions.find(session => session.sessionId === 'second');
     assert.ok(secondStatus.router.bufferedInputBytes > 0);
+    assert.equal(secondStatus.capture.state, 'stopped');
+    assert.ok(secondStatus.capture.frames > 0);
+    assert.equal(secondStatus.capture.bytes, secondStatus.router.bufferedInputBytes);
+    assert.ok(Number.isFinite(secondStatus.capture.maxFrameRms) && secondStatus.capture.maxFrameRms <= 32768);
+    assert.equal(secondStatus.capture.speechRecognition, 'unverified');
+    report.captureDiagnostics = secondStatus.capture;
     report.sessionRecovery = { invalidSelectionReleasedOwnership: true, stoppedSessionRemoved: true, nextNativeCapture: true, secondSessionBytes: secondStatus.router.bufferedInputBytes };
     report.status = 'PASS';
   } catch (error) { report.status = 'FAIL'; report.error = error.message; throw error; }

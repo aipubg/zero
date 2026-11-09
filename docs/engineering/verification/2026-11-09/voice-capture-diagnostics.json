@@ -1,0 +1,36 @@
+{
+  "classification": [
+    "REAL_OS"
+  ],
+  "status": "PASS",
+  "rawMicrophoneSaved": false,
+  "scope": "Explicit WinMM input selection and capture; not speech understanding",
+  "capture": {
+    "device": {
+      "id": 0,
+      "name": "Headset (Rockerz 480)",
+      "channels": 2
+    },
+    "frames": 81,
+    "bytes": 77760,
+    "readyDeviceId": 0
+  },
+  "unavailableIndexRejected": true,
+  "captureDiagnostics": {
+    "state": "stopped",
+    "deviceId": 0,
+    "frames": 80,
+    "bytes": 76800,
+    "lastFrameAt": 1794246060595,
+    "lastFrameRms": 5.8871328618720105,
+    "maxFrameRms": 1922.0582744590931,
+    "speechRecognition": "unverified"
+  },
+  "sessionRecovery": {
+    "invalidSelectionReleasedOwnership": true,
+    "stoppedSessionRemoved": true,
+    "nextNativeCapture": true,
+    "secondSessionBytes": 76800
+  },
+  "finishedAt": "2026-11-09T17:41:00.697Z"
+}

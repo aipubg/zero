@@ -23,3 +23,10 @@
 - REAL_OS actual native selection/recovery artifact1794245891812 PASS: invalid index releases session ownership, valid first capture starts, stopSession removes it, second session waits/opens actual device and receives real PCM bytes. No raw audio saved. Evidence voice-microphone-session-recovery.json.
 - Existing actual browser --devices artifact1794245918908 PASS,nineworkflows including real UI capture start/stop/disconnect and reconnect. No human recognition/barge-in acceptance claim.
 - Runner integrity VALID; current endurance PID24180 independently alive. Owner configuration edits remain untouched/excluded. Full objective still active.
+
+## Actual capture lifecycle, frame counts and signal diagnostics
+- Voice session status now distinguishes opening/active/stopped/cancelled/failed capture, reports selected index, cumulative frames/bytes, last-frame timestamp and last/max PCM16 RMS. Capture statistics use actual ingested PCM; no raw audio or ambient words stored.
+- Capture explicitly labels speechRecognition unverified, so nonzero input is not advertised as successful STT. Cancellation before backend start reports cancelled and does not open a device.
+- Actual REAL_OS probe artifacts/voice-device-selection/1794246052167/report.json PASS:invalid input failed state, subsequent real capture/ownership recovery, stopped state, frame counts, byte total equals actual router buffer and bounded finite RMS. Evidence voice-capture-diagnostics.json.
+- Existing26unit/contract checks PASS, including cancelled-before-open state and native ownership wait. These are not human speech/barge-in acceptance.
+- Runner integrity VALID; endurance PID24180 independently live. Owner config edits excluded, full acceptance still open.

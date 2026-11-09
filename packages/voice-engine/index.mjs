@@ -198,10 +198,13 @@ export class VoiceEngine extends EventEmitter {
     }
     const operation = this._operation(options.signal);
     this.microphoneOperation = operation;
+    const capture = { state: 'opening', deviceId: options.deviceId ?? null, frames: 0, bytes: 0, lastFrameAt: null, lastFrameRms: 0, maxFrameRms: 0, speechRecognition: 'unverified' };
+    session.lastCapture = capture;
     session.microphone = operation;
     operation.started = false;
     const cleanup = () => {
       operation.release();
+      if (capture.state !== 'failed') capture.state = operation.controller.signal.aborted ? 'cancelled' : 'stopped';
       if (this.microphoneOperation === operation) this.microphoneOperation = null;
       if (session.microphone === operation) {
         session.microphone = null;
@@ -211,20 +214,28 @@ export class VoiceEngine extends EventEmitter {
     try {
       this._checkOperation(session, operation);
       const job = this.backend.startMicrophone({ ...options, sampleRate: this.sampleRate, signal: operation.controller.signal, onFrame: pcm => {
-        if (session.active && !operation.controller.signal.aborted) this.ingestChunk(sessionId, pcm);
+        if (session.active && !operation.controller.signal.aborted) {
+          this.ingestChunk(sessionId, pcm);
+          const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength); let squares = 0;
+          for (let offset = 0; offset < view.byteLength; offset += 2) squares += view.getInt16(offset, true) ** 2;
+          capture.frames++; capture.bytes += pcm.length; capture.lastFrameAt = Date.now();
+          capture.lastFrameRms = pcm.length ? Math.sqrt(squares / (pcm.length / 2)) : 0;
+          capture.maxFrameRms = Math.max(capture.maxFrameRms, capture.lastFrameRms);
+        }
       } });
       operation.done = job.done;
-      job.done.then(cleanup, error => { this._reportError(session, 'microphone', error); cleanup(); });
+      job.done.then(cleanup, error => { if (error.code !== 'VOICE_CANCELLED') capture.state = 'failed'; this._reportError(session, 'microphone', error); cleanup(); });
       await job.ready;
       this._checkOperation(session, operation);
       if (session.microphone !== operation) throw new VoiceError('VOICE_CAPTURE_ENDED', 'Microphone capture ended before becoming ready');
       operation.started = true;
+      capture.state = 'active';
       const selectedDevice = options.deviceId === undefined ? {} : { deviceId: options.deviceId };
       this.emit('voice:microphone_started', { sessionId, sampleRate: this.sampleRate, ...selectedDevice });
       return { ok: true, sessionId, microphoneActive: true, sampleRate: this.sampleRate, encoding: 'pcm_s16le', channels: 1, ...selectedDevice };
     } catch (error) {
       operation.controller.abort();
-      if (!operation.done) { this._reportError(session, 'microphone', error); cleanup(); }
+      if (!operation.done) { capture.state = error.code === 'VOICE_CANCELLED' ? 'cancelled' : 'failed'; this._reportError(session, 'microphone', error); cleanup(); }
       throw error;
     }
   }
@@ -265,7 +276,7 @@ export class VoiceEngine extends EventEmitter {
   getStatus() {
     return {
       activeCount: this.sessions.size,
-      sessions: [...this.sessions.values()].map(s => ({ sessionId: s.sessionId, state: s.turnManager.state, bargeInCount: s.turnManager.bargeInCount, router: s.router.getStatus(), microphoneActive: Boolean(s.microphone?.started && !s.microphone.controller.signal.aborted), synthesisActive: Boolean(s.output), playbackActive: Boolean(s.output?.playbackStarted && !s.output.controller.signal.aborted), transcriptionActive: Boolean(s.transcription), lastError: s.lastError })),
+      sessions: [...this.sessions.values()].map(s => ({ sessionId: s.sessionId, state: s.turnManager.state, bargeInCount: s.turnManager.bargeInCount, capture: s.lastCapture ? { ...s.lastCapture } : null, router: s.router.getStatus(), microphoneActive: Boolean(s.microphone?.started && !s.microphone.controller.signal.aborted), synthesisActive: Boolean(s.output), playbackActive: Boolean(s.output?.playbackStarted && !s.output.controller.signal.aborted), transcriptionActive: Boolean(s.transcription), lastError: s.lastError })),
       sampleRate: this.sampleRate,
       encoding: 'pcm_s16le',
       channels: 1,

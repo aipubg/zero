@@ -384,7 +384,12 @@ test('[UNIT] a new session waits for cancelled microphone native ownership to fi
   const first = deferred(); const second = deferred(); let opens = 0;
   const engine = new VoiceEngine({ backend: backend({ startMicrophone: () => ({ ready: Promise.resolve({}), done: ++opens === 1 ? first.promise : second.promise }) }) });
   t.after(() => { first.resolve(); second.resolve(); engine.close(); });
-  engine.startSession('first'); await engine.startMicrophone('first');
+  engine.startSession('first');
+  const alreadyCancelled = new AbortController(); alreadyCancelled.abort();
+  await assert.rejects(engine.startMicrophone('first', { signal: alreadyCancelled.signal }), { code: 'VOICE_CANCELLED' });
+  assert.equal(opens, 0);
+  assert.equal(engine.getStatus().sessions[0].capture.state, 'cancelled');
+  await engine.startMicrophone('first');
   engine.stopSession('first'); engine.startSession('second');
   const pending = engine.startMicrophone('second');
   await Promise.resolve();
