@@ -1,0 +1,18 @@
+{
+  "classification": [
+    "INTEGRATION",
+    "REAL_OS",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PASS",
+  "cleanMachine": "NOT_RUN; same Windows machine and checkout",
+  "oldPid": 21592,
+  "newPid": 8452,
+  "backup": "E:\\zero\\.backup\\functional-correction-1794248712777",
+  "restoredFiles": 19,
+  "persistedMessages": 2,
+  "exactTranscriptIdentityPreserved": true,
+  "completedReceiptReplayNoDuplicate": true,
+  "originalTaskAndRunIdentityPreserved": true,
+  "actualNewCloudTurnAfterRestore": true
+}
