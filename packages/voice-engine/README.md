@@ -85,6 +85,11 @@ frame/byte counts, last-frame timestamp and PCM16 RMS signal measurements. These
 are input diagnostics; `speechRecognition: unverified` means capture alone has
 not established that words were understood. No sample audio is stored in status.
 
+Explicit `voice.transcribe` RPCs forward the requested `language` to the installed
+Windows recognizer. Successful results report the actual recognizer culture;
+an unavailable culture fails and retains buffered input for correction/retry.
+Omitting the language selects an installed recognizer and reports its culture.
+
 Two opt-in hardware probes keep captured audio in RAM and omit ambient transcripts
 from their JSON reports under `artifacts/`:
 

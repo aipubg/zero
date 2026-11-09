@@ -12,9 +12,13 @@ namespace Zero.Voice {
         public double startMs;
         public double durationMs;
     }
+    public class RecognitionResult {
+        public string language;
+        public RecognizedSegment[] segments;
+    }
     public static class Recognition {
         // This consumes a finite PCM stream, never the system microphone.
-        public static RecognizedSegment[] Transcribe(byte[] pcm, int sampleRate, string language) {
+        public static RecognitionResult Transcribe(byte[] pcm, int sampleRate, string language) {
             RecognizerInfo selected = null;
             foreach (RecognizerInfo info in SpeechRecognitionEngine.InstalledRecognizers()) {
                 if (String.IsNullOrEmpty(language) || String.Equals(info.Culture.Name, language, StringComparison.OrdinalIgnoreCase)) {
@@ -46,7 +50,7 @@ namespace Zero.Voice {
                     throw new TimeoutException("Windows speech recognition timed out");
                 }
                 if (failure != null) throw failure;
-                return segments.ToArray();
+                return new RecognitionResult { language = selected.Culture.Name, segments = segments.ToArray() };
             }
         }
     }

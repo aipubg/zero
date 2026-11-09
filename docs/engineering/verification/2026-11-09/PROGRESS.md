@@ -30,3 +30,10 @@
 - Actual REAL_OS probe artifacts/voice-device-selection/1794246052167/report.json PASS:invalid input failed state, subsequent real capture/ownership recovery, stopped state, frame counts, byte total equals actual router buffer and bounded finite RMS. Evidence voice-capture-diagnostics.json.
 - Existing26unit/contract checks PASS, including cancelled-before-open state and native ownership wait. These are not human speech/barge-in acceptance.
 - Runner integrity VALID; endurance PID24180 independently live. Owner config edits excluded, full acceptance still open.
+
+## Actual recognizer language forwarded and reported through RPC
+- Found direct voice.transcribe RPC ignored params.language while conversation binding already forwarded it. RPC now passes requested language; actual native recognition result reports selected Windows culture.
+- C# result carries culture+segments together, avoiding an inferred or separately enumerated language. Missing culture still fails explicitly without fallback. PowerShell preserves same text/segments/transcribed/no-speech behavior.
+-30existing voice native/unit/contract checks PASS. Genuine native recognition reported en-US; selected phrase had probabilistic voice/boys substitution retained in test output, not rewritten.
+- New REAL_OS/INTEGRATION actual authenticated WebSocket test artifacts/voice-language-rpc/1794246256010/report.json PASS: real Windows TTS PCM uploaded, zz-ZZ rejected, exact input bytes restored, same input recognized with en-US and reported culture, buffer drained, cloudRequests0. No mock recognizer or provider. Manual isolated engine session prevents automatic conversation execution; not full voice conversation or microphone proof.
+- Evidence voice-language-rpc.json, documentation updated. Inventory VALID; endurance PID24180 independently live. Human STT, barge-in, local strict recall and24h/master gates remain open.

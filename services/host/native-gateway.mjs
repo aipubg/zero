@@ -1664,7 +1664,7 @@ export class ZeroNativeHost {
         return await this.voiceEngine.synthesizeSpeech(params.sessionId, params.text);
 
       case 'voice.transcribe':
-        return await this.voiceEngine.transcribe(params.sessionId);
+        return await this.voiceEngine.transcribe(params.sessionId, { language: params.language });
 
       case 'voice.status':
         return { ok: true, status: 'PARTIAL', ...this.voiceEngine.getStatus() };

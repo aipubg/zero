@@ -60,6 +60,7 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
       return;
     }
     const result = await backend.transcribe(audio.pcm, { language: 'en-US' });
+    assert.equal(result.language, 'en-US');
     assert.equal(result.transcribed, true);
     assertRecognizedPhrase(result.text);
     assert.ok(result.segments.length > 0);
