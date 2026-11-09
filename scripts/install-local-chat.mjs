@@ -24,7 +24,7 @@ if (fs.existsSync(destination)) {
 } else {
   let lastProgress = 0; let observedBytes = 0;
   try {
-    await downloadVerifiedGguf({ url, destination, sizeBytes: size, sha256, signal: AbortSignal.timeout(600000), onProgress: downloadedBytes => {
+    await downloadVerifiedGguf({ url, destination, sizeBytes: size, sha256, signal: AbortSignal.timeout(larger ? 1800000 : 600000), onProgress: downloadedBytes => {
       observedBytes = downloadedBytes;
       if (Date.now() - lastProgress < 5000) return;
       lastProgress = Date.now();

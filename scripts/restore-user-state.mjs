@@ -71,6 +71,7 @@ export async function restoreUserState(backupDirectory, destination) {
     if (fs.existsSync(pluginDbPath) && typeof manifest.stateDirectory === 'string' && path.isAbsolute(manifest.stateDirectory)) {
       const db = new DatabaseSync(pluginDbPath);
       try {
+        db.exec('BEGIN IMMEDIATE');
         if (db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zero_installed_plugins'").get() && db.prepare('PRAGMA table_info(zero_installed_plugins)').all().some(column => column.name === 'source')) {
           for (const row of db.prepare('SELECT id,source FROM zero_installed_plugins WHERE source IS NOT NULL').all()) {
             const source = JSON.parse(row.source);
@@ -85,6 +86,10 @@ export async function restoreUserState(backupDirectory, destination) {
             relocatedPluginSources.push(row.id);
           }
         }
+        db.exec('COMMIT');
+      } catch (error) {
+        try { db.exec('ROLLBACK'); } catch {}
+        throw error;
       } finally { db.close(); }
     }
     return { status: 'RESTORED', destination: target, files: entries.length, hashesVerified: true, hashScope: 'Copied backup bytes verified before explicit plugin path migration', relocatedPluginSources, sqliteIntegrity: 'ok', authenticatedFields, activation: 'NOT_RUN; restored files are not automatically activated', encryptedData: authenticatedFields ? 'All encrypted observation fields authenticated using original Windows identity before restore' : 'No encrypted observation fields found; decryption NOT_RUN' };

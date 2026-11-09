@@ -44,6 +44,41 @@ test('[INTEGRATION] restore reopens actual SQLite rows and JSON, rejects overwri
   }
 });
 
+test('[INTEGRATION] failed later plugin relocation rolls back earlier source rewrites', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-restore-'));
+  const backup = path.join(root, 'backup');
+  const marker = '.zero-data/plugin-sdk/releases/revision-a/.zero-plugin-revision';
+  fs.mkdirSync(path.dirname(path.join(backup, marker)), { recursive: true });
+  fs.writeFileSync(path.join(backup, marker), 'revision-a');
+  const originalState = path.join(root, 'original-state');
+  const originalSources = ['revision-a', 'revision-b'].map(revision => JSON.stringify({ root: path.join(originalState, 'plugin-sdk/releases', revision), revision, packageRoot: '.' }));
+  const dbPath = path.join(backup, '.zero-data/zero-plugins.sqlite');
+  const db = new DatabaseSync(dbPath);
+  db.exec('CREATE TABLE zero_installed_plugins (id TEXT PRIMARY KEY, source TEXT)');
+  db.prepare('INSERT INTO zero_installed_plugins VALUES (?,?)').run('first', originalSources[0]);
+  db.prepare('INSERT INTO zero_installed_plugins VALUES (?,?)').run('second', originalSources[1]);
+  db.close();
+  const originalBytes = fs.readFileSync(dbPath);
+  const files = ['.zero-data/zero-plugins.sqlite', marker].map(file => {
+    const bytes = fs.readFileSync(path.join(backup, file));
+    return { file, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };
+  });
+  fs.writeFileSync(path.join(backup, 'manifest.json'), JSON.stringify({ stateDirectory: originalState, files }));
+  const destination = path.join(root, 'restored');
+  try {
+    await assert.rejects(restoreUserState(backup, destination), /ownership marker missing/);
+    const restored = new DatabaseSync(path.join(destination, '.zero-data/zero-plugins.sqlite'), { readOnly: true });
+    try { assert.deepEqual(restored.prepare('SELECT source FROM zero_installed_plugins ORDER BY id').all().map(row => row.source), originalSources); }
+    finally { restored.close(); }
+    assert.deepEqual(fs.readFileSync(dbPath), originalBytes);
+    const evidence = path.resolve('artifacts/restore-plugin-transaction', String(Date.now())); fs.mkdirSync(evidence, { recursive: true });
+    fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ classification: ['INTEGRATION'], status: 'PASS', failedSecondSourceRejected: true, firstSourceRewriteRolledBack: true, originalBackupBytesUnchanged: true, scope: 'Actual SQLite migration rollback with controlled metadata; executable plugin recovery proved separately' }, null, 2));
+  } finally {
+    assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); assert.ok(path.basename(root).startsWith('zero-restore-'));
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('[REAL_OS] restored SQLite snapshot decrypts with copied Windows DPAPI key and rejects omitted key', { skip: process.platform !== 'win32' }, async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-restore-'));
   const livePath = path.join(root, 'live.sqlite');

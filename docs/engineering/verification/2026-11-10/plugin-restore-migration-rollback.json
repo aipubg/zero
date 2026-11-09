@@ -1,0 +1,10 @@
+{
+  "classification": [
+    "INTEGRATION"
+  ],
+  "status": "PASS",
+  "failedSecondSourceRejected": true,
+  "firstSourceRewriteRolledBack": true,
+  "originalBackupBytesUnchanged": true,
+  "scope": "Actual SQLite migration rollback with controlled metadata; executable plugin recovery proved separately"
+}
