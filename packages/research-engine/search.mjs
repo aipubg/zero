@@ -37,6 +37,15 @@ export class SearchEngine {
     }
   }
 
+  static isSourceUrl(urlString) {
+    if (!SearchEngine.isValidWebUrl(urlString)) return false;
+    const url = new URL(urlString);
+    // Instant Answer related/category links navigate back into search results.
+    // Their snippets are not retrieved external source documents.
+    const host = url.hostname.toLowerCase().replace(/^www\./, '');
+    return host !== 'duckduckgo.com' && !host.endsWith('.duckduckgo.com');
+  }
+
   async retrieveJson(endpoint, provider, attempts, validate) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000);
@@ -83,7 +92,7 @@ export class SearchEngine {
       const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1&skip_disambig=1`;
       const data = await this.retrieveJson(ddgUrl, 'duckduckgo-instant', attempts, value => value !== null && typeof value === 'object' && !Array.isArray(value));
       if (data) {
-        if (data.Abstract && data.AbstractURL && SearchEngine.isValidWebUrl(data.AbstractURL)) {
+        if (data.Abstract && data.AbstractURL && SearchEngine.isSourceUrl(data.AbstractURL)) {
           citations.push({
             citationIndex: citations.length + 1,
             title: data.Heading || cleanQuery,
@@ -104,7 +113,7 @@ export class SearchEngine {
         if (Array.isArray(data.RelatedTopics)) {
           for (const topic of data.RelatedTopics) {
             if (citations.length >= limit) break;
-            if (topic.Text && topic.FirstURL && SearchEngine.isValidWebUrl(topic.FirstURL)) {
+            if (topic.Text && topic.FirstURL && SearchEngine.isSourceUrl(topic.FirstURL)) {
               citations.push({
                 citationIndex: citations.length + 1,
                 title: topic.Text.split(' - ')[0] || topic.Text.slice(0, 60),
@@ -143,7 +152,7 @@ export class SearchEngine {
               const title = titles[i];
               const snippet = snippets && snippets[i] ? snippets[i] : `Wikipedia reference for ${title}`;
 
-              if (SearchEngine.isValidWebUrl(link) && !citations.some((c) => c.url === link)) {
+              if (SearchEngine.isSourceUrl(link) && !citations.some((c) => c.url === link)) {
                 citations.push({
                   citationIndex: citations.length + 1,
                   title,

@@ -1,0 +1,39 @@
+{
+  "classification": "REAL_EXTERNAL",
+  "scope": "Actual same-process scheduler, production dispatcher, research service, live providers and report file; no native host RPC or browser interaction",
+  "historicalResults": [
+    {
+      "receipt": "artifacts/automation-live/2026-11-10T04-51-40-173Z/receipt.json",
+      "result": "FAIL",
+      "reason": "Windows UI Automation Microsoft query returned no sources despite successful HTTP responses"
+    },
+    {
+      "receipt": "artifacts/automation-live/2026-11-10T04-52-03-910Z/receipt.json",
+      "result": "FAIL",
+      "reason": "Initial structural PASS withdrawn after independent URL requests exposed two DuckDuckGo category links redirecting into search"
+    }
+  ],
+  "change": "Exclude DuckDuckGo-hosted query/category navigation from source citations while retaining external document entries",
+  "correctedRun": {
+    "receipt": "artifacts/automation-live/2026-11-10T04-53-09-166Z/receipt.json",
+    "query": "UI Automation",
+    "result": "PASS",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Microsoft_UI_Automation",
+      "https://en.wikipedia.org/wiki/UI_Automation"
+    ],
+    "checks": "Actual report file SHA-256, citation URLs in report, verified=false, independent successful source HTTP bodies, final destinations outside DuckDuckGo"
+  },
+  "regression": {
+    "command": "node --test test/search-provenance.test.mjs",
+    "tests": 6,
+    "result": "PASS",
+    "scope": "Five controlled provider contracts plus an actual loopback stalled-body deadline integration"
+  },
+  "limitations": [
+    "Not a general web search accuracy benchmark or independent verification of source claims",
+    "Two Wikipedia URLs may describe the same subject; no independent-source diversity claim",
+    "Live broad-query failure remains recorded; no automatic query rewriting implemented",
+    "Release remains BLOCKED"
+  ]
+}

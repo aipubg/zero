@@ -64,3 +64,17 @@ test('[CONTRACT] source domain filters apply to retrieved URLs', async () => {
   assert.equal(result.citations.length, 1);
   assert.equal(result.citations[0].domain, 'example.org');
 });
+
+test('[CONTRACT] DuckDuckGo query and category navigation cannot become retrieved source citations', async () => {
+  const engine = new SearchEngine({ fetch: async url => new Response(JSON.stringify(url.includes('duckduckgo') ? {
+    Abstract: 'Query navigation', AbstractURL: 'https://duckduckgo.com/?q=fixture',
+    RelatedTopics: [
+      { Text: 'Category', FirstURL: 'https://duckduckgo.com/c/Windows_APIs' },
+      { Text: 'Topic', FirstURL: 'https://www.duckduckgo.com/Fixture' },
+    ],
+  } : ['', ['Document'], ['Actual document metadata'], ['https://example.org/document']])) });
+  const result = await engine.search('fixture');
+  assert.deepEqual(result.citations.map(c => c.url), ['https://example.org/document']);
+  assert.equal(result.citations[0].provenance.provider, 'wikipedia-opensearch');
+  assert.equal(result.citations[0].verified, false);
+});
