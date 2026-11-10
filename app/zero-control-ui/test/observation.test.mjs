@@ -19,6 +19,13 @@ import {
 import { createFrameRing } from "../observation/ring-buffer.mjs";
 import { createWorkerQueue } from "../observation/worker-queue.mjs";
 
+function removeOwnedFixture(directory) {
+  const resolved = fs.realpathSync.native(directory);
+  assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+  assert.ok(path.basename(resolved).startsWith('zero-observation-'));
+  fs.rmSync(resolved, { recursive: true, force: true });
+}
+
 function frame(text = "frame", capturedAtMs = 1_000, extra = {}) {
   const buffer = Buffer.from(text);
   return {
@@ -147,7 +154,7 @@ test("worker queue is bounded, aborts active work, and drops excess jobs", async
   assert.equal(queue.stats().pending, 0);
 });
 
-test("perception sanitizes secrets, uses UIA first, OCR fallback, and never calls the cloud", async () => {
+test("perception sanitizes supplied text and selects supplied UIA or OCR adapters", async () => {
   const redacted = sanitizeObservedText(
     "Authorization: Bearer abcdefghijklmnop\npassword=hunter2\nnormal text",
   );
@@ -457,7 +464,7 @@ test("engine start prunes expired summary rows and exposes bounded prune results
   await engine.dispose();
 });
 
-test("retention is bounded, restart-safe, and raw frames never enter SQLite", () => {
+test("retention bounds supplied rows and survives same-process SQLite reopen", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zero-observation-retention-"));
   const dbPath = path.join(dir, "observations.sqlite");
   const now = 10 * 24 * 60 * 60_000;
@@ -492,7 +499,7 @@ test("retention is bounded, restart-safe, and raw frames never enter SQLite", ()
   const reopened = createObservationStore({ dbPath, clock: () => now });
   assert.equal(reopened.stats().observations, 2, "retention survives a reopen");
   reopened.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeOwnedFixture(dir);
 });
 
 test("Private Mode during in-flight capture cancels work, clears buffers, and reports final cleanup", async () => {
@@ -665,7 +672,7 @@ test("dispose bounds a capture that ignores AbortSignal and keeps the store open
   const reopened = createObservationStore({ dbPath });
   assert.equal(reopened.stats().observations, 1, "late capture did not commit an observation");
   reopened.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeOwnedFixture(dir);
 });
 
 test("dispose closes the store when capture settles within the cleanup bound", async () => {
@@ -709,7 +716,7 @@ test("dispose closes the store when capture settles within the cleanup bound", a
   const reopened = createObservationStore({ dbPath });
   assert.equal(reopened.stats().observations, 1, "aborted capture committed no observation");
   reopened.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeOwnedFixture(dir);
 });
 
 test("queued perception that settles after Private Mode cannot commit a summary", async () => {
@@ -793,10 +800,10 @@ test("dispose defers store close while queued perception is still running and ca
   const reopened = createObservationStore({ dbPath });
   assert.equal(reopened.stats().observations, 1, "late worker did not commit a summary");
   reopened.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeOwnedFixture(dir);
 });
 
-test("observation modules contain no cloud/network fallback path", async () => {
+test("observation source files contain no listed network API strings", async () => {
   const fs = await import("node:fs/promises");
   const path = await import("node:path");
   const { fileURLToPath } = await import("node:url");

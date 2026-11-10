@@ -1,0 +1,20 @@
+{
+  "status": "PARTIAL",
+  "reviewedFiles": [
+    "app/zero-control-ui/test/observation-lifecycle.test.mjs",
+    "app/zero-control-ui/test/observation.test.mjs"
+  ],
+  "execution": {
+    "passed": 39,
+    "failed": 0,
+    "log": "artifacts/observation-scoped-review.log"
+  },
+  "changes": [
+    "Titles distinguish supplied adapters, source scans and same-process SQLite reopen from real native/end-to-end claims.",
+    "Recursive fixture removal verifies canonical temp parent and exact test-owned prefix."
+  ],
+  "limits": [
+    "Simulated capture buffers and supplied adapters do not establish continuous screen capture or real OCR/vision.",
+    "No real browser, external inference, process reboot or endurance run."
+  ]
+}

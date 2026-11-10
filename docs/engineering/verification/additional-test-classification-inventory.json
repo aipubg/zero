@@ -684,14 +684,182 @@
       "file": "app/zero-control-ui/test/observation-lifecycle.test.mjs",
       "sha256": "8f8eed4a942ac5b93622d0a2f2111bbdf1131f3c9ce93536cdc75640f7a3f0c2",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Lifecycle preference/state/error/redaction/serialization tests use supplied engine, Map storage and clock; one engine-resume case integrates real in-memory SQLite with fake capture. Direct runtime-handler/tool calls are not browser or wire RPC.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No real Windows capture, UIA, OCR, vision model, browser interaction or continuous/endurance capture is executed.",
+        "SQLite reopen is within the same Node process; supplied row absence is not byte-level proof that arbitrary raw data never enters storage."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "first run is disabled by default and writes no preference record",
+          "line": 174,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: first run is disabled by default and writes no preference record. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "startup resumes capture only when the persisted preference is explicitly enabled",
+          "line": 191,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: startup resumes capture only when the persisted preference is explicitly enabled. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "startup honors persisted Private Mode and private-off resumes only the persisted enabled preference",
+          "line": 208,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: startup honors persisted Private Mode and private-off resumes only the persisted enabled preference. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "Private Mode persists before stopping capture and stop persists disabled before stopping",
+          "line": 244,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: Private Mode persists before stopping capture and stop persists disabled before stopping. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "malformed, unreadable, and unavailable preference storage fail closed and never expose raw errors",
+          "line": 275,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: malformed, unreadable, and unavailable preference storage fail closed and never expose raw errors. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "start fails closed when the preference write fails and still stops capture",
+          "line": 324,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: start fails closed when the preference write fails and still stops capture. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "stop reports a safe failure when the disabled preference cannot be recorded",
+          "line": 349,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: stop reports a safe failure when the disabled preference cannot be recorded. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "Private Mode write failures apply and keep the private state",
+          "line": 375,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: Private Mode write failures apply and keep the private state. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "explicit start reports unavailable instead of an unqualified success",
+          "line": 408,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: explicit start reports unavailable instead of an unqualified success. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "explicit start distinguishes error, rejection, and running success",
+          "line": 451,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: explicit start distinguishes error, rejection, and running success. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "startup auto-resume failure preserves the enabled preference and retries on the next startup",
+          "line": 499,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: startup auto-resume failure preserves the enabled preference and retries on the next startup. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "Private Mode exit reports the start failure without falling back to unsafe capture",
+          "line": 531,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: Private Mode exit reports the start failure without falling back to unsafe capture. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "Private Mode exit makes exactly one start attempt and reports success or failure",
+          "line": 576,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual observation engine and in-memory SQLite with fake capture source; explicit start count and unavailable-resume state. No native screen capture."
+        },
+        {
+          "title": "recent history uses lifecycle policy, sanitizes records, and stays empty when blocked",
+          "line": 619,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: recent history uses lifecycle policy, sanitizes records, and stays empty when blocked. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "lifecycle serializes concurrent start, private, stop, and private-off calls",
+          "line": 717,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: lifecycle serializes concurrent start, private, stop, and private-off calls. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "dispose is idempotent, blocks later operations, and never releases a late start",
+          "line": 750,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: dispose is idempotent, blocks later operations, and never releases a late start. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "the persisted record contains only schema, enabled, private-mode, and a timestamp",
+          "line": 767,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: the persisted record contains only schema, enabled, private-mode, and a timestamp. No disk preference persistence or actual capture."
+        },
+        {
+          "title": "runtime handlers initialize and control through the lifecycle and surface safe errors",
+          "line": 801,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine/Map preference store/clock lifecycle contract: runtime handlers initialize and control through the lifecycle and surface safe errors. No disk preference persistence or actual capture."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/observation-tool.test.mjs",
@@ -753,16 +921,209 @@
     },
     {
       "file": "app/zero-control-ui/test/observation.test.mjs",
-      "sha256": "dd1ba5e580187056f29243b06d8625a9f8e85d9b80706862d34dd2156e848612",
+      "sha256": "f5a16442b94275c729087ed0b28d114a35b85dc070e4b96a9d5b271f546eff9c",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Ring, change detector, queue and supplied perception contracts; fake frames/capture and actual in-memory or temporary-file SQLite exercise engine cleanup, retention and late-commit prevention. Source string scans do not prove runtime network absence.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No real Windows capture, UIA, OCR, vision model, browser interaction or continuous/endurance capture is executed.",
+        "SQLite reopen is within the same Node process; supplied row absence is not byte-level proof that arbitrary raw data never enters storage."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "frame ring enforces horizon, byte, frame, rate, and source caps and clears buffers",
+          "line": 45,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied byte buffers, fake capture, fake adapters, delayed jobs or input text only: frame ring enforces horizon, byte, frame, rate, and source caps and clears buffers. No actual PNG decode, native capture/UIA/OCR or inferred cloud execution."
+        },
+        {
+          "title": "change detector dedupes identical frames and reports scene/pixel changes",
+          "line": 103,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied byte buffers, fake capture, fake adapters, delayed jobs or input text only: change detector dedupes identical frames and reports scene/pixel changes. No actual PNG decode, native capture/UIA/OCR or inferred cloud execution."
+        },
+        {
+          "title": "worker queue is bounded, aborts active work, and drops excess jobs",
+          "line": 124,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied byte buffers, fake capture, fake adapters, delayed jobs or input text only: worker queue is bounded, aborts active work, and drops excess jobs. No actual PNG decode, native capture/UIA/OCR or inferred cloud execution."
+        },
+        {
+          "title": "perception sanitizes supplied text and selects supplied UIA or OCR adapters",
+          "line": 157,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied byte buffers, fake capture, fake adapters, delayed jobs or input text only: perception sanitizes supplied text and selects supplied UIA or OCR adapters. No actual PNG decode, native capture/UIA/OCR or inferred cloud execution."
+        },
+        {
+          "title": "observation memory stores summaries only, prunes retention, and records workflow candidates",
+          "line": 207,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: observation memory stores summaries only, prunes retention, and records workflow candidates. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "engine captures changed frames, dedupes identical frames, and applies Private Mode cleanup",
+          "line": 244,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: engine captures changed frames, dedupes identical frames, and applies Private Mode cleanup. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "engine records backpressure drops without unbounded queue growth",
+          "line": 311,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: engine records backpressure drops without unbounded queue growth. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "engine reports offline capture failure without a cloud fallback and stops after bounded errors",
+          "line": 334,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: engine reports offline capture failure without a cloud fallback and stops after bounded errors. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "engine counts consecutive failures separately and recovers after a successful capture",
+          "line": 371,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: engine counts consecutive failures separately and recovers after a successful capture. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "engine start prunes expired summary rows and exposes bounded prune results",
+          "line": 426,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: engine start prunes expired summary rows and exposes bounded prune results. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "retention bounds supplied rows and survives same-process SQLite reopen",
+          "line": 467,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: retention bounds supplied rows and survives same-process SQLite reopen. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "Private Mode during in-flight capture cancels work, clears buffers, and reports final cleanup",
+          "line": 505,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: Private Mode during in-flight capture cancels work, clears buffers, and reports final cleanup. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "Private Mode cancels queued OCR work and no summary commits after it begins",
+          "line": 551,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: Private Mode cancels queued OCR work and no summary commits after it begins. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "dispose during in-flight capture settles without committing a summary",
+          "line": 585,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: dispose during in-flight capture settles without committing a summary. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "dispose bounds a capture that ignores AbortSignal and keeps the store open until it settles",
+          "line": 625,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: dispose bounds a capture that ignores AbortSignal and keeps the store open until it settles. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "dispose closes the store when capture settles within the cleanup bound",
+          "line": 678,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: dispose closes the store when capture settles within the cleanup bound. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "queued perception that settles after Private Mode cannot commit a summary",
+          "line": 722,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: queued perception that settles after Private Mode cannot commit a summary. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "dispose defers store close while queued perception is still running and cannot write later",
+          "line": 761,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real engine/store lifecycle with supplied frame/capture/perception/clock or delayed promises: dispose defers store close while queued perception is still running and cannot write later. SQLite is in-memory or temp file; reopen is same process, not host restart."
+        },
+        {
+          "title": "observation source files contain no listed network API strings",
+          "line": 806,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Reads source files and rejects listed network strings only; no runtime network instrumentation."
+        },
+        {
+          "title": "default observation engine is lazy and reports unavailable/off without starting capture",
+          "line": 819,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Creates lazy default engine with in-memory store, inspects off-state and disposes; no capture start."
+        },
+        {
+          "title": "capture adapter parses PNG dimensions and the fake source is deterministic",
+          "line": 834,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied byte buffers, fake capture, fake adapters, delayed jobs or input text only: capture adapter parses PNG dimensions and the fake source is deterministic. No actual PNG decode, native capture/UIA/OCR or inferred cloud execution."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/product-path.test.mjs",
