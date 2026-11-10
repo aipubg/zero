@@ -1,0 +1,18 @@
+{
+  "command": "node --test test/plugin-sdk-lifecycle.test.mjs test/skill-sdk-integration.test.mjs",
+  "passed": 22,
+  "changes": [
+    "Actual package missing-handler and onLoad failures now reject without phantom registration",
+    "Plugin source files compared byte-for-byte before install and after removal",
+    "Skill uninstall retains actual source content/assets, not only source existence",
+    "Direct UI-handler, fixture and same-process reopen titles distinguish scope from real browser/external execution",
+    "Canonical temporary roots checked before cleanup; child npm/Git/Node commands bounded"
+  ],
+  "actualEvidence": "Local executable handler file effects, actual npm pack/install, fresh Node plugin restoration without original sources, offline rewritten Git clones/revisions, SQLite trigger rollback and task failure/operation validation",
+  "limits": "Locally authored fixtures, controlled model HTTP/Promise responses and direct UI handlers; no new external provider/GitHub/registry/browser acceptance. Supplied verified/evidence return values test metadata normalization, not independent evidence validity.",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 79,
+  "additionalUnreviewedFiles": 10,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

@@ -18,9 +18,10 @@ function temporary(t) {
   t.sdkCleanup = [];
   t.after(async () => {
     for (const cleanup of [...t.sdkCleanup].reverse()) await cleanup();
-    assert.equal(path.dirname(path.resolve(root)), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(root).startsWith('zero-skill-sdk-integration-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-skill-sdk-integration-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   });
   return root;
 }
@@ -67,7 +68,7 @@ async function modelServer(t, handler, options = {}) {
 
 const call = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args) } });
 
-test('local install copies an external bundle; state, update, and uninstall survive fresh loaders', async t => {
+test('local fixture bundle state update and uninstall survive same-process loader reopen', async t => {
   const root = temporary(t);
   const skillsDir = path.join(root, 'library');
   const source = sourceAt(root);
@@ -107,6 +108,8 @@ test('local install copies an external bundle; state, update, and uninstall surv
   assert.equal(archived.record.enabled, true);
   assert.equal(new SkillLoader({ skillsDir }).getSkill('external-report'), null);
   assert.ok(fs.existsSync(path.join(source, 'SKILL.md')), 'uninstall must preserve the original source');
+  assert.match(fs.readFileSync(path.join(source, 'SKILL.md'), 'utf8'), /version: '2.0.0'/);
+  assert.equal(fs.readFileSync(path.join(source, 'scripts/helper.txt'), 'utf8'), 'updated asset');
   assert.equal(fs.existsSync(path.join(skillsDir, 'external-report')), false);
   assert.deepEqual(JSON.parse(fs.readFileSync(loader.statePath)).skills, {});
 });
@@ -115,7 +118,7 @@ test('GitHub tree and raw-file URLs clone actual git bundles and update recorded
   const root = temporary(t);
   const repository = path.join(root, 'repository');
   fs.mkdirSync(repository);
-  const git = args => execFileSync('git', args, { cwd: repository, windowsHide: true, stdio: 'pipe' }).toString().trim();
+  const git = args => execFileSync('git', args, { cwd: repository, windowsHide: true, stdio: 'pipe', timeout: 30000 }).toString().trim();
   git(['init', '-b', 'main']);
   const source = sourceAt(repository, manifest(), 'skills/report');
   const fixtureCommit = message => {
@@ -178,7 +181,7 @@ test('failed and malicious updates preserve installed files/config and reject sy
   assert.equal(loader.getSkill('external-report').version, '1.0.0');
 });
 
-test('actual ModelFabric HTTP loop dispatches a registered capability, produces an artifact, and persists a completed task', async t => {
+test('controlled ModelFabric HTTP loop executes a real file capability and persists its task', async t => {
   const root = temporary(t);
   const loader = new SkillLoader({ skillsDir: path.join(root, 'library') });
   await loader.installSkill(sourceAt(root), { config: { reportFormat: 'plain text', apiKey: 'private-fixture-secret', env: { PRIVATE_VALUE: 'private-env-secret' } } });
@@ -307,7 +310,7 @@ test('cancellation and task cancellation stop the loop and never mark work compl
   assert.equal(hostCancelled.status, 'cancelled');
 });
 
-test('native UI status/config/library/import use real persisted loader state and guarded bundle revisions', async t => {
+test('direct Skills UI handlers persist loader state and guard bundle revisions', async t => {
   const root = temporary(t);
   const loader = new SkillLoader({ skillsDir: path.join(root, 'library') });
   const source = sourceAt(root, manifest('external-report', 'Produce the report.', `metadata:\n  openclaw:\n    emoji: '📋'\n    primaryEnv: SDK_FIXTURE_TOKEN\n    requires:\n      env: [SDK_FIXTURE_TOKEN]\n`));

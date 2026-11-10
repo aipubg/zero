@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFile } from 'node:child_process';
@@ -20,9 +21,10 @@ async function sandbox(t) {
   const managers = [];
   t.after(async () => {
     for (const manager of managers) await manager.close();
-    assert.equal(path.dirname(root), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(root).startsWith('zero-plugin-test-'));
-    await fs.rm(root, { recursive: true, force: true });
+    const resolved = realpathSync.native(root);
+    assert.equal(path.dirname(resolved), realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-plugin-test-'));
+    await fs.rm(resolved, { recursive: true, force: true });
   });
   const dbPath = path.join(root, 'plugins.sqlite');
   const pluginsDir = path.join(root, 'managed');
@@ -68,6 +70,8 @@ const execute = (engine, args = { a: [2, 3], b: [4, 5] }, toolName = 'actual_dot
 test('directory install executes real output, gates handlers, restarts dependency state, updates and removes without deleting data', async (t) => {
   const box = await sandbox(t);
   const source = await fixture(box.root);
+  const sourceFiles = ['package.json', 'index.mjs', 'math.mjs'];
+  const sourceBytes = await Promise.all(sourceFiles.map(file => fs.readFile(path.join(source, file))));
   const { manager, engine } = box.open();
   const installed = await manager.installPlugin(JSON.parse(JSON.stringify({ path: source, config: { factor: 3 } })));
   assert.equal(installed.runtimeStatus, 'active');
@@ -101,6 +105,7 @@ test('directory install executes real output, gates handlers, restarts dependenc
   assert.equal(JSON.parse(await fs.readFile(first.output, 'utf8')).value, 690, 'data survives removal');
   assert.ok((await fs.readFile(path.join(path.dirname(first.output), 'hooks.log'), 'utf8')).includes('disable\ndestroy\n'));
   assert.ok(await fs.stat(path.join(source, 'index.mjs')), 'source directory untouched');
+  for (const [index, file] of sourceFiles.entries()) assert.deepEqual(await fs.readFile(path.join(source, file)), sourceBytes[index]);
   assert.deepEqual(await fs.readdir(path.join(box.pluginsDir, 'releases')), []);
 });
 
@@ -127,7 +132,7 @@ const result = await ce.execute({toolName:'actual_dot',args:{a:[7,2],b:[3,4]}});
 const disabled = await ce.execute({toolName:'sleep_dot',args:{a:[1],b:[1]}});
 console.log(JSON.stringify({ready,result,disabled,plugins:manager.listPlugins()}));
 await manager.close();`;
-  const child = await runFile(process.execPath, ['--input-type=module', '-e', script, box.dbPath, box.pluginsDir], { windowsHide: true });
+  const child = await runFile(process.execPath, ['--input-type=module', '-e', script, box.dbPath, box.pluginsDir], { windowsHide: true, timeout: 30000 });
   const result = JSON.parse(child.stdout.trim());
   assert.deepEqual(result.ready.unavailable, []);
   assert.equal(result.result.value, 116);
@@ -144,7 +149,7 @@ test('npm tarball installation executes code, ignores install scripts and persis
   const box = await sandbox(t);
   const source = await fixture(box.root, { id: 'zero-test-packed-plugin' });
   const npmCli = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
-  const packed = await runFile(process.execPath, [npmCli, 'pack', '--ignore-scripts', '--json', '--pack-destination', box.root, source], { cwd: box.root, windowsHide: true });
+  const packed = await runFile(process.execPath, [npmCli, 'pack', '--ignore-scripts', '--json', '--pack-destination', box.root, source], { cwd: box.root, windowsHide: true, timeout: 30000 });
   const archive = path.join(box.root, JSON.parse(packed.stdout)[0].filename);
   const { manager, engine } = box.open();
   const installed = await manager.installFromPackage(archive);
@@ -167,6 +172,16 @@ test('missing handlers, duplicate installs, ownership conflicts and failed hooks
   assert.equal(engine.customCapabilities.size, 0);
   const source = await fixture(box.root);
   await manager.installPlugin({ path: source });
+  for (const options of [
+    { id: 'missing-handler', capability: 'absent_cap', missing: true },
+    { id: 'load-failing', capability: 'load_cap', failLoad: true },
+  ]) {
+    const rejectedSource = await fixture(box.root, options);
+    await assert.rejects(manager.installPlugin({ path: rejectedSource }), /missing executable handler|load-boom/);
+    assert.equal(manager.getPlugin(options.id), null);
+    assert.equal(engine.getPlugin(options.id), null);
+    assert.equal(engine.customCapabilities.has(options.capability), false);
+  }
   await assert.rejects(manager.installPlugin({ path: source }), /already installed/);
   const conflict = await fixture(box.root, { id: 'conflict' });
   await assert.rejects(manager.installPlugin({ path: conflict }), /owned by plugin/);
@@ -263,7 +278,7 @@ test('capability engine rejects missing handlers atomically and never treats mer
   assert.equal((await execute(engine, {}, 'proven')).verified, true);
 });
 
-test('native UI adapter uses one real manager and native list/actions/inspect contracts', async (t) => {
+test('direct Plugins UI handlers use actual manager state and executable fixture handlers', async (t) => {
   const box = await sandbox(t);
   const source = await fixture(box.root);
   const { manager, engine } = box.open();

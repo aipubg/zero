@@ -2589,16 +2589,110 @@
     },
     {
       "file": "test/plugin-sdk-lifecycle.test.mjs",
-      "sha256": "5d1e4046de0cc2996ca97000648fd42219095492bfcb5e0a461f866ed85e77e0",
+      "sha256": "42b5a866b2c4900c8fa7fb392d2bb56e6578951d5d513836930afcd9574d507f",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Actual local plugin handler writes/readbacks output; disable/stale handles, dependency module reload, update/removal retain exact source files and data. Actual fresh Node process restores installed active/disabled packages after original source paths renamed; executes handler and reads output; same-process reopen resets module state. Actual npm pack on local fixture and tarball install execute handler without lifecycle script, preserve installed code after original archive renamed; no registry download. Actual fixture missing handler/load failure/enable failure, duplicate install and ownership conflict reject without phantom registration; existing handler still works. Actual failed update hook rolls back version/working handler; update of disabled fixture preserves disabled intent until explicit enable. Actual legacy SQLite metadata/config preserved while no executable source means unavailable with no capability registration. Supplied deferred handler drains before disable hook; new calls blocked, enable/disable operations serialize and closed manager rejects. Supplied capability return objects test atomic missing-handler registration and normalization of bare/failure/verified/evidence claims; no real evidence validation. Direct Plugins UI handlers drive actual local manager install/list/inspect/toggle/catalog/remove and executable fixture output, preserving data and redacting config; no browser. Actual SQLite trigger failures roll back installed/updated registrations and config; working file handler remains callable. Actual missing installed entrypoint remains listed/unavailable while healthy package restores and executes; no whole-host restart.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Locally authored executable package/tarball, supplied hooks and direct UI handlers; no real browser, remote registry plugin or independent verification of plugin-reported evidence metadata."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "directory install executes real output, gates handlers, restarts dependency state, updates and removes without deleting data",
+          "line": 70,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual local plugin handler writes/readbacks output; disable/stale handles, dependency module reload, update/removal retain exact source files and data."
+        },
+        {
+          "title": "enabled and disabled installs restore in a genuinely fresh Node process without original sources",
+          "line": 112,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual fresh Node process restores installed active/disabled packages after original source paths renamed; executes handler and reads output; same-process reopen resets module state."
+        },
+        {
+          "title": "npm tarball installation executes code, ignores install scripts and persists offline",
+          "line": 148,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual npm pack on local fixture and tarball install execute handler without lifecycle script, preserve installed code after original archive renamed; no registry download."
+        },
+        {
+          "title": "missing handlers, duplicate installs, ownership conflicts and failed hooks leave no phantom registration",
+          "line": 167,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual fixture missing handler/load failure/enable failure, duplicate install and ownership conflict reject without phantom registration; existing handler still works."
+        },
+        {
+          "title": "failed update rolls back working handlers and metadata; disabled update stays disabled",
+          "line": 197,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual failed update hook rolls back version/working handler; update of disabled fixture preserves disabled intent until explicit enable."
+        },
+        {
+          "title": "legacy metadata is preserved and honestly marked unavailable instead of fabricated as active",
+          "line": 215,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual legacy SQLite metadata/config preserved while no executable source means unavailable with no capability registration."
+        },
+        {
+          "title": "disable waits for running handlers and prevents new calls; lifecycle requests serialize",
+          "line": 236,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied deferred handler drains before disable hook; new calls blocked, enable/disable operations serialize and closed manager rejects."
+        },
+        {
+          "title": "capability engine rejects missing handlers atomically and never treats mere return as verification",
+          "line": 263,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied capability return objects test atomic missing-handler registration and normalization of bare/failure/verified/evidence claims; no real evidence validation."
+        },
+        {
+          "title": "direct Plugins UI handlers use actual manager state and executable fixture handlers",
+          "line": 281,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Direct Plugins UI handlers drive actual local manager install/list/inspect/toggle/catalog/remove and executable fixture output, preserving data and redacting config; no browser."
+        },
+        {
+          "title": "SQLite failures roll back install and update registrations without changing persisted config",
+          "line": 322,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite trigger failures roll back installed/updated registrations and config; working file handler remains callable."
+        },
+        {
+          "title": "broken saved sources stay installed with explicit errors and do not prevent healthy restoration",
+          "line": 342,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual missing installed entrypoint remains listed/unavailable while healthy package restores and executes; no whole-host restart."
+        }
+      ]
     },
     {
       "file": "test/restore-host-process-real.test.mjs",
@@ -3170,16 +3264,114 @@
     },
     {
       "file": "test/skill-sdk-integration.test.mjs",
-      "sha256": "0304dcb816dae55b02d4d5efda17e5c8fa7505b754bbd22b3a518fcc873513e3",
+      "sha256": "6ec33b7327f5083723c03ce51cfc021aa3ce47b6f33843fb9f2e0cac4287f4c8",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Actual local bundle copy/update/uninstall archives files/state/config, disabled state survives loader reopen and original source bytes/content remain. Actual local git repository commits/clones with GitHub/raw URL identities rewritten to file transport; pinned revision/update/subpath guards checked offline. Actual installed fixture content/config retained after invalid name/name change, injected registry write failure and real junction escape refusal. Controlled loopback HTTP supplied model tool calls execute real report file capability; independent readback, secret omission, task steps and same-process SQLite reopen asserted. Actual deterministic operation batch fully validates before leading file effects; valid two writes leave FINAL and two steps. Controlled loopback HTTP supplies incomplete/refused/malformed/duplicate responses; real task failure and absent file effect asserted. Supplied tool refusal, missing fabric, malformed/empty loopback replies and disabled state propagate incomplete failure in actual task DB. Supplied nonsettling model Promise cancels on caller/controller and task cancellation; actual SQLite task remains CANCELLED. Direct Skills UI handlers persist actual fixture status/config/library/import/revision guards with secret redaction and same-process loader reopen; no browser. Supplied loop/unauthorized/echo/nonsettling model responses cannot complete actual task; call counters and deadline failures recorded. Actual custom skill creation/update stays in temp skills directory; malformed registry file rejects reopen and exact corrupt bytes remain.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Locally authored Skill fixtures and offline Git URL rewrite, supplied model HTTP/Promise adapters and direct UI handlers; no real external model, GitHub source retrieval or browser. Reopened loaders/task store are same process."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "local fixture bundle state update and uninstall survive same-process loader reopen",
+          "line": 71,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual local bundle copy/update/uninstall archives files/state/config, disabled state survives loader reopen and original source bytes/content remain."
+        },
+        {
+          "title": "GitHub tree and raw-file URLs clone actual git bundles and update recorded revisions, offline",
+          "line": 117,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual local git repository commits/clones with GitHub/raw URL identities rewritten to file transport; pinned revision/update/subpath guards checked offline."
+        },
+        {
+          "title": "failed and malicious updates preserve installed files/config and reject symlink escape",
+          "line": 156,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual installed fixture content/config retained after invalid name/name change, injected registry write failure and real junction escape refusal."
+        },
+        {
+          "title": "controlled ModelFabric HTTP loop executes a real file capability and persists its task",
+          "line": 184,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Controlled loopback HTTP supplied model tool calls execute real report file capability; independent readback, secret omission, task steps and same-process SQLite reopen asserted."
+        },
+        {
+          "title": "[INTEGRATION] deterministic skill operation batches validate entirely before real file effects",
+          "line": 225,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual deterministic operation batch fully validates before leading file effects; valid two writes leave FINAL and two steps."
+        },
+        {
+          "title": "[CONTRACT] actual HTTP incomplete skill responses and malformed full batches persist failure without leading file effects",
+          "line": 245,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Controlled loopback HTTP supplies incomplete/refused/malformed/duplicate responses; real task failure and absent file effect asserted."
+        },
+        {
+          "title": "execution propagates tool refusal, missing model, malformed arguments, and no-output failures",
+          "line": 262,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied tool refusal, missing fabric, malformed/empty loopback replies and disabled state propagate incomplete failure in actual task DB."
+        },
+        {
+          "title": "cancellation and task cancellation stop the loop and never mark work complete",
+          "line": 288,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied nonsettling model Promise cancels on caller/controller and task cancellation; actual SQLite task remains CANCELLED."
+        },
+        {
+          "title": "direct Skills UI handlers persist loader state and guard bundle revisions",
+          "line": 313,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Direct Skills UI handlers persist actual fixture status/config/library/import/revision guards with secret redaction and same-process loader reopen; no browser."
+        },
+        {
+          "title": "turn limits, unregistered tools, echoed instructions, and deadlines cannot produce completed tasks",
+          "line": 357,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied loop/unauthorized/echo/nonsettling model responses cannot complete actual task; call counters and deadline failures recorded."
+        },
+        {
+          "title": "custom creation stays in skillsDir and corrupt registry data is never silently overwritten",
+          "line": 393,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual custom skill creation/update stays in temp skills directory; malformed registry file rejects reopen and exact corrupt bytes remain."
+        }
+      ]
     },
     {
       "file": "test/startup-settings-persistence.test.mjs",
