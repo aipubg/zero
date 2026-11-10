@@ -1,29 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import net from 'node:net';
+import { createRequire } from 'node:module';
 
 // Dynamically load ws client
 async function getWsClient() {
-  const wsMod = (await import('../app/node_modules/ws/index.js')).default;
+  const wsMod = createRequire(new URL('../backend/package.json', import.meta.url))('ws');
   return wsMod.WebSocket || wsMod;
 }
 
-test('Zero Native Gateway Host & Protocol Dispatcher', async (t) => {
+test('Isolated native gateway real WebSocket RPC and persisted effects', { timeout: 20000 }, async (t) => {
   const WebSocket = await getWsClient();
-  const testPort = 18799;
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-native-gateway-test-'));
+  const reservation = net.createServer();
+  await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve));
+  const testPort = reservation.address().port;
+  await new Promise(resolve => reservation.close(resolve));
   const testToken = 'zero-test-auth-token-123';
 
   const host = new ZeroNativeHost({
     port: testPort,
     host: '127.0.0.1',
     token: testToken,
+    dataDir: path.join(root, 'data'),
+    prefsPath: path.join(root, 'prefs.json'),
+    skillsDir: path.join(root, 'skills'),
+    providersPath: path.join(root, 'providers.json'),
+    agentBindingsPath: path.join(root, 'bindings.json'),
   });
-
-  await host.start();
 
   t.after(async () => {
     await host.close({ reason: 'test-complete' });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-native-gateway-test-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   });
+  await host.start();
 
   const wsUrl = `ws://127.0.0.1:${testPort}`;
 
@@ -40,11 +57,11 @@ test('Zero Native Gateway Host & Protocol Dispatcher', async (t) => {
       }
       if (msg.type === 'res' && msg.id) {
         const handler = pendingResponses.get(msg.id);
-        if (handler) handler(msg);
+        if (handler) { pendingResponses.delete(msg.id); handler(msg); }
       }
       if (msg.jsonrpc === '2.0' && msg.id) {
         const handler = pendingResponses.get(msg.id);
-        if (handler) handler(msg);
+        if (handler) { pendingResponses.delete(msg.id); handler(msg); }
       }
     });
 
@@ -57,8 +74,9 @@ test('Zero Native Gateway Host & Protocol Dispatcher', async (t) => {
     assert.ok(challenge.payload.nonce);
 
     function sendRpc(req) {
-      return new Promise((resolve) => {
-        pendingResponses.set(req.id, resolve);
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => { pendingResponses.delete(req.id); reject(new Error(`RPC timeout: ${req.method}`)); }, 3000);
+        pendingResponses.set(req.id, response => { clearTimeout(timeout); resolve(response); });
         ws.send(JSON.stringify(req));
       });
     }

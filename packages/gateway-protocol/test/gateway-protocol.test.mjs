@@ -97,6 +97,19 @@ test('Zero Gateway Protocol Specification', async (t) => {
     const mux = new GatewayMultiplexer({ defaultTimeoutMs: 100 });
     assert.equal(mux.pendingCount, 0);
 
+    const original = mux.registerRequest('duplicate', 200);
+    await assert.rejects(mux.registerRequest('duplicate', 200), /Duplicate pending/);
+    assert.equal(mux.pendingCount, 1);
+    mux.resolveResponse('duplicate', { retained: true });
+    assert.deepEqual(await original, { retained: true });
+    assert.equal(mux.pendingCount, 0);
+
+    const rejected = mux.registerRequest('rejected', 200);
+    const observed = assert.rejects(rejected, /upstream rejected/);
+    mux.rejectResponse('rejected', new Error('upstream rejected'));
+    await observed;
+    assert.equal(mux.pendingCount, 0);
+
     const promiseA = mux.registerRequest('req_A', 200);
     assert.equal(mux.pendingCount, 1);
     mux.resolveResponse('req_A', { status: 'success' });

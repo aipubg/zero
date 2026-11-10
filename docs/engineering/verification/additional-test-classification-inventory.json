@@ -490,16 +490,61 @@
     },
     {
       "file": "packages/gateway-protocol/test/gateway-protocol.test.mjs",
-      "sha256": "b94085862471388d8946df03c1d6c25655dc252a8add0a255acd89b268e68838",
+      "sha256": "2fadce677b596b2b42fbdd89963d10daf181144b234ac9c35b0f6c3ffe6f5a38",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Container for frame construction/parser, supplied handshake and local request multiplexer assertions. Constructed JSON-RPC request/response/error/notification fields match supplied inputs and codes. Supplied JSON strings/Buffers parse into request/notification variants; malformed JSON produces parse error. Direct handshake validator accepts supplied matching token/protocol and rejects bad token/unsupported protocol; no real WebSocket. Local multiplexer rejects duplicate pending ID without replacing original Promise, resolves original, rejects supplied error, and expires actual timer with pending cleanup.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Supplied frame/token data and local Promise timers; no network socket, actual authentication service or browser."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Zero Gateway Protocol Specification",
+          "line": 18,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Container for frame construction/parser, supplied handshake and local request multiplexer assertions."
+        },
+        {
+          "title": "creates standard JSON-RPC 2.0 requests, responses, and notifications",
+          "line": 19,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Constructed JSON-RPC request/response/error/notification fields match supplied inputs and codes."
+        },
+        {
+          "title": "parses and categorizes incoming raw frame strings and buffers",
+          "line": 44,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied JSON strings/Buffers parse into request/notification variants; malformed JSON produces parse error."
+        },
+        {
+          "title": "validates Protocol 4 Handshake with role and token security",
+          "line": 74,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Direct handshake validator accepts supplied matching token/protocol and rejects bad token/unsupported protocol; no real WebSocket."
+        },
+        {
+          "title": "Multiplexer resolves and rejects requests with timeout deadlines",
+          "line": 96,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Local multiplexer rejects duplicate pending ID without replacing original Promise, resolves original, rejects supplied error, and expires actual timer with pending cleanup."
+        }
+      ]
     },
     {
       "file": "packages/memory/test/memory.test.mjs",
@@ -1838,16 +1883,38 @@
     },
     {
       "file": "test/native-gateway.test.mjs",
-      "sha256": "69c8dd76fea0fe81c13d10e3b80c0afb3d0a8735018ddc9661d0a25b86876154",
+      "sha256": "adbfc5854c34c14f8fcf46d544f596b70e6fa2796a9d4eaf1d4666435f3622ea",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Container starts actual isolated native host on dynamic port with bounded RPCs and task-owned temporary state. Actual WebSocket challenge/handshake then health/agents/memory remember+recall, job registration and scoped hold take/status/release; no desktop mutation executes.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Real isolated localhost host/socket and SQLite; automation is registered only, no scheduled action, external inference, browser or process restart."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Isolated native gateway real WebSocket RPC and persisted effects",
+          "line": 16,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Container starts actual isolated native host on dynamic port with bounded RPCs and task-owned temporary state."
+        },
+        {
+          "title": "connects via WebSocket, completes handshake, and dispatches RPC methods",
+          "line": 47,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual WebSocket challenge/handshake then health/agents/memory remember+recall, job registration and scoped hold take/status/release; no desktop mutation executes."
+        }
+      ]
     },
     {
       "file": "test/native-observation-lifecycle.test.mjs",

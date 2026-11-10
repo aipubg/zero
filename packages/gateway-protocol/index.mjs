@@ -372,6 +372,7 @@ export class GatewayMultiplexer {
   }
 
   registerRequest(id, timeoutMs = this.defaultTimeoutMs) {
+    if (this._pending.has(id)) return Promise.reject(new Error(`Duplicate pending gateway request '${id}'`));
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         if (this._pending.has(id)) {

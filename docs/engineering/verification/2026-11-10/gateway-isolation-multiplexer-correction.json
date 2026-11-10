@@ -1,0 +1,18 @@
+{
+  "changes": [
+    "Native gateway test moved from default owner data and fixed port to isolated temporary state and dynamic port",
+    "WebSocket client resolves declared backend ws dependency, not app transitive path",
+    "RPCs have bounded deadlines and consumed handlers are removed",
+    "Production multiplexer rejects duplicate pending IDs before replacing original request Promise"
+  ],
+  "command": "node --test packages/gateway-protocol/test/gateway-protocol.test.mjs test/native-gateway.test.mjs",
+  "reportedChecksPassed": 7,
+  "scope": "Includes suite containers; supplied frame/handshake/multiplexer contracts plus actual isolated native WebSocket memory/job/hold RPC outcomes",
+  "duplicateOutcome": "Second registration rejects, first Promise remains reachable/resolves and pending count clears; explicit error and timer rejection also checked",
+  "limits": "No browser, external provider, scheduled job effect, desktop input or native process restart in these two test files",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 66,
+  "additionalUnreviewedFiles": 23,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}
