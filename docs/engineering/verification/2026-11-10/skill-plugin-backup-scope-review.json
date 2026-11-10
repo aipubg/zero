@@ -1,0 +1,21 @@
+{
+  "command": "node --test test/backup-skills-restore.test.mjs test/backup-plugin-restore.test.mjs test/user-data-audit.test.mjs",
+  "passed": 3,
+  "failed": 0,
+  "classification": "INTEGRATION",
+  "actualEvidence": [
+    "Controlled restored Skill nested script runs directly in Node with exact stdout, disabled state and config retained",
+    "Restored executable plugin handler writes/readbacks actual data after original managed bundle absolute path is unavailable; prior plugin data survives before invocation",
+    "Actual SQLite audit accepts additive schema/rows and rejects original message mutation/deletion"
+  ],
+  "limits": [
+    "Locally authored fixture packages, not new external skill/plugin acceptance",
+    "No actual browser, ZERO skill model/task workflow or cross-machine portability",
+    "Fixture preservation audit does not establish full current-owner-data audit"
+  ],
+  "cleanupChange": "Canonical temporary parent and exact task-prefix validated before recursive removal",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 55,
+  "additionalUnreviewedFiles": 34,
+  "releaseStatus": "BLOCKED"
+}

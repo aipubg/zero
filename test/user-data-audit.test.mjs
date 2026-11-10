@@ -33,7 +33,9 @@ test('[INTEGRATION] data preservation audit permits additions but rejects mutati
     db = new DatabaseSync(filename); db.exec("DELETE FROM messages WHERE id='original'"); db.close();
     assert.equal(audit('FAIL').failures[0].missingOrChangedRows, 1);
   } finally {
-    assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir()));
-    fs.rmSync(directory, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(directory);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-data-audit-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });

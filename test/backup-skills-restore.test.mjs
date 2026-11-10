@@ -30,7 +30,9 @@ test('[INTEGRATION] backup restores skill instructions, nested executable bytes 
     const evidence = path.resolve('artifacts/restore-skills', String(Date.now())); fs.mkdirSync(evidence, { recursive: true });
     fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ classification: ['INTEGRATION'], status: 'PASS', backup, restoredDisabledState: true, restoredConfig: true, nestedScriptBytesPreserved: true, actualRestoredScriptOutput: executed, scope: 'Controlled skill backup/restore with direct Node script execution; not external skill/task acceptance or plugin bundle recovery' }, null, 2));
   } finally {
-    assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); assert.ok(path.basename(root).startsWith('zero-skill-restore-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-skill-restore-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });

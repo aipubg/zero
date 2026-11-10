@@ -50,7 +50,9 @@ test('[INTEGRATION] restored managed plugin executes after original bundle path 
     fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ classification: ['INTEGRATION'], status: 'PASS', backup, relocatedPluginSources: result.relocatedPluginSources, originalPluginDataPreservedBeforeExecution: true, oldAbsoluteBundlePathUnavailable: true, actualRegisteredHandlerResult: effect.result, actualRestoredDataFileReadback: true, scope: 'Controlled actual executable plugin package; external/npm/MCP portability not established' }, null, 2));
   } finally {
     await original?.manager.close(); await restored?.manager.close();
-    assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); assert.ok(path.basename(root).startsWith('zero-plugin-restore-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-plugin-restore-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });

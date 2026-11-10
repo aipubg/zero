@@ -889,29 +889,51 @@
     },
     {
       "file": "test/backup-plugin-restore.test.mjs",
-      "sha256": "337476687e1c08cdb9a668e94d12e04e3a9ca69e4280933d3e7abcb348fd2134",
+      "sha256": "bee942bb8d16123269613cadece71f9d064e9d66657ee127d32789c1e8d8aa76",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Real installed fixture plugin handler writes data; actual backup/restore relocates managed sources, retains prior output and executes restored registered handler after original bundle path is renamed away.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Locally authored executable package and same-process managers; no external npm/MCP package, browser or new-machine portability."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] restored managed plugin executes after original bundle path becomes unavailable",
+          "line": 11,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real installed fixture plugin handler writes data; actual backup/restore relocates managed sources, retains prior output and executes restored registered handler after original bundle path is renamed away."
+        }
+      ]
     },
     {
       "file": "test/backup-skills-restore.test.mjs",
-      "sha256": "690338208630c88bf0a169671bf4e263f14700d5cecdebac2618fe44b1868701",
+      "sha256": "eb0d1b05447bd8aafddf6b6a28340fd564045933e18fff7fe33decd4a75e2bb5",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Real backup child script and restore retain controlled skill instructions, nested script bytes, disabled/config state; restored script directly executed by Node with exact stdout.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Locally authored controlled Skill fixture and direct script execution, not an external skill, ZERO task/model execution, UI workflow or new machine portability."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] backup restores skill instructions, nested executable bytes and enable/config state",
+          "line": 10,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real backup child script and restore retain controlled skill instructions, nested script bytes, disabled/config state; restored script directly executed by Node with exact stdout."
+        }
+      ]
     },
     {
       "file": "test/capability-lease-lifecycle.test.mjs",
@@ -2187,16 +2209,27 @@
     },
     {
       "file": "test/user-data-audit.test.mjs",
-      "sha256": "6f52c47fe717b9e573544d5d53de8309d72d0bc804c87e4bbac2684960aa174b",
+      "sha256": "c9d138446501db76f57ce650b36300ca63acbc99c63252e7c1173f541a7b9fc4",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Actual fixture SQLite backup and audit child process accept unchanged/additive schema and rows, reject changed/deleted original message with exact missingOrChangedRows count.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Controlled fixture data and limited schema; not a complete audit of current owner state, every file format or all application features."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] data preservation audit permits additions but rejects mutation and deletion of original messages",
+          "line": 11,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual fixture SQLite backup and audit child process accept unchanged/additive schema and rows, reject changed/deleted original message with exact missingOrChangedRows count."
+        }
+      ]
     },
     {
       "file": "test/verification/classification-runner.test.mjs",
