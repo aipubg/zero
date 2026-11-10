@@ -3,11 +3,13 @@
   "change": "Removed successful no-op default dispatchers; require explicit positive acknowledgement and reject explicitly incomplete results",
   "command": "node --test test/automation-failure-outcomes.test.mjs packages/automation/test/automation.test.mjs",
   "result": "PASS",
-  "tests": 8,
+  "tests": 10,
   "evidence": [
     "Missing executor, undefined result, empty result, queued acknowledgement and completed=false record failures",
     "Actual scheduled and event callbacks append Unicode text to a temporary file, independently read after each dispatch",
-    "Existing success=true callback and scheduling history checks continue passing"
+    "Existing success=true callback and scheduling history checks continue passing",
+    "Overlapping trigger calls share a run instead of dispatching the same due action twice",
+    "Unserializable result records failure and allows later scheduler calls to proceed"
   ],
   "limitations": [
     "A dispatcher acknowledgement is not independent verification of arbitrary external effects",

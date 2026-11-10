@@ -127,7 +127,14 @@ export class AutomationScheduler {
     return this.checkAndTriggerDueJobs(now);
   }
 
-  async checkAndTriggerDueJobs(now = Date.now()) {
+  checkAndTriggerDueJobs(now = Date.now()) {
+    // The host timer and manual RPC may overlap while an action awaits I/O.
+    if (this._dueRun) return this._dueRun;
+    this._dueRun = this._executeDueJobs(now).finally(() => { this._dueRun = null; });
+    return this._dueRun;
+  }
+
+  async _executeDueJobs(now) {
     const stmt = this.db.prepare(`
       SELECT * FROM zero_cron_jobs
       WHERE enabled = 1 AND next_run <= ?
@@ -141,10 +148,12 @@ export class AutomationScheduler {
 
       let status = 'completed';
       let result = null;
+      let serializedResult = null;
       let error = null;
 
       try {
         result = await executeConfirmedAction(this.executor, job.targetAction, job.params);
+        serializedResult = JSON.stringify(result);
       } catch (err) {
         status = 'failed';
         error = err.message || 'Execution error';
@@ -155,7 +164,7 @@ export class AutomationScheduler {
         INSERT INTO zero_cron_runs (id, job_id, status, result, error, executed_at)
         VALUES (?, ?, ?, ?, ?, ?)
       `);
-      runStmt.run(runId, job.id, status, result ? JSON.stringify(result) : null, error, now);
+      runStmt.run(runId, job.id, status, serializedResult, error, now);
 
       // Schedule next run
       const nextRun = this.calculateNextRun(job.cronExpr, now);

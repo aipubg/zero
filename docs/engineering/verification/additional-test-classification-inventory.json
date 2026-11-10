@@ -586,7 +586,7 @@
     },
     {
       "file": "test/automation-failure-outcomes.test.mjs",
-      "sha256": "54a0f00f2edc2e7c69a4c9979dbf87e2b338fc9ae5bb139e7e385ac0088f1a46",
+      "sha256": "b708d8da8d9993cec6e79e4d843e3175ce23f908c5f2503e013e221f96889e5d",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "NOT_REVIEWED",
       "labels": [],

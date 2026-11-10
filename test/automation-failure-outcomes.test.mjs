@@ -61,3 +61,36 @@ test('[INTEGRATION] scheduled and event dispatchers produce independently read f
     fs.rmSync(resolved, { recursive: true });
   }
 });
+
+test('[CONTRACT] overlapping timer and manual triggers dispatch each due job once', async () => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let calls = 0;
+  const scheduler = new AutomationScheduler({ executor: async () => {
+    calls++;
+    await gate;
+    return { ok: true };
+  } });
+  try {
+    scheduler.registerJob({ id: 'overlap', title: 'Overlap', cronExpr: '* * * * *', targetAction: 'count', nextRunAt: Date.now() - 1000 });
+    const first = scheduler.triggerDueJobs();
+    const second = scheduler.triggerDueJobs();
+    assert.equal(calls, 1);
+    release();
+    const results = await Promise.all([first, second]);
+    assert.equal(results[0].runs[0].runId, results[1].runs[0].runId);
+    assert.equal(scheduler.listRuns({ jobId: 'overlap' }).length, 1);
+    assert.equal((await scheduler.triggerDueJobs()).triggeredCount, 0);
+  } finally { release(); scheduler.close(); }
+});
+
+test('[CONTRACT] unserializable results record failure without stranding the scheduler', async () => {
+  const scheduler = new AutomationScheduler({ executor: async () => ({ ok: true, value: 1n }) });
+  try {
+    scheduler.registerJob({ id: 'serialize', title: 'Serialize', cronExpr: '* * * * *', targetAction: 'return', nextRunAt: Date.now() - 1000 });
+    const result = await scheduler.triggerDueJobs();
+    assert.equal(result.runs[0].status, 'failed');
+    assert.match(scheduler.listRuns({ jobId: 'serialize' })[0].error, /BigInt/i);
+    assert.equal((await scheduler.triggerDueJobs()).triggeredCount, 0);
+  } finally { scheduler.close(); }
+});
