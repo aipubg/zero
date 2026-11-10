@@ -450,22 +450,12 @@ export class ComputerOperator {
             await Driver.bringToFront("chrome", signal).catch(() => {});
 
             // Apply playback rate (e.g. 2x) & volume via keyboard shortcuts after page loads
-            if (params.playback_rate && params.playback_rate !== 1) {
-              await new Promise(r => setTimeout(r, 1500));
-              if (params.playback_rate === 2) {
-                for (let i = 0; i < 4; i++) {
-                  await Driver.pressKey("shift+>", signal).catch(() => {});
-                  await new Promise(r => setTimeout(r, 100));
-                }
-              }
-            }
-            if (params.volume_percent !== undefined) {
-              await new Promise(r => setTimeout(r, 500));
-              const steps = Math.round((100 - params.volume_percent) / 5);
-              for (let i = 0; i < Math.min(steps, 20); i++) {
-                await Driver.pressKey("down", signal).catch(() => {});
-                await new Promise(r => setTimeout(r, 50));
-              }
+            if (params.playback_rate || params.volume_percent !== undefined) {
+              await new Promise(r => setTimeout(r, 1200));
+              await Driver.applyPlaybackSettings({
+                speed: params.playback_rate || 1.0,
+                volumePercent: params.volume_percent !== undefined ? params.volume_percent : 100,
+              }, signal).catch(() => {});
             }
 
             const mediaState = await Driver.inspectMediaPlayback(signal).catch(() => null);

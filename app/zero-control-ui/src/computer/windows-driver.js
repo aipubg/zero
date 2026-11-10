@@ -461,14 +461,22 @@ export async function listWindows(signal = null) {
       if (res && !res.isError) {
         if (res.structuredJson) {
           const parsed = JSON.parse(res.structuredJson);
-          return { ok: true, windows: parsed.windows || [], ...parsed };
+          if (Array.isArray(parsed.windows) && parsed.windows.length > 0) {
+            return { ok: true, windows: parsed.windows, ...parsed };
+          }
         }
-        return { ok: true, text: res.text, windows: [] };
       }
     } catch {}
   }
   const native = await runNativeWinAction("list_windows", {}, signal);
   return { ok: true, ...native };
+}
+
+/**
+ * Apply live media playback settings (speed, volume) via keyboard shortcuts.
+ */
+export async function applyPlaybackSettings({ speed = 1.0, volumePercent = 100 } = {}, signal = null) {
+  return await runNativeWinAction("apply_playback_settings", { speed, volumePercent }, signal);
 }
 
 /**

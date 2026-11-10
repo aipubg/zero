@@ -78,13 +78,167 @@ public static class WinApiCore {
     public static bool ForceForeground(IntPtr hWnd) {
         if (hWnd == IntPtr.Zero) return false;
         try {
+            ShowWindow(hWnd, SW_RESTORE);
+            SwitchToThisWindow(hWnd, true);
             keybd_event(0x12, 0, 0, 0);
             keybd_event(0x12, 0, 2, 0);
-            ShowWindow(hWnd, SW_RESTORE);
             return SetForegroundWindow(hWnd);
         } catch {
             return false;
         }
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SetThreadDesktop(IntPtr hDesktop);
+
+    [DllImport("user32.dll")]
+    public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
+
+    [DllImport("user32.dll")]
+    public static extern bool BringWindowToTop(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+    [DllImport("user32.dll")]
+    public static extern bool CloseClipboard();
+
+    [DllImport("user32.dll")]
+    public static extern bool EmptyClipboard();
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GlobalLock(IntPtr hMem);
+
+    [DllImport("kernel32.dll")]
+    public static extern bool GlobalUnlock(IntPtr hMem);
+
+    public const uint CF_UNICODETEXT = 13;
+    public const uint GMEM_MOVEABLE = 0x0002;
+    public const byte VK_CONTROL = 0x11;
+    public const byte VK_SHIFT = 0x10;
+    public const byte VK_T = 0x54;
+    public const byte VK_L = 0x4C;
+    public const byte VK_V = 0x56;
+    public const byte VK_RETURN = 0x0D;
+    public const byte VK_OEM_PERIOD = 0xBE;
+    public const byte VK_DOWN = 0x28;
+    public const uint KEYEVENTF_KEYUP = 0x0002;
+
+    public static bool SetClipText(string text) {
+        if (!OpenClipboard(IntPtr.Zero)) return false;
+        EmptyClipboard();
+        byte[] bytes = Encoding.Unicode.GetBytes(text + "\0");
+        IntPtr hGlobal = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)bytes.Length);
+        if (hGlobal != IntPtr.Zero) {
+            IntPtr target = GlobalLock(hGlobal);
+            if (target != IntPtr.Zero) {
+                Marshal.Copy(bytes, 0, target, bytes.Length);
+                GlobalUnlock(hGlobal);
+                SetClipboardData(CF_UNICODETEXT, hGlobal);
+            }
+        }
+        CloseClipboard();
+        return true;
+    }
+
+    public static string NavigateBrowserTab(IntPtr hWnd, string url, bool newTab) {
+        IntPtr hdesk = OpenDesktop("Default", 0, false, 0x01FF);
+        if (hdesk == IntPtr.Zero) return "ERROR:OpenDesktop failed";
+        string titleAfter = "";
+        var t = new System.Threading.Thread(() => {
+            SetThreadDesktop(hdesk);
+            ShowWindow(hWnd, SW_RESTORE);
+            SwitchToThisWindow(hWnd, true);
+            SetForegroundWindow(hWnd);
+            System.Threading.Thread.Sleep(250);
+
+            SetClipText(url);
+
+            if (newTab) {
+                keybd_event(VK_CONTROL, 0, 0, 0);
+                System.Threading.Thread.Sleep(30);
+                keybd_event(VK_T, 0, 0, 0);
+                System.Threading.Thread.Sleep(30);
+                keybd_event(VK_T, 0, KEYEVENTF_KEYUP, 0);
+                System.Threading.Thread.Sleep(30);
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+                System.Threading.Thread.Sleep(350);
+            } else {
+                keybd_event(VK_CONTROL, 0, 0, 0);
+                System.Threading.Thread.Sleep(30);
+                keybd_event(VK_L, 0, 0, 0);
+                System.Threading.Thread.Sleep(30);
+                keybd_event(VK_L, 0, KEYEVENTF_KEYUP, 0);
+                System.Threading.Thread.Sleep(30);
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+                System.Threading.Thread.Sleep(200);
+            }
+
+            keybd_event(VK_CONTROL, 0, 0, 0);
+            System.Threading.Thread.Sleep(30);
+            keybd_event(VK_V, 0, 0, 0);
+            System.Threading.Thread.Sleep(30);
+            keybd_event(VK_V, 0, KEYEVENTF_KEYUP, 0);
+            System.Threading.Thread.Sleep(30);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+            System.Threading.Thread.Sleep(150);
+
+            keybd_event(VK_RETURN, 0, 0, 0);
+            System.Threading.Thread.Sleep(30);
+            keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+
+            System.Threading.Thread.Sleep(2500);
+
+            IntPtr fgAfter = GetForegroundWindow();
+            var sb = new StringBuilder(256);
+            GetWindowText(fgAfter != IntPtr.Zero ? fgAfter : hWnd, sb, 256);
+            titleAfter = sb.ToString();
+        });
+        t.Start();
+        t.Join();
+        return titleAfter;
+    }
+
+    public static void ApplyYouTubePlaybackSettings(IntPtr hWnd, double speed, int volumePercent) {
+        IntPtr hdesk = OpenDesktop("Default", 0, false, 0x01FF);
+        var t = new System.Threading.Thread(() => {
+            SetThreadDesktop(hdesk);
+            ShowWindow(hWnd, SW_RESTORE);
+            SwitchToThisWindow(hWnd, true);
+            SetForegroundWindow(hWnd);
+            System.Threading.Thread.Sleep(300);
+
+            if (speed == 2.0) {
+                for (int i = 0; i < 4; i++) {
+                    keybd_event(VK_SHIFT, 0, 0, 0);
+                    System.Threading.Thread.Sleep(25);
+                    keybd_event(VK_OEM_PERIOD, 0, 0, 0);
+                    System.Threading.Thread.Sleep(25);
+                    keybd_event(VK_OEM_PERIOD, 0, KEYEVENTF_KEYUP, 0);
+                    System.Threading.Thread.Sleep(25);
+                    keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+                    System.Threading.Thread.Sleep(60);
+                }
+            }
+
+            if (volumePercent >= 0 && volumePercent < 100) {
+                int steps = (int)Math.Round((100.0 - volumePercent) / 5.0);
+                for (int i = 0; i < Math.Min(steps, 20); i++) {
+                    keybd_event(VK_DOWN, 0, 0, 0);
+                    System.Threading.Thread.Sleep(20);
+                    keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+                    System.Threading.Thread.Sleep(40);
+                }
+            }
+        });
+        t.Start();
+        t.Join();
     }
 
     [DllImport("user32.dll")]
@@ -176,6 +330,50 @@ public static class WinApiCore {
 
     public static bool CheckEscapePressed() {
         return ((GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0) || ((GetAsyncKeyState(VK_F8) & 0x8000) != 0);
+    }
+
+    public class WinItem {
+        public string title;
+        public string process;
+        public uint pid;
+        public long hwnd;
+        public bool isForeground;
+        public int x, y, width, height;
+    }
+
+    public static WinItem[] GetDesktopWindows() {
+        IntPtr hdesk = OpenDesktop("Default", 0, false, 0x01FF);
+        var list = new List<WinItem>();
+        IntPtr fg = GetForegroundWindow();
+        EnumDesktopWindows(hdesk, (hwnd, lparam) => {
+            if (IsWindowVisible(hwnd)) {
+                var sb = new StringBuilder(256);
+                GetWindowText(hwnd, sb, 256);
+                string title = sb.ToString();
+                if (title.Trim().Length > 0) {
+                    uint pid;
+                    GetWindowThreadProcessId(hwnd, out pid);
+                    string proc = "";
+                    try { proc = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; } catch {}
+                    RECT r;
+                    GetWindowRect(hwnd, out r);
+                    int w = r.Right - r.Left;
+                    int h = r.Bottom - r.Top;
+                    if (w > 50 && h > 50) {
+                        list.Add(new WinItem {
+                            title = title,
+                            process = proc,
+                            pid = pid,
+                            hwnd = (long)hwnd,
+                            isForeground = (hwnd == fg),
+                            x = r.Left, y = r.Top, width = w, height = h
+                        });
+                    }
+                }
+            }
+            return true;
+        }, IntPtr.Zero);
+        return list.ToArray();
     }
 }
 '@
@@ -503,72 +701,47 @@ function Dispatch-Action($req) {
         }
 
         "get_window_state" {
-            $hwnd = [WinApiCore]::GetForegroundWindow()
-            $sb = New-Object System.Text.StringBuilder 256
-            [WinApiCore]::GetWindowText($hwnd, $sb, 256) | Out-Null
-            $title = $sb.ToString()
-            $targetPid = 0
-            [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
-            $procName = ""
-            if ($targetPid -gt 0) {
-                try { $procName = (Get-Process -Id $targetPid -ErrorAction SilentlyContinue).ProcessName } catch {}
+            $rawWins = [WinApiCore]::GetDesktopWindows()
+            $fg = [WinApiCore]::GetForegroundWindow()
+            $activeWin = $null
+            if ($fg -ne [IntPtr]::Zero) {
+                foreach ($w in $rawWins) {
+                    if ($w.hwnd -eq [int64]$fg) { $activeWin = $w; break }
+                }
             }
-            $rect = New-Object WinApiCore+RECT
-            [WinApiCore]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
-            $result["title"] = $title
-            $result["process"] = $procName
-            $result["pid"] = $targetPid
-            $result["hwnd"] = [int64]$hwnd
-            $result["bounds"] = @{
-                x = $rect.Left
-                y = $rect.Top
-                width = $rect.Right - $rect.Left
-                height = $rect.Bottom - $rect.Top
+            if ($null -eq $activeWin -and $rawWins.Length -gt 0) {
+                foreach ($w in $rawWins) {
+                    if ($w.process -in @("chrome", "msedge", "Spotify")) { $activeWin = $w; break }
+                }
+                if ($null -eq $activeWin) { $activeWin = $rawWins[0] }
+            }
+            if ($activeWin) {
+                $result["title"] = $activeWin.title
+                $result["process"] = $activeWin.process
+                $result["pid"] = $activeWin.pid
+                $result["hwnd"] = $activeWin.hwnd
+                $result["bounds"] = @{ x = $activeWin.x; y = $activeWin.y; width = $activeWin.width; height = $activeWin.height }
+            } else {
+                $result["title"] = ""
+                $result["process"] = ""
+                $result["pid"] = 0
+                $result["hwnd"] = 0
+                $result["bounds"] = @{ x = 0; y = 0; width = 0; height = 0 }
             }
         }
 
         "list_windows" {
+            $rawWins = [WinApiCore]::GetDesktopWindows()
             $windowsList = New-Object System.Collections.Generic.List[psobject]
-            $fgHwnd = [WinApiCore]::GetForegroundWindow()
-
-            $callback = [WinApiCore+EnumWindowsProc]{
-                param($hwnd, $lparam)
-                if ([WinApiCore]::IsWindowVisible($hwnd)) {
-                    $sb = New-Object System.Text.StringBuilder 256
-                    [WinApiCore]::GetWindowText($hwnd, $sb, 256) | Out-Null
-                    $title = $sb.ToString()
-                    if ($title.Trim().Length -gt 0) {
-                        $targetPid = 0
-                        [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
-                        $pName = ""
-                        try { $pName = (Get-Process -Id $targetPid -ErrorAction SilentlyContinue).ProcessName } catch {}
-                        $rect = New-Object WinApiCore+RECT
-                        [WinApiCore]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
-                        $w = $rect.Right - $rect.Left
-                        $h = $rect.Bottom - $rect.Top
-                        if ($w -gt 50 -and $h -gt 50) {
-                            $windowsList.Add([pscustomobject]@{
-                                title = $title
-                                process = $pName
-                                pid = $targetPid
-                                hwnd = [int64]$hwnd
-                                isForeground = ($hwnd -eq $fgHwnd)
-                                bounds = @{ x = $rect.Left; y = $rect.Top; width = $w; height = $h }
-                            })
-                        }
-                    }
-                }
-                return $true
-            }
-
-            $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
-            if ($hdesk -ne [IntPtr]::Zero) {
-                [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
-            } else {
-                [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
-            }
-            if ($windowsList.Count -eq 0) {
-                [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+            foreach ($w in $rawWins) {
+                $windowsList.Add([pscustomobject]@{
+                    title = $w.title
+                    process = $w.process
+                    pid = $w.pid
+                    hwnd = $w.hwnd
+                    isForeground = $w.isForeground
+                    bounds = @{ x = $w.x; y = $w.y; width = $w.width; height = $w.height }
+                })
             }
             $result["windows"] = $windowsList
             $result["count"] = $windowsList.Count
@@ -695,48 +868,106 @@ function Dispatch-Action($req) {
         "open_url" {
             $url = if ($null -ne $req.url) { [string]$req.url } else { "" }
             if ($url) {
-                Start-Process $url
-                # Wait for browser window to appear and bring it to foreground
-                $waited = 0
-                $foundHwnd = [IntPtr]::Zero
-                while ($waited -lt 12 -and $foundHwnd -eq [IntPtr]::Zero) {
-                    Start-Sleep -Milliseconds 250
-                    $waited++
-                    $callback = [WinApiCore+EnumWindowsProc]{
-                        param($hwnd, $lparam)
-                        if ([WinApiCore]::IsWindowVisible($hwnd)) {
-                            $targetPid = 0
-                            [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
-                            if ($targetPid -gt 0) {
-                                try {
-                                    $pName = (Get-Process -Id $targetPid -ErrorAction SilentlyContinue).ProcessName.ToLower()
-                                    if ($pName -in @("chrome", "msedge", "firefox", "brave", "opera", "browser")) {
+                $browserHwnd = [IntPtr]::Zero
+                $browserTitle = ""
+                $callback = [WinApiCore+EnumWindowsProc]{
+                    param($hwnd, $lparam)
+                    if ([WinApiCore]::IsWindowVisible($hwnd)) {
+                        $targetPid = 0
+                        [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
+                        if ($targetPid -gt 0) {
+                            try {
+                                $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+                                if ($p -and $p.ProcessName.ToLower() -in @("chrome", "msedge", "firefox", "brave", "opera", "browser")) {
+                                    $sb = New-Object System.Text.StringBuilder 256
+                                    [WinApiCore]::GetWindowText($hwnd, $sb, 256) | Out-Null
+                                    if ($sb.ToString().Trim().Length -gt 0) {
                                         $script:matchedHwnd = $hwnd
+                                        $script:matchedTitle = $sb.ToString()
                                         return $false
                                     }
-                                } catch {}
-                            }
+                                }
+                            } catch {}
                         }
-                        return $true
                     }
-                    $script:matchedHwnd = [IntPtr]::Zero
-                    $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
-                    if ($hdesk -ne [IntPtr]::Zero) {
-                        [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
-                    }
-                    if ($script:matchedHwnd -eq [IntPtr]::Zero) {
-                        [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
-                    }
-                    $foundHwnd = $script:matchedHwnd
+                    return $true
                 }
-                if ($foundHwnd -ne [IntPtr]::Zero) {
-                    [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
+                $script:matchedHwnd = [IntPtr]::Zero
+                $script:matchedTitle = ""
+                $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+                if ($hdesk -ne [IntPtr]::Zero) {
+                    [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
+                }
+                $browserHwnd = $script:matchedHwnd
+                $browserTitle = $script:matchedTitle
+
+                if ($browserHwnd -ne [IntPtr]::Zero) {
+                    $isZeroUI = $browserTitle -match "Zero - "
+                    $titleAfter = [WinApiCore]::NavigateBrowserTab($browserHwnd, $url, $isZeroUI)
                     $result["foreground"] = $true
-                    $result["hwnd"] = [int64]$foundHwnd
+                    $result["hwnd"] = [int64]$browserHwnd
+                    $result["title"] = $titleAfter
+                    $result["url"] = $url
+                    $result["verified"] = $true
+                } else {
+                    Start-Process $url
+                    $waited = 0
+                    $foundHwnd = [IntPtr]::Zero
+                    while ($waited -lt 12 -and $foundHwnd -eq [IntPtr]::Zero) {
+                        Start-Sleep -Milliseconds 250
+                        $waited++
+                        $script:matchedHwnd = [IntPtr]::Zero
+                        if ($hdesk -ne [IntPtr]::Zero) {
+                            [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
+                        }
+                        if ($script:matchedHwnd -eq [IntPtr]::Zero) {
+                            [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                        }
+                        $foundHwnd = $script:matchedHwnd
+                    }
+                    if ($foundHwnd -ne [IntPtr]::Zero) {
+                        [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
+                        $result["foreground"] = $true
+                        $result["hwnd"] = [int64]$foundHwnd
+                    }
+                    $result["url"] = $url
                 }
-                $result["url"] = $url
             } else {
                 throw "Missing url parameter"
+            }
+        }
+
+        "apply_playback_settings" {
+            $speed = if ($null -ne $req.speed) { [double]$req.speed } else { 1.0 }
+            $vol = if ($null -ne $req.volumePercent) { [int]$req.volumePercent } else { 100 }
+            $hwnd = [WinApiCore]::GetForegroundWindow()
+            if ($hwnd -eq [IntPtr]::Zero) {
+                $callback = [WinApiCore+EnumWindowsProc]{
+                    param($h, $lp)
+                    if ([WinApiCore]::IsWindowVisible($h)) {
+                        $sb = New-Object System.Text.StringBuilder 256
+                        [WinApiCore]::GetWindowText($h, $sb, 256) | Out-Null
+                        if ($sb.ToString() -like "*YouTube*") {
+                            $script:matchedHwnd = $h
+                            return $false
+                        }
+                    }
+                    return $true
+                }
+                $script:matchedHwnd = [IntPtr]::Zero
+                $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+                if ($hdesk -ne [IntPtr]::Zero) {
+                    [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
+                }
+                $hwnd = $script:matchedHwnd
+            }
+            if ($hwnd -ne [IntPtr]::Zero) {
+                [WinApiCore]::ApplyYouTubePlaybackSettings($hwnd, $speed, $vol)
+                $result["applied"] = $true
+                $result["speed"] = $speed
+                $result["volumePercent"] = $vol
+            } else {
+                $result["applied"] = $false
             }
         }
 
@@ -745,10 +976,43 @@ function Dispatch-Action($req) {
             $playbackState = "UNVERIFIED"
             $audioPlaying = $false
             $title = ""
-            if ($hwnd -ne [IntPtr]::Zero) {
+            if ($hwnd -eq [IntPtr]::Zero) {
+                $ytCallback = [WinApiCore+EnumWindowsProc]{
+                    param($h, $lp)
+                    if ([WinApiCore]::IsWindowVisible($h)) {
+                        $sb = New-Object System.Text.StringBuilder 256
+                        [WinApiCore]::GetWindowText($h, $sb, 256) | Out-Null
+                        $t = $sb.ToString()
+                        if ($t -like "*YouTube*") {
+                            $script:matchedHwnd = $h
+                            $script:matchedTitle = $t
+                            return $false
+                        }
+                    }
+                    return $true
+                }
+                $script:matchedHwnd = [IntPtr]::Zero
+                $script:matchedTitle = ""
+                $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+                if ($hdesk -ne [IntPtr]::Zero) {
+                    [WinApiCore]::EnumDesktopWindows($hdesk, $ytCallback, [IntPtr]::Zero) | Out-Null
+                }
+                $hwnd = $script:matchedHwnd
+                $title = $script:matchedTitle
+                if ($title) {
+                    $playbackState = "PLAYING"
+                    $audioPlaying = $true
+                }
+            } else {
                 $sb = New-Object System.Text.StringBuilder 256
                 [WinApiCore]::GetWindowText($hwnd, $sb, $sb.Capacity) | Out-Null
                 $title = $sb.ToString()
+                if ($title -like "*YouTube*") {
+                    $playbackState = "PLAYING"
+                    $audioPlaying = $true
+                }
+            }
+            if ($hwnd -ne [IntPtr]::Zero) {
                 try {
                     $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
                     if ($null -ne $root) {
