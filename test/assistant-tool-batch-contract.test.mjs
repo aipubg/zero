@@ -34,7 +34,13 @@ test('[CONTRACT] malformed tool batches fail before writes and exhausted loops p
   fs.writeFileSync(providersPath, JSON.stringify([{ id: 'fixture', baseUrl: `http://127.0.0.1:${upstream.address().port}/v1`, apiKey: 'local-contract-only', models: ['contract-model'] }]));
   fs.writeFileSync(agentBindingsPath, JSON.stringify({ agentBindings: { zero: { model: 'fixture/contract-model' } } }));
   const host = new ZeroNativeHost({ port, dataDir: path.join(root, 'data'), prefsPath: path.join(root, 'prefs.json'), skillsDir: path.join(root, 'skills'), providersPath, agentBindingsPath, maxAssistantTurns: 5 });
-  t.after(async () => { await host.close(); upstream.closeAllConnections(); await new Promise(resolve => upstream.close(resolve)); assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); });
+  t.after(async () => {
+    await host.close(); upstream.closeAllConnections(); await new Promise(resolve => upstream.close(resolve));
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-assistant-batch-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
+  });
   await host.start();
   for (mode of ['json', 'duplicate', 'undeclared', 'missing-id', 'empty']) {
     target = path.join(root, `${mode}.txt`);

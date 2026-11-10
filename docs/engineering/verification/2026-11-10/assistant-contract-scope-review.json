@@ -1,0 +1,14 @@
+{
+  "command": "node --test test/agent-completion-contract.test.mjs test/assistant-tool-batch-contract.test.mjs test/assistant-write-scopes.test.mjs",
+  "initialResult": "FAIL",
+  "passed": 2,
+  "failedFileLoads": 2,
+  "failure": "Cannot find module yaml from backend/package.json before native host test declarations loaded",
+  "passingScope": "Controlled real loopback HTTP and actual orchestrator durable task state reject incomplete/filtered inference and malformed tool batches",
+  "pending": "Frozen declared dependency install started; host test rerun remains NOT_RUN until installation completes",
+  "review": "Three source files read; per-declaration CONTRACT/INTEGRATION scope and supplied model/client/prototype limitations recorded, independently of execution status",
+  "additionalReviewedFiles": 39,
+  "additionalUnreviewedFiles": 50,
+  "cleanupChange": "Native batch test checks canonical temporary parent and task-owned prefix before recursive cleanup",
+  "releaseStatus": "BLOCKED"
+}

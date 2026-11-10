@@ -438,14 +438,36 @@
       "file": "test/agent-completion-contract.test.mjs",
       "sha256": "470accf0125a945a0a7c3c24e01e0bbc461e5b90d8a4a4a9a5b7ad0c500e1c43",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Actual loopback HTTP supplies length/content_filter to specialist or coordinator; real orchestrator/SQLite task and inference-step states must fail, with no consolidation after failed specialist. Actual loopback HTTP supplies malformed, empty, invalid-JSON or duplicate tool batches; supplied execution counter stays zero and durable master task fails.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Local server supplies all model outputs and capability counter; no real independent specialist models, external inference, browser or tool effect."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] actual HTTP truncated and filtered completions fail durable specialist or coordinator tasks",
+          "line": 7,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual loopback HTTP supplies length/content_filter to specialist or coordinator; real orchestrator/SQLite task and inference-step states must fail, with no consolidation after failed specialist."
+        },
+        {
+          "title": "[CONTRACT] malformed HTTP tool batches execute no earlier valid side effect",
+          "line": 41,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual loopback HTTP supplies malformed, empty, invalid-JSON or duplicate tool batches; supplied execution counter stays zero and durable master task fails."
+        }
+      ]
     },
     {
       "file": "test/agent-desktop-real.test.mjs",
@@ -560,29 +582,53 @@
     },
     {
       "file": "test/assistant-tool-batch-contract.test.mjs",
-      "sha256": "6b509a00f18a971d6becd5488e209f44541874f866f1289269ef45f9e3122b4a",
+      "sha256": "fc1c43cd6588854bab6f28bc7237d786443e79fce3c2a10fcc83488dcbd57f2d",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Real native host and local HTTP, but controlled upstream model and supplied notification client; private assistant method invoked directly, no real browser/WebSocket client, external model or process restart."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] malformed tool batches fail before writes and exhausted loops preserve effects without completion",
+          "line": 10,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE."
+        }
+      ]
     },
     {
       "file": "test/assistant-write-scopes.test.mjs",
       "sha256": "1556d86623ea7e15fe62f65fbfb3c960ce2d3b3788d5acb732064b3ef3f2252c",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Direct RPC dispatcher rejects viewer mutation aliases/retry/resume before supplied handlers run, while supplied owner session can invoke three allowed handlers.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Prototype-only host with supplied assistant/task handlers and authenticated-session objects; no actual login, HTTP/WebSocket client or assistant execution."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] read-only sessions cannot bypass assistant mutation scopes through aliases or task retry",
+          "line": 4,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Direct RPC dispatcher rejects viewer mutation aliases/retry/resume before supplied handlers run, while supplied owner session can invoke three allowed handlers."
+        }
+      ]
     },
     {
       "file": "test/automation-failure-outcomes.test.mjs",
