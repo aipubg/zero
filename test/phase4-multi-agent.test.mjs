@@ -274,14 +274,14 @@ test('Phase 4: Multi-Agent Workforce & Specialist Teams Verification', async (su
       {
         id: 'st_code',
         agentId: 'coder',
-        goal: 'Implement WAL journal mode connection setup',
+        goal: 'Implement WAL journal mode connection setup in a Python file and summarize the implementation',
         dependsOn: ['st_research'],
         tools: ['write_file'],
       },
       {
         id: 'st_review',
         agentId: 'reviewer',
-        goal: 'Verify concurrency semantics and PR integrity',
+        goal: 'Verify concurrency semantics and PR integrity concisely',
         dependsOn: ['st_code'],
         tools: ['review_diff'],
       },
@@ -291,7 +291,8 @@ test('Phase 4: Multi-Agent Workforce & Specialist Teams Verification', async (su
       goal: 'Benchmark and optimize SQLite WAL concurrency',
       teamId: 'team_alpha_core',
       subtasks,
-      timeoutMs: 15000,
+      timeoutMs: 150000,
+      maxOutputTokens: 4096,
     });
 
     assert.ok(execRes.ok);

@@ -43,6 +43,8 @@ blob-report/
 *.png
 /artifacts/
 /workspaces/
+/temp/
+skills/.zero-skills.json
 
 # OS/editor files
 .DS_Store

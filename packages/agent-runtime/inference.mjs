@@ -67,7 +67,7 @@ export async function executeSpecialist(orchestrator, subtask, context) {
       tools.push({ type: 'function', function: { name, description: custom?.description || descriptions[name] || name, parameters } });
     }
   }
-  const messages = [{ role: 'system', content: `You are ${profile?.name || subtask.agentId} (${profile?.role || 'specialist'}). Report only work actually performed. Distinguish findings from verified actions. Available tools: ${[...handlers.keys()].join(', ') || 'none'}.` },
+  const messages = [{ role: 'system', content: `You are ${profile?.name || subtask.agentId} (${profile?.role || 'specialist'}). Report only work actually performed. Distinguish findings from verified actions. Available tools: ${[...handlers.keys()].join(', ') || 'none'}. Once necessary tool calls are executed, conclude with your final summary without calling redundant tools.` },
     { role: 'user', content: `Overall goal: ${context.goal}\nYour goal: ${subtask.goal}\nDependency results: ${JSON.stringify(context.subtaskResults)}` }];
   const toolResults = [];
   const record = (data) => sm.recordStep(context.childTaskId, { stepNumber: sm.getTaskSteps(context.childTaskId).length + 1, ...data });

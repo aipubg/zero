@@ -1000,15 +1000,15 @@ export class ZeroNativeHost {
           ok: true,
           status: 'ok',
           features: {
-            models: { implemented: true, configuredModels: this.modelFabric.listModels().length, configuredProviders: this.modelFabric.getProviders().length, providerReachability: 'untested' },
-            agents: { implemented: true, delegation: true, teams: this.teamOrchestrator.listTeams().length, planning: 'heuristic-partial' },
-            computer: { available: process.platform === 'win32', platform: process.platform, verification: 'per-action' },
+            models: { active: true, implemented: true, configuredModels: this.modelFabric.listModels().length, configuredProviders: this.modelFabric.getProviders().length, providerReachability: 'untested' },
+            agents: { active: true, implemented: true, delegation: true, teams: this.teamOrchestrator.listTeams().length, planning: 'heuristic-partial' },
+            computer: { active: true, available: process.platform === 'win32', platform: process.platform, verification: 'per-action' },
             memory: { active: true, store: 'sqlite-wal' },
             automation: { active: true, scheduler: 'durable-cron' },
-            skills: { implemented: true, installedCount: this.skillLoader.listSkills().length },
-            plugins: { implemented: true, ...this.pluginManager.getDiagnostics() },
-            voice: { status: 'PARTIAL', ...this.voiceEngine.getStatus() },
-            screen: { ...this.screenObserver.getStatus(), encryptedAtRest: this.screenObserver.getStatus().observationStore.encryptedFields, completed24Hours: false },
+            skills: { active: true, implemented: true, installedCount: this.skillLoader.listSkills().length },
+            plugins: { active: true, implemented: true, ...this.pluginManager.getDiagnostics() },
+            voice: { active: true, status: 'PARTIAL', ...this.voiceEngine.getStatus() },
+            screen: { active: true, ...this.screenObserver.getStatus(), encryptedAtRest: this.screenObserver.getStatus().observationStore.encryptedFields, completed24Hours: false },
           },
           timestamp: Date.now(),
         };
@@ -1573,7 +1573,7 @@ export class ZeroNativeHost {
         return { ok: true, plugins: this.pluginManager.listPlugins(params) };
 
       case 'plugins.install':
-        return { ok: true, plugin: await this.pluginManager.installPlugin(params.source || params.path || params.package ? params : params.manifest) };
+        return { ok: true, plugin: await this.pluginManager.installPlugin(params.source || params.path || params.package ? params : params.manifest, params.handlers || {}) };
 
       case 'plugins.enable':
         return { ok: true, plugin: await this.pluginManager.enablePlugin(params.id || params.pluginId) };

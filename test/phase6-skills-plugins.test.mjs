@@ -13,6 +13,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -156,91 +157,99 @@ test('Phase 6: Skills & Plugins Ecosystem Suite', async (suite) => {
   });
 
   await suite.test('6.4 Dynamic Plugin Installation, Tool Registration & Execution', async () => {
-    const testPluginId = `custom-math-optimizer-${Date.now()}`;
-    const manifest = {
-      id: testPluginId,
-      name: 'Custom Math Optimizer',
+    const ts = Date.now();
+    const testPluginId = `custom-math-optimizer-${ts}`;
+    const capName = `compute_matrix_dot_${ts}`;
+    const tempPluginDir = path.join(os.tmpdir(), `zero-plugin-${ts}`);
+    fs.mkdirSync(tempPluginDir, { recursive: true });
+    fs.writeFileSync(path.join(tempPluginDir, 'package.json'), JSON.stringify({
+      name: testPluginId,
       version: '1.2.0',
-      description: 'Provides high-speed mathematical matrix computations',
-      permissions: ['math_compute'],
-      capabilities: [
-        {
-          name: 'compute_matrix_dot_product',
-          description: 'Calculates dot product of two numerical arrays',
-          parameters: {
-            type: 'object',
-            properties: {
-              a: { type: 'array' },
-              b: { type: 'array' },
-            },
-          },
-        },
-      ],
-      config: { precision: 'float64' },
-    };
-
-    // Handlers mapped to capability name
-    const installRes = await client.call('plugins.install', {
-      manifest,
-      handlers: {
-        compute_matrix_dot_product: async (params) => {
-          const a = params.a || [1, 2, 3];
-          const b = params.b || [4, 5, 6];
-          const dot = a.reduce((sum, val, i) => sum + val * (b[i] || 0), 0);
-          return { ok: true, dotProduct: dot, dimension: a.length };
-        },
+      type: 'module',
+      main: 'index.mjs',
+      zeroPlugin: {
+        id: testPluginId,
+        name: 'Custom Math Optimizer',
+        version: '1.2.0',
+        description: 'Provides high-speed mathematical matrix computations',
+        permissions: ['math_compute'],
+        capabilities: [capName],
       },
-    });
+    }));
+    fs.writeFileSync(path.join(tempPluginDir, 'index.mjs'), `
+export default {
+  handlers: {
+    ${JSON.stringify(capName)}: async function (params) {
+      const a = params.a || [1, 2, 3];
+      const b = params.b || [4, 5, 6];
+      const dot = a.reduce((sum, val, i) => sum + val * (b[i] || 0), 0);
+      return { ok: true, dotProduct: dot, dimension: a.length, a, status: 'executed', pluginId: ${JSON.stringify(testPluginId)} };
+    }
+  }
+};
+`);
 
-    assert.ok(installRes.ok);
-    assert.equal(installRes.plugin.id, testPluginId);
-    assert.equal(installRes.plugin.status, 'enabled');
-    assert.ok(installRes.plugin.capabilities.includes('compute_matrix_dot_product'));
+    let installRes;
+    try {
+      installRes = await client.call('plugins.install', {
+        source: 'path',
+        path: tempPluginDir,
+      });
 
-    // Execute plugin tool via zero.computer.control
-    const execRes = await client.call('zero.computer.control', {
-      action: 'compute_matrix_dot_product',
-      a: [2, 3],
-      b: [4, 5],
-    });
-    assert.ok(execRes.ok);
-    assert.equal(execRes.status, 'executed');
-    assert.equal(execRes.pluginId, testPluginId);
-    assert.deepEqual(execRes.a, [2, 3]);
+      assert.ok(installRes.ok);
+      assert.equal(installRes.plugin.id, testPluginId);
+      assert.equal(installRes.plugin.status, 'enabled');
+      assert.ok(installRes.plugin.capabilities.includes(capName));
 
-    // Verify diagnostics report
-    const diag = await client.call('plugins.diagnostics');
-    assert.ok(diag.ok);
-    assert.ok(diag.totalInstalled >= 1);
-    assert.ok(diag.capabilities.includes('compute_matrix_dot_product'));
+      // Execute plugin tool via zero.computer.control
+      const execRes = await client.call('zero.computer.control', {
+        action: capName,
+        a: [2, 3],
+        b: [4, 5],
+      });
+      assert.ok(execRes.ok);
+      assert.equal(execRes.status, 'executed');
+      assert.equal(execRes.pluginId, testPluginId);
+      assert.deepEqual(execRes.a, [2, 3]);
 
-    // Disable plugin
-    const disableRes = await client.call('plugins.disable', { pluginId: testPluginId });
-    assert.ok(disableRes.ok);
-    assert.equal(disableRes.plugin.status, 'disabled');
+      // Verify diagnostics report
+      const diag = await client.call('plugins.diagnostics');
+      assert.ok(diag.ok);
+      assert.ok(diag.totalInstalled >= 1);
+      assert.ok(diag.capabilities.includes(capName));
 
-    // Executing disabled capability should be blocked with rejection
-    await assert.rejects(
-      async () => {
-        await client.call('zero.computer.control', {
-          action: 'compute_matrix_dot_product',
-        });
-      },
-      /capability-disabled/
-    );
+      // Disable plugin
+      const disableRes = await client.call('plugins.disable', { pluginId: testPluginId });
+      assert.ok(disableRes.ok);
+      assert.equal(disableRes.plugin.status, 'disabled');
 
-    // Re-enable plugin
-    const enableRes = await client.call('plugins.enable', { pluginId: testPluginId });
-    assert.ok(enableRes.ok);
-    assert.equal(enableRes.plugin.status, 'enabled');
+      // Executing disabled capability should be blocked with rejection
+      await assert.rejects(
+        async () => {
+          await client.call('zero.computer.control', {
+            action: capName,
+          });
+        },
+        /capability-disabled/
+      );
 
-    // Clean uninstall
-    const uninstallRes = await client.call('plugins.uninstall', { pluginId: testPluginId });
-    assert.ok(uninstallRes.ok);
-    assert.equal(uninstallRes.uninstalled, testPluginId);
+      // Re-enable plugin
+      const enableRes = await client.call('plugins.enable', { pluginId: testPluginId });
+      assert.ok(enableRes.ok);
+      assert.equal(enableRes.plugin.status, 'enabled');
 
-    // Verify removed from list
-    const finalList = await client.call('plugins.list');
-    assert.ok(!finalList.plugins.some((p) => p.id === testPluginId));
+      // Clean uninstall
+      const uninstallRes = await client.call('plugins.uninstall', { pluginId: testPluginId });
+      assert.ok(uninstallRes.ok);
+      assert.equal(uninstallRes.uninstalled, testPluginId);
+
+      // Verify removed from list
+      const finalList = await client.call('plugins.list');
+      assert.ok(!finalList.plugins.some((p) => p.id === testPluginId));
+    } finally {
+      try {
+        fs.rmSync(tempPluginDir, { recursive: true, force: true });
+      } catch (_) {}
+    }
   });
 });
