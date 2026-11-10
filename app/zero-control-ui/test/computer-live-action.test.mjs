@@ -1,7 +1,10 @@
 process.env.ZERO_STRICT_POLICY_TEST = "1";
 import assert from "node:assert/strict";
 import test from "node:test";
+const legacyInteractive = { skip: process.env.ZERO_RUN_INTERACTIVE_LEGACY_TESTS === "1" ? false : "BLOCKED: physical legacy actions require an isolated interactive desktop; no live owner-app mutation in default tests" };
+
 import * as Driver from "../src/computer/windows-driver.js";
+test.after(() => Driver.stopDaemon());
 import { ComputerOperator } from "../src/computer/operator.js";
 import {
   createComputerTool,
@@ -21,7 +24,7 @@ test("Live Windows Driver: Screen geometry and cursor coordinates", async () => 
   assert.equal(typeof cursor.y, "number");
 });
 
-test("Live Windows Driver: Mouse move, scroll, and wait", async () => {
+test("Live Windows Driver: physical move scroll and wait acknowledgement", legacyInteractive, async () => {
   const moveRes = await Driver.moveCursor(400, 300);
   assert.equal(moveRes.ok, true);
 
@@ -37,7 +40,7 @@ test("Live Windows Driver: Mouse move, scroll, and wait", async () => {
   assert.equal(waitRes.waitedMs, 100);
 });
 
-test("Live Windows Driver: Clipboard set and get roundtrip", async () => {
+test("Live Windows Driver: clipboard mutation roundtrip", legacyInteractive, async () => {
   const marker = `zero-test-${Date.now()}`;
   const setRes = await Driver.clipboardSet(marker);
   assert.equal(setRes.ok, true);
@@ -69,7 +72,7 @@ test("Live Windows Driver: Window state, window list, and UIA elements", async (
   }
 });
 
-test("ComputerOperator: Human safety bailout integration", async () => {
+test("ComputerOperator: supplied bailout state with native observation and physical move", legacyInteractive, async () => {
   let policyState = { hold: null, needsFreshSnapshot: false };
   const operator = new ComputerOperator({ getPolicyState: () => policyState });
 
@@ -101,7 +104,7 @@ test("ComputerOperator: Human safety bailout integration", async () => {
   assert.equal(allowedRes.ok, true);
 });
 
-test("zero_computer_action Tool: Execute Observe -> Act -> Verify pattern", async () => {
+test("zero_computer_action Tool: native element query and clipboard mutation readback", legacyInteractive, async () => {
   const tools = createAllComputerTools();
   const actionTool = tools.find((t) => t.name === ZERO_COMPUTER_ACTION_TOOL_NAME);
   assert.ok(actionTool, "zero_computer_action tool must be registered");

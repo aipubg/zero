@@ -1,4 +1,6 @@
 import test from "node:test";
+const legacyInteractive = { skip: process.env.ZERO_RUN_INTERACTIVE_LEGACY_TESTS === "1" ? false : "BLOCKED: physical legacy actions require an isolated interactive desktop; no live owner-app mutation in default tests" };
+
 import assert from "node:assert/strict";
 import { ComputerOperator } from "../src/computer/operator.js";
 import { createComputerTool, ZERO_COMPUTER_TOOL_NAME } from "../src/computer/tools.js";
@@ -34,7 +36,7 @@ test("ComputerOperator: get_cursor_position returns coordinates", async () => {
   assert.ok(typeof res.y === "number");
 });
 
-test("ComputerOperator: move cursor within bounds", async () => {
+test("ComputerOperator: physical cursor move acknowledgement", legacyInteractive, async () => {
   const op = new ComputerOperator();
   const res = await op.execute("move", { x: 500, y: 500 });
   assert.equal(res.ok, true);
@@ -43,7 +45,7 @@ test("ComputerOperator: move cursor within bounds", async () => {
   assert.equal(res.y, 500);
 });
 
-test("ComputerOperator: click mouse safely", async () => {
+test("ComputerOperator: physical click dispatch acknowledgement only", legacyInteractive, async () => {
   const op = new ComputerOperator();
   const res = await op.execute("click", { x: 500, y: 500, button: "left", count: 1 });
   assert.equal(res.ok, true);
@@ -51,14 +53,14 @@ test("ComputerOperator: click mouse safely", async () => {
   assert.equal(res.button, "left");
 });
 
-test("ComputerOperator: drag mouse", async () => {
+test("ComputerOperator: physical drag dispatch acknowledgement only", legacyInteractive, async () => {
   const op = new ComputerOperator();
   const res = await op.execute("drag", { x: 400, y: 400, to_x: 450, to_y: 450 });
   assert.equal(res.ok, true);
   assert.equal(res.action, "drag");
 });
 
-test("ComputerOperator: scroll mouse wheel", async () => {
+test("ComputerOperator: physical scroll dispatch acknowledgement only", legacyInteractive, async () => {
   const op = new ComputerOperator();
   const res = await op.execute("scroll", { direction: "down", amount: 2 });
   assert.equal(res.ok, true);
@@ -90,6 +92,9 @@ test("ComputerOperator: screenshot produces base64 image", async () => {
   assert.equal(res.action, "screenshot");
   assert.ok(res.data && res.data.length > 0);
   assert.equal(res.mimeType, "image/png");
+  const png = Buffer.from(res.data, "base64");
+  assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  assert.ok(png.readUInt32BE(16) > 0 && png.readUInt32BE(20) > 0);
 });
 
 test("ComputerOperator: human hold blocks actions", async () => {
@@ -103,7 +108,7 @@ test("ComputerOperator: human hold blocks actions", async () => {
   assert.equal(resAfter.ok, true);
 });
 
-test("ComputerOperator: freshness gate blocks input before observation after hold release", async () => {
+test("ComputerOperator: freshness blocks input until actual observation then dispatches click", legacyInteractive, async () => {
   const op = new ComputerOperator({ requireFreshSnapshotAfterRelease: true });
   op.setHumanHold(true);
   op.setHumanHold(false); // Released: requireFreshSnapshot is now true

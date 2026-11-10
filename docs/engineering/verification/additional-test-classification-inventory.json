@@ -302,16 +302,79 @@
     },
     {
       "file": "app/zero-control-ui/test/computer-live-action.test.mjs",
-      "sha256": "5044e5d665b49e92db5412aa2d40922e9bf2e4375ba713ea318324e63dcc7d72",
+      "sha256": "c7ca341b3fe915fadb87dd2e366cf082e3c8e7b5efefd187aa57695feee8ae39",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "REAL_OS"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Actual display geometry and cursor metadata return expected numeric shapes. Opt-in physical move/wheel/wait dispatch acknowledged; cursor only checked nonnegative, no target/viewport verification. Opt-in global clipboard write/read matches marker; not executed on owner desktop by default. Actual foreground/windows/UIA queries return shapes; first element fields checked only when list nonempty. Opt-in supplied human bailout blocks input; native geometry/screenshot then physical move acknowledged; physical bailout detection not tested. Opt-in native elements query plus global clipboard write/read roundtrip; no actual typing into app or independent screen effect.",
+      "gaps": [
+        "Physical mutation cases opt-in only and not executed by default; clipboard not restored by legacy assertions, so isolated interactive desktop required. Read-only UIA asserts shape/optional first element only, not semantic accuracy."
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_RUN_INTERACTIVE_LEGACY_TESTS === '1' in an isolated interactive desktop",
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Only physical legacy mutation cases; default explicit BLOCKED skip is never PASS. Main primary backend owned-window tests are separate."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "Live Windows Driver: Screen geometry and cursor coordinates",
+          "line": 16,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual display geometry and cursor metadata return expected numeric shapes."
+        },
+        {
+          "title": "Live Windows Driver: physical move scroll and wait acknowledgement",
+          "line": 27,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Opt-in physical move/wheel/wait dispatch acknowledged; cursor only checked nonnegative, no target/viewport verification."
+        },
+        {
+          "title": "Live Windows Driver: clipboard mutation roundtrip",
+          "line": 43,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Opt-in global clipboard write/read matches marker; not executed on owner desktop by default."
+        },
+        {
+          "title": "Live Windows Driver: Window state, window list, and UIA elements",
+          "line": 53,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual foreground/windows/UIA queries return shapes; first element fields checked only when list nonempty."
+        },
+        {
+          "title": "ComputerOperator: supplied bailout state with native observation and physical move",
+          "line": 75,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Opt-in supplied human bailout blocks input; native geometry/screenshot then physical move acknowledged; physical bailout detection not tested."
+        },
+        {
+          "title": "zero_computer_action Tool: native element query and clipboard mutation readback",
+          "line": 107,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Opt-in native elements query plus global clipboard write/read roundtrip; no actual typing into app or independent screen effect."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/computer-operator.test.mjs",
@@ -390,16 +453,141 @@
     },
     {
       "file": "app/zero-control-ui/test/computer-tools-live.test.mjs",
-      "sha256": "b29f07c152f2a93c790f3bd1ec96c1e209a71bf7a498720d39aeaa8b40d414cb",
+      "sha256": "4493a2b6470c2c443a9558298cd0ac3cb66f94bc2d92dadae3e9e8accd3e9fac",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "REAL_OS"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Default operator flags/coordinator exist; no native process required. Actual native screen geometry returns positive dimensions and scale. Actual native cursor query returns numeric coordinates. Opt-in physical move returns echoed target coordinates; no independent cursor readback. Opt-in physical click acknowledged; no owned target or independent application effect. Opt-in physical drag acknowledged; no independent final position or application effect. Opt-in physical wheel acknowledged; no scrollTop/viewport effect assertion. Actual foreground query returns window/title shape, without logging owner title. Actual native app listing returns array/report shape; no completeness claim. Actual screenshot returns nonempty PNG bytes with valid signature and positive encoded dimensions; no image-content accuracy claim. Local hold prevents supplied click before dispatch; actual cursor read allowed after release. Opt-in release gate rejects early input, actual screenshot clears gate and final click acknowledged; no owned target/application effect. Actual native size/cursor/screenshot tool calls return declared envelopes/images and missing action rejects; no input action.",
+      "gaps": [
+        "Physical mutation cases opt-in only and not executed by default; several only assert dispatch acknowledgements, not independent desktop effects. Read-only screenshot validates PNG header/dimensions, not scene accuracy."
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_RUN_INTERACTIVE_LEGACY_TESTS === '1' in an isolated interactive desktop",
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Only physical legacy mutation cases; default explicit BLOCKED skip is never PASS. Main primary backend owned-window tests are separate."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "ComputerOperator: initial state and driver setup",
+          "line": 13,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Default operator flags/coordinator exist; no native process required."
+        },
+        {
+          "title": "ComputerOperator: get_screen_size returns valid dimensions",
+          "line": 20,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual native screen geometry returns positive dimensions and scale."
+        },
+        {
+          "title": "ComputerOperator: get_cursor_position returns coordinates",
+          "line": 30,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual native cursor query returns numeric coordinates."
+        },
+        {
+          "title": "ComputerOperator: physical cursor move acknowledgement",
+          "line": 39,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Opt-in physical move returns echoed target coordinates; no independent cursor readback."
+        },
+        {
+          "title": "ComputerOperator: physical click dispatch acknowledgement only",
+          "line": 48,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Opt-in physical click acknowledged; no owned target or independent application effect."
+        },
+        {
+          "title": "ComputerOperator: physical drag dispatch acknowledgement only",
+          "line": 56,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Opt-in physical drag acknowledged; no independent final position or application effect."
+        },
+        {
+          "title": "ComputerOperator: physical scroll dispatch acknowledgement only",
+          "line": 63,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Opt-in physical wheel acknowledged; no scrollTop/viewport effect assertion."
+        },
+        {
+          "title": "ComputerOperator: get_window_state returns foreground info",
+          "line": 71,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual foreground query returns window/title shape, without logging owner title."
+        },
+        {
+          "title": "ComputerOperator: list_apps returns application list or report",
+          "line": 80,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual native app listing returns array/report shape; no completeness claim."
+        },
+        {
+          "title": "ComputerOperator: screenshot produces base64 image",
+          "line": 88,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual screenshot returns nonempty PNG bytes with valid signature and positive encoded dimensions; no image-content accuracy claim."
+        },
+        {
+          "title": "ComputerOperator: human hold blocks actions",
+          "line": 100,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Local hold prevents supplied click before dispatch; actual cursor read allowed after release."
+        },
+        {
+          "title": "ComputerOperator: freshness blocks input until actual observation then dispatches click",
+          "line": 111,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Opt-in release gate rejects early input, actual screenshot clears gate and final click acknowledged; no owned target/application effect."
+        },
+        {
+          "title": "createComputerTool: tool executes zero_computer actions cleanly",
+          "line": 132,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Actual native size/cursor/screenshot tool calls return declared envelopes/images and missing action rejects; no input action."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/delegation-gateway.test.mjs",

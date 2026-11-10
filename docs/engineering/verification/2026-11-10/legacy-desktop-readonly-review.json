@@ -1,0 +1,20 @@
+{
+  "command": "node --test app/zero-control-ui/test/computer-live-action.test.mjs app/zero-control-ui/test/computer-tools-live.test.mjs",
+  "passed": 10,
+  "skippedBlocked": 9,
+  "failed": 0,
+  "scope": "Actual read-only native geometry/cursor/window/app/UIA/screenshot checks plus local hold contract; not all19 scenarios passed",
+  "changes": [
+    "Arbitrary physical click/drag/wheel/clipboard mutation requires explicit isolated-desktop opt-in instead of silently modifying owner's active apps",
+    "Weak physical-action titles describe dispatch acknowledgement, not safe/verified application effects",
+    "Real screenshot checks PNG signature and positive encoded dimensions, not only nonempty response",
+    "Native daemon teardown registered for both files"
+  ],
+  "primaryAcceptance": "Separate actual agent-desktop owned WinForms field/button/file and authenticated RPC regression has3PASS; legacy skips are not replacements for missing functionality or converted to PASS",
+  "limits": "Opt-in flag is a test selection boundary, not a product permission prompt. Physical legacy assertions still have stated gaps and were not executed; UIA shape is not accuracy evidence.",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 84,
+  "additionalUnreviewedFiles": 5,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}
