@@ -31,16 +31,25 @@ test('[INTEGRATION] restore reopens actual SQLite rows and JSON, rejects overwri
     try { assert.equal(restored.prepare('SELECT content FROM messages').get().content, 'मेरा पुराना chat सुरक्षित रहे'); }
     finally { restored.close(); }
     assert.equal(JSON.parse(fs.readFileSync(path.join(destination, files[1].file))).retained, 'owner preference');
+    const beforeOverwriteAttempt = files.map(record => fs.readFileSync(path.join(destination, record.file)));
     await assert.rejects(restoreUserState(backup, destination), /already exists/);
+    for (const [index, record] of files.entries()) assert.deepEqual(fs.readFileSync(path.join(destination, record.file)), beforeOverwriteAttempt[index]);
     for (const record of [{ ...files[0], file: '../outside.sqlite' }, { ...files[0], file: '.zero-data/CON.sqlite' }, { ...files[0], sha256: '0'.repeat(64) }]) {
       save([record]);
       await assert.rejects(restoreUserState(backup, path.join(root, 'invalid')), /path|mismatch/);
       assert.equal(fs.existsSync(path.join(root, 'invalid')), false);
     }
+    for (const duplicate of [files[0], { ...files[0], file: '.zero-data/SESSIONS.SQLITE' }]) {
+      save([files[0], duplicate]);
+      const target = path.join(root, 'duplicate');
+      await assert.rejects(restoreUserState(backup, target), /Duplicate backup destination/);
+      assert.equal(fs.existsSync(target), false);
+    }
   } finally {
-    assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir()));
-    assert.ok(path.basename(root).startsWith('zero-restore-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-restore-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });
 
@@ -74,8 +83,9 @@ test('[INTEGRATION] failed later plugin relocation rolls back earlier source rew
     const evidence = path.resolve('artifacts/restore-plugin-transaction', String(Date.now())); fs.mkdirSync(evidence, { recursive: true });
     fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ classification: ['INTEGRATION'], status: 'PASS', failedSecondSourceRejected: true, firstSourceRewriteRolledBack: true, originalBackupBytesUnchanged: true, scope: 'Actual SQLite migration rollback with controlled metadata; executable plugin recovery proved separately' }, null, 2));
   } finally {
-    assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); assert.ok(path.basename(root).startsWith('zero-restore-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir())); assert.ok(path.basename(resolved).startsWith('zero-restore-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });
 
@@ -127,8 +137,9 @@ test('[REAL_OS] restored SQLite snapshot decrypts with copied Windows DPAPI key 
     fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ classification: ['REAL_OS', 'INTEGRATION'], status: 'PASS', authenticatedFields: result.authenticatedFields, actualSQLiteSnapshot: true, actualWindowsDpapiKey: true, restoredRecordRetrieved: true, plaintextAbsentInDatabase: true, omittedKeyRejectedBeforeDestinationCreation: true, tamperedAuthenticatedCiphertextRejectedDespiteValidFileHash: true, inputSource: 'Controlled storage record, not actual screen capture', cleanMachineRecovery: 'NOT_RUN; same original Windows identity' }, null, 2));
   } finally {
     live?.close(); restored?.close();
-    assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir()));
-    assert.ok(path.basename(root).startsWith('zero-restore-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-restore-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });

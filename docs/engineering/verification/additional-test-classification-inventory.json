@@ -925,16 +925,104 @@
     },
     {
       "file": "packages/screen-intelligence/screen-intelligence.test.mjs",
-      "sha256": "f1c325e4df856e06c19dd38ede7d291dd54b4c970991870dedf448dec5b2b3d9",
+      "sha256": "e6cbc976038e94a12855de8b11f55ed87852d169f5fe962731d3baa493077cc9",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION",
+        "REAL_OS"
+      ],
+      "scope": "Supplied slow/failing capture Promise serializes timer/manual ticks, exposes failure and recovers supplied frame ingestion. Supplied deferred capture result from prior generation cannot ingest after stop/restart/destroy; no process restart. Supplied buffer-byte, application and OCR changes refresh detector baseline and unchanged result has no invented score. Stop before deferred capture prevents adapter invocation; stop from supplied change event suppresses later frame event. Injected store insertion failure retains retry eligibility for identical supplied frame and commits once after restoration. Supplied1x1 PNG encoded dimensions override metadata geometry; supplied metadata/OCR failures remain unavailable. Supplied large parent subarrays/metadata obey owned-byte/frame bounds; short real timer expires idle fixture frames. Supplied absent/malformed/nonlive captures reject without fabricated geometry/OCR; local extractor invalid-input result remains failure/unknown confidence. Actual file-backed encrypted observation SQLite/current-user key persists manually ingested fixture across same-process factory reopen, remains idle and labels context historical. Actual legacy plaintext SQLite schema preserves supplied observation through additive provenance/encryption migration; no continuous native capture.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Captured pixels, foreground and OCR largely supplied; retained buffers use short fixture windows and are not continuous capture/endurance. Actual local invalid-image rejection is not successful OCR/model inference. Disk tests use same-process reopen and current Windows key identity."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "CONTRACT: loop/manual ticks serialize slow capture and recover from reported failures",
+          "line": 17,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied slow/failing capture Promise serializes timer/manual ticks, exposes failure and recovers supplied frame ingestion."
+        },
+        {
+          "title": "CONTRACT: stop/restart/destroy discard capture completions from prior generations",
+          "line": 41,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied deferred capture result from prior generation cannot ingest after stop/restart/destroy; no process restart."
+        },
+        {
+          "title": "UNIT: full-image changes and context changes refresh the same baseline",
+          "line": 66,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied buffer-byte, application and OCR changes refresh detector baseline and unchanged result has no invented score."
+        },
+        {
+          "title": "CONTRACT: stopping before deferred work prevents capture; stopping in a change listener emits no later frame",
+          "line": 77,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Stop before deferred capture prevents adapter invocation; stop from supplied change event suppresses later frame event."
+        },
+        {
+          "title": "CONTRACT: persistence failure does not lose an identical retry",
+          "line": 96,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Injected store insertion failure retains retry eligibility for identical supplied frame and commits once after restoration."
+        },
+        {
+          "title": "CONTRACT: encoded geometry is authoritative and metadata/OCR failures stay explicitly unavailable",
+          "line": 110,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied1x1 PNG encoded dimensions override metadata geometry; supplied metadata/OCR failures remain unavailable."
+        },
+        {
+          "title": "UNIT: retention owns subarrays and bounds pixels, metadata, count and idle expiry",
+          "line": 129,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied large parent subarrays/metadata obey owned-byte/frame bounds; short real timer expires idle fixture frames."
+        },
+        {
+          "title": "CONTRACT: no-pixel, synthetic and malformed captures fail without made-up OCR or geometry",
+          "line": 145,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied absent/malformed/nonlive captures reject without fabricated geometry/OCR; local extractor invalid-input result remains failure/unknown confidence."
+        },
+        {
+          "title": "INTEGRATION: factory persists under dataDir across reopen, remains idle, reports historical context",
+          "line": 162,
+          "labels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "scope": "Actual file-backed encrypted observation SQLite/current-user key persists manually ingested fixture across same-process factory reopen, remains idle and labels context historical."
+        },
+        {
+          "title": "INTEGRATION: opening an old schema preserves observations and adds provenance columns",
+          "line": 191,
+          "labels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "scope": "Actual legacy plaintext SQLite schema preserves supplied observation through additive provenance/encryption migration; no continuous native capture."
+        }
+      ]
     },
     {
       "file": "packages/sessions/test/sessions.test.mjs",
@@ -2552,16 +2640,54 @@
     },
     {
       "file": "test/restore-user-state.test.mjs",
-      "sha256": "7a665812e379bce3f50ca27e788db73c9d487333f2a12a26e50252f8312fd558",
+      "sha256": "518c90a025077c17dce260eea9497b39dca789659b35643e77cc40175a18318b",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION",
+        "REAL_OS"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Actual SQLite Unicode rows/JSON restored; attempted overwrite leaves exact target bytes intact, path/device/hash errors and duplicate/case-colliding destinations reject before target creation. Actual restored plugin-source SQLite relocation fails on later missing ownership marker, transaction restores earlier source strings and original backup bytes remain unchanged. Actual Windows DPAPI key and SQLite snapshot restore/decrypt controlled record; omitted paired key and authenticated-column tamper reject before destination creation despite updated outer hash.",
+      "gaps": [
+        "Actual controlled storage fixtures; same Windows identity and same-process stores except backup internals; no real owner restore, clean-machine recovery, host restart or screen capture."
+      ],
+      "modes": [
+        {
+          "condition": "process.platform === 'win32' for DPAPI restore declaration",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Windows DPAPI assertion skips elsewhere and cannot become PASS."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[INTEGRATION] restore reopens actual SQLite rows and JSON, rejects overwrite, corruption and escaping paths",
+          "line": 11,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite Unicode rows/JSON restored; attempted overwrite leaves exact target bytes intact, path/device/hash errors and duplicate/case-colliding destinations reject before target creation."
+        },
+        {
+          "title": "[INTEGRATION] failed later plugin relocation rolls back earlier source rewrites",
+          "line": 56,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual restored plugin-source SQLite relocation fails on later missing ownership marker, transaction restores earlier source strings and original backup bytes remain unchanged."
+        },
+        {
+          "title": "[REAL_OS] restored SQLite snapshot decrypts with copied Windows DPAPI key and rejects omitted key",
+          "line": 92,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Actual Windows DPAPI key and SQLite snapshot restore/decrypt controlled record; omitted paired key and authenticated-column tamper reject before destination creation despite updated outer hash."
+        }
+      ]
     },
     {
       "file": "test/rpc-contracts.test.mjs",

@@ -38,11 +38,12 @@ test('CONTRACT: loop/manual ticks serialize slow capture and recover from report
   } finally { await observer.destroy(); }
 });
 
-test('CONTRACT: stop/restart/destroy discard capture completions from prior generations', async () => {
+test('CONTRACT: stop/restart/destroy discard capture completions from prior generations', async t => {
   const pending = deferred();
   let calls = 0;
   const observer = new ScreenObserver({ dbPath: ':memory:', captureIntervalMs: 60_000,
     captureFrame: () => { calls++; return pending.promise; } });
+  t.after(async () => { pending.resolve(frame()); await observer.destroy(); });
   observer.start();
   const tick = observer.captureTick();
   await Promise.resolve();

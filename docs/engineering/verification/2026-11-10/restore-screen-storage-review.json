@@ -1,0 +1,18 @@
+{
+  "command": "node --test packages/screen-intelligence/screen-intelligence.test.mjs test/restore-user-state.test.mjs",
+  "passed": 13,
+  "changes": [
+    "Existing restore target bytes explicitly unchanged after rejected overwrite",
+    "Exact duplicate and case-colliding filenames reject before destination creation",
+    "Restore temp cleanup checks canonical parent/task prefix",
+    "Deferred supplied capture cleanup registered even after failed assertions"
+  ],
+  "actualEvidence": "SQLite Unicode/JSON restore, transaction rollback, Windows DPAPI paired-key decryption/authentication rejection and file-backed observation schema/persistence; supplied pixel/capture/error contracts remain separately scoped",
+  "intermediateFailure": "First duplicate fixture uppercased the allowed root directory and was correctly rejected as unsupported location rather than duplicate. Run had2PASS/1FAIL. Fixture now retains canonical root and changes only filename case, exercising actual case-collision rejection; assertion not weakened.",
+  "limits": "No actual continuous capture, successful OCR/model inference, owner data restore or clean-machine recovery in these commands",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 77,
+  "additionalUnreviewedFiles": 12,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}
