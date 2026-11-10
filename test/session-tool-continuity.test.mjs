@@ -24,8 +24,8 @@ test('[INTEGRATION] tool-call identity and recent conversation survive file-back
     assert.equal(store.countMessages('voice-chat'), 4);
   } finally {
     store.close();
-    assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir()));
-    fs.rmSync(directory, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(directory); assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir())); assert.ok(path.basename(resolved).startsWith('zero-session-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });
 
@@ -52,8 +52,8 @@ test('[INTEGRATION] compaction preserves original history across restart and who
     assert.equal(store.getTranscript('archive').length, 7);
   } finally {
     store.close();
-    assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir()));
-    fs.rmSync(directory, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(directory); assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir())); assert.ok(path.basename(resolved).startsWith('zero-session-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });
 

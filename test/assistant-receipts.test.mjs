@@ -27,5 +27,5 @@ test('[INTEGRATION] duplicate assistant requests share execution and persisted r
     const recovered = createAssistantReceipts(sessions.db); recovered.recoverInterrupted();
     await assert.rejects(recovered(failed, execute), /interrupted.*interrupted-task-id/); assert.equal(executions, 1);
     assert.equal(sessions.db.prepare('SELECT status FROM zero_assistant_receipts WHERE run_id=?').get('failed-request').status, 'interrupted');
-  } finally { sessions.close(); assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir())); fs.rmSync(directory, { recursive: true, force: true }); }
+  } finally { sessions.close(); const resolved = fs.realpathSync.native(directory); assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir())); assert.ok(path.basename(resolved).startsWith('zero-receipts-')); fs.rmSync(resolved, { recursive: true, force: true }); }
 });

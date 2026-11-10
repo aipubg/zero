@@ -1,0 +1,26 @@
+{
+  "priorFailure": "Host test files failed loading because declared yaml was not linked",
+  "installer": {
+    "command": "pnpm install --frozen-lockfile --ignore-scripts --store-dir E:\\.pnpm-store",
+    "result": "FAIL",
+    "error": "ERR_PNPM_EPERM renaming @trycua/cua-driver-win32-x64-msvc temporary import directory",
+    "note": "Existing live endurance process preserved; no native process killed to release package handles"
+  },
+  "localRecovery": "Already imported yaml@2.9.1 and ws@8.22.0 matched backend manifest exact versions; missing root links created as Windows junctions and canonical resolution checked. Full installer is not thereby PASS.",
+  "rerun": {
+    "command": "node --test test/agent-completion-contract.test.mjs test/assistant-tool-batch-contract.test.mjs test/assistant-write-scopes.test.mjs",
+    "result": "PASS",
+    "tests": 4,
+    "scope": "Controlled local model HTTP and isolated real native host, durable failure/interruption/recovery; no browser or external inference"
+  },
+  "receiptContinuity": {
+    "command": "node --test test/assistant-receipts.test.mjs test/session-tool-continuity.test.mjs",
+    "result": "PASS",
+    "tests": 4,
+    "scope": "Real isolated SQLite/file effects and supplied records, same-process reopen; manually changed interrupted row, not killed-process recovery"
+  },
+  "additionalReviewedFiles": 41,
+  "additionalUnreviewedFiles": 48,
+  "knownOpenFinding": "Scheduler calculateNextRun still treats standard cron schedules as relative intervals or defaults unsupported five-field expressions to one minute; needs actual calendar implementation and corrected outcome tests.",
+  "releaseStatus": "BLOCKED"
+}

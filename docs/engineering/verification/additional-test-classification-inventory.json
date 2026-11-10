@@ -569,16 +569,27 @@
     },
     {
       "file": "test/assistant-receipts.test.mjs",
-      "sha256": "76df8de5e08640d09bcb605514d9048110fbec98a647c6d6bd2b83afd31af3a2",
+      "sha256": "593ecc6365854f1b310c4b9b5f85fd56d4aa0e7d87048618bd498bd137d15aed",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Real temporary SQLite plus an actual file append prove shared concurrent request execution, replay after same-process close/reopen and input collision/failure replay; manually changed running row exercises interrupted recovery classification.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "The interrupted receipt is manually inserted through SQL; no killed process or whole host restart is exercised."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] duplicate assistant requests share execution and persisted result across reopen",
+          "line": 8,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real temporary SQLite plus an actual file append prove shared concurrent request execution, replay after same-process close/reopen and input collision/failure replay; manually changed running row exercises interrupted recovery classification."
+        }
+      ]
     },
     {
       "file": "test/assistant-tool-batch-contract.test.mjs",
@@ -1692,16 +1703,44 @@
     },
     {
       "file": "test/session-tool-continuity.test.mjs",
-      "sha256": "db80283656e842923ddc4ffa36418913b86a0788bed32846319d48c67b1150c2",
+      "sha256": "c9c2d665004990e0a7875857ff6efb0b030eced92239268dc08a201d6f4f9c66",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Real file-backed SQLite close/reopen retains supplied tool-call IDs, null assistant content and transcript pagination. Real SQLite compaction retains supplied original history and complete tool exchanges across same-process close/reopen; no actual process restart. Supplied orphan and interrupted tool records in in-memory SQLite are filtered from model-context projection without fabricated tool output or deleting original history.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "All conversation/tool contents are supplied records; no actual voice, tool execution, model recall or killed-process recovery."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] tool-call identity and recent conversation survive file-backed reopen",
+          "line": 8,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real file-backed SQLite close/reopen retains supplied tool-call IDs, null assistant content and transcript pagination."
+        },
+        {
+          "title": "[INTEGRATION] compaction preserves original history across restart and whole tool exchanges",
+          "line": 32,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real SQLite compaction retains supplied original history and complete tool exchanges across same-process close/reopen; no actual process restart."
+        },
+        {
+          "title": "[CONTRACT] interrupted and legacy orphan tool chains are excluded without fabricated outputs",
+          "line": 60,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied orphan and interrupted tool records in in-memory SQLite are filtered from model-context projection without fabricated tool output or deleting original history."
+        }
+      ]
     },
     {
       "file": "test/skill-sdk-integration.test.mjs",
