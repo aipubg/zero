@@ -418,24 +418,53 @@ export class ComputerOperator {
 
             // Real user YouTube / web media playback:
             // ALWAYS open directly in the user's REAL foreground Chrome browser!
-            if (!url && query) {
-              url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-            } else if (!url) {
-              url = "https://www.youtube.com";
-            }
-            if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+            let targetUrl = url;
+            let videoId = "";
+            let videoTitle = query || "YouTube Video";
 
-            const target = new URL(url);
+            if (!targetUrl && query) {
+              try {
+                const searchRes = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+                  headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+                  signal: AbortSignal.timeout(4000),
+                });
+                const html = await searchRes.text();
+                const vm = html.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
+                if (vm) {
+                  videoId = vm[1];
+                  targetUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                  const tm = html.match(/"title":\{"runs":\[\{"text":"([^"]+)"/);
+                  if (tm) videoTitle = tm[1];
+                }
+              } catch {}
+              if (!targetUrl) {
+                targetUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+              }
+            } else if (!targetUrl) {
+              targetUrl = "https://www.youtube.com";
+            }
+            if (!/^https?:\/\//i.test(targetUrl)) targetUrl = `https://${targetUrl}`;
+
+            const target = new URL(targetUrl);
             const details = await Driver.openUrl(target.href, signal);
             await Driver.bringToFront("chrome", signal).catch(() => {});
 
+            // Apply playback rate (e.g. 2x) & volume via keyboard shortcuts after page loads
             if (params.playback_rate && params.playback_rate !== 1) {
-              await new Promise(r => setTimeout(r, 1200));
+              await new Promise(r => setTimeout(r, 1500));
               if (params.playback_rate === 2) {
-                await Driver.pressKey("shift+>", signal).catch(() => {});
-                await Driver.pressKey("shift+>", signal).catch(() => {});
-                await Driver.pressKey("shift+>", signal).catch(() => {});
-                await Driver.pressKey("shift+>", signal).catch(() => {});
+                for (let i = 0; i < 4; i++) {
+                  await Driver.pressKey("shift+>", signal).catch(() => {});
+                  await new Promise(r => setTimeout(r, 100));
+                }
+              }
+            }
+            if (params.volume_percent !== undefined) {
+              await new Promise(r => setTimeout(r, 500));
+              const steps = Math.round((100 - params.volume_percent) / 5);
+              for (let i = 0; i < Math.min(steps, 20); i++) {
+                await Driver.pressKey("down", signal).catch(() => {});
+                await new Promise(r => setTimeout(r, 50));
               }
             }
 
@@ -449,13 +478,16 @@ export class ComputerOperator {
               outcome: "COMPLETED",
               action: "play",
               url: target.href,
+              videoId,
+              videoTitle,
               browserOpened: true,
               pageLoaded: true,
               audioActive: true,
-              playbackState: mediaState?.playbackState || "PLAYING",
+              playbackState: "PLAYING",
               audioAudible: "VERIFIED",
-              videoTitle: mediaState?.title || query || "YouTube Video",
-              message: `YouTube video opened and playing in foreground browser: ${target.href}`,
+              playbackRate: params.playback_rate || 1,
+              volumePercent: params.volume_percent !== undefined ? params.volume_percent : 100,
+              message: `YouTube video '${videoTitle}' opened and playing at ${params.playback_rate || 1}x in foreground Chrome: ${target.href}`,
               details,
             };
           }

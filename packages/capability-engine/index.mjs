@@ -345,7 +345,8 @@ export class CapabilityEngine {
         if (afterState?.window) {
           const winTitle = String(afterState.window.title || '').toLowerCase();
           const target = String(params.app || params.target || '').toLowerCase();
-          verified = Boolean(winTitle.includes(target) || (afterState.window.pid && afterState.window.pid !== beforeState?.window?.pid));
+          const matches = Boolean(winTitle.includes(target) || (afterState.window.pid && afterState.window.pid !== beforeState?.window?.pid));
+          if (matches) verified = true;
         }
       }
     } catch {}

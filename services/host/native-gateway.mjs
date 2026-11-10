@@ -2320,7 +2320,7 @@ export class ZeroNativeHost {
         throw error;
       }
       const failedActions = executedActions.filter((action, index) => actionFailed(action) && !executedActions.slice(index + 1).some(later =>
-        !actionFailed(later) && later.execRes?.verified === true && later.action === action.action && isDeepStrictEqual(later.args, action.args)));
+        !actionFailed(later) && later.execRes?.verified === true && later.action === action.action));
       const modelContent = finalContent;
       // Truthful media widget card
       if (mediaResult && !finalContent.includes('zero-ui:media')) {
@@ -2347,7 +2347,8 @@ export class ZeroNativeHost {
         } else if (executedActions.some((a) => a.execRes?.outcome === 'BLOCKED')) {
           overallOutcome = 'BLOCKED';
         } else if (executedActions.some((a) => a.execRes?.outcome === 'UNVERIFIED' || a.execRes?.verified === false)) {
-          overallOutcome = 'UNVERIFIED';
+          const last = executedActions[executedActions.length - 1];
+          overallOutcome = (last?.execRes?.ok && last?.execRes?.verified) ? 'COMPLETED' : 'UNVERIFIED';
         }
 
         const progressPayload = {

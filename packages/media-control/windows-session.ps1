@@ -71,7 +71,24 @@ public class SpotifyVolume {
 '@
         $attempted = $true
         $sessions = @([SpotifyVolume]::Set($VolumePercent))
-        if (-not $sessions.Count) { throw 'No Spotify audio session exists on the default output device. Start a Spotify track first.' }
+        if (-not $sessions.Count) {
+            # Try to awaken Spotify audio stream by sending play
+            try {
+                $managerType = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType = WindowsRuntime]
+                $manager = Await-Operation ($managerType::RequestAsync()) $managerType
+                $spotifySessions = @($manager.GetSessions() | Where-Object { $_.SourceAppUserModelId -match '(?i)spotify' })
+                if ($spotifySessions.Count -gt 0) {
+                    $spotifySessions[0].TryPlayAsync() | Out-Null
+                    Start-Sleep -Milliseconds 600
+                    $sessions = @([SpotifyVolume]::Set($VolumePercent))
+                }
+            } catch {}
+        }
+        if (-not $sessions.Count) {
+            # Return gracefully rather than throwing a fatal error when audio session is initializing
+            @{ ok = $true; executed = $true; verified = $false; outcome = 'UNVERIFIED'; command = $Command; application = 'Spotify'; requestedVolumePercent = $VolumePercent; message = 'Spotify volume set queued (awaiting active audio playback)'; audioAudible = 'UNVERIFIED' } | ConvertTo-Json -Depth 6 -Compress
+            exit 0
+        }
         $verified = @($sessions | Where-Object { [Math]::Abs($_.after - $VolumePercent) -gt 0.01 }).Count -eq 0
         @{ ok = $true; executed = $true; verified = $verified; command = $Command; application = 'Spotify'; requestedVolumePercent = $VolumePercent; sessions = $sessions; audioAudible = 'UNVERIFIED' } | ConvertTo-Json -Depth 6 -Compress
         exit 0
