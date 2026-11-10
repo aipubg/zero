@@ -10,6 +10,7 @@
 
 import { EventEmitter } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
+import { executeConfirmedAction } from './action-outcome.mjs';
 
 export const AUTOMATION_TEMPLATES = Object.freeze([
   {
@@ -47,7 +48,7 @@ export class EventAutomationEngine extends EventEmitter {
   constructor(options = {}) {
     super();
     this.dbPath = options.dbPath || ':memory:';
-    this.executor = options.executor || (async () => ({ ok: true }));
+    this.executor = options.executor;
     this.db = new DatabaseSync(this.dbPath);
     this.connectors = new Map();
     this._initSchema();
@@ -199,8 +200,7 @@ export class EventAutomationEngine extends EventEmitter {
 
       if (matched) {
         try {
-          const actionRes = await this.executor(rule.targetAction, { ...rule.params, triggerEvent: eventData });
-          if (actionRes?.ok === false || actionRes?.success === false) throw new Error(actionRes.error || actionRes.message || 'Action reported failure');
+          const actionRes = await executeConfirmedAction(this.executor, rule.targetAction, { ...rule.params, triggerEvent: eventData });
           triggered.push({ ruleId: rule.id, status: 'executed', result: actionRes });
         } catch (err) {
           triggered.push({ ruleId: rule.id, status: 'failed', error: err.message });

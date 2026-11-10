@@ -6,6 +6,7 @@
 
 import { DatabaseSync } from 'node:sqlite';
 import { EventEmitter } from 'node:events';
+import { executeConfirmedAction } from './action-outcome.mjs';
 
 export class AutomationScheduler {
   /**
@@ -15,7 +16,7 @@ export class AutomationScheduler {
    */
   constructor(options = {}) {
     this.dbPath = options.dbPath || ':memory:';
-    this.executor = options.executor || (async () => ({ ok: true }));
+    this.executor = options.executor;
     this.events = new EventEmitter();
     this.db = new DatabaseSync(this.dbPath);
     this._timer = null;
@@ -143,8 +144,7 @@ export class AutomationScheduler {
       let error = null;
 
       try {
-        result = await this.executor(job.targetAction, job.params);
-          if (result?.ok === false || result?.success === false) throw new Error(result.error || result.message || 'Action reported failure');
+        result = await executeConfirmedAction(this.executor, job.targetAction, job.params);
       } catch (err) {
         status = 'failed';
         error = err.message || 'Execution error';
