@@ -408,6 +408,9 @@ export class ComputerOperator {
             return { ok: false, executed: false, message: "Browser URL must be HTTP or HTTPS without embedded credentials" };
           }
           const details = await Driver.openUrl(target.href, signal);
+          try {
+            await Driver.bringToFront("chrome", signal).catch(() => {});
+          } catch {}
           const ok = details?.ok !== false;
           const verified = ok && details?.ok === true;
           return {

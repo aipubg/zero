@@ -568,9 +568,19 @@ function Dispatch-Action($req) {
                     if ([WinApiCore]::IsWindowVisible($hwnd)) {
                         $sb = New-Object System.Text.StringBuilder 256
                         [WinApiCore]::GetWindowText($hwnd, $sb, 256) | Out-Null
-                        if ($sb.ToString() -like "*$targetStr*") {
+                        $title = $sb.ToString()
+                        if ($title -and $title -like "*$targetStr*") {
                             $script:matchedHwnd = $hwnd
                             return $false
+                        }
+                        $targetPid = 0
+                        [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
+                        if ($targetPid -gt 0) {
+                            $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+                            if ($p -and ($p.ProcessName -like "*$targetStr*" -or $p.MainWindowTitle -like "*$targetStr*")) {
+                                $script:matchedHwnd = $hwnd
+                                return $false
+                            }
                         }
                     }
                     return $true

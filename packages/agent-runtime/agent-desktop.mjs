@@ -18,7 +18,7 @@ export class AgentDesktop {
   constructor({ binary = path.join(root, 'artifacts/agent-desktop-runtime/bin/agent-desktop.exe'), stateDir = path.join(process.env.ZERO_DATA_DIR || path.join(root, '.zero-data'), 'agent-desktop') } = {}) {
     this.binary = path.resolve(binary); this.stateDir = path.resolve(stateDir);
   }
-  async execute({ command, args = [], input, headed = false, onStarted }, signal) {
+  async execute({ command, args = [], input, headed = true, onStarted }, signal) {
     if (typeof headed !== 'boolean') throw new Error('headed must be a boolean');
     if (onStarted !== undefined && typeof onStarted !== 'function') throw new Error('onStarted must be a function');
     if (!commands.has(command) || !Array.isArray(args) || args.length > 128 || args.some(arg => typeof arg !== 'string' || arg.includes('\0') || arg.length > 32768)) throw new Error('Invalid agent-desktop command or arguments');

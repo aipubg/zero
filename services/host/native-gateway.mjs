@@ -237,7 +237,7 @@ export class ZeroNativeHost {
 
     const tool = (name, description, parameters, handler) => canonicalCapabilityEngine.registerCapability({ name, description, parameters, handler });
     registerLocalTools(canonicalCapabilityEngine, { cwd: REPO_ROOT });
-    tool('desktop_control', 'PRIMARY desktop control backend: agent-desktop native accessibility. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Read a fresh snapshot after actions. Prefer semantic set-value with input text over physical typing. Old coordinate tools are compatibility fallbacks. Never retry an uncertain delivery; inspect live state. Read skills get desktop and skills get platform for supported commands.', { type: 'object', properties: { command: { type: 'string', enum: DESKTOP_COMMANDS }, args: { type: 'array', description: 'CLI tokens, NOT a shell string. snapshot example: ["--window-id","w-123"]. get example: ["@snapshot:e1","--property","value"]. click/set-value: ["@snapshot:e1"]. skills guide: ["get","desktop"]. Reuse refs only from returned snapshots.', items: { type: 'string' } }, input: { type: 'string', description: 'Text to insert for set-value/type/clipboard-set ONLY. Never put refs, flags or read instructions here. Omit for snapshot/get/click.' }, headed: { type: 'boolean', description: 'Permit physical keyboard/cursor input when explicitly needed; semantic actions default false.' } }, required: ['command'], additionalProperties: false }, (args, signal, context) => canonicalCapabilityEngine.execute({ agentId: context?.agentId || 'zero', toolName: 'zero_computer_action', args: { ...args, action: 'desktop' }, signal }));
+    tool('desktop_control', 'PRIMARY desktop control backend: agent-desktop native accessibility with physical screen interaction. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Runs in headed mode by default to ensure all actions are visible on screen.', { type: 'object', properties: { command: { type: 'string', enum: DESKTOP_COMMANDS }, args: { type: 'array', description: 'CLI tokens, NOT a shell string. snapshot example: ["--window-id","w-123"]. get example: ["@snapshot:e1","--property","value"]. click/set-value: ["@snapshot:e1"]. skills guide: ["get","desktop"]. Reuse refs only from returned snapshots.', items: { type: 'string' } }, input: { type: 'string', description: 'Text to insert for set-value/type/clipboard-set ONLY. Never put refs, flags or read instructions here. Omit for snapshot/get/click.' }, headed: { type: 'boolean', description: 'Physical keyboard/cursor input; defaults to true for visible execution.' } }, required: ['command'], additionalProperties: false }, (args, signal, context) => canonicalCapabilityEngine.execute({ agentId: context?.agentId || 'zero', toolName: 'zero_computer_action', args: { headed: args.headed ?? true, ...args, action: 'desktop' }, signal }));
     tool('research_search', 'Retrieve real search results and provenance. Retrieved sources are not independently verified.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => this.researchEngine.searchEngine.search(args.query, args));
     tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
     tool('memory_remember', 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string', enum: Object.values(MEMORY_LAYERS), default: 'semantic' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
@@ -1958,25 +1958,29 @@ export class ZeroNativeHost {
         type: 'function',
         function: {
           name: 'zero_computer_action',
-          description: 'Compatibility Windows actions. Prefer desktop_control for primary accessibility snapshots and qualified-ref interaction. Use these legacy actions for explicitly needed coordinate or existing browser workflows.',
+          description: 'Unified Windows & Browser Actions. Drives apps and browser in the foreground. Use mouse_move, left_click, type_text, and press_key to visually operate the desktop and browser. Use get_elements to discover interactive controls (buttons, inputs, links) with exact screen centerX and centerY coordinates for direct mouse clicks.',
           parameters: {
             type: 'object',
             required: ['action'],
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
               },
-              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
-              text: { type: 'string', description: 'Text to type into the focused window' },
+              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome")' },
+              text: { type: 'string', description: 'Text to type into the focused window or element' },
               query: { type: 'string', description: 'Search term or song name to play on YouTube' },
-              command: { type: 'string', enum: [...MEDIA_COMMANDS, 'status'], description: 'media_control: ZERO-owned browser player. spotify_control: status/play/pause/next/previous/set_volume on the exact Windows Spotify session. set_volume uses volume_percent; browser set_speed uses playback_rate. If Spotify has no active track use open_app Spotify then desktop_control to select a track, not global media keys.' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Exact player volume, e.g. 5 for 5%. Supported by play and media_control set_volume.' },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Exact playback speed, e.g. 2 for 2x. Supported by play and media_control set_speed.' },
-              url: { type: 'string', description: 'URL to open in the browser' },
-              key: { type: 'string', description: 'Key or shortcut to press' },
-              x: { type: 'number', description: 'X screen coordinate' },
-              y: { type: 'number', description: 'Y screen coordinate' },
+              command: { type: 'string', enum: [...MEDIA_COMMANDS, 'status'], description: 'media_control: ZERO-owned browser player. spotify_control: status/play/pause/next/previous/set_volume on the exact Windows Spotify session.' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Exact player volume, e.g. 5 for 5%.' },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Exact playback speed, e.g. 2 for 2x.' },
+              url: { type: 'string', description: 'URL to open in the foreground browser' },
+              key: { type: 'string', description: 'Key or shortcut to press (e.g. Return, Escape, Tab, ctrl+a)' },
+              x: { type: 'number', description: 'X screen coordinate for mouse_move or click' },
+              y: { type: 'number', description: 'Y screen coordinate for mouse_move or click' },
+              button: { type: 'string', enum: ['left', 'right', 'middle'], description: 'Mouse button for click action' },
+              direction: { type: 'string', enum: ['up', 'down', 'left', 'right'], description: 'Scroll direction' },
+              amount: { type: 'number', description: 'Scroll amount (ticks)' },
+              target: { type: 'string', description: 'Target window title or process name to focus/bring to front (e.g. "chrome", "notepad")' },
             },
           },
         },

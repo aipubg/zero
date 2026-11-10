@@ -27,7 +27,17 @@ export class MediaController {
       'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
     ].find(candidate => fs.existsSync(candidate));
     if (!executablePath) throw new Error('A supported installed Chrome or Edge browser is required for media playback');
-    this.browser = await chromium.launch({ executablePath, headless: false, timeout: 15000 });
+    this.browser = await chromium.launch({
+      executablePath,
+      headless: false,
+      timeout: 15000,
+      args: [
+        '--start-maximized',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-blink-features=AutomationControlled',
+      ],
+    });
     this.browser.on('disconnected', () => { this.browser = null; this.page = null; });
   }
 
@@ -123,11 +133,21 @@ export class MediaController {
       const search = youtube && !(/^\/(watch|shorts\/|embed\/)/.test(target.pathname));
       if (search) target = new URL(`https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim() || target.searchParams.get('search_query') || 'latest official music video')}`);
       await this._launch(); combined.throwIfAborted();
-      if (!this.page || this.page.isClosed()) this.page = await this.browser.newPage();
+      if (!this.page || this.page.isClosed()) {
+        const contexts = this.browser.contexts();
+        const context = contexts.length ? contexts[0] : await this.browser.newContext({ viewport: null });
+        this.page = await context.newPage();
+      }
       combined.throwIfAborted(); this.effectStarted = true;
       await this.page.bringToFront();
       await this.page.goto(target.href, { waitUntil: 'domcontentloaded', timeout: 20000 });
       combined.throwIfAborted();
+
+      // Ensure Chrome window is immediately brought to foreground of Windows desktop
+      try {
+        const { bringToFront } = await import('../../app/zero-control-ui/src/computer/windows-driver.js');
+        await bringToFront('chrome');
+      } catch {}
       if (search) {
         const result = this.page.locator('ytd-video-renderer a#video-title[href*="watch?v="]').first();
         await result.waitFor({ state: 'visible', timeout: 15000 });
