@@ -52,6 +52,7 @@ test('literal extraction preserves title and exact CRLF line', () => {
   assert.deepEqual(reviewedDeclarations('describe("container", () => {\n  it(\'assertion\', () => {});\n});'), [
     { title: 'container', line: 1 }, { title: 'assertion', line: 2 },
   ]);
+  assert.deepEqual(reviewedDeclarations("await suite.test('nested RPC', () => {});"), [{ title: 'nested RPC', line: 1 }]);
 });
 
 test('dry audit has no passing assertions or verified requirements', () => {

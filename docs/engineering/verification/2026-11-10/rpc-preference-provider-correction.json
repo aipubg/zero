@@ -1,0 +1,21 @@
+{
+  "productionChanges": [
+    "Malformed or non-object preferences reject get/set without replacing existing file",
+    "models.authStatus uses already computed public hasApiKey instead of trying to resolve credentials from redacted provider data",
+    "Configured key is not authentication evidence: authenticated=null and tested=false until actual testing"
+  ],
+  "testChanges": [
+    "RPC suite now creates isolated native host with dynamic port and task-owned config/state instead of live owner port/settings",
+    "Config/preference assertions include direct on-disk effects and exact corrupt-file preservation",
+    "Structured RPC errors and standalone unsupported restart are checked accurately",
+    "Catalog supports literal suite.test declarations; still no dynamic-family coverage claim"
+  ],
+  "initialResult": { "passed": 11, "failedIncludingContainer": 10, "log": "artifacts/rpc-isolation-initial-failure.log", "note": "Stale string-error/unsupported-restart assertions plus real redacted-provider key-state bug; original failures retained" },
+  "regression": { "command": "node --test test/rpc-contracts.test.mjs test/assistant-tool-batch-contract.test.mjs test/model-settings.test.mjs", "reportedChecksPassed": 26, "log": "artifacts/rpc-isolated-correction.log", "scope": "Actual isolated local HTTP/WebSocket/config files and controlled upstream responses; includes suite container" },
+  "auditRegression": { "passed": 16 },
+  "limits": "No external provider authentication, real browser or actual restart certified by this RPC suite. Running owner host still uses previously loaded source until next restart.",
+  "additionalReviewedFiles": 80,
+  "additionalUnreviewedFiles": 9,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

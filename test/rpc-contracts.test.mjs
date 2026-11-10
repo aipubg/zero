@@ -10,13 +10,13 @@ import http from 'node:http';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import net from 'node:net';
+import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
 
 const WS = globalThis.WebSocket;
-const PORT = 18789;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
-const WS_URL = `ws://127.0.0.1:${PORT}/`;
-const CONFIG_PATH = path.resolve('zero-system/config/zero.json');
-const PREFS_PATH = path.resolve('zero-system/config/user-prefs.json');
+let PORT, BASE_URL, WS_URL, CONFIG_PATH, PREFS_PATH;
+const errorText = response => typeof response.error === 'string' ? response.error : response.error?.message;
 
 function createRpcClient() {
   const ws = new WS(WS_URL);
@@ -28,7 +28,8 @@ function createRpcClient() {
       const msg = JSON.parse(event.data);
       const reqId = msg.id;
       if (reqId && pending.has(reqId)) {
-        const { resolve } = pending.get(reqId);
+        const { resolve, timer } = pending.get(reqId);
+        clearTimeout(timer);
         pending.delete(reqId);
         resolve(msg);
       }
@@ -43,8 +44,9 @@ function createRpcClient() {
   async function call(method, params = {}, isReference = true) {
     await readyPromise;
     const id = `rpc_${++msgId}`;
-    return new Promise((resolve) => {
-      pending.set(id, { resolve });
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { pending.delete(id); reject(new Error(`RPC timeout: ${method}`)); }, 3000);
+      pending.set(id, { resolve, timer });
       ws.send(JSON.stringify(isReference ? {
         type: 'req',
         id,
@@ -62,14 +64,27 @@ function createRpcClient() {
   return { ws, call, close: () => ws.close() };
 }
 
-test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
+test('Isolated actual WebSocket RPC contracts and scope enforcement', { timeout: 45000 }, async (suite) => {
   let client;
   let authToken = '';
-  let originalConfig = null;
-  const hadPrefs = fs.existsSync(PREFS_PATH);
+  let root, host;
 
   suite.before(async () => {
-    try {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-rpc-contract-'));
+    CONFIG_PATH = path.join(root, 'config.json');
+    PREFS_PATH = path.join(root, 'prefs.json');
+    const providersPath = path.join(root, 'providers.json');
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify({ models: { providers: { nv: { apiKey: 'nvapi-contract-private' } } } }));
+    fs.writeFileSync(providersPath, JSON.stringify([{ id: 'nv', baseUrl: 'https://example.invalid/v1', apiKey: 'nvapi-contract-private', models: ['fixture'] }]));
+    const reservation = net.createServer();
+    await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve));
+    PORT = reservation.address().port;
+    await new Promise(resolve => reservation.close(resolve));
+    BASE_URL = `http://127.0.0.1:${PORT}`; WS_URL = `ws://127.0.0.1:${PORT}/`;
+    host = new ZeroNativeHost({ port: PORT, token: 'contract-only-token', configPath: CONFIG_PATH,
+      prefsPath: PREFS_PATH, providersPath, agentBindingsPath: path.join(root, 'bindings.json'),
+      dataDir: path.join(root, 'data'), skillsDir: path.join(root, 'skills'), localModelsDir: path.join(root, 'models') });
+    await host.start();
       const uiCfg = await fetch(`${BASE_URL}/control-ui-config.json`).then((r) => r.json());
       assert.equal(uiCfg.gatewayToken, undefined, 'gatewayToken must never be exposed in control-ui-config.json');
       assert.equal(uiCfg.token, undefined, 'token must never be exposed in control-ui-config.json');
@@ -80,19 +95,15 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
         body: JSON.stringify({ clientId: 'test-rpc-suite', role: 'admin' }),
       }).then((r) => r.json());
       authToken = sessionRes.token || '';
-    } catch {}
-    if (fs.existsSync(CONFIG_PATH)) {
-      originalConfig = fs.readFileSync(CONFIG_PATH, 'utf8');
-    }
   });
 
-  suite.after(() => {
-    if (originalConfig !== null) {
-      fs.writeFileSync(CONFIG_PATH, originalConfig, 'utf8');
-    }
-    if (!hadPrefs && fs.existsSync(PREFS_PATH)) {
-      try { fs.unlinkSync(PREFS_PATH); } catch (_) {}
-    }
+  suite.after(async () => {
+    await host?.close();
+    if (!root) return;
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-rpc-contract-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   });
 
   suite.beforeEach(async () => {
@@ -134,6 +145,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
     // Read back via config.get
     const getRes = await client.call('config.get');
     assert.equal(getRes.payload.config.testParam, 'zero_verification_val');
+    assert.equal(JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')).testParam, 'zero_verification_val');
   });
 
   await suite.test('config.patch rejects invalid port out of range', async () => {
@@ -141,7 +153,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
       config: { gateway: { port: 99999 } },
     });
     assert.equal(res.ok, false);
-    assert.ok(res.error.includes('between 1024 and 65535'));
+    assert.ok(errorText(res).includes('between 1024 and 65535'));
   });
 
   await suite.test('users.prefs.get and set persists preferences', async () => {
@@ -154,15 +166,29 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
     const getRes = await client.call('users.prefs.get');
     assert.equal(getRes.ok, true);
     assert.equal(getRes.payload.prefs.theme, 'dark');
+    assert.equal(JSON.parse(fs.readFileSync(PREFS_PATH, 'utf8')).theme, 'dark');
+    const original = fs.readFileSync(PREFS_PATH, 'utf8');
+    try {
+      for (const invalid of ['{broken', 'null', '[]', '17']) {
+        fs.writeFileSync(PREFS_PATH, invalid);
+        const failedRead = await client.call('users.prefs.get');
+        assert.equal(failedRead.ok, false);
+        const failed = await client.call('users.prefs.set', { prefs: { theme: 'light' } });
+        assert.equal(failed.ok, false);
+        assert.equal(fs.readFileSync(PREFS_PATH, 'utf8'), invalid);
+      }
+    } finally { fs.writeFileSync(PREFS_PATH, original); }
   });
 
-  await suite.test('models.authStatus returns live provider report', async () => {
+  await suite.test('models.authStatus reports configured fixture without claiming authentication', async () => {
     const res = await client.call('models.authStatus');
     assert.equal(res.ok, true);
     assert.ok(Array.isArray(res.payload.providers));
     const nv = res.payload.providers.find((p) => p.provider === 'nv' || p.provider === 'nvidia');
     assert.ok(nv, 'NVIDIA provider reported');
     assert.equal(nv.configured, true);
+    assert.equal(nv.authenticated, null);
+    assert.equal(nv.tested, false);
   });
 
   await suite.test('sessions.subscribe and unsubscribe manage subscriptions', async () => {
@@ -177,11 +203,9 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
 
   await suite.test('zero.gateway.restart returns scheduling confirmation or explicit unsupported in standalone', async () => {
     const res = await client.call('zero.gateway.restart');
-    if (res.ok) {
-      assert.equal(res.payload.status, 'restarting');
-    } else {
-      assert.ok(res.error.includes('Controlled restart requires an active process supervisor') || res.error.includes('UNSUPPORTED_OPERATION'));
-    }
+    assert.equal(res.ok, false);
+    assert.equal(res.error.code, 'UNSUPPORTED_OPERATION');
+    assert.match(errorText(res), /active process supervisor/);
   });
 
   await suite.test('sessions.setInvolvement persists involvement state', async () => {
@@ -207,7 +231,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
       });
       // Invalid token must be rejected outright
       assert.equal(handshake.ok, false);
-      assert.ok(handshake.error.includes('Invalid gateway authentication token'));
+      assert.ok(errorText(handshake).includes('Invalid gateway authentication token'));
     } finally {
       unauthClient.close();
     }
@@ -237,7 +261,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
       await viewer.call('connect', { minProtocol: 4, maxProtocol: 4 });
       const res = await viewer.call('zero.providers.configure', { provider: { id: 'evil' } });
       assert.equal(res.ok, false);
-      assert.ok(res.error.includes('requires scope'));
+      assert.ok(errorText(res).includes('requires scope'));
     } finally {
       viewer.close();
     }
@@ -249,7 +273,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
       await viewer.call('connect', { minProtocol: 4, maxProtocol: 4 });
       const res = await viewer.call('zero.computer.control', { action: 'left_click' });
       assert.equal(res.ok, false);
-      assert.ok(res.error.includes('requires scope'));
+      assert.ok(errorText(res).includes('requires scope'));
     } finally {
       viewer.close();
     }
@@ -261,7 +285,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
       await viewer.call('connect', { minProtocol: 4, maxProtocol: 4 });
       const res = await viewer.call('sessions.delete', { key: 'agent:zero:main' });
       assert.equal(res.ok, false);
-      assert.ok(res.error.includes('requires scope'));
+      assert.ok(errorText(res).includes('requires scope'));
     } finally {
       viewer.close();
     }
@@ -277,7 +301,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
         action: 'hack',
       });
       assert.equal(res.ok, false);
-      assert.ok(res.error.includes('requires scope'));
+      assert.ok(errorText(res).includes('requires scope'));
     } finally {
       viewer.close();
     }
@@ -289,11 +313,11 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
       await viewer.call('connect', { minProtocol: 4, maxProtocol: 4 });
       const restartRes = await viewer.call('zero.gateway.restart');
       assert.equal(restartRes.ok, false);
-      assert.ok(restartRes.error.includes('requires scope'));
+      assert.ok(errorText(restartRes).includes('requires scope'));
 
       const configRes = await viewer.call('config.set', { config: { port: 1234 } });
       assert.equal(configRes.ok, false);
-      assert.ok(configRes.error.includes('requires scope'));
+      assert.ok(errorText(configRes).includes('requires scope'));
     } finally {
       viewer.close();
     }
@@ -302,7 +326,7 @@ test('Zero AI RPC Contract & Scope Enforcement Suite', async (suite) => {
   await suite.test('unknown RPC method deterministically returns method not found error', async () => {
     const res = await client.call('bogus.nonexistent.rpc');
     assert.equal(res.ok, false);
-    assert.ok(res.error.includes('not found on Zero Native Gateway'));
+    assert.ok(errorText(res).includes('not found on Zero Native Gateway'));
   });
 
   await suite.test('security: DNS rebinding with external Host header is rejected with 403', async () => {

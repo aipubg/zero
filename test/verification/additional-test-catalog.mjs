@@ -22,7 +22,7 @@ export function listTestSources(root) {
 // Only the literal declarations in explicitly reviewed files are supported.
 // Unreviewed syntax is never assigned an inferred classification or leaf count.
 export function reviewedDeclarations(source) {
-  return [...source.matchAll(/^[ \t]*(?:await[ \t]+)?(?:test|t\.test|describe|it)\((?:'([^'\\\r\n]+)'|"([^"\\\r\n]+)")\s*,/gm)]
+  return [...source.matchAll(/^[ \t]*(?:await[ \t]+)?(?:test|t\.test|suite\.test|describe|it)\((?:'([^'\\\r\n]+)'|"([^"\\\r\n]+)")\s*,/gm)]
     .map(match => ({ title: match[1] ?? match[2], line: source.slice(0, match.index).split('\n').length }));
 }
 

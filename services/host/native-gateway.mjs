@@ -1855,7 +1855,8 @@ export class ZeroNativeHost {
           if (fs.existsSync(prefsPath)) {
             prefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
           }
-        } catch {}
+        } catch { throw new Error('Preference storage cannot be read; existing file preserved'); }
+        if (!prefs || typeof prefs !== 'object' || Array.isArray(prefs)) throw new Error('Preference storage must contain an object; existing file preserved');
         return { prefs };
       }
 
@@ -1866,8 +1867,11 @@ export class ZeroNativeHost {
           if (fs.existsSync(prefsPath)) {
             currentPrefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
           }
-        } catch {}
-        const newPrefs = { ...currentPrefs, ...(params.prefs || params) };
+        } catch { throw new Error('Preference storage cannot be read; existing file preserved'); }
+        if (!currentPrefs || typeof currentPrefs !== 'object' || Array.isArray(currentPrefs)) throw new Error('Preference storage must contain an object; existing file preserved');
+        const patch = params.prefs ?? params;
+        if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Preferences must be an object');
+        const newPrefs = { ...currentPrefs, ...patch };
         fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
         fs.writeFileSync(prefsPath, JSON.stringify(newPrefs, null, 2), 'utf8');
         return { ok: true, prefs: newPrefs };
@@ -1878,12 +1882,11 @@ export class ZeroNativeHost {
 
       case 'models.authStatus': {
         const providers = this.modelFabric.getProviders().map((p) => {
-          const key = this.modelFabric.resolveApiKey(p);
-          const hasKey = Boolean(key && key.length > 5);
+          const hasKey = p.hasApiKey === true;
           return {
             provider: p.id,
             configured: hasKey,
-            authenticated: hasKey,
+            authenticated: null,
             tested: false,
             keyState: hasKey ? 'configured' : 'missing',
             apiKey: hasKey ? { source: 'configured', status: 'static' } : undefined,
