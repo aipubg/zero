@@ -1,0 +1,26 @@
+{
+  "command": "node --test test/gguf-download-file-integration.test.mjs test/huggingface-catalog-contract.test.mjs test/local-gguf-delete-preservation.test.mjs",
+  "passed": 4,
+  "failed": 0,
+  "skipped": 0,
+  "actualEvidence": [
+    "Loopback HTTP transfer, SHA/size/magic checks, destination preservation and cleanup on corrupt/truncated/aborted response",
+    "Actual stalled body fails at production 30-second deadline without destination or temporary file",
+    "Actual isolated model deletion preserves external source SHA-256 and size, unrelated files and provider backup"
+  ],
+  "changes": [
+    "Preservation assertion now hashes external source before/after instead of checking only size",
+    "Missing installed source becomes explicit BLOCKED skip, not synthetic passing fixture",
+    "Canonical temporary parent/prefix checked before recursive cleanup",
+    "Three test sources reviewed with exact assertion scopes"
+  ],
+  "limitations": [
+    "Controlled transfer payload is not loadable model; no actual model inference or external download in this run",
+    "Catalog input contract does not retrieve a live Hugging Face catalog",
+    "Service reopen is same process"
+  ],
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 52,
+  "additionalUnreviewedFiles": 37,
+  "releaseStatus": "BLOCKED"
+}

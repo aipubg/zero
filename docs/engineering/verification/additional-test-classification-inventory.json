@@ -1087,29 +1087,59 @@
     },
     {
       "file": "test/gguf-download-file-integration.test.mjs",
-      "sha256": "3fae58a8af34f70325967d83500ee69d5612bb6509421519194ad788653663be",
+      "sha256": "ae71639457c7b2f68db5eedb3fae571983b87c590628b0b19422e0ffe81492d9",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Actual loopback streams bytes to disk with SHA/size/magic validation, exclusive destination preservation, corrupt/truncated/excess content rejection, caller abort and no leftover files. Actual loopback sends GGUF prefix and stalls; production 30-second body deadline rejects and leaves no destination or temporary file.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Controlled local HTTP bytes have GGUF magic plus random payload, not a loadable model or real Hugging Face download."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] download streams actual HTTP bytes, rejects corrupt/truncated content and preserves existing files",
+          "line": 11,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual loopback streams bytes to disk with SHA/size/magic validation, exclusive destination preservation, corrupt/truncated/excess content rejection, caller abort and no leftover files."
+        },
+        {
+          "title": "[INTEGRATION] actual stalled HTTP body times out and leaves no published or temporary file",
+          "line": 57,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual loopback sends GGUF prefix and stalls; production 30-second body deadline rejects and leaves no destination or temporary file."
+        }
+      ]
     },
     {
       "file": "test/huggingface-catalog-contract.test.mjs",
       "sha256": "535069a166c67f5b0adbefba008e29b375b6f6a45300f00b65b547bbcb974723",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Repository identity normalization accepts owner/repo and official URL; malformed path, credentials/query, alternate host and port inputs reject before network operation.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No actual Hugging Face catalog response or remote retrieval; valid inputs only normalized, invalid ones rejected before fetch."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] Hugging Face catalog accepts repository identity and rejects arbitrary URL/path input",
+          "line": 5,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Repository identity normalization accepts owner/repo and official URL; malformed path, credentials/query, alternate host and port inputs reject before network operation."
+        }
+      ]
     },
     {
       "file": "test/huggingface-download-real.test.mjs",
@@ -1232,16 +1262,35 @@
     },
     {
       "file": "test/local-gguf-delete-preservation.test.mjs",
-      "sha256": "741b780ea16bf83e084c2b6bfb28dba053c74ffb0de3f432d673d3476d325115",
+      "sha256": "57f2ca5a01afea0be839ce740921c5ceba8437df0042a6609669b5c8e07f87ef",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Actual copied GGUF and manifests deleted from isolated model directory; external original SHA/size and unrelated file bytes retained, provider backup preserved, malformed IDs/settings refuse mutation and settings survive service reopen.",
+      "gaps": [
+        "Requires an installed local GGUF fixture and skips BLOCKED when absent; does not load/infer model. Manifest and service reopen are same process; only isolated copied owned files are deleted."
+      ],
+      "modes": [
+        {
+          "condition": "LocalInferenceRuntime default GGUF source exists",
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual fixture preservation run; absence skips with BLOCKED and is not PASS."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[INTEGRATION] actual GGUF removal preserves outside source, unrelated data and same-prefix guides",
+          "line": 10,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual copied GGUF and manifests deleted from isolated model directory; external original SHA/size and unrelated file bytes retained, provider backup preserved, malformed IDs/settings refuse mutation and settings survive service reopen."
+        }
+      ]
     },
     {
       "file": "test/local-gguf-runtime-real.test.mjs",

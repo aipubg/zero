@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
@@ -46,9 +47,10 @@ test('[INTEGRATION] download streams actual HTTP bytes, rejects corrupt/truncate
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));
     // Only this test-created, resolved directory is removed.
-    assert.equal(path.dirname(directory), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('zero-download-'));
-    await fs.rm(directory, { recursive: true, force: true });
+    const resolved = realpathSync.native(directory);
+    assert.equal(path.dirname(resolved), realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-download-'));
+    await fs.rm(resolved, { recursive: true, force: true });
   }
 });
 
@@ -65,8 +67,9 @@ test('[INTEGRATION] actual stalled HTTP body times out and leaves no published o
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));
-    assert.equal(path.dirname(directory), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('zero-download-'));
-    await fs.rm(directory, { recursive: true, force: true });
+    const resolved = realpathSync.native(directory);
+    assert.equal(path.dirname(resolved), realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-download-'));
+    await fs.rm(resolved, { recursive: true, force: true });
   }
 });
