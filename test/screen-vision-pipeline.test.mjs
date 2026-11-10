@@ -13,14 +13,14 @@ function create(runtime) {
     ocrText: 'Contract OCR', metadataStatus: 'available', ocr: { status: 'available' },
   }) });
 }
-test('[CONTRACT] vision inference stays single-flight while screen capture continues and late results are discarded', async () => {
+test('[CONTRACT] supplied vision stays single-flight while fixture capture continues and late results are discarded', async () => {
   let release, signal, calls = 0;
   const runtime = fixtureRuntime(async (_bytes, options) => { calls++; signal = options.signal; return new Promise(resolve => { release = resolve; }); });
   const observer = create(runtime);
   try {
     observer.start(); await observer.captureTick();
     await pause(45);
-    assert.ok(observer.stats.totalFramesIngested > 2, 'Slow inference must not block actual capture-loop progress');
+    assert.ok(observer.stats.totalFramesIngested > 2, 'Slow supplied inference must not block capture-loop progress with supplied frames');
     assert.equal(calls, 1); assert.equal(observer.getStatus().visionInference.pending, true);
     const stopped = observer.stop();
     assert.equal(signal.aborted, true);

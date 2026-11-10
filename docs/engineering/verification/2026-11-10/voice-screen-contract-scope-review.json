@@ -1,0 +1,20 @@
+{
+  "command": "node --test test/screen-automation.test.mjs test/screen-vision-pipeline.test.mjs test/voice-completion-honesty.test.mjs",
+  "result": "PASS",
+  "tests": 9,
+  "classifications": ["UNIT", "CONTRACT", "INTEGRATION"],
+  "scope": "Supplied screen events, capture frames, OCR, inference and voice adapters; actual in-memory encrypted SQLite columns checked in one integration assertion",
+  "changes": [
+    "Reviewed nine exact declarations in three files with per-assertion scope and explicit fixture limitations",
+    "Renamed supplied playback and fixture-capture test titles to distinguish them from native device execution",
+    "Removed assertion text implying supplied frames proved actual screen capture"
+  ],
+  "additionalReviewedFiles": 36,
+  "additionalUnreviewedFiles": 53,
+  "exhaustiveClassification": "NOT_ESTABLISHED",
+  "limitations": [
+    "No actual microphone, synthesis, audio output device, human playback confirmation, native capture, OCR or model inference performed by these tests",
+    "Separate human/native evidence remains required",
+    "Release remains BLOCKED"
+  ]
+}

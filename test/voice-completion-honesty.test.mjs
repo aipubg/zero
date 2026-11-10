@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { VoiceEngine } from '../packages/voice-engine/index.mjs';
 
-test('[CONTRACT] playback requires actual started and completed signals instead of resolved adapter promise', async () => {
+test('[CONTRACT] supplied playback adapter requires started and completed signals instead of a resolved promise', async () => {
   for (const mode of ['no-result', 'no-start', 'failed']) {
     const engine = new VoiceEngine({ backend: {
       synthesize: async () => ({ pcm: Buffer.alloc(3200), voice: 'contract' }),

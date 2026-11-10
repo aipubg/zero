@@ -1437,14 +1437,41 @@
       "file": "test/screen-automation.test.mjs",
       "sha256": "57f81ff977afd53dece416f1c3767ce2b5142084dc1614e27bc9cdefa11ed3e1",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Supplied transition burst and deferred dispatch promises bound pending work to two, count overflow, recover capacity and make teardown drain pending work. Supplied change events suppress initial/duplicate windows, forward only allowed transition metadata and stop forwarding after teardown. Supplied rule failure result increments bridge failure count and retains its error.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "EventEmitter observations and dispatcher promises are supplied; no actual screen capture, configured rule execution or native desktop effect."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] slow actions bound pending work, report overflow and recover capacity",
+          "line": 6,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied transition burst and deferred dispatch promises bound pending work to two, count overflow, recover capacity and make teardown drain pending work."
+        },
+        {
+          "title": "[CONTRACT] only observed window transitions dispatch configured events and teardown drains work",
+          "line": 34,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied change events suppress initial/duplicate windows, forward only allowed transition metadata and stop forwarding after teardown."
+        },
+        {
+          "title": "[CONTRACT] resolved rule failures remain visible in screen automation status",
+          "line": 48,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied rule failure result increments bridge failure count and retains its error."
+        }
+      ]
     },
     {
       "file": "test/screen-resource-totals.test.mjs",
@@ -1480,16 +1507,53 @@
     },
     {
       "file": "test/screen-vision-pipeline.test.mjs",
-      "sha256": "4ede15bdb75bb7e57dedf145d2fdfb5036efd981b08f0ae94e7319c08be5989e",
+      "sha256": "66d98d459bbf2d8a671caab865c95e5d5fb6a87c2e5fad3d9e953b6fc32c6557",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Supplied slow vision promise stays single-flight while supplied-frame capture loop continues; stop aborts and discards late output and releases retained bytes. Real in-memory encrypted SQLite update stores supplied vision text/provenance on the corresponding supplied frame; raw sensitive columns carry ciphertext. Supplied model failure preserves supplied OCR observations without writing an inferred vision description. Disabled runtime and a missing executable guard reject startup without claiming readiness; no inference process is run.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Frames, OCR and vision text are supplied fixtures; no Windows capture, native OCR or actual model inference."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] supplied vision stays single-flight while fixture capture continues and late results are discarded",
+          "line": 16,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied slow vision promise stays single-flight while supplied-frame capture loop continues; stop aborts and discards late output and releases retained bytes."
+        },
+        {
+          "title": "[INTEGRATION] actual encrypted SQLite update binds model output and provenance to its original frame",
+          "line": 34,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real in-memory encrypted SQLite update stores supplied vision text/provenance on the corresponding supplied frame; raw sensitive columns carry ciphertext."
+        },
+        {
+          "title": "[CONTRACT] model failure leaves OCR capture available and never writes a fabricated vision description",
+          "line": 50,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied model failure preserves supplied OCR observations without writing an inferred vision description."
+        },
+        {
+          "title": "[UNIT] disabled and missing local runtime prerequisites cannot claim readiness",
+          "line": 61,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Disabled runtime and a missing executable guard reject startup without claiming readiness; no inference process is run."
+        }
+      ]
     },
     {
       "file": "test/search-provenance.test.mjs",
@@ -1829,16 +1893,35 @@
     },
     {
       "file": "test/voice-completion-honesty.test.mjs",
-      "sha256": "b42dbf163cc25d59940b693ae8ae76d5e6782cbd5172d40c2f989d4f1200c9e5",
+      "sha256": "125c5ddbe53152bf71b85fcefbdbd020edd391d7bf00cf41e615f6d35739445b",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Supplied playback adapter with no result, missing start or played=false rejects with VOICE_PLAYBACK_INCOMPLETE. Supplied recognizer ok=false with plausible text rejects with VOICE_TRANSCRIPTION_FAILED.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Supplied synthesis/playback/transcription adapters; no actual microphone, speech synthesis, sound device, human audibility or recognizer."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] supplied playback adapter requires started and completed signals instead of a resolved promise",
+          "line": 5,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied playback adapter with no result, missing start or played=false rejects with VOICE_PLAYBACK_INCOMPLETE."
+        },
+        {
+          "title": "[CONTRACT] failed recognizer response with text cannot become successful transcription",
+          "line": 17,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied recognizer ok=false with plausible text rejects with VOICE_TRANSCRIPTION_FAILED."
+        }
+      ]
     },
     {
       "file": "test/voice-conversation-real.test.mjs",
