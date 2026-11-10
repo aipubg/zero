@@ -7,6 +7,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { EventEmitter } from 'node:events';
 import { executeConfirmedAction } from './action-outcome.mjs';
+import { nextCronTime } from './cron-calendar.mjs';
 
 export class AutomationScheduler {
   /**
@@ -55,22 +56,7 @@ export class AutomationScheduler {
    * Compute next execution timestamp in milliseconds based on standard cron expression.
    */
   calculateNextRun(cronExpr, fromTime = Date.now()) {
-    const expr = (cronExpr || '').trim().toLowerCase();
-
-    // Shorthand keywords
-    if (expr === '@hourly') return fromTime + 3600 * 1000;
-    if (expr === '@daily') return fromTime + 86400 * 1000;
-    if (expr === '@weekly') return fromTime + 7 * 86400 * 1000;
-
-    // Step minutes (e.g. */5 * * * *, */15 * * * *)
-    const stepMatch = expr.match(/^\*\/(\d+)\s+\*\s+\*\s+\*\s+\*$/);
-    if (stepMatch) {
-      const minutes = parseInt(stepMatch[1], 10);
-      return fromTime + minutes * 60 * 1000;
-    }
-
-    // Default interval fallback (e.g. * * * * * = every 1 minute)
-    return fromTime + 60 * 1000;
+    return nextCronTime(cronExpr, fromTime);
   }
 
   registerJob({ id, title, cronExpr = '*/15 * * * *', targetAction, params = {}, enabled = true, nextRun = null, nextRunAt = null }) {
@@ -79,7 +65,9 @@ export class AutomationScheduler {
     }
     const now = Date.now();
     const jobId = id || `job_${now}_${Math.random().toString(36).slice(2, 8)}`;
-    const effectiveNextRun = nextRun || nextRunAt || this.calculateNextRun(cronExpr, now);
+    const calculated = this.calculateNextRun(cronExpr, now);
+    const effectiveNextRun = nextRun ?? nextRunAt ?? calculated;
+    if (!Number.isFinite(effectiveNextRun)) throw new Error('Invalid next execution timestamp');
 
     const stmt = this.db.prepare(`
       INSERT INTO zero_cron_jobs (
@@ -150,8 +138,10 @@ export class AutomationScheduler {
       let result = null;
       let serializedResult = null;
       let error = null;
+      let nextRun = null;
 
       try {
+        nextRun = this.calculateNextRun(job.cronExpr, now);
         result = await executeConfirmedAction(this.executor, job.targetAction, job.params);
         serializedResult = JSON.stringify(result);
       } catch (err) {
@@ -167,13 +157,16 @@ export class AutomationScheduler {
       runStmt.run(runId, job.id, status, serializedResult, error, now);
 
       // Schedule next run
-      const nextRun = this.calculateNextRun(job.cronExpr, now);
+      if (nextRun === null) {
+        // Preserve malformed legacy jobs and history, but stop unsafe retries.
+        this.db.prepare('UPDATE zero_cron_jobs SET enabled = 0 WHERE id = ?').run(job.id);
+      }
       const updateStmt = this.db.prepare(`
         UPDATE zero_cron_jobs
         SET last_run = ?, next_run = ?
         WHERE id = ?
       `);
-      updateStmt.run(now, nextRun, job.id);
+      updateStmt.run(now, nextRun ?? row.next_run, job.id);
 
       const runRecord = {
         runId,

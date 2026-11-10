@@ -226,16 +226,97 @@
     },
     {
       "file": "packages/automation/test/automation.test.mjs",
-      "sha256": "14593cac8df7604ea54d55125844a32bbe9a5a130ec1f594bc6fcc75259dc88b",
+      "sha256": "3052b9586840e149b6caad40ddc213d58bcb072bc351e65d2fe3861da5ef7832",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Calendar calculations and actual isolated SQLite scheduler bookkeeping with supplied executors; explicit timezone child processes.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No backup/email task or native gateway/UI execution; due times are manually supplied except separately recorded wall-clock runner. Parent containers are not additional runtime leaves."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Zero Durable Automation & Cron Scheduling Engine",
+          "line": 6,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Container for actual in-memory SQLite scheduler bookkeeping and supplied executor, plus calendar calculation unit checks."
+        },
+        {
+          "title": "registers, lists, toggles, and deletes recurring jobs",
+          "line": 22,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual in-memory SQLite registration, listing, disable/enable and deletion with absent lookup and empty listing after deletion."
+        },
+        {
+          "title": "calculates next execution time accurately for expressions",
+          "line": 50,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Fixed host-local timestamps assert calendar hourly/daily/ten-minute boundaries, not elapsed intervals."
+        },
+        {
+          "title": "triggers due jobs, records execution history, and advances schedule",
+          "line": 62,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Manually past-dated SQLite due job invokes supplied callback once and records history/future schedule; no actual email action."
+        },
+        {
+          "title": "handles job execution failure safely without crashing scheduler",
+          "line": 92,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied throwing executor records failed run and error in actual SQLite."
+        },
+        {
+          "title": "[UNIT] cron schedules match calendar boundaries, named ranges and restricted day union",
+          "line": 112,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Fixed calendar examples cover exact boundary, steps, ranges, names, leap day, day-field union and aliases."
+        },
+        {
+          "title": "[UNIT] invalid and impossible cron schedules fail instead of falling back to every minute",
+          "line": 128,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Invalid syntax/ranges/steps and impossible February date reject calculation and registration even with explicit nextRunAt."
+        },
+        {
+          "title": "[INTEGRATION] malformed persisted cron is retained and disabled before executing effects",
+          "line": 139,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual isolated SQLite malformed legacy row is retained and disabled with failed history before supplied effect counter runs."
+        },
+        {
+          "title": "[INTEGRATION] isolated timezone processes handle missing and repeated DST wall times",
+          "line": 155,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real isolated Node processes with explicit TZ calculate India and New York missing/repeated DST calendar outcomes; not a long-running timer."
+        }
+      ]
     },
     {
       "file": "packages/capability-engine/test/capability-engine.test.mjs",

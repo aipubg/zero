@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AutomationScheduler } from '../index.mjs';
+import { spawnSync } from 'node:child_process';
 
 test('Zero Durable Automation & Cron Scheduling Engine', async (t) => {
   let executedCount = 0;
@@ -41,18 +42,21 @@ test('Zero Durable Automation & Cron Scheduling Engine', async (t) => {
 
     const reEnabled = scheduler.toggleJob('daily-backup', true);
     assert.equal(reEnabled.enabled, true);
+    assert.equal(scheduler.deleteJob('daily-backup'), true);
+    assert.equal(scheduler.getJob('daily-backup'), null);
+    assert.deepEqual(scheduler.listJobs(), []);
   });
 
   await t.test('calculates next execution time accurately for expressions', () => {
-    const now = 1700000000000;
+    const now = new Date(2026, 10, 10, 8, 23, 42, 123).getTime();
     const hourly = scheduler.calculateNextRun('@hourly', now);
-    assert.equal(hourly, now + 3600 * 1000);
+    assert.equal(hourly, new Date(2026, 10, 10, 9, 0).getTime());
 
     const daily = scheduler.calculateNextRun('@daily', now);
-    assert.equal(daily, now + 86400 * 1000);
+    assert.equal(daily, new Date(2026, 10, 11, 0, 0).getTime());
 
     const step10 = scheduler.calculateNextRun('*/10 * * * *', now);
-    assert.equal(step10, now + 10 * 60 * 1000);
+    assert.equal(step10, new Date(2026, 10, 10, 8, 30).getTime());
   });
 
   await t.test('triggers due jobs, records execution history, and advances schedule', async () => {
@@ -103,4 +107,62 @@ test('Zero Durable Automation & Cron Scheduling Engine', async (t) => {
   });
 
   scheduler.close();
+});
+
+test('[UNIT] cron schedules match calendar boundaries, named ranges and restricted day union', () => {
+  const scheduler = new AutomationScheduler();
+  const next = (expr, from, expected) => assert.equal(scheduler.calculateNextRun(expr, from.getTime()), expected.getTime(), expr);
+  try {
+    next('0 9 * * *', new Date(2026, 10, 10, 8, 59, 59), new Date(2026, 10, 10, 9));
+    next('0 9 * * *', new Date(2026, 10, 10, 9), new Date(2026, 10, 11, 9));
+    next('*/23 * * * *', new Date(2026, 10, 10, 8, 47), new Date(2026, 10, 10, 9));
+    next('15,45 9-17/2 * * mon-fri', new Date(2026, 10, 13, 17, 45), new Date(2026, 10, 16, 9, 15));
+    next('0 0 29 feb *', new Date(2026, 2, 1), new Date(2028, 1, 29));
+    next('0 0 1 * mon', new Date(2026, 10, 2), new Date(2026, 10, 9));
+    next('@weekly', new Date(2026, 10, 10), new Date(2026, 10, 15));
+    next('0 0 * * 7', new Date(2026, 10, 10), new Date(2026, 10, 15));
+    next('@monthly', new Date(2026, 11, 31), new Date(2027, 0, 1));
+  } finally { scheduler.close(); }
+});
+
+test('[UNIT] invalid and impossible cron schedules fail instead of falling back to every minute', () => {
+  const scheduler = new AutomationScheduler();
+  try {
+    for (const expr of ['', '@reboot', '0 0 * * * *', '60 * * * *', '* 24 * * *', '*/0 * * * *', '10-2 * * * *', '0 0 31 feb *', '0 0 * wat *', 'garbage']) {
+      assert.throws(() => scheduler.calculateNextRun(expr), /cron/i, expr);
+      assert.throws(() => scheduler.registerJob({ title: 'Invalid', targetAction: 'effect', cronExpr: expr, nextRunAt: 1 }), /cron/i, expr);
+    }
+    assert.equal(scheduler.listJobs().length, 0);
+  } finally { scheduler.close(); }
+});
+
+test('[INTEGRATION] malformed persisted cron is retained and disabled before executing effects', async () => {
+  let effects = 0;
+  const scheduler = new AutomationScheduler({ executor: async () => { effects++; return { ok: true }; } });
+  try {
+    scheduler.registerJob({ id: 'legacy', title: 'Preserved legacy', targetAction: 'effect', cronExpr: '* * * * *', nextRunAt: 1 });
+    scheduler.db.prepare('UPDATE zero_cron_jobs SET cron_expr = ? WHERE id = ?').run('invalid legacy schedule', 'legacy');
+    const result = await scheduler.triggerDueJobs();
+    assert.equal(result.runs[0].status, 'failed');
+    assert.equal(effects, 0);
+    assert.equal(scheduler.getJob('legacy').enabled, false);
+    assert.equal(scheduler.getJob('legacy').cronExpr, 'invalid legacy schedule');
+    assert.match(scheduler.listRuns({ jobId: 'legacy' })[0].error, /cron/i);
+    assert.equal((await scheduler.triggerDueJobs()).triggeredCount, 0);
+  } finally { scheduler.close(); }
+});
+
+test('[INTEGRATION] isolated timezone processes handle missing and repeated DST wall times', () => {
+  for (const [timezone, expression, from, expected] of [
+    ['Asia/Calcutta', '0 9 * * *', '2026-11-10T03:00:00Z', '2026-11-10T03:30:00.000Z'],
+    ['America/New_York', '30 2 * * *', '2026-03-08T06:59:00Z', '2026-03-09T06:30:00.000Z'],
+    ['America/New_York', '30 1 * * *', '2026-11-01T05:30:00Z', '2026-11-01T06:30:00.000Z'],
+  ]) {
+    const source = `import { nextCronTime } from ${JSON.stringify(new URL('../cron-calendar.mjs', import.meta.url).href)}; console.log(new Date(nextCronTime(process.argv[1], Date.parse(process.argv[2]))).toISOString());`;
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', source, expression, from], {
+      env: { ...process.env, TZ: timezone }, encoding: 'utf8', windowsHide: true, timeout: 10000,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.trim(), expected, timezone + ' ' + from);
+  }
 });
