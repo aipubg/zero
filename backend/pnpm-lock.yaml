@@ -20,6 +20,9 @@ importers:
       openclaw:
         specifier: 2026.10.6
         version: 2026.10.6
+      tar:
+        specifier: 7.5.22
+        version: 7.5.22
       ws:
         specifier: 8.22.0
         version: 8.22.0

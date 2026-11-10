@@ -2607,14 +2607,14 @@
     },
     {
       "file": "test/assistant-tool-batch-contract.test.mjs",
-      "sha256": "fc1c43cd6588854bab6f28bc7237d786443e79fce3c2a10fcc83488dcbd57f2d",
+      "sha256": "158cbb9424efe59fa7e23c9eb1786ccc130adb32170d437d6965becb9a394cfa",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "CONTRACT",
         "INTEGRATION"
       ],
-      "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE.",
+      "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE. Protocol-shaped DSML/tool-call prose without API calls fails before any effect and persists failed receipts.",
       "gaps": [
         "Real native host and local HTTP, but controlled upstream model and supplied notification client; private assistant method invoked directly, no real browser/WebSocket client, external model or process restart."
       ],
@@ -2627,7 +2627,7 @@
             "CONTRACT",
             "INTEGRATION"
           ],
-          "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE."
+          "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE. Also rejects protocol-shaped assistant prose without API calls."
         }
       ]
     },
@@ -4900,15 +4900,103 @@
       ]
     },
     {
+      "file": "test/skill-archive-extraction.test.mjs",
+      "sha256": "186982230568a45b6f2fd013574afad5233fedc9a533ff7c36c8b563acceb2d0",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION",
+        "CONTRACT"
+      ],
+      "scope": "Actual maintained tar/gzip reader and filesystem preserve complete selected Unicode bundle; controlled malicious archives, missing manifests and cancellation reject before extraction output.",
+      "gaps": [
+        "Controlled local archive bytes; no external retrieval, publisher signature or model execution."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "archive extraction preserves the complete selected bundle and excludes other repository files",
+          "line": 38,
+          "labels": [
+            "INTEGRATION",
+            "CONTRACT"
+          ],
+          "scope": "Actual maintained tar/gzip reader and filesystem preserve complete selected Unicode bundle; controlled malicious archives, missing manifests and cancellation reject before extraction output."
+        },
+        {
+          "title": "archive validation rejects traversal, links, collisions, wrong pins and oversized files before extraction",
+          "line": 58,
+          "labels": [
+            "INTEGRATION",
+            "CONTRACT"
+          ],
+          "scope": "Actual maintained tar/gzip reader and filesystem preserve complete selected Unicode bundle; controlled malicious archives, missing manifests and cancellation reject before extraction output."
+        },
+        {
+          "title": "archive extraction refuses missing manifests and already-cancelled operations without output writes",
+          "line": 80,
+          "labels": [
+            "INTEGRATION",
+            "CONTRACT"
+          ],
+          "scope": "Actual maintained tar/gzip reader and filesystem preserve complete selected Unicode bundle; controlled malicious archives, missing manifests and cancellation reject before extraction output."
+        }
+      ]
+    },
+    {
+      "file": "test/skill-git-process.test.mjs",
+      "sha256": "fe48126401d506ac444ade8dd1ce5f4b504e84e8fc9bba94b40d44247f924297",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual Windows Git HTTP process trees stop on timeout, cancellation and authenticated pending-import host shutdown; independent CIM identity/socket readbacks and installed bundle/registry byte preservation.",
+      "gaps": [
+        "Windows only, explicitly BLOCKED elsewhere; controlled stalled localhost HTTP transport, not GitHub availability or forced host crash recovery."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "real Windows Git HTTP deadline stops its complete process tree before rejecting",
+          "line": 72,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Actual Windows Git HTTP process trees stop on timeout, cancellation and authenticated pending-import host shutdown; independent CIM identity/socket readbacks and installed bundle/registry byte preservation."
+        },
+        {
+          "title": "real Windows Git HTTP cancellation stops its complete process tree before rejecting",
+          "line": 76,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Actual Windows Git HTTP process trees stop on timeout, cancellation and authenticated pending-import host shutdown; independent CIM identity/socket readbacks and installed bundle/registry byte preservation."
+        },
+        {
+          "title": "actual host shutdown cancels an in-flight Skills import RPC and preserves installed bundles",
+          "line": 80,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Actual Windows Git HTTP process trees stop on timeout, cancellation and authenticated pending-import host shutdown; independent CIM identity/socket readbacks and installed bundle/registry byte preservation."
+        }
+      ]
+    },
+    {
       "file": "test/skill-sdk-integration.test.mjs",
-      "sha256": "6ec33b7327f5083723c03ce51cfc021aa3ce47b6f33843fb9f2e0cac4287f4c8",
+      "sha256": "87e0090cfc91ef45848954d8db03e29de20fc2f3341adfa00cc653c19c574983",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "CONTRACT",
         "INTEGRATION"
       ],
-      "scope": "Actual local bundle copy/update/uninstall archives files/state/config, disabled state survives loader reopen and original source bytes/content remain. Actual local git repository commits/clones with GitHub/raw URL identities rewritten to file transport; pinned revision/update/subpath guards checked offline. Actual installed fixture content/config retained after invalid name/name change, injected registry write failure and real junction escape refusal. Controlled loopback HTTP supplied model tool calls execute real report file capability; independent readback, secret omission, task steps and same-process SQLite reopen asserted. Actual deterministic operation batch fully validates before leading file effects; valid two writes leave FINAL and two steps. Controlled loopback HTTP supplies incomplete/refused/malformed/duplicate responses; real task failure and absent file effect asserted. Supplied tool refusal, missing fabric, malformed/empty loopback replies and disabled state propagate incomplete failure in actual task DB. Supplied nonsettling model Promise cancels on caller/controller and task cancellation; actual SQLite task remains CANCELLED. Direct Skills UI handlers persist actual fixture status/config/library/import/revision guards with secret redaction and same-process loader reopen; no browser. Supplied loop/unauthorized/echo/nonsettling model responses cannot complete actual task; call counters and deadline failures recorded. Actual custom skill creation/update stays in temp skills directory; malformed registry file rejects reopen and exact corrupt bytes remain.",
+      "scope": "Actual local bundle copy/update/uninstall archives files/state/config, disabled state survives loader reopen and original source bytes/content remain. Actual local git repository commits/clones with GitHub/raw URL identities rewritten to file transport; pinned revision/update/subpath guards checked offline. Actual installed fixture content/config retained after invalid name/name change, injected registry write failure and real junction escape refusal. Controlled loopback HTTP supplied model tool calls execute real report file capability; independent readback, secret omission, task steps and same-process SQLite reopen asserted. Actual deterministic operation batch fully validates before leading file effects; valid two writes leave FINAL and two steps. Controlled loopback HTTP supplies incomplete/refused/malformed/duplicate responses; real task failure and absent file effect asserted. Supplied tool refusal, missing fabric, malformed/empty loopback replies and disabled state propagate incomplete failure in actual task DB. Supplied nonsettling model Promise cancels on caller/controller and task cancellation; actual SQLite task remains CANCELLED. Direct Skills UI handlers persist actual fixture status/config/library/import/revision guards with secret redaction and same-process loader reopen; no browser. Supplied loop/unauthorized/echo/nonsettling model responses cannot complete actual task; call counters and deadline failures recorded. Actual custom skill creation/update stays in temp skills directory; malformed registry file rejects reopen and exact corrupt bytes remain. Pinned offline Git fixture explicitly selects Git transport rather than the default pinned GitHub archive transport.",
       "gaps": [
         "Locally authored Skill fixtures and offline Git URL rewrite, supplied model HTTP/Promise adapters and direct UI handlers; no real external model, GitHub source retrieval or browser. Reopened loaders/task store are same process."
       ],

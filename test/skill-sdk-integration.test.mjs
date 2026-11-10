@@ -147,7 +147,7 @@ test('GitHub tree and raw-file URLs clone actual git bundles and update recorded
   const raw = await loader.installSkill('https://raw.githubusercontent.com/sdk-fixture/report/main/skills/report/SKILL.md');
   assert.equal(raw.skill.source.revision, nextRevision);
   loader.uninstallSkill('external-report');
-  const pinned = await loader.installSkill(`https://github.com/sdk-fixture/report/tree/${firstRevision}/skills/report`);
+  const pinned = await loader.installSkill(`https://github.com/sdk-fixture/report/tree/${firstRevision}/skills/report`, { transport: 'git' });
   assert.equal(pinned.skill.version, '1.0.0');
   assert.equal(pinned.skill.source.revision, firstRevision);
   await assert.rejects(loader.installSkill('https://github.com/sdk-fixture/report/tree/main/skills/report', { subpath: '../escape' }), /inside/);

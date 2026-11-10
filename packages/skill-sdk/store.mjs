@@ -21,6 +21,9 @@ export class SkillStore {
     this.skillsDir = path.resolve(options.skillsDir || path.join(process.cwd(), 'skills'));
     this.statePath = path.resolve(options.statePath || path.join(this.skillsDir, '.zero-skills.json'));
     this.executionContext = options.executionContext || {};
+    this._sourceAbort = new AbortController();
+    this._sourceOperations = new Set();
+    this._sourceClosePromise = null;
   }
 
   _readState() {
@@ -116,8 +119,26 @@ export class SkillStore {
     if (!input) throw new Error('Skill source is required');
     if (options.enabled !== undefined && typeof options.enabled !== 'boolean') throw new Error('enabled must be boolean');
     const config = jsonConfig(options.config || {});
-    const acquired = await acquireSource(input, options);
-    try { return this._publish(acquired.directory, acquired.source, { ...options, config }); } finally { acquired.cleanup(); }
+    const signal = AbortSignal.any([this._sourceAbort.signal, ...(options.signal ? [options.signal] : [])]);
+    signal.throwIfAborted();
+    const operation = acquireSource(input, { ...options, signal });
+    this._sourceOperations.add(operation);
+    try {
+      const acquired = await operation;
+      try { signal.throwIfAborted(); return this._publish(acquired.directory, acquired.source, { ...options, config }); }
+      finally { acquired.cleanup(); }
+    } finally { this._sourceOperations.delete(operation); }
+  }
+
+  closeSources(reason = new Error('Skill source acquisition stopped with its host')) {
+    if (this._sourceClosePromise) return this._sourceClosePromise;
+    this._sourceAbort.abort(reason);
+    this._sourceClosePromise = Promise.allSettled([...this._sourceOperations]).then(results => ({
+      ok: !results.some(result => result.status === 'rejected' && result.reason?.childTreeExitConfirmed === false),
+      acquisitionsDrained: results.length,
+      cleanupUnconfirmed: results.filter(result => result.status === 'rejected' && result.reason?.childTreeExitConfirmed === false).length,
+    }));
+    return this._sourceClosePromise;
   }
 
   _publish(directory, source, options = {}) {

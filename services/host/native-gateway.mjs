@@ -2207,6 +2207,13 @@ export class ZeroNativeHost {
         }
         // If no tool calls were requested, complete with the accumulated content from this single request
         if (toolCallsMap.size === 0) {
+          // Protocol-shaped assistant text is not an executed API tool call.
+          // Never interpret it as code or report the requested action complete.
+          if (/^\s*(?:<tool_call(?:\s|>)|<｜DSML｜function_calls>|<｜DSML｜invoke\b)/u.test(accumulatedContent)) {
+            const error = new Error('Model emitted tool protocol as text; no API tool call was executed');
+            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
+            throw error;
+          }
           if (finishReason !== 'stop') {
             const error = new Error('Model declared tool calls without calls');
             recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
@@ -2393,6 +2400,7 @@ export class ZeroNativeHost {
   }
 
   async close(options = {}) {
+    const skillSourceDrain = this.skillLoader?.closeSources();
     await this.localGguf?.unloadModel(true);
     await this.screenAutomation.close();
     if (this.cronInterval) {
@@ -2403,6 +2411,7 @@ export class ZeroNativeHost {
       controller.abort();
     }
     this.activeTurns.clear();
+    const skillSourceResult = await skillSourceDrain;
     await this.voiceConversation.close();
     await Promise.allSettled([...this.pendingRequests]);
 
@@ -2428,6 +2437,7 @@ export class ZeroNativeHost {
     this.deviceManager?.close();
     this.automation.close();
     this.eventAutomation?.close();
+    if (skillSourceResult?.ok === false) throw new Error('Zero Host closed with unconfirmed Skill source process cleanup');
     console.log(`[Zero Host] Zero Native Gateway stopped cleanly (${options.reason || 'normal'}).`);
   }
 }

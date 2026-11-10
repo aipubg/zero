@@ -12,6 +12,11 @@ test('[CONTRACT] malformed tool batches fail before writes and exhausted loops p
   let mode; let target; let loopRequests = 0;
   const upstream = http.createServer(async (req, res) => {
     for await (const chunk of req) void chunk;
+    if (mode === 'text-tool-protocol') {
+      res.writeHead(200, { 'content-type': 'text/event-stream' });
+      res.end(`data: ${JSON.stringify({ choices: [{ delta: { content: '<tool_call>\n<｜DSML｜function_calls><｜DSML｜invoke name="write_file">' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`);
+      return;
+    }
     if (mode === 'recovery') {
       res.writeHead(200, { 'content-type': 'text/event-stream' });
       res.end(`data: ${JSON.stringify({ choices: [{ delta: { content: 'RECOVERED_RESPONSE' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`);
@@ -42,9 +47,9 @@ test('[CONTRACT] malformed tool batches fail before writes and exhausted loops p
     fs.rmSync(resolved, { recursive: true, force: true });
   });
   await host.start();
-  for (mode of ['json', 'duplicate', 'undeclared', 'missing-id', 'empty']) {
+  for (mode of ['json', 'duplicate', 'undeclared', 'missing-id', 'empty', 'text-tool-protocol']) {
     target = path.join(root, `${mode}.txt`);
-    await assert.rejects(host._runAssistantRequest({ sessionKey: mode, runId: mode, userContent: 'Execute requested tool batch', source: 'contract' }), /Malformed|duplicate|undeclared|without calls/);
+    await assert.rejects(host._runAssistantRequest({ sessionKey: mode, runId: mode, userContent: 'Execute requested tool batch', source: 'contract' }), /Malformed|duplicate|undeclared|without calls|tool protocol as text/);
     assert.equal(fs.existsSync(target), false, `Leading write must not run for ${mode}`);
     const receipt = host.sessions.db.prepare('select task_id,status from zero_assistant_receipts where run_id=?').get(mode);
     assert.equal(receipt.status, 'failed'); assert.equal(host.tasks.getTask(receipt.task_id).status, 'FAILED');

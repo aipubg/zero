@@ -1,10 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const run = promisify(execFile);
+import { runGit } from './git-process.mjs';
+import { acquireGithubArchive } from './github-archive.mjs';
 
 export function githubSource(input, options = {}) {
   let url;
@@ -50,6 +48,7 @@ export function copySkillTree(source, destination) {
 
 /** Acquire a source snapshot. Git is a transport only; installed scripts are never run here. */
 export async function acquireSource(input, options = {}) {
+  options.signal?.throwIfAborted();
   const source = typeof input === 'object' && input !== null ? input : githubSource(input, options) || { type: 'local', path: path.resolve(input) };
   if (source.type === 'local') {
     const supplied = path.resolve(source.path);
@@ -71,16 +70,20 @@ export async function acquireSource(input, options = {}) {
   };
   try {
     const pinnedCommit = checked.ref && /^[a-f0-9]{40}$/i.test(checked.ref);
-    const gitOptions = {
-      windowsHide: true, timeout: 120000, maxBuffer: 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-    };
-    const deadline = Date.now() + 120000;
+    const duration = options.timeoutMs ?? 120000;
+    if (!Number.isFinite(duration) || duration <= 0 || duration > 120000) throw new Error('Source acquisition timeout must be a positive duration up to 120000ms');
+    const deadline = Date.now() + duration;
+    const transport = options.transport || source.transport || (pinnedCommit ? 'github-archive' : 'git');
+    if (!['git', 'github-archive'].includes(transport)) throw new Error('Unsupported GitHub source transport');
+    let archiveInfo;
     const git = args => {
       const remaining = deadline - Date.now();
       if (remaining <= 0) throw new Error('GitHub skill acquisition timed out');
-      return run('git', args, { ...gitOptions, timeout: remaining });
+      return runGit(args, { timeoutMs: remaining, signal: options.signal });
     };
-    if (pinnedCommit) {
+    if (transport === 'github-archive') {
+      archiveInfo = await acquireGithubArchive(checked, { temporary, checkout, timeoutMs: deadline - Date.now(), signal: options.signal });
+    } else if (pinnedCommit) {
       // Fetch only the requested snapshot, not the unrelated current HEAD first.
       await git(['init', '--quiet', checkout]);
       await git(['-C', checkout, 'remote', 'add', 'origin', checked.url]);
@@ -96,12 +99,11 @@ export async function acquireSource(input, options = {}) {
       current = path.dirname(current);
     }
     if (!fs.existsSync(path.join(directory, 'SKILL.md'))) throw new Error('GitHub skill source requires SKILL.md; specify subpath for repositories with multiple skills');
-    const { stdout } = await git(['-C', checkout, 'rev-parse', 'HEAD']);
-    const revision = stdout.trim();
+    const revision = archiveInfo?.revision || (await git(['-C', checkout, 'rev-parse', 'HEAD'])).stdout.trim();
     if (pinnedCommit && revision.toLowerCase() !== checked.ref.toLowerCase()) throw new Error('Git snapshot differs from the requested pinned revision');
-    return { directory, source: { ...checked, revision }, cleanup };
+    return { directory, source: { ...checked, revision, ...(archiveInfo || { transport: 'git' }) }, cleanup };
   } catch (error) {
-    cleanup();
+    if (error.childTreeExitConfirmed !== false) cleanup();
     throw error;
   }
 }

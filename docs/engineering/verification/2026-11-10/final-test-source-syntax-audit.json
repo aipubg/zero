@@ -1,8 +1,8 @@
 {
   "status": "PASS_FOR_DECLARED_SOURCE_SCOPE_ONLY",
-  "method": "TypeScript 6.0.3 AST parse of current 109 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
-  "sourceFiles": 109,
-  "declarationsIncludingContainers": 611,
+  "method": "TypeScript 6.0.3 AST parse of current 111 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
+  "sourceFiles": 111,
+  "declarationsIncludingContainers": 617,
   "unsupported": [],
   "entries": [
     {
@@ -162,7 +162,7 @@
     },
     {
       "file": "test/assistant-tool-batch-contract.test.mjs",
-      "sha256": "fc1c43cd6588854bab6f28bc7237d786443e79fce3c2a10fcc83488dcbd57f2d",
+      "sha256": "158cbb9424efe59fa7e23c9eb1786ccc130adb32170d437d6965becb9a394cfa",
       "literalDeclarations": 1
     },
     {
@@ -471,8 +471,18 @@
       "literalDeclarations": 3
     },
     {
+      "file": "test/skill-archive-extraction.test.mjs",
+      "sha256": "186982230568a45b6f2fd013574afad5233fedc9a533ff7c36c8b563acceb2d0",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/skill-git-process.test.mjs",
+      "sha256": "fe48126401d506ac444ade8dd1ce5f4b504e84e8fc9bba94b40d44247f924297",
+      "literalDeclarations": 3
+    },
+    {
       "file": "test/skill-sdk-integration.test.mjs",
-      "sha256": "6ec33b7327f5083723c03ce51cfc021aa3ce47b6f33843fb9f2e0cac4287f4c8",
+      "sha256": "87e0090cfc91ef45848954d8db03e29de20fc2f3341adfa00cc653c19c574983",
       "literalDeclarations": 11
     },
     {
@@ -925,6 +935,14 @@
       "bindings": "test"
     },
     {
+      "file": "test/skill-archive-extraction.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/skill-git-process.test.mjs",
+      "bindings": "test"
+    },
+    {
       "file": "test/skill-sdk-integration.test.mjs",
       "bindings": "test"
     },
@@ -991,7 +1009,7 @@
   ],
   "limits": [
     "No test execution, product acceptance, reachable workflow completeness or independent verification of every application behavior.",
-    "611 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
+    "617 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
     "Classification applies to current cataloged files and declaration syntax; new sources/syntax require review.",
     "CLI integrity remains conservative REQUIRES_FINAL_SCOPE_AUDIT and release BLOCKED; this separate receipt must be reviewed alongside actual execution evidence."
   ],
