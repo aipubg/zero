@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TaskStateMachine, TASK_STATUS } from '../index.mjs';
 
-test('Zero Agent Runtime & Durable Task State Machine', async (t) => {
+test('In-memory SQLite task state transitions and supplied step records', async (t) => {
   const sm = new TaskStateMachine({ dbPath: ':memory:' });
+  t.after(() => sm.close());
 
   await t.test('creates task in PENDING status and transitions through happy path', () => {
     const task = sm.createTask({
@@ -64,7 +65,7 @@ test('Zero Agent Runtime & Durable Task State Machine', async (t) => {
     );
   });
 
-  await t.test('records step history, thoughts, and tool executions', () => {
+  await t.test('stores supplied step history and tool result records', () => {
     sm.createTask({ id: 'task-test-03', goal: 'Step record test' });
     sm.enqueueTask('task-test-03');
     sm.startTask('task-test-03');
@@ -110,5 +111,4 @@ test('Zero Agent Runtime & Durable Task State Machine', async (t) => {
     assert.equal(signal.aborted, true);
   });
 
-  sm.close();
 });

@@ -1,0 +1,18 @@
+{
+  "command": "node --test packages/agent-runtime/test/agent-runtime.test.mjs packages/agent-runtime/test/agent-delegation.test.mjs packages/capability-engine/test/capability-engine.test.mjs",
+  "reportedTestsPassed": 13,
+  "reportedSuites": 1,
+  "actualScope": "In-memory task bookkeeping and supplied step/outcome records; actual native screen geometry getter with positive dimensions and audit entry",
+  "changes": [
+    "Manual result storage and same-process recovery no longer named as actual tool/agent execution or host restart",
+    "Task stores close even when an assertion fails",
+    "Capability native daemon teardown registered after tests",
+    "Literal catalog now supports describe/it as well as test/t.test; containers remain distinguished from leaf runtime evidence"
+  ],
+  "intermediateFailure": "A stronger dimension assertion initially used res.width/res.height and failed3PASS/1FAIL; observed actual contract nests geometry under data. Corrected assertion checks data.width/data.height and positive finite values. Historical failure retained.",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 64,
+  "additionalUnreviewedFiles": 25,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

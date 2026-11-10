@@ -228,29 +228,111 @@
     },
     {
       "file": "packages/agent-runtime/test/agent-delegation.test.mjs",
-      "sha256": "cdf42fbb0dd5904cfda7ef2cee7eeea8b88e03a4e3591ec2cf76af3fe2a1191b",
+      "sha256": "87bb7a97b652d49317037d6fa5db0547afff42193088ae54c80799abc4c49dac",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Container for actual in-memory delegated task bookkeeping and supplied outcomes. Manual delegation and child completion store supplied tool/result records and resume parent; no specialist executes. Manual child failure records parent escalation wait state and step. Startup recovery method on same live in-memory state transitions a supplied running task to WAITING; no actual restart.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Manually completed/failed task records only; no independent agent/model, actual tools, stopped process or real host restart."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "In-memory delegated task bookkeeping and supplied recovery state",
+          "line": 5,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Container for actual in-memory delegated task bookkeeping and supplied outcomes."
+        },
+        {
+          "title": "manually completed child result resumes parent and stores supplied records",
+          "line": 9,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Manual delegation and child completion store supplied tool/result records and resume parent; no specialist executes."
+        },
+        {
+          "title": "manually failed child sets escalation state on parent",
+          "line": 61,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Manual child failure records parent escalation wait state and step."
+        },
+        {
+          "title": "startup recovery method transitions supplied running task without a process restart",
+          "line": 88,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Startup recovery method on same live in-memory state transitions a supplied running task to WAITING; no actual restart."
+        }
+      ]
     },
     {
       "file": "packages/agent-runtime/test/agent-runtime.test.mjs",
-      "sha256": "dc719f6449fb447d12fd72df2552c09012d860ab23b791bf75428bd92a2e9dbb",
+      "sha256": "45525dbe4c20a8ae1fb6b34ef09151af0b3368aff060231a52d0eed7bf73af5d",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Container for actual in-memory SQLite task transitions and supplied step records. Direct task methods create/queue/run/pause/resume/complete with supplied summary and actual SQLite status/time. Illegal direct transitions reject; pending task can cancel. Supplied thoughts/tool arguments/results inserted into actual SQLite and retrieved in order; no tool executed. Direct cancellation aborts associated local AbortController signal.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "In-memory SQLite and supplied results; no actual browser, tool, model, disk reopen or process restart."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "In-memory SQLite task state transitions and supplied step records",
+          "line": 5,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Container for actual in-memory SQLite task transitions and supplied step records."
+        },
+        {
+          "title": "creates task in PENDING status and transitions through happy path",
+          "line": 9,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Direct task methods create/queue/run/pause/resume/complete with supplied summary and actual SQLite status/time."
+        },
+        {
+          "title": "disallows invalid state transitions",
+          "line": 45,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Illegal direct transitions reject; pending task can cancel."
+        },
+        {
+          "title": "stores supplied step history and tool result records",
+          "line": 68,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Supplied thoughts/tool arguments/results inserted into actual SQLite and retrieved in order; no tool executed."
+        },
+        {
+          "title": "cancelling task triggers its AbortController signal",
+          "line": 102,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Direct cancellation aborts associated local AbortController signal."
+        }
+      ]
     },
     {
       "file": "packages/automation/test/automation.test.mjs",
@@ -348,16 +430,63 @@
     },
     {
       "file": "packages/capability-engine/test/capability-engine.test.mjs",
-      "sha256": "57e82f8b0e4e7d67c22a2c3be90125d3de9d05c0cb36a30bee295dad03b5d1aa",
+      "sha256": "e87cc992e71625de2dd5e87b04d717cd9b42d396af409643e2a61e57c754858a",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "REAL_OS"
+      ],
+      "scope": "Suite container for validation/hold contracts and actual Windows screen geometry audit. Registered capability/action metadata validates supported input and rejects unknown tool. Supplied disallowed action under known capability rejects before dispatch. Local operator hold blocks supplied click and records BLOCKED_BY_HOLD; click is not executed. Actual native getter returns positive dimensions under result.data and audit identity/duration/outcome; result remains UNVERIFIED without independent effect proof.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Only actual screen geometry getter executes natively; no successful mouse input, independent visual outcome, browser, plugin or full desktop workflow."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Zero Capability Execution Engine",
+          "line": 7,
+          "labels": [
+            "UNIT",
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Suite container for validation/hold contracts and actual Windows screen geometry audit."
+        },
+        {
+          "title": "validates registered capabilities and rejects unknown tools",
+          "line": 8,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Registered capability/action metadata validates supported input and rejects unknown tool."
+        },
+        {
+          "title": "rejects disallowed action under a valid capability",
+          "line": 19,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied disallowed action under known capability rejects before dispatch."
+        },
+        {
+          "title": "enforces human takeover hold arbitration",
+          "line": 26,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Local operator hold blocks supplied click and records BLOCKED_BY_HOLD; click is not executed."
+        },
+        {
+          "title": "actual screen geometry records an audit entry without independent outcome verification",
+          "line": 44,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual native getter returns positive dimensions under result.data and audit identity/duration/outcome; result remains UNVERIFIED without independent effect proof."
+        }
+      ]
     },
     {
       "file": "packages/gateway-protocol/test/gateway-protocol.test.mjs",
@@ -2468,7 +2597,7 @@
     },
     {
       "file": "test/verification/classification-runner.test.mjs",
-      "sha256": "6ea93665332e30498501082002b512a6e74db5d6600e54df7e287aadb8e3a7b5",
+      "sha256": "fa1e1f19023fd7f3c4fc63083660e644ba6e46fd5a8ebff53dd2794c70be1270",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -2508,7 +2637,7 @@
         },
         {
           "title": "dry audit has no passing assertions or verified requirements",
-          "line": 54,
+          "line": 57,
           "labels": [
             "UNIT"
           ],
@@ -2516,7 +2645,7 @@
         },
         {
           "title": "leaf skip and TODO, including empty reasons, never become PASS",
-          "line": 61,
+          "line": 64,
           "labels": [
             "UNIT"
           ],
@@ -2524,7 +2653,7 @@
         },
         {
           "title": "suite-only skip or setup failure blocks all missing leaves and adds no parent PASS",
-          "line": 70,
+          "line": 73,
           "labels": [
             "UNIT"
           ],
@@ -2532,7 +2661,7 @@
         },
         {
           "title": "failures, cancellation, timeouts and child transport problems cannot become green",
-          "line": 80,
+          "line": 83,
           "labels": [
             "UNIT"
           ],
@@ -2540,7 +2669,7 @@
         },
         {
           "title": "unknown/duplicate leaves and nonzero child exit cannot produce overall PASS",
-          "line": 93,
+          "line": 96,
           "labels": [
             "UNIT"
           ],
@@ -2548,7 +2677,7 @@
         },
         {
           "title": "all passing assertions still leave acceptance and release blocked",
-          "line": 101,
+          "line": 104,
           "labels": [
             "UNIT"
           ],
@@ -2556,7 +2685,7 @@
         },
         {
           "title": "real Node reporter handles passing, skipped, TODO and failed fixtures",
-          "line": 117,
+          "line": 120,
           "labels": [
             "INTEGRATION"
           ],
@@ -2564,7 +2693,7 @@
         },
         {
           "title": "real Node suite skip before declaration blocks inventoried children",
-          "line": 127,
+          "line": 130,
           "labels": [
             "INTEGRATION"
           ],
@@ -2572,7 +2701,7 @@
         },
         {
           "title": "real Node setup failure leaves inventoried assertions blocked",
-          "line": 134,
+          "line": 137,
           "labels": [
             "INTEGRATION"
           ],
@@ -2580,7 +2709,7 @@
         },
         {
           "title": "hung child has a bounded deadline and cannot pass",
-          "line": 142,
+          "line": 145,
           "labels": [
             "INTEGRATION"
           ],
@@ -2588,7 +2717,7 @@
         },
         {
           "title": "CLI rejects implicit execution and invalid selections without touching host",
-          "line": 148,
+          "line": 151,
           "labels": [
             "INTEGRATION"
           ],
@@ -2596,7 +2725,7 @@
         },
         {
           "title": "CLI dry audit returns NOT_RUN and BLOCKED for all 137 leaves",
-          "line": 156,
+          "line": 159,
           "labels": [
             "INTEGRATION"
           ],
@@ -2604,7 +2733,7 @@
         },
         {
           "title": "CLI integrity check exit zero explicitly means no product tests ran",
-          "line": 170,
+          "line": 173,
           "labels": [
             "INTEGRATION"
           ],

@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TaskStateMachine, TASK_STATUS } from '../index.mjs';
 
-test('Zero Multi-Agent Durable Delegation & Recovery Workflows', async (t) => {
+test('In-memory delegated task bookkeeping and supplied recovery state', async (t) => {
   const sm = new TaskStateMachine({ dbPath: ':memory:' });
+  t.after(() => sm.close());
 
-  await t.test('Scenario 1: Successful sub-agent delegation and result aggregation', () => {
+  await t.test('manually completed child result resumes parent and stores supplied records', () => {
     // 1. Create parent commander task
     const parent = sm.createTask({
       id: 'parent-task-100',
@@ -57,7 +58,7 @@ test('Zero Multi-Agent Durable Delegation & Recovery Workflows', async (t) => {
     sm.completeTask('parent-task-100');
   });
 
-  await t.test('Scenario 2: Failed child execution triggers human escalation', () => {
+  await t.test('manually failed child sets escalation state on parent', () => {
     const parent = sm.createTask({
       id: 'parent-task-200',
       sessionId: 'commander-session-2',
@@ -84,7 +85,7 @@ test('Zero Multi-Agent Durable Delegation & Recovery Workflows', async (t) => {
     assert.match(parentSteps[parentSteps.length - 1].thought, /Escalating to operator/);
   });
 
-  await t.test('Scenario 3: Host restart recovery transitions interrupted tasks safely', () => {
+  await t.test('startup recovery method transitions supplied running task without a process restart', () => {
     // Create an interrupted task simulated before host crash
     const interrupted = sm.createTask({
       id: 'crash-task-300',
@@ -108,5 +109,4 @@ test('Zero Multi-Agent Durable Delegation & Recovery Workflows', async (t) => {
     assert.match(steps[steps.length - 1].thought, /reboot detected/);
   });
 
-  sm.close();
 });

@@ -1,6 +1,8 @@
-import { describe, it } from 'node:test';
+import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { CapabilityEngine } from '../index.mjs';
+import { stopDaemon } from '../../../app/zero-control-ui/src/computer/windows-driver.js';
+after(() => stopDaemon());
 
 describe('Zero Capability Execution Engine', () => {
   it('validates registered capabilities and rejects unknown tools', () => {
@@ -39,7 +41,7 @@ describe('Zero Capability Execution Engine', () => {
     assert.equal(log[log.length - 1].decision, 'BLOCKED_BY_HOLD');
   });
 
-  it('records structured audit events for every invocation', async () => {
+  it('actual screen geometry records an audit entry without independent outcome verification', async () => {
     const engine = new CapabilityEngine();
     const res = await engine.execute({
       agentId: 'zero',
@@ -48,6 +50,8 @@ describe('Zero Capability Execution Engine', () => {
     });
 
     assert.equal(res.ok, true);
+    assert.ok(Number.isFinite(res.data.width) && res.data.width > 0);
+    assert.ok(Number.isFinite(res.data.height) && res.data.height > 0);
     assert.ok(res.auditId);
     assert.ok(typeof res.durationMs === 'number');
 

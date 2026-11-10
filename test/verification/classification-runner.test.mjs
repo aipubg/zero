@@ -49,6 +49,9 @@ test('literal extraction preserves title and exact CRLF line', () => {
     { title: 'double title', line: 1 }, { title: 'single title', line: 3 },
   ]);
   assert.deepEqual(reviewedDeclarations('test(`dynamic ${value}`, () => {});'), []);
+  assert.deepEqual(reviewedDeclarations('describe("container", () => {\n  it(\'assertion\', () => {});\n});'), [
+    { title: 'container', line: 1 }, { title: 'assertion', line: 2 },
+  ]);
 });
 
 test('dry audit has no passing assertions or verified requirements', () => {
