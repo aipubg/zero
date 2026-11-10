@@ -17,6 +17,8 @@ Subsequent voice correction: [native quiet-input playback and actual human inter
 
 Evidence keys used below:
 
+Owner-requested UI redesign: [ZERO / Orbital](../../design/ZERO-ORBITAL.md) adds a first-party command home, feature navigation, keyboard palette, responsive layout and shared settings styling over the existing live backend. [Current UI evidence](2026-11-10/zero-orbital-ui.json) keeps the actual failures and bounded assertion scopes; it does not replace the original product acceptance gates.
+
 Latest owner-delivery checkpoint: [usable local build, conservative cleanup and fresh regressions](2026-11-10/local-ready-cleanup-checkpoint.json). Frozen setup now succeeds; 103 UI-package checks, 59 selected core checks, 11 model/settings/import browser workflows and 14 external-lifecycle browser workflows passed at this checkpoint. The new external provider catalog retrieved84entries; the earlier HTTP502 remains a historical FAIL. Native local host is running with an authenticated browser connection and selected pinned Whisper assets. This is a usable local checkpoint, not a full production sign-off or exhaustive audit.
 
 - **UI:** [actual persisted UI/reconnect/scroll/search](2026-11-02/browser-per-workflow-classification.json); [recent nine-workflow regression and actual 3B tool recall](2026-11-10/qwen-3b-real-ui-recall.json).
@@ -32,7 +34,7 @@ Latest owner-delivery checkpoint: [usable local build, conservative cleanup and 
 
 | Clause | Required outcome | Current scope/status | Evidence and remaining limit |
 |---|---|---|---|
-| Honesty 1 | Classify all acceptance tests using the seven exact labels | PARTIAL | Original 137 leaves/18 files and 13 runner entrypoints plus 90 reviewed additional source files now inventoried with explicit declaration/mode scope. 108 total source files; 0 additional files remain NOT_REVIEWED. Integrity check explicitly reports exhaustiveClassification NOT_ESTABLISHED; see ADDITIONAL-TEST-CLASSIFICATION.md. |
+| Honesty 1 | Classify all acceptance tests using the seven exact labels | PARTIAL | Original 137 leaves/18 files and 13 runner entrypoints plus 91 reviewed additional source files now inventoried with explicit declaration/mode scope. 109 total source files; 0 additional files remain NOT_REVIEWED. Integrity check explicitly reports exhaustiveClassification REQUIRES_FINAL_SCOPE_AUDIT; see ADDITIONAL-TEST-CLASSIFICATION.md. |
 | Honesty 2 | Replace weak assertions with intended-outcome tests | PARTIAL | UI, Skills, Plugins, Agents, Screen, Voice and Desktop provide actual effects; legacy source/existence assertions remain explicitly insufficient. |
 | Honesty 3 | Remove misleading production-completion claims | PARTIAL | Current notices withdraw historical sign-off; exhaustive remaining claim scan/release audit still required. |
 | Honesty 4 | Preserve failing/blocked scenarios without PASS conversion | EVIDENCED | Voice interruption FAIL, prior local-model recall failures, interrupted endurance and external prerequisites retained. No global pass inference. |

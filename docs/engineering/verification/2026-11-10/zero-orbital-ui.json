@@ -1,0 +1,92 @@
+{
+  "date": "2026-11-10",
+  "status": "UI_IMPLEMENTED_WITH_SCOPED_EVIDENCE_PRODUCT_PARTIAL",
+  "ownerInstruction": "Build a distinctive first-party Zero-themed UI, expose useful existing features and continue remaining backend corrections.",
+  "visualIdentity": {
+    "name": "ZERO / Orbital",
+    "activeGeneration": "c0848250f1ee33d28b0ac8c2d37fef442c6499d219e7ef182ec292750998a767",
+    "design": "docs/design/ZERO-ORBITAL.md",
+    "source": [
+      "app/zero-control-ui/src/shell/zero-shell.js",
+      "app/zero-control-ui/src/shell/zero-shell.css"
+    ],
+    "externalAssets": false
+  },
+  "functionality": [
+    "Twelve live route destinations and eight additional settings palette destinations.",
+    "Alt+K navigation with filter, arrow/Enter, Escape; existing Ctrl+K search preserved.",
+    "Existing composer draft creation without submission or overwrite.",
+    "Actual Gateway-backed model/voice/observation/connection status; unavailable states retained.",
+    "Responsive desktop/tablet/mobile with no horizontal page overflow and composer in viewport.",
+    "Header control tray preserves existing controls; first-party settings branding and styled installation forms.",
+    "Hidden Models test marker removed and tests assert actual visible-heading contract."
+  ],
+  "preservation": "Existing route/session/data authority retained; preexisting owner configuration changes and unrelated temp directory are excluded from staging.",
+  "verification": {
+    "uiPackage": {
+      "passed": 104,
+      "log": "artifacts/ui-design/unit-release.log",
+      "scope": "Supplied DOM/contracts/local state, not 104 browser workflows"
+    },
+    "selectedIntegrationAndAudit": {
+      "passed": 29,
+      "log": "artifacts/ui-design/final-integration-audit.log",
+      "scope": "One actual shell browser workflow, eleven local Skill SDK checks and seventeen metadata/reporter checks"
+    },
+    "shellBrowser": {
+      "passed": 1,
+      "log": "artifacts/ui-design/shell-browser-release.log",
+      "scope": "Actual isolated host, navigation/draft/keyboard/responsive controls, no model accuracy or physical input claim"
+    },
+    "broadInitial": {
+      "status": "FAIL",
+      "passed": 12,
+      "failed": [
+        "Existing Skills page imports an actual pinned external GitHub bundle and persists it",
+        "Gateway reconnects after a real process stop/restart and memory remains"
+      ],
+      "receipt": "E:\\zero\\artifacts\\functional-browser\\1794323685661/report.json"
+    },
+    "broadCorrected": {
+      "status": "FAIL",
+      "passed": 13,
+      "failed": [
+        {
+          "name": "Existing Skills page imports an actual pinned external GitHub bundle and persists it",
+          "error": "locator.waitFor: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Installed skill: frontend-design. Reload to refresh the installed list.', { exact: true }) to be visible\u001b[22m\n"
+        }
+      ],
+      "receipt": "E:\\zero\\artifacts\\functional-browser\\1794324076276/report.json"
+    }
+  },
+  "correctionsDuringVerification": [
+    "Original Ctrl+K/native palette conflict retained in shell-browser-initial.log; own route navigation now Alt+K.",
+    "Native route interception left palette open, asynchronous settings shell removed identity and global Escape handling blocked close; corrected through capture/lifecycle handling, retained intermediate failure logs.",
+    "Dark scroll fades no longer inherit a white native surface.",
+    "Pinned Git Skill source fetches only requested snapshot, checks exact revision, uses one bounded 120-second acquisition deadline and guarded temporary cleanup. Local pinned-revision regression passes; real GitHub transport still times out.",
+    "Completed-request reconnect check uses actual wheel input to reach an older virtualized reply; independently verified persisted identity and zero extra model calls retained."
+  ],
+  "externalGitTransportProbe": {
+    "status": "FAILED",
+    "method": "Actual git HTTP1.1 ls-remote for anthropics/skills HEAD",
+    "elapsedMs": 15021,
+    "deadlineMs": 15000,
+    "commitReceived": false
+  },
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER; never restarted",
+  "remaining": [
+    "Real external Skill download is a current FAIL, not replaced with a local fixture PASS.",
+    "Remaining master-product voice/media/device/remote and full independent release gates remain open.",
+    "No full accessibility, all-screen/all-state regression or production completion claim."
+  ],
+  "ownerRuntime": {
+    "status": "PASS",
+    "pidAtCheckpoint": 10968,
+    "actualBrowserConnection": true,
+    "currentGenerationLoaded": true,
+    "ownerConfigurationAndEnvironmentBytesUnchanged": true,
+    "receipt": "artifacts/ui-design/owner-runtime-final.json",
+    "preview": "artifacts/ui-design/zero-orbital-preview.png",
+    "scope": "No owner chat submission, microphone capture or configuration writes"
+  }
+}

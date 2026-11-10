@@ -1,4 +1,6 @@
 import "./index.css";
+import "./src/shell/zero-shell.css";
+import { installZeroShell } from "./src/shell/zero-shell.js";
 import { PLUGIN_ID } from "./src/constants.js";
 import { installLegacyRouteInterceptor } from "./src/legacy-routes.js";
 import { installNativeSurfaces } from "./src/native-surfaces.js";
@@ -26,7 +28,9 @@ export default {
     if (typeof document !== 'undefined') document.getElementById?.("zero-permanent-top-actions")?.remove();
     const disposeRoutes = installLegacyRouteInterceptor(host);
     const disposeSurfaces = installNativeSurfaces(host);
+    const disposeShell = installZeroShell(host);
     return () => {
+      disposeShell?.();
       disposeSurfaces?.();
       disposeRoutes?.();
     };

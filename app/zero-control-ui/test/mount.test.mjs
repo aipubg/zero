@@ -24,7 +24,8 @@ test("Providers surface mounts supplied DOM text and disposes without a gateway"
   const container = new FakeElement("div");
   const handle = mountModelsPage(container, {});
   assert.equal(typeof handle.dispose, "function");
-  assert.match(container.textContent, /Model Providers & Gateway/);
+  assert.match(container.textContent, /Models & Providers/);
+  assert.equal(container.children[0].children.some(node => node.className === "zero-test-marker"), false);
   assert.match(container.textContent, /Configure cloud model providers/);
 
   handle.dispose();

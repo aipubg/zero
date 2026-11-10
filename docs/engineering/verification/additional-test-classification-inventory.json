@@ -625,7 +625,7 @@
     },
     {
       "file": "app/zero-control-ui/test/mount.test.mjs",
-      "sha256": "f2b0ed77b5952ff37ea9f2b98ea6af5fa3a0d38995dd534ef2ff7942624758e8",
+      "sha256": "8133061e5625b7a6b2856628a86eacfd0069996611408756ffd436bf066fb57a",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -644,11 +644,11 @@
           "labels": [
             "CONTRACT"
           ],
-          "scope": "Supplied FakeElement/document models page mount contains expected text and dispose empties container; no gateway request."
+          "scope": "Supplied FakeElement/document models page mount contains expected text and dispose empties container; no gateway request. Now asserts the actual Models & Providers title and absence of the removed hidden test-marker element."
         },
         {
           "title": "Runtime registration wires integration status and observation methods",
-          "line": 34,
+          "line": 35,
           "labels": [
             "CONTRACT"
           ],
@@ -656,7 +656,7 @@
         },
         {
           "title": "supplied CLI and connector metadata validate parameters and redact fixture secrets",
-          "line": 74,
+          "line": 75,
           "labels": [
             "CONTRACT"
           ],
@@ -664,7 +664,7 @@
         },
         {
           "title": "OMB connector projection: cached native MCP capabilities are bounded and secret-free",
-          "line": 128,
+          "line": 129,
           "labels": [
             "UNIT"
           ],
@@ -672,7 +672,7 @@
         },
         {
           "title": "observation runtime handlers expose bounded status, control, and recent rows",
-          "line": 177,
+          "line": 178,
           "labels": [
             "CONTRACT"
           ],
@@ -1127,7 +1127,7 @@
     },
     {
       "file": "app/zero-control-ui/test/product-path.test.mjs",
-      "sha256": "dea6902d596ec67ba4a3cadcbe0a100861f0fdda80fa783c3c745079e4130bc6",
+      "sha256": "fee110f3d84598ed41ba3d9fc5f699912f9422dc02f23bc3204370396b4d8e23",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -1146,11 +1146,11 @@
           "labels": [
             "CONTRACT"
           ],
-          "scope": "Fake document and FakeElement mount/dispose plus expected text only; no real gateway connection."
+          "scope": "Fake document and FakeElement mount/dispose plus expected text only; no real gateway connection. Now asserts the actual Models & Providers title and absence of the removed hidden test-marker element."
         },
         {
           "title": "pure session and error projections keep Gateway contracts stable",
-          "line": 30,
+          "line": 31,
           "labels": [
             "UNIT"
           ],
@@ -1158,7 +1158,7 @@
         },
         {
           "title": "built native bundle contains no CopilotKit product path",
-          "line": 84,
+          "line": 85,
           "labels": [
             "CONTRACT"
           ],
@@ -5620,6 +5620,33 @@
             "INTEGRATION"
           ],
           "scope": "pinned Whisper CPU decodes actual Windows synthesized speech"
+        }
+      ]
+    },
+    {
+      "file": "test/zero-shell-browser.test.mjs",
+      "sha256": "4d3a5c5c747949581bf2d0a1942b147c5d01863ede08b1b78dd4b0a552d24662",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "scope": "Actual first-party Orbital UI against isolated native Gateway: live connected response, unique navigation, draft card input/no overwrite/no chat submission, Alt+K filter/arrow/Enter navigation, settings identity, empty-filter/Escape, desktop/tablet/mobile layout and page-error absence.",
+      "gaps": [
+        "No model inference, native desktop input, microphone capture, arbitrary screen functionality or subjective complete design approval is established.",
+        "Missing installed Chrome/Edge fails the explicit browser prerequisite, never becomes PASS."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "Zero Orbital shell navigation, live status, draft preservation and responsive controls",
+          "line": 14,
+          "labels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "scope": "Actual route, keyboard, draft-preservation, zero chat.send/persisted-user-message, responsive viewport/composer and browser error checks with disposable real host; no mocked page rendering."
         }
       ]
     }

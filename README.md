@@ -4,6 +4,8 @@ Windows source setup: run `zero-setup.cmd`, then `zero-host.cmd`. Node.js24.11 o
 
 Existing-PC delivery: [open and use the current Windows build](docs/engineering/WINDOWS-READY.md), including the latest cleanup, tested fixes and remaining acceptance limits.
 
+First-party UI: [ZERO / Orbital](docs/design/ZERO-ORBITAL.md) — the owner-requested command workspace, feature navigation and responsive visual identity, connected to the existing backend.
+
 
 ZERO AI
 MASTER PRODUCT VISION, TARGET ARCHITECTURE, REPOSITORY TRANSFORMATION,

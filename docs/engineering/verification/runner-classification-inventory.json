@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "f075e79f8b6f113cb008c49174c37546d591d86db36b701574393481ed9c6ac9",
+      "sha256": "d86754eaddbbe81a995a847e9461e8cfb7a17f29fb32061781683b047b103e8f",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -12,7 +12,7 @@
         "REAL_OS",
         "CONTRACT"
       ],
-      "scope": "Isolated actual UI workflows and persisted effects with explicit selector validation; invalid/help invocations execute no product workflows.",
+      "scope": "Isolated actual UI workflows and persisted effects with explicit selector validation; invalid/help invocations execute no product workflows. Completed-request replay scrolls the actual transcript to a virtualized older reply with wheel input and records before/after scroll positions; old reply need not stay mounted at the bottom.",
       "modes": [
         "--external: two consecutive actual cloud UI sends on the same page, exact replies, durable transcript run IDs and restart/replay recovery",
         "--models: actual UI assignment, isolated settings restart and independently observed real upstream model request; provider-reported alias retained separately",

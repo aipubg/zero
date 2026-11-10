@@ -1,8 +1,8 @@
 {
   "status": "PASS_FOR_DECLARED_SOURCE_SCOPE_ONLY",
-  "method": "TypeScript 6.0.3 AST parse of current 108 test sources, direct declarations compared against catalog extraction; node:test bindings inspected.",
-  "sourceFiles": 108,
-  "declarationsIncludingContainers": 610,
+  "method": "TypeScript 6.0.3 AST parse of current 109 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
+  "sourceFiles": 109,
+  "declarationsIncludingContainers": 611,
   "unsupported": [],
   "entries": [
     {
@@ -37,7 +37,7 @@
     },
     {
       "file": "app/zero-control-ui/test/mount.test.mjs",
-      "sha256": "f2b0ed77b5952ff37ea9f2b98ea6af5fa3a0d38995dd534ef2ff7942624758e8",
+      "sha256": "8133061e5625b7a6b2856628a86eacfd0069996611408756ffd436bf066fb57a",
       "literalDeclarations": 5
     },
     {
@@ -57,7 +57,7 @@
     },
     {
       "file": "app/zero-control-ui/test/product-path.test.mjs",
-      "sha256": "dea6902d596ec67ba4a3cadcbe0a100861f0fdda80fa783c3c745079e4130bc6",
+      "sha256": "fee110f3d84598ed41ba3d9fc5f699912f9422dc02f23bc3204370396b4d8e23",
       "literalDeclarations": 3
     },
     {
@@ -544,6 +544,11 @@
       "file": "test/whisper-native-real.test.mjs",
       "sha256": "1b2de43e2d7976de5313b2c8f64f357f37aed571539dfe74a474eaddfe0fb3bf",
       "literalDeclarations": 1
+    },
+    {
+      "file": "test/zero-shell-browser.test.mjs",
+      "sha256": "4d3a5c5c747949581bf2d0a1942b147c5d01863ede08b1b78dd4b0a552d24662",
+      "literalDeclarations": 1
     }
   ],
   "imports": [
@@ -978,11 +983,15 @@
     {
       "file": "test/whisper-native-real.test.mjs",
       "bindings": "test"
+    },
+    {
+      "file": "test/zero-shell-browser.test.mjs",
+      "bindings": "test"
     }
   ],
   "limits": [
     "No test execution, product acceptance, reachable workflow completeness or independent verification of every application behavior.",
-    "610 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
+    "611 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
     "Classification applies to current cataloged files and declaration syntax; new sources/syntax require review.",
     "CLI integrity remains conservative REQUIRES_FINAL_SCOPE_AUDIT and release BLOCKED; this separate receipt must be reviewed alongside actual execution evidence."
   ],

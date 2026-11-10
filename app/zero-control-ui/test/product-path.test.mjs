@@ -20,7 +20,8 @@ test("Gateway models surface mounts clean slate ready for new gateway", async ()
 
   const container = new FakeElement("div");
   const handle = mountModelsPage(container, {});
-  assert.match(container.textContent, /Model Providers & Gateway/);
+  assert.match(container.textContent, /Models & Providers/);
+  assert.equal(container.children[0].children.some(node => node.className === "zero-test-marker"), false);
   assert.match(container.textContent, /Configure cloud model providers/);
 
   handle.dispose();
@@ -87,7 +88,8 @@ test("built native bundle contains no CopilotKit product path", async () => {
   );
   const bundle = await readFile(path.join(root, manifest.controlUi.entry), "utf8");
   assert.doesNotMatch(bundle, /copilotkit|@ag-ui|Failed to fetch threads/i);
-  assert.match(bundle, /Model Gateway/);
+  assert.match(bundle, /Models & Providers/);
+  assert.doesNotMatch(bundle, /zero-test-marker/);
   assert.match(bundle, /Private assistant for local Gateway-backed work/);
   assert.match(bundle, /openclaw-model-providers-page/);
   assert.match(bundle, /openclaw-about-page/);

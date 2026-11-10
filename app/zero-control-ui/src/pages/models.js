@@ -292,18 +292,12 @@ export function mountModelsPage(container, context = {}) {
 
   const root = element("div", "zero-models-view zero-models-page");
 
-  // Hidden test marker for verification suites
-  const testMarker = element("div", "zero-test-marker");
-  testMarker.style.display = "none";
-  testMarker.textContent = "Model Providers & Gateway - Model Gateway - Configure cloud model providers";
-  root.append(testMarker);
-
   // --- 1. Top Header ---
   const header = element("header", "zero-models-header");
   const headerLeft = element("div", "zero-models-header__left");
   const statusIcon = element("div", "zero-models-status-icon");
   const titles = element("div", "zero-models-header__titles");
-  const subtitle = element("div", "zero-models-header__subtitle", "Zero Models (PRIVATE GATEWAY PROVIDER MANAGER)");
+  const subtitle = element("div", "zero-models-header__subtitle", "INTELLIGENCE / MODEL ROUTING");
   const title = element("h1", "zero-models-header__title", "Models & Providers");
   const caption = element("div", "zero-models-header__caption", "Configure cloud model providers, defaults, offline GGUF models, and agent model bindings.");
 

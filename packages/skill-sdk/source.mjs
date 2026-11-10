@@ -63,16 +63,30 @@ export async function acquireSource(input, options = {}) {
   if (!checked) throw new Error('Expected a GitHub repository URL');
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-skill-github-'));
   const checkout = path.join(temporary, 'repository');
+  const cleanup = () => {
+    if (!fs.existsSync(temporary)) return;
+    const resolved = fs.realpathSync.native(temporary);
+    if (path.dirname(resolved) !== fs.realpathSync.native(os.tmpdir()) || !path.basename(resolved).startsWith('zero-skill-github-')) throw new Error('Refusing to remove an unexpected skill source directory');
+    fs.rmSync(resolved, { recursive: true, force: true });
+  };
   try {
     const pinnedCommit = checked.ref && /^[a-f0-9]{40}$/i.test(checked.ref);
     const gitOptions = {
       windowsHide: true, timeout: 120000, maxBuffer: 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     };
-    await run('git', ['clone', '--depth', '1', '--no-tags', ...(checked.ref && !pinnedCommit ? ['--branch', checked.ref] : []), '--', checked.url, checkout], gitOptions);
+    const deadline = Date.now() + 120000;
+    const git = args => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new Error('GitHub skill acquisition timed out');
+      return run('git', args, { ...gitOptions, timeout: remaining });
+    };
     if (pinnedCommit) {
-      await run('git', ['-C', checkout, 'fetch', '--depth', '1', 'origin', checked.ref], gitOptions);
-      await run('git', ['-C', checkout, 'checkout', '--detach', 'FETCH_HEAD'], gitOptions);
-    }
+      // Fetch only the requested snapshot, not the unrelated current HEAD first.
+      await git(['init', '--quiet', checkout]);
+      await git(['-C', checkout, 'remote', 'add', 'origin', checked.url]);
+      await git(['-C', checkout, 'fetch', '--depth', '1', '--no-tags', 'origin', checked.ref]);
+      await git(['-C', checkout, 'checkout', '--detach', 'FETCH_HEAD']);
+    } else await git(['clone', '--depth', '1', '--no-tags', ...(checked.ref ? ['--branch', checked.ref] : []), '--', checked.url, checkout]);
     const directory = path.resolve(checkout, checked.subpath);
     if (directory !== checkout && !directory.startsWith(checkout + path.sep)) throw new Error('Skill path escapes repository');
     // A symlink in any ancestor must not allow a selected subtree to escape checkout.
@@ -82,10 +96,12 @@ export async function acquireSource(input, options = {}) {
       current = path.dirname(current);
     }
     if (!fs.existsSync(path.join(directory, 'SKILL.md'))) throw new Error('GitHub skill source requires SKILL.md; specify subpath for repositories with multiple skills');
-    const { stdout } = await run('git', ['-C', checkout, 'rev-parse', 'HEAD'], { windowsHide: true });
-    return { directory, source: { ...checked, revision: stdout.trim() }, cleanup: () => fs.rmSync(temporary, { recursive: true, force: true }) };
+    const { stdout } = await git(['-C', checkout, 'rev-parse', 'HEAD']);
+    const revision = stdout.trim();
+    if (pinnedCommit && revision.toLowerCase() !== checked.ref.toLowerCase()) throw new Error('Git snapshot differs from the requested pinned revision');
+    return { directory, source: { ...checked, revision }, cleanup };
   } catch (error) {
-    fs.rmSync(temporary, { recursive: true, force: true });
+    cleanup();
     throw error;
   }
 }

@@ -1065,8 +1065,24 @@ try {
       assert.equal((await rpc('models.status')).upstreamRequestCount, before);
       const history = await rpc('chat.history', { sessionKey: original.sessionKey });
       assert.equal(history.messages.filter(message => message.role === 'user' && message.content === originalRequest.message).length, 1);
-      await page.getByText(original.content, { exact: true }).last().waitFor();
-      replayEvidence = { taskId: replay.taskId, additionalModelCalls: 0, originalUserMessageCount: 1, replyVisibleAfterReconnect: true };
+      const originalReply = page.getByText(original.content, { exact: true }).last();
+      const viewport = page.locator('.chat-pane-cache__pane--active .chat-thread-viewport');
+      const scrollPositions = () => page.locator('.chat-pane-cache__pane--active .chat-thread, .chat-pane-cache__pane--active .chat-thread-viewport').evaluateAll(nodes => nodes.map(node => ({ className: node.className, scrollTop: node.scrollTop, scrollHeight: node.scrollHeight, clientHeight: node.clientHeight })));
+      const beforeScroll = await scrollPositions();
+      // Later skill/plugin turns can virtualize the older reply out of the DOM.
+      // Reach it through actual UI scrolling instead of requiring every turn to
+      // remain mounted at the bottom of a long conversation.
+      for (let attempt = 0; !await originalReply.count() && attempt < 24; attempt++) {
+        const box = await viewport.boundingBox();
+        assert.ok(box, 'Active transcript viewport must exist');
+        await page.mouse.move(box.x + 8, box.y + Math.min(100, box.height / 2));
+        await page.mouse.wheel(0, -700);
+        await page.waitForTimeout(100);
+      }
+      await originalReply.scrollIntoViewIfNeeded();
+      await originalReply.waitFor();
+      const afterScroll = await scrollPositions();
+      replayEvidence = { taskId: replay.taskId, additionalModelCalls: 0, originalUserMessageCount: 1, replyVisibleAfterReconnect: true, beforeScroll, afterScroll };
     }
     await page.getByRole('textbox', { name: 'Chat composer', exact: true }).fill('Connected after real restart');
     return { oldPid, newPid: child.pid, memoryCount: records.length, closedAt: previousConnection.closedAt, reconnectedAt: recovered.connectedAt, completedRequestReplay: replayEvidence };
