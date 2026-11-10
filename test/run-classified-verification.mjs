@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { validateInventory, emptyResults, reconcile, summarize } from './verification/classification-core.mjs';
 import { validateRunnerCatalog } from './verification/runner-catalog.mjs';
+import { validateAdditionalTestCatalog } from './verification/additional-test-catalog.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const inventoryPath = path.join(root, 'docs/engineering/verification/test-classification-inventory.json');
@@ -84,10 +85,14 @@ export async function main(args = process.argv.slice(2)) {
   if (execute && (!disposable || !requested.length)) throw new Error('Execution requires explicit --suite IDs and --disposable-environment; no owner-state execution');
   const inventory = validateInventory(JSON.parse(fs.readFileSync(inventoryPath, 'utf8')), root);
   const runnerCatalog = validateRunnerCatalog(root);
+  const additionalTests = validateAdditionalTestCatalog(root, inventory.suites.map(suite => suite.file));
   for (const id of requested) if (!inventory.suites.some(suite => suite.id === id)) throw new Error(`Unknown suite: ${id}`);
   if (check) {
     console.log(JSON.stringify({ inventoryIntegrity: 'VALID', suites: inventory.suites.length,
       additionalRunnerCatalog: 'VALID', additionalRunnerCount: runnerCatalog.runners.length,
+      additionalTestCatalog: 'VALID', totalTestSourceFiles: additionalTests.totalSourceFiles,
+      additionalReviewedFiles: additionalTests.reviewed, additionalUnreviewedFiles: additionalTests.unreviewed.length,
+      exhaustiveClassification: additionalTests.unreviewed.length ? 'NOT_ESTABLISHED' : 'REQUIRES_FINAL_SCOPE_AUDIT',
       leaves: inventory.suites.reduce((total, suite) => total + suite.tests.length, 0),
       execution: 'NOT_RUN', releaseStatus: 'BLOCKED' }, null, 2));
     return 0;
@@ -114,6 +119,7 @@ export async function main(args = process.argv.slice(2)) {
     selectedSuites: suites.map(suite => suite.id),
     sourceHashes: Object.fromEntries(suites.map(suite => [suite.file, suite.sha256])),
     scope: 'Selected audited leaves only; never an overall product acceptance result',
+    additionalTestCoverage: { reviewedFiles: additionalTests.reviewed, unreviewedFiles: additionalTests.unreviewed, execution: 'NOT_RUN_BY_INVENTORY' },
     summary: summarize(results, suiteRuns), suiteRuns, results,
     unimplementedGates: inventory.unimplementedGates,
     reportedBrowserBlocker: inventory.reportedBrowserBlocker,

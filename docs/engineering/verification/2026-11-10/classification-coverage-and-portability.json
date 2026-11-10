@@ -1,0 +1,68 @@
+{
+  "classification": [
+    "CONTRACT",
+    "INTEGRATION",
+    "REAL_OS"
+  ],
+  "status": "PARTIAL",
+  "scope": "Classification metadata, real reporter/CLI behavior and actual native speech regression only; no complete-product or exhaustive classification claim",
+  "sourceCoverage": {
+    "totalFiles": 106,
+    "legacySuiteFiles": 18,
+    "legacyLeaves": 137,
+    "standaloneScripts": 13,
+    "additionalReviewedFiles": 19,
+    "additionalUnreviewedFiles": 69,
+    "reviewedDeclarations": 40,
+    "exhaustiveClassification": "NOT_ESTABLISHED"
+  },
+  "portability": {
+    "before": "Archive audit BLOCKED by source SHA mismatch from CRLF/LF only",
+    "beforeLog": "artifacts/catalog-portability-before.log",
+    "comparedFiles": 31,
+    "onlyLineEndingDifferences": true,
+    "originalAuditByteHashesAllPreservedAndMatched": true,
+    "canonicalChecksPassedInOwnerWorktreeAndOutsideSource": true,
+    "binaryArtifactHashingChanged": false
+  },
+  "regression": {
+    "initialOwnerSchemaFailure": {
+      "tests": 18,
+      "pass": 17,
+      "fail": 1,
+      "skipped": 0
+    },
+    "finalOwner": {
+      "tests": 18,
+      "pass": 18,
+      "fail": 0,
+      "skipped": 0
+    },
+    "finalOutside": {
+      "tests": 18,
+      "pass": 18,
+      "fail": 0,
+      "skipped": 0
+    },
+    "finalOwnerArtifact": "artifacts/current-catalog-final-schema-tests.log",
+    "finalOutsideArtifact": "outside-source/additional-catalog-final-schema-tests.log"
+  },
+  "nativeSpeech": {
+    "artifact": "artifacts/current-windows-recognition-acceptance.log",
+    "tests": 6,
+    "pass": 6,
+    "fail": 0,
+    "skipped": 0,
+    "scope": "Actual Windows TTS/SAPI native readiness/cancellation/recovery; no microphone/playback, documented>=75percent word agreement plus required phrase, not exact transcript fidelity",
+    "missingRecognizerGuard": "Explicit BLOCKED/skip added; actual recognizer-present machine tested. Missing-recognizer Windows machine not available; Node skip-to-BLOCKED reporter behavior tested separately."
+  },
+  "sourceHashEncoding": "UTF8_LF",
+  "sourceHashes": {
+    "test/run-classified-verification.mjs": "c2a05b3b86fb3201ce3878e75a6ecd18941d1d6ed93fc0a6fa9bc80a46893181",
+    "test/verification/classification-core.mjs": "79876d69d5b775cbe09aac46c9560d76d7f9431a038fd9b79d35cc8d3990f81f",
+    "test/verification/runner-catalog.mjs": "37229f9362dddcae28d0b487db2620ca9875577213d3889284509c14ffd25564",
+    "test/verification/additional-test-catalog.mjs": "1a35078b803fb31e56741e76afecf4b677aa97af1db851b084cf879465089551",
+    "test/additional-test-catalog.test.mjs": "fb48e5bd8b9a3b8979a7a6e78ec3d4244a65a655e81286d3ce578e9c8e595374",
+    "packages/voice-engine/test/windows-native.integration.test.mjs": "590f66a371dd815d08d510aca6881ab5d120928caec17a90b5a705fd85e92ac1"
+  }
+}

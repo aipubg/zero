@@ -34,6 +34,10 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
   }
   assert.equal(availability.microphone.selection, 'windows-default-mapper');
   assert.equal(availability.synthesis.available, true, availability.synthesis.reason);
+  if (!availability.recognition.available) {
+    t.skip(`BLOCKED: installed Windows dictation recognizer unavailable: ${availability.recognition.reason || 'no recognizer'}`);
+    return;
+  }
 
   const phrase = 'The voice engine can now speak real words.';
   const audio = await backend.synthesize(phrase);
@@ -54,12 +58,7 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
   await writeFile(proof, wav);
   t.diagnostic(`REAL_WINDOWS_TTS_PROOF ${JSON.stringify({ file: proof, pcmBytes: audio.pcm.length, sampleRate: audio.sampleRate, voice: audio.voice })}`);
 
-  await t.test('real dictation recognizes the synthesized words or reports a missing recognizer', async () => {
-    if (!availability.recognition.available) {
-      await assert.rejects(backend.transcribe(audio.pcm), { code: 'VOICE_TRANSCRIBE_FAILED' });
-      t.diagnostic(`Recognition unavailable: ${availability.recognition.reason}`);
-      return;
-    }
+  await t.test('real dictation recognizes the synthesized words', async () => {
     const result = await backend.transcribe(audio.pcm, { language: 'en-US' });
     assert.equal(result.language, 'en-US');
     assert.equal(result.transcribed, true);
@@ -83,10 +82,8 @@ test('[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifac
       assert.equal(result.played, false);
       assert.equal(Buffer.concat(frames).length, result.pcmByteLength);
       engine.ingestChunk('native-proof', Buffer.concat(frames));
-      if (availability.recognition.available) {
-        const transcript = await engine.transcribe('native-proof');
-        assertRecognizedPhrase(transcript.text);
-      }
+      const transcript = await engine.transcribe('native-proof');
+      assertRecognizedPhrase(transcript.text);
       assert.equal(engine.getStatus().sessions[0].microphoneActive, false);
     } finally { engine.close(); }
   });

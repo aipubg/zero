@@ -281,7 +281,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "54a361f17b67ef9583b2fc7dc8eafd62832d8238a800bcaf355a8078b38af3d5"
     },
     {
       "id": "phase2",
@@ -455,7 +456,8 @@
             "Zero movement passes; no overflow target identified."
           ]
         }
-      ]
+      ],
+      "originalAuditByteSha256": "ad62a0afc6a5803ce7bd8f909d8a847db2e3459958d0ba3bf5d4ac364dd08381"
     },
     {
       "id": "phase3",
@@ -576,7 +578,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "85b69bbb34fab3ef8301d948ebabc5cde31f1204116420d44f9dde9e3e2a5f14"
     },
     {
       "id": "phase4",
@@ -700,7 +703,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "243323dc7daa5a9ccf90ef71b04f4e6a3fb3f3e1465997b0123485f615812b86"
     },
     {
       "id": "phase5",
@@ -820,7 +824,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "4649615a5488167ac5e1dcf0d72dbc7223aaa351f6119e58504cc75f84844cd5"
     },
     {
       "id": "phase6",
@@ -908,7 +913,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "df8be593561616cebc852e043f0daec9424e4bba1dfd3c2d3144aaa154e6e4b1"
     },
     {
       "id": "phase7",
@@ -1031,7 +1037,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "71c16355953e01635545db4c0bfd1253f63a7ebc671b164630981300e42daed4"
     },
     {
       "id": "phase8",
@@ -1117,7 +1124,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "c60f4e61bfc07b486f3dae309bdeec7181977fd0d1fbe30bc7cc05607875ad95"
     },
     {
       "id": "phase9",
@@ -1219,7 +1227,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "6d9d1a600766718eadcdc2483dd7a8e7b99c12383ca34eaf64f01f41bbf02034"
     },
     {
       "id": "phase10",
@@ -1322,12 +1331,13 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "382bdfa506ffba0e3df20ef3eb9317e8254c5e8543b05ad18d2fe545c2ee08ee"
     },
     {
       "id": "phase11",
       "file": "test/phase11-automation-connectors.test.mjs",
-        "sha256": "6f051d16659d8683cf21138ded5d300cdbc8b20107e5b4206e5825f4acc52b05",
+      "sha256": "6f051d16659d8683cf21138ded5d300cdbc8b20107e5b4206e5825f4acc52b05",
       "prerequisites": [
         "node24",
         "host18789"
@@ -1346,7 +1356,7 @@
             "ENDURANCE"
           ],
           "claim": "11.1 Scheduled Cron Job Registration and Due Execution",
-            "proves": "Executes a scheduled native window query and checks live PID/bounds plus exact persisted output; tool output is not independent verification.",
+          "proves": "Executes a scheduled native window query and checks live PID/bounds plus exact persisted output; tool output is not independent verification.",
           "gaps": [
             "No unattended timer, restart durability or independent side-effect verification."
           ],
@@ -1356,7 +1366,7 @@
         {
           "id": "phase11:02",
           "title": "11.2 Event-Driven Conditional Workflow Rules",
-            "line": 134,
+          "line": 134,
           "labels": [
             "INTEGRATION"
           ],
@@ -1365,7 +1375,7 @@
             "REAL_OS"
           ],
           "claim": "11.2 Event-Driven Conditional Workflow Rules",
-            "proves": "Emits explicit test events, checks matching and actual native screen dimensions; does not verify real event-source wiring.",
+          "proves": "Emits explicit test events, checks matching and actual native screen dimensions; does not verify real event-source wiring.",
           "gaps": [
             "No native event producer; deletes all existing screen:window_changed rules."
           ],
@@ -1375,7 +1385,7 @@
         {
           "id": "phase11:03",
           "title": "11.3 Automation Templates Catalog and Instantiation",
-            "line": 181,
+          "line": 181,
           "labels": [
             "INTEGRATION"
           ],
@@ -1393,7 +1403,7 @@
         {
           "id": "phase11:04",
           "title": "11.4 External Connected Connectors Discovery and Health Ping",
-            "line": 200,
+          "line": 200,
           "labels": [
             "CONTRACT"
           ],
@@ -1401,14 +1411,15 @@
             "REAL_EXTERNAL"
           ],
           "claim": "11.4 External Connected Connectors Discovery and Health Ping",
-            "proves": "Exercises connector registration and actual local HTTP HEAD success/failure through RPC; functional execution remains explicitly unverified. Requires a disposable host via ZERO_ACCEPTANCE_PORT.",
+          "proves": "Exercises connector registration and actual local HTTP HEAD success/failure through RPC; functional execution remains explicitly unverified. Requires a disposable host via ZERO_ACCEPTANCE_PORT.",
           "gaps": [
             "No independent authenticated remote request or service-side outcome."
           ],
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "6f051d16659d8683cf21138ded5d300cdbc8b20107e5b4206e5825f4acc52b05"
     },
     {
       "id": "phase12",
@@ -1476,7 +1487,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "d5116bd7316889d2a3d7326ffad9b2278dd6976e4a1da855fe1786c58ab67d04"
     },
     {
       "id": "phase13",
@@ -1544,7 +1556,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "a938d5740e2ba9b0e4f4ec8438bb006a2d3c60a69e7f9b0a5665f5abf6f78016"
     },
     {
       "id": "phase14",
@@ -1689,7 +1702,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "ff18fc7bbc45b4199d876d7877ac73f498ab62961c2603f02d9048784dc7789c"
     },
     {
       "id": "phase15",
@@ -1830,7 +1844,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "fabe75685b1c5f81d83a5590c4421853bea265c9ec621876a458c66376d06c35"
     },
     {
       "id": "phase16",
@@ -1936,7 +1951,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "0fb8b54bddb4f3e35c1956b619a7e361ddd31a64cddb0f227b6b73842b27f4b9"
     },
     {
       "id": "phase17",
@@ -2025,7 +2041,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "ccc3720cdbf132d43d9e1bbb5c262ed8db67a3a4dc2d99aec57a9edaa67906a8"
     },
     {
       "id": "requirements48",
@@ -2924,7 +2941,8 @@
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
         }
-      ]
+      ],
+      "originalAuditByteSha256": "0476c73d8c6d825bbd906385051b031e79e2046fa4dbc8c2d436bfd654815d8f"
     }
   ],
   "reportedChecks": [
@@ -2968,5 +2986,7 @@
     "commit": "bd4607f",
     "source": "User-reported milestone",
     "scope": "Search provenance and backup script; this audit created no commit."
-  }
+  },
+  "hashEncoding": "UTF8_LF",
+  "hashScope": "Source text with CRLF normalized to LF only; original Windows audit byte hashes retained. Not binary artifact hashing."
 }

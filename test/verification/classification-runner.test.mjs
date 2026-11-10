@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { LABELS, declarations, emptyResults, reconcile, summarize, validateInventory } from './classification-core.mjs';
 import { runChild } from '../run-classified-verification.mjs';
+import { validateAdditionalTestCatalog } from './additional-test-catalog.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const inventory = JSON.parse(fs.readFileSync(path.join(root, 'docs/engineering/verification/test-classification-inventory.json'), 'utf8'));
@@ -165,5 +166,12 @@ test('CLI dry audit returns NOT_RUN and BLOCKED for all 137 leaves', () => {
 test('CLI integrity check exit zero explicitly means no product tests ran', () => {
   const child = spawnSync(process.execPath, ['test/run-classified-verification.mjs', '--check'], { cwd: root, encoding: 'utf8', windowsHide: true });
   assert.equal(child.status, 0);
-  assert.deepEqual(JSON.parse(child.stdout), { inventoryIntegrity: 'VALID', suites: 18, leaves: 137, execution: 'NOT_RUN', releaseStatus: 'BLOCKED' });
+  const additional = validateAdditionalTestCatalog(root, inventory.suites.map(suite => suite.file));
+  const runners = JSON.parse(fs.readFileSync(path.join(root, 'docs/engineering/verification/runner-classification-inventory.json'), 'utf8'));
+  assert.deepEqual(JSON.parse(child.stdout), { inventoryIntegrity: 'VALID', suites: 18,
+    additionalRunnerCatalog: 'VALID', additionalRunnerCount: runners.runners.length,
+    additionalTestCatalog: 'VALID', totalTestSourceFiles: additional.totalSourceFiles,
+    additionalReviewedFiles: additional.reviewed, additionalUnreviewedFiles: additional.unreviewed.length,
+    exhaustiveClassification: additional.unreviewed.length ? 'NOT_ESTABLISHED' : 'REQUIRES_FINAL_SCOPE_AUDIT',
+    leaves: 137, execution: 'NOT_RUN', releaseStatus: 'BLOCKED' });
 });

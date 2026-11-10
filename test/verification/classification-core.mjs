@@ -6,6 +6,8 @@ export const LABELS = Object.freeze([
   'UNIT', 'CONTRACT', 'INTEGRATION', 'REAL_BROWSER', 'REAL_OS', 'REAL_EXTERNAL', 'ENDURANCE',
 ]);
 export const sha256 = text => createHash('sha256').update(text).digest('hex');
+// Text-source identity only. Binary artifact integrity must remain byte-exact.
+export const sourceSha256 = text => sha256(text.replace(/\r\n/g, '\n'));
 
 // Deliberately limited to the literal declarations used by the audited sources.
 // Unknown syntax/count/source drift is an audit error, never inferred coverage.
@@ -17,6 +19,7 @@ export function declarations(source) {
 
 export function validateInventory(inventory, root) {
   if (inventory.schemaVersion !== 1) throw new Error('Unsupported inventory schema');
+  if (inventory.hashEncoding !== 'UTF8_LF') throw new Error('Explicit UTF8_LF source fingerprint encoding required');
   if (JSON.stringify(inventory.labels) !== JSON.stringify(LABELS)) throw new Error('Exact classification labels required');
   const actualFiles = fs.readdirSync(path.join(root, 'test'))
     .filter(name => /^phase\d+-.+\.test\.mjs$/.test(name) || name === 'real-world-requirements-48.test.mjs')
@@ -27,7 +30,7 @@ export function validateInventory(inventory, root) {
   for (const suite of inventory.suites) {
     if (path.isAbsolute(suite.file) || suite.file.includes('..') || !actualFiles.includes(suite.file)) throw new Error('Unsafe suite path');
     const source = fs.readFileSync(path.join(root, suite.file), 'utf8');
-    if (suite.sha256 !== sha256(source)) throw new Error(`Source drift: ${suite.file}; review and re-audit before running`);
+    if (suite.sha256 !== sourceSha256(source)) throw new Error(`Source drift: ${suite.file}; review and re-audit before running`);
     const leaves = declarations(source);
     if (leaves.length !== suite.tests.length || leaves.length === 0) throw new Error(`Leaf count drift: ${suite.file}`);
     for (const [index, item] of suite.tests.entries()) {

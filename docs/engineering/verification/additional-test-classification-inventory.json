@@ -1,0 +1,1766 @@
+{
+  "schemaVersion": 1,
+  "hashEncoding": "UTF8_LF",
+  "scope": "Additional source identity and explicitly reviewed literal declarations only; no test execution, product acceptance or exhaustive classification claim",
+  "entries": [
+    {
+      "file": "app/test/bridge.test.mjs",
+      "sha256": "55871f4b90b3b91de6584a9e637185cb5b7a007c692ff6cd46d2c2979c573e0e",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-hold.test.mjs",
+      "sha256": "17a5cf06b617f11a13c2c13e6f97ac6c3cca84a18a498777c30385ef93e6cbba",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-live-action.test.mjs",
+      "sha256": "5044e5d665b49e92db5412aa2d40922e9bf2e4375ba713ea318324e63dcc7d72",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-operator.test.mjs",
+      "sha256": "12a07116c7c4eba05ccff1682881d4dd21af986c4349a40ba76e87db6e3e9e9a",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-tools-live.test.mjs",
+      "sha256": "b29f07c152f2a93c790f3bd1ec96c1e209a71bf7a498720d39aeaa8b40d414cb",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/delegation-gateway.test.mjs",
+      "sha256": "0e36921932507d433a33f465719604eb19dd876447432aa4619dc5dba74a95a3",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/mount.test.mjs",
+      "sha256": "0a2fce8ae5ed9be9238c4eb92e7d6124486959eb98aac4961015a99e99850324",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/observation-lifecycle.test.mjs",
+      "sha256": "8f8eed4a942ac5b93622d0a2f2111bbdf1131f3c9ce93536cdc75640f7a3f0c2",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/observation-tool.test.mjs",
+      "sha256": "cb6b2a6536e01be3a2f42dd6a07d4cfc0f4fcaa4df0cb8006e95611403ebac35",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/observation.test.mjs",
+      "sha256": "dd1ba5e580187056f29243b06d8625a9f8e85d9b80706862d34dd2156e848612",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/product-path.test.mjs",
+      "sha256": "dea6902d596ec67ba4a3cadcbe0a100861f0fdda80fa783c3c745079e4130bc6",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "app/zero-control-ui/test/product-surface.test.mjs",
+      "sha256": "31eb89b10f0c327f0547016789a0567a11e302b9fabdc6e8e13cf0382013312c",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "backend/plugin/legacy-redirects.test.mjs",
+      "sha256": "39ca45ffe629209c681dff9a6d2dceb2b68be966fcc770a6666378180754c428",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "backend/scripts/test/migrate-zero-only-agents.test.mjs",
+      "sha256": "6598707eb8b3c638bf6d457b719d3f967cc725a92047829eef5a1ed8e1d9e8ba",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "backend/scripts/test/sync-zero-instructions.test.mjs",
+      "sha256": "3028716eaf319b4fcdf832b8e9f57d6cb3f6533c087dbe917f8bfd17a1665360",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/agent-runtime/test/agent-delegation.test.mjs",
+      "sha256": "cdf42fbb0dd5904cfda7ef2cee7eeea8b88e03a4e3591ec2cf76af3fe2a1191b",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/agent-runtime/test/agent-runtime.test.mjs",
+      "sha256": "dc719f6449fb447d12fd72df2552c09012d860ab23b791bf75428bd92a2e9dbb",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/automation/test/automation.test.mjs",
+      "sha256": "14593cac8df7604ea54d55125844a32bbe9a5a130ec1f594bc6fcc75259dc88b",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/capability-engine/test/capability-engine.test.mjs",
+      "sha256": "57e82f8b0e4e7d67c22a2c3be90125d3de9d05c0cb36a30bee295dad03b5d1aa",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/gateway-protocol/test/gateway-protocol.test.mjs",
+      "sha256": "b94085862471388d8946df03c1d6c25655dc252a8add0a255acd89b268e68838",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/memory/test/memory.test.mjs",
+      "sha256": "a78eae4d612549c576b3cc939086599d0d340d59b2963b266a7d630dfd6b4b87",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/model-fabric/test/model-fabric.test.mjs",
+      "sha256": "1fd9becf182fe210a0091cac006e89ed0a23d505bb9ed868cd86afc3116696e5",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/screen-intelligence/screen-intelligence.test.mjs",
+      "sha256": "f1c325e4df856e06c19dd38ede7d291dd54b4c970991870dedf448dec5b2b3d9",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/sessions/test/sessions.test.mjs",
+      "sha256": "654469dd252bd993c27e0ff52331235d974a75ae0deb85b5d5b888129b78dd65",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "packages/voice-engine/test/windows-native.integration.test.mjs",
+      "sha256": "590f66a371dd815d08d510aca6881ab5d120928caec17a90b5a705fd85e92ac1",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual Windows TTS/SAPI dictation and native cancellation/readiness/recovery, using real synthesized PCM and fixture WAV.",
+      "gaps": [
+        "No microphone or speaker opens",
+        "Recognition accepts documented75percent word agreement plus required phrase; not exact transcription accuracy",
+        "Missing recognizer is now BLOCKED/skip, never speech-recognition PASS"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_NATIVE_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Requires installed Windows synthesis and dictation; each subtest has this native scope"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] real Windows synthesis and recognition, with a WAV proof artifact",
+          "line": 21,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "real Windows synthesis and recognition, with a WAV proof artifact"
+        },
+        {
+          "title": "real dictation recognizes the synthesized words",
+          "line": 61,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "real dictation recognizes the synthesized words"
+        },
+        {
+          "title": "legacy session APIs route real speech into real STT without device access",
+          "line": 75,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "legacy session APIs route real speech into real STT without device access"
+        },
+        {
+          "title": "real unavailable voice and cancellation fail truthfully",
+          "line": 91,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "real unavailable voice and cancellation fail truthfully"
+        },
+        {
+          "title": "[REAL_OS] actual recognizer cancels after native readiness without hard kill and recovers",
+          "line": 99,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "actual recognizer cancels after native readiness without hard kill and recovers"
+        },
+        {
+          "title": "[REAL_OS] next engine recognition waits for actual cancelled native recognizer teardown",
+          "line": 133,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "next engine recognition waits for actual cancelled native recognizer teardown"
+        }
+      ]
+    },
+    {
+      "file": "packages/voice-engine/test/windows-voice.test.mjs",
+      "sha256": "b9a746e691982191d2d8b45d72901fd22c49ed40ec66eb213eb3796f4af5a8cd",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/additional-test-catalog.test.mjs",
+      "sha256": "fb48e5bd8b9a3b8979a7a6e78ec3d4244a65a655e81286d3ce578e9c8e595374",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Controlled source/metadata fixtures test inventory refusals without executing test source.",
+      "gaps": [
+        "No application or real-world feature outcome"
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "[CONTRACT] additional catalog rejects missing sources, stale identities, inferred review and invalid labels without executing tests",
+          "line": 8,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "additional catalog rejects missing sources, stale identities, inferred review and invalid labels without executing tests"
+        }
+      ]
+    },
+    {
+      "file": "test/agent-completion-contract.test.mjs",
+      "sha256": "470accf0125a945a0a7c3c24e01e0bbc461e5b90d8a4a4a9a5b7ad0c500e1c43",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/agent-desktop-real.test.mjs",
+      "sha256": "ec2afaa61aa0c8a8d09a4924c30c9d9b31ef5c604c4570230a5d5f609715ea79",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual pinned native CLI, owned Windows field/button effect, caller leases and spawned cancellation; successful native delivery flag is separate from independently observed effect.",
+      "gaps": [
+        "Controlled native fixture, not arbitrary-app accuracy",
+        "Model execution is not in the default native-only run"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_AGENT_DESKTOP_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Real native fixture and cancellation"
+        },
+        {
+          "condition": "ZERO_AGENT_DESKTOP_MODEL_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Actual configured external model drives primary tool readback"
+        },
+        {
+          "condition": "ZERO_AGENT_DESKTOP_MULTI_STEP_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Also require actual model observe/set/click/observe and independent application effect"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] primary agent-desktop backend sets native field and invokes button with independent effect readback",
+          "line": 13,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "primary agent-desktop backend sets native field and invokes button with independent effect readback"
+        },
+        {
+          "title": "[REAL_OS] cancelled real desktop command settles before returning unknown delivery and recovers for observation",
+          "line": 121,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "cancelled real desktop command settles before returning unknown delivery and recovers for observation"
+        }
+      ]
+    },
+    {
+      "file": "test/agent-desktop-rpc-real.test.mjs",
+      "sha256": "54c8ddc25f31090f6e4e583ea2be4c7ac2349c99a50f9a990bd4bc7759983d3a",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual authenticated WebSocket RPC plus native refusal/cancellation and recovered observation.",
+      "gaps": [
+        "No physical action success or all-client certification"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_AGENT_DESKTOP_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Real native error/delivery metadata through reference and legacy RPC"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] actual desktop RPC retains safe refusal and unknown delivery metadata",
+          "line": 13,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "actual desktop RPC retains safe refusal and unknown delivery metadata"
+        }
+      ]
+    },
+    {
+      "file": "test/assistant-receipts.test.mjs",
+      "sha256": "76df8de5e08640d09bcb605514d9048110fbec98a647c6d6bd2b83afd31af3a2",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/assistant-tool-batch-contract.test.mjs",
+      "sha256": "6b509a00f18a971d6becd5488e209f44541874f866f1289269ef45f9e3122b4a",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/assistant-write-scopes.test.mjs",
+      "sha256": "1556d86623ea7e15fe62f65fbfb3c960ce2d3b3788d5acb732064b3ef3f2252c",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/automation-failure-outcomes.test.mjs",
+      "sha256": "dabcc4722d1182a60d0fd624d10c9ef30059b366d83cf8586c9bcd3fb496cae6",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/backup-encrypted-records-real.test.mjs",
+      "sha256": "b9aa72a90e73ed2609f8da3181c7870e0d93893317a7a642853103919bc4c16c",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Real DPAPI-backed controlled SQLite rows and actual backup CLI; older corrupt ciphertext must fail authentication.",
+      "gaps": [
+        "Controlled storage records, not continuous capture or clean-machine DPAPI portability"
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "[REAL_OS] backup authenticates older encrypted records, not only latest observation",
+          "line": 9,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "backup authenticates older encrypted records, not only latest observation"
+        }
+      ]
+    },
+    {
+      "file": "test/backup-mcp-restore-real.test.mjs",
+      "sha256": "269d6a83fa78b64b6f4265e8863b1afa564e355a6cbf9949c0d415f8002b5919",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "scope": "Pinned real third-party executable filesystem MCP package, actual write before/after isolated backup relocation and new process.",
+      "gaps": [
+        "Same machine and retained allowlist; not all plugins or remote workers"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_MCP_RESTORE_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Real external package provisioning and handler effects"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_EXTERNAL] pinned third-party MCP filesystem plugin executes after backup restore relocation",
+          "line": 12,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "pinned third-party MCP filesystem plugin executes after backup restore relocation"
+        }
+      ]
+    },
+    {
+      "file": "test/backup-plugin-restore.test.mjs",
+      "sha256": "337476687e1c08cdb9a668e94d12e04e3a9ca69e4280933d3e7abcb348fd2134",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/backup-skills-restore.test.mjs",
+      "sha256": "690338208630c88bf0a169671bf4e263f14700d5cecdebac2618fe44b1868701",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/capability-lease-lifecycle.test.mjs",
+      "sha256": "a8fcd4940b7900aaa22f6086999666f3c2e3d5e4f4370fd9623ed0bfc9b00898",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/capability-result-honesty.test.mjs",
+      "sha256": "e45a9839b21cc05117513ad22ca338831bad3cc559adb6e2a94ca4431818e1ca",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/connector-probes.test.mjs",
+      "sha256": "e053d592d2f7b0a2fd2db93fd40d3b1ae6fa248ce41127aad2333156ccdfdb45",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/desktop-session-persistence.test.mjs",
+      "sha256": "cb82bdeabad05654476c59f74b4cf65a6580ab6a50cdf548f6ba231b3727adb2",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/e2e-matrix.test.mjs",
+      "sha256": "e74b1223add1888559f13b99e25662f8fb2ceddc40c31d0322ecbeac1046d28a",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/e2e-scenarios.test.mjs",
+      "sha256": "e37c92668702934f8c655b99517a075e8fca6d5138e225a41d994d221330ed81",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/gguf-download-file-integration.test.mjs",
+      "sha256": "3fae58a8af34f70325967d83500ee69d5612bb6509421519194ad788653663be",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/huggingface-catalog-contract.test.mjs",
+      "sha256": "535069a166c67f5b0adbefba008e29b375b6f6a45300f00b65b547bbcb974723",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/huggingface-download-real.test.mjs",
+      "sha256": "7a3c01008e3c2d78a4975a3b27081c789cb07278f7b3c60874d9aa031b508c32",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
+      ],
+      "scope": "Actual official pinned GGUF transfer, full independent disk SHA and existing-file preservation.",
+      "gaps": [
+        "Default download does not prove inference or model quality"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_HF_DOWNLOAD_TESTS=1",
+          "labels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "scope": "Real full network transfer, no mocked bytes"
+        },
+        {
+          "condition": "ZERO_HF_INFERENCE_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Also actual downloaded model native load/token generation/unload; not semantic readiness"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_EXTERNAL] official GGUF download completes with independent disk hash and no overwrite",
+          "line": 9,
+          "labels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "scope": "official GGUF download completes with independent disk hash and no overwrite"
+        }
+      ]
+    },
+    {
+      "file": "test/local-chat-wrapper.test.mjs",
+      "sha256": "33b8f59ff91d898b1f2a14c0125538ff2ed1aa8d7c88a3ef866f5ad0a3d3bafa",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/local-gguf-continuation.test.mjs",
+      "sha256": "bf4b59d83d769aeb04c18624d0654b7da44fcf14562b04aa563b35cac650c245",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/local-gguf-delete-preservation.test.mjs",
+      "sha256": "741b780ea16bf83e084c2b6bfb28dba053c74ffb0de3f432d673d3476d325115",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/local-gguf-runtime-real.test.mjs",
+      "sha256": "d14e6950847ca336764dffe1d75b99430c5d3df3212b34e7771fbda786ef24a7",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Selected actual native GGUF load/token generation/history preservation, local transport/terminal accounting and unload with actual CPU inference.",
+      "gaps": [
+        "Selected model only, not semantic chat/tool accuracy or arbitrary architectures",
+        "Loopback transport is not an external provider"
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "[REAL_OS] pinned GGUF loads, generates native token IDs, preserves prior history and unloads",
+          "line": 14,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "pinned GGUF loads, generates native token IDs, preserves prior history and unloads"
+        }
+      ]
+    },
+    {
+      "file": "test/local-gguf-tool-calls.test.mjs",
+      "sha256": "13f118e6b62b50296735de5b0e2eab5838b677baef8116bc75dcab8082896d5b",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/local-tools.integration.test.mjs",
+      "sha256": "77018889a044f5f0aa37a9d038d9a97c0c1e2f039619d05679d404a067fd2825",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/model-config-import.test.mjs",
+      "sha256": "76af2d01ec30680135d30df9f26b3250c3398d1a1a6dd71a11ab0fbbaf68a69e",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/model-settings.test.mjs",
+      "sha256": "d72c62b79cbb2312b946543cf24e5dc5d308a4c28a60325e6bd6539ad04b42df",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/model-stream-channels.test.mjs",
+      "sha256": "a56b64a38634184229f2de68cb3fe73ca2264442febccb6a6b590d04ec19cc2f",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/native-gateway.test.mjs",
+      "sha256": "69c8dd76fea0fe81c13d10e3b80c0afb3d0a8735018ddc9661d0a25b86876154",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/native-observation-lifecycle.test.mjs",
+      "sha256": "b0aab34d1d0a22d2ac071189d90c81d6a2ccb9145b50089ce00793abe6f1f499",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/observation-encryption.integration.test.mjs",
+      "sha256": "fb1c80d630ed62849555822b6ec0a86b1c114ef5bf7c04eaffbde4b4aafa9604",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/owned-process-resources.test.mjs",
+      "sha256": "0540b379cdd10100746fd100b2bb83734729a5e039cad8cb084b0833fdd4e4c4",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/plugin-sdk-lifecycle.test.mjs",
+      "sha256": "5d1e4046de0cc2996ca97000648fd42219095492bfcb5e0a461f866ed85e77e0",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/restore-host-process-real.test.mjs",
+      "sha256": "f5b534b0c92b7d1555d6a52fa022398921436109d2f649eff38d1a2b3b6f04a6",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "scope": "Actual external assistant transcript, production backup/restore and stopped/new native host with persisted receipt replay and fresh reply.",
+      "gaps": [
+        "Same Windows machine and checkout; not clean-machine installation or power loss"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_RESTORE_HOST_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Uses configured real provider and isolated user state"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_EXTERNAL] actual chat survives backup, restore and a new native host process",
+          "line": 11,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "actual chat survives backup, restore and a new native host process"
+        }
+      ]
+    },
+    {
+      "file": "test/restore-user-state.test.mjs",
+      "sha256": "7a665812e379bce3f50ca27e788db73c9d487333f2a12a26e50252f8312fd558",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/rpc-contracts.test.mjs",
+      "sha256": "24c690ab85b5ed80a4a5bfeb72576f06cae5a30f88e203b501fde2a9e7697d42",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/runner-catalog.test.mjs",
+      "sha256": "c20da1c56b5287e143b61757eddc64bf9554828158e9c2b419c2376624d3a020",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Controlled script/source/metadata fixtures enforce runner inventory identity, known labels and refusal on missing coverage; no product execution.",
+      "gaps": [
+        "Controlled metadata/reporting fixtures do not establish application, external-service or native device outcomes."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "[CONTRACT] runner catalog audits source identity and fails closed on missing classifications or source drift",
+          "line": 9,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "runner catalog audits source identity and fails closed on missing classifications or source drift"
+        }
+      ]
+    },
+    {
+      "file": "test/runtime-workers.integration.test.mjs",
+      "sha256": "59d588cb21e6d9eff82862fc95a68a19a0ac38c4130210175e91f5b2d704462c",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/runtime-workers.live.test.mjs",
+      "sha256": "4822b668b65867ca1710d4860237e9cc955c4d3283eaac7ba20b46bda8fe5da7",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/screen-automation.test.mjs",
+      "sha256": "57f81ff977afd53dece416f1c3767ce2b5142084dc1614e27bc9cdefa11ed3e1",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/screen-resource-totals.test.mjs",
+      "sha256": "2d39e158596b08f14a4539b1c333db4675cf690bde7a2d84116d44d0c636483b",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/screen-vision-pipeline.test.mjs",
+      "sha256": "4ede15bdb75bb7e57dedf145d2fdfb5036efd981b08f0ae94e7319c08be5989e",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/search-provenance.test.mjs",
+      "sha256": "c1da0b5035159c0b0aa68e3a4ea16b093b5c78b708ecd579a48c1a240817bcd5",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/session-run-identity.test.mjs",
+      "sha256": "6d57aae71f639246ff75d218e65aa1d670cc66f18e90d55703aacaec9a4d7f0a",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/session-tool-continuity.test.mjs",
+      "sha256": "db80283656e842923ddc4ffa36418913b86a0788bed32846319d48c67b1150c2",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/skill-sdk-integration.test.mjs",
+      "sha256": "0304dcb816dae55b02d4d5efda17e5c8fa7505b754bbd22b3a518fcc873513e3",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/startup-settings-persistence.test.mjs",
+      "sha256": "f1bd30ef4de893e1281a25d06395818f30e672b143642c84b1c8dfa4197eb5bd",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/team-process-recovery.test.mjs",
+      "sha256": "78224381a6e7be7c9a97279592da0b1f4ba6db26600bbda7af28d504816547ce",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/user-data-audit.test.mjs",
+      "sha256": "6f52c47fe717b9e573544d5d53de8309d72d0bc804c87e4bbac2684960aa174b",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/verification/classification-runner.test.mjs",
+      "sha256": "98b075f58a9bb536663e2fd890907310f6244d3eb87803cd6b207c9b40ab32d1",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Inventory validation and pure result reducers plus actual controlled Node reporter/CLI subprocesses; not application acceptance.",
+      "gaps": [
+        "Controlled metadata/reporting fixtures do not establish application, external-service or native device outcomes."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "all audited source hashes, exact labels, titles and leaf counts match",
+          "line": 20,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "all audited source hashes, exact labels, titles and leaf counts match"
+        },
+        {
+          "title": "classification rejects source drift, missing suites, label drift and title drift",
+          "line": 29,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "classification rejects source drift, missing suites, label drift and title drift"
+        },
+        {
+          "title": "literal extraction preserves title and exact CRLF line",
+          "line": 45,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "literal extraction preserves title and exact CRLF line"
+        },
+        {
+          "title": "dry audit has no passing assertions or verified requirements",
+          "line": 50,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "dry audit has no passing assertions or verified requirements"
+        },
+        {
+          "title": "leaf skip and TODO, including empty reasons, never become PASS",
+          "line": 57,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "leaf skip and TODO, including empty reasons, never become PASS"
+        },
+        {
+          "title": "suite-only skip or setup failure blocks all missing leaves and adds no parent PASS",
+          "line": 66,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "suite-only skip or setup failure blocks all missing leaves and adds no parent PASS"
+        },
+        {
+          "title": "failures, cancellation, timeouts and child transport problems cannot become green",
+          "line": 76,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "failures, cancellation, timeouts and child transport problems cannot become green"
+        },
+        {
+          "title": "unknown/duplicate leaves and nonzero child exit cannot produce overall PASS",
+          "line": 89,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "unknown/duplicate leaves and nonzero child exit cannot produce overall PASS"
+        },
+        {
+          "title": "all passing assertions still leave acceptance and release blocked",
+          "line": 97,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "all passing assertions still leave acceptance and release blocked"
+        },
+        {
+          "title": "real Node reporter handles passing, skipped, TODO and failed fixtures",
+          "line": 113,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "real Node reporter handles passing, skipped, TODO and failed fixtures"
+        },
+        {
+          "title": "real Node suite skip before declaration blocks inventoried children",
+          "line": 123,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "real Node suite skip before declaration blocks inventoried children"
+        },
+        {
+          "title": "real Node setup failure leaves inventoried assertions blocked",
+          "line": 130,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "real Node setup failure leaves inventoried assertions blocked"
+        },
+        {
+          "title": "hung child has a bounded deadline and cannot pass",
+          "line": 138,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "hung child has a bounded deadline and cannot pass"
+        },
+        {
+          "title": "CLI rejects implicit execution and invalid selections without touching host",
+          "line": 144,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "CLI rejects implicit execution and invalid selections without touching host"
+        },
+        {
+          "title": "CLI dry audit returns NOT_RUN and BLOCKED for all 137 leaves",
+          "line": 152,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "CLI dry audit returns NOT_RUN and BLOCKED for all 137 leaves"
+        },
+        {
+          "title": "CLI integrity check exit zero explicitly means no product tests ran",
+          "line": 166,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "CLI integrity check exit zero explicitly means no product tests ran"
+        }
+      ]
+    },
+    {
+      "file": "test/voice-acoustic-real.test.mjs",
+      "sha256": "0a2f0b162d2a945c4a2f47bbf9ac69b810b549f10d08187f8f095137295b7235",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual synthesized output device to microphone probe and selected phrase STT; frames are captured from WinMM.",
+      "gaps": [
+        "Not human conversation or barge-in",
+        "Headphones may isolate output; failed phrase probe must remain failed"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_ACOUSTIC_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Physical playback/capture; optional explicit Whisper recognition selection"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] actual speaker to microphone acoustic speech recognition probe",
+          "line": 8,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "actual speaker to microphone acoustic speech recognition probe"
+        }
+      ]
+    },
+    {
+      "file": "test/voice-completion-honesty.test.mjs",
+      "sha256": "b42dbf163cc25d59940b693ae8ae76d5e6782cbd5172d40c2f989d4f1200c9e5",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/voice-conversation-real.test.mjs",
+      "sha256": "e8e46d9c852c6a1186ebf5153d9518f18c2b808c75578c66c41821484e41f41d",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION",
+        "REAL_EXTERNAL"
+      ],
+      "scope": "Actual shared host voice transcription, external assistant, native synthesis and same-chat typed continuation.",
+      "gaps": [
+        "Default input is real local synthesized speech in RAM, not microphone",
+        "A run proves only its selected optional modes; earlier failed gates stay failed"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_NATIVE_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Default synthesized-input conversation without playback"
+        },
+        {
+          "condition": "ZERO_VOICE_HUMAN_CONVERSATION=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Actual headset microphone and native reply playback; explicit utterance end by default"
+        },
+        {
+          "condition": "ZERO_VOICE_HUMAN_AUTOMATIC=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Actual microphone RPC with automatic VAD endpoint; no explicit voice.turn or pre-reply mic stop"
+        },
+        {
+          "condition": "ZERO_VOICE_INTERRUPT_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Typed interruption of actual external voice turn; not acoustic barge-in"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] actual Windows speech completes shared external assistant turn and typed chat continuation",
+          "line": 11,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "actual Windows speech completes shared external assistant turn and typed chat continuation"
+        }
+      ]
+    },
+    {
+      "file": "test/voice-conversation.test.mjs",
+      "sha256": "0b88def6de6e040857c207b1433fa5f592d91b68fdd763c10953c2cb49cf91de",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "NOT_REVIEWED",
+      "labels": [],
+      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "gaps": [
+        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      ],
+      "modes": [],
+      "declarations": null
+    },
+    {
+      "file": "test/voice-device-selection-real.test.mjs",
+      "sha256": "8d83f6b1ff01482398b33513b61e8cb1fcf0f8ca6780871304106d057db9df52",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual enumerated microphone selection, native PCM, invalid index refusal and stopped-session ownership handoff.",
+      "gaps": [
+        "Actual device capture is not recognized speech or audible playback"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_DEVICE_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Opens real selected Windows input device"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] explicit enumerated microphone opens and unavailable index fails without fallback",
+          "line": 8,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "explicit enumerated microphone opens and unavailable index fails without fallback"
+        }
+      ]
+    },
+    {
+      "file": "test/voice-human-barge-in-real.test.mjs",
+      "sha256": "d055b6839d86f8b36b524c52f598a742d400050dc77693dbcfa8a0ee96f97217",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual native playback then human microphone VAD cancellation, adjacent expected words STT and subsequent real playback recovery.",
+      "gaps": [
+        "Prompted selected hardware/phrase; no echo cancellation or general noise/intent accuracy"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_HUMAN_BARGE_IN=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Requires real human interruption speech during playback"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] actual headset speech interrupts native playback and next playback recovers",
+          "line": 7,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "actual headset speech interrupts native playback and next playback recovers"
+        }
+      ]
+    },
+    {
+      "file": "test/voice-human-microphone-real.test.mjs",
+      "sha256": "b792dcbad8a7ba81af23dce3b50b8a0ac2c0b172aaa64659256d97fc819c077d",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual prompted headset capture and selected-phrase recognition; only aggregate levels/expected word flags saved.",
+      "gaps": [
+        "No full conversation, barge-in or general recognition accuracy",
+        "Human timing/participation are prerequisites"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_HUMAN_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Physical capture and actual selected local recognizer"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] prompted headset microphone speech reaches actual local STT",
+          "line": 8,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "prompted headset microphone speech reaches actual local STT"
+        }
+      ]
+    },
+    {
+      "file": "test/voice-language-rpc-real.test.mjs",
+      "sha256": "4d5d63db68f7435f20ceb91e80d198c9800f65f55f821e23e3c8efc1128c4d6c",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual native speech through authenticated RPC; unavailable language rejected and input preserved for real retry.",
+      "gaps": [
+        "Synthesized input, not microphone or acoustic interruption"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_NATIVE_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Uses actual selected Windows or explicit Whisper backend"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] actual voice RPC honors language and preserves input after missing recognizer",
+          "line": 11,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "actual voice RPC honors language and preserves input after missing recognizer"
+        }
+      ]
+    },
+    {
+      "file": "test/voice-quiet-playback-real.test.mjs",
+      "sha256": "4db0fff42184416c5e43eb357ebbf1bb472ea6f3a4dbab73ed7aeced35625daf",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual eight-second requested-quiet capture while native playback continues, explicit cancellation and native output recovery.",
+      "gaps": [
+        "No speaker identity or general noise immunity",
+        "Does not prove human acoustic barge-in"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_VOICE_QUIET_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Requires requested quiet and selected physical Windows devices"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] native playback survives requested-quiet microphone capture and cancellation recovers",
+          "line": 7,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "native playback survives requested-quiet microphone capture and cancellation recovers"
+        }
+      ]
+    },
+    {
+      "file": "test/whisper-native-real.test.mjs",
+      "sha256": "1b2de43e2d7976de5313b2c8f64f357f37aed571539dfe74a474eaddfe0fb3bf",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Pinned real CPU Whisper decodes actual Windows TTS through CLI and ZERO stdin backend; spawned cancellation, recovery and unknown-language refusal.",
+      "gaps": [
+        "Not human microphone or audible playback",
+        "Selected phrase is not a recognition benchmark"
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_WHISPER_TESTS=1",
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Requires separately provisioned pinned Whisper assets"
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] pinned Whisper CPU decodes actual Windows synthesized speech",
+          "line": 13,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "pinned Whisper CPU decodes actual Windows synthesized speech"
+        }
+      ]
+    }
+  ]
+}

@@ -40,7 +40,8 @@
         "--hf-complete: actual UI external full transfer, independent disk SHA, immediate parent catalog refresh, real host restart/persisted catalog and actual UI native load/token-generation/unload; no semantic chat/tool accuracy claim",
         "--gguf-qwen-3b (requires --gguf): select separately provisioned pinned official 3B weights for unchanged actual local UI/tool/recall gates; model capability requires execution, not installer/catalog success"
       ],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "d44ea9ef6d69313139f0ed02b202e2cb1384e4904ba8265476b516410f30d6f5"
     },
     {
       "file": "scripts/screen-intelligence-endurance.mjs",
@@ -56,7 +57,8 @@
         "--duration-seconds N",
         "--local-vision 1"
       ],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "ade5ae3568ed2f4f57914466e00afbaa5b275322d8998fcb54c74b9c8a42a968"
     },
     {
       "file": "scripts/screen-intelligence-real-os.mjs",
@@ -67,7 +69,8 @@
       ],
       "scope": "Native desktop fixture capture, OCR, change detection and reopened observation memory; not continuous endurance.",
       "modes": [],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "6f19620faf77ac7ca0c6fde9035eab318bba26078fa6c5385f40620c44fe6dcb"
     },
     {
       "file": "scripts/verify-assistant-crash.mjs",
@@ -84,7 +87,8 @@
         "--tool-failure-only",
         "--tool-unrelated-only"
       ],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "02f3f807cf8da97106f749dad640f2b7f3438e39397105a975274b18bf9e6ebf"
     },
     {
       "file": "scripts/verify-automation-isolated.mjs",
@@ -95,7 +99,8 @@
       ],
       "scope": "Owned isolated host and historical phase11 assertions; controlled connector fixtures are not external service execution.",
       "modes": [],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "53ff12213f0245e4a542c5d170bdbae32037ef2c79939a58aff9bc5fdf97b2a0"
     },
     {
       "file": "scripts/verify-external-mcp.mjs",
@@ -107,7 +112,8 @@
       ],
       "scope": "Actual downloaded executable MCP plugin handlers, manager persistence, refresh, preparation-failure preservation, process kill/restart and file effects; UI covered separately.",
       "modes": [],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "4d797429483e6233955d4f860d5a7de5059b47435a42008a81d7edbf055751fa"
     },
     {
       "file": "scripts/verify-external-skill.mjs",
@@ -122,7 +128,8 @@
         "default: new execution",
         "--resume-directory DIR: existing artifact recheck only, not new execution"
       ],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "6b89f6767e6e6dbc578125986c019bcea1201cf6b90260ab753a40700fed46d1"
     },
     {
       "file": "scripts/verify-local-vision-screen.mjs",
@@ -134,7 +141,8 @@
       ],
       "scope": "Controlled visible native screen changes and local GGUF inference persisted in encrypted observations.",
       "modes": [],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "b46ad06950d7d35b7f22b72fbccbec4b9f3fec892e93b4414b9db4920e405627"
     },
     {
       "file": "scripts/verify-local-vision.mjs",
@@ -146,7 +154,8 @@
       ],
       "scope": "Actual local GGUF generation, rendered color recognition, owned-process resources, cancellation and restart.",
       "modes": [],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "9ebe2de92252d3d41fcded87a03dc8246faa7fd24147d01f49ee1fd0c01d8761"
     },
     {
       "file": "scripts/verify-screen-automation.mjs",
@@ -158,7 +167,8 @@
       ],
       "scope": "Actual observed title transition through configured rule to native screen-size action; not every OS event source.",
       "modes": [],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "492927c89b6c7a978dc2adcfdb8a1fdb579d340e4d984c04cb76deaecd5596ed"
     },
     {
       "file": "scripts/verify-screen-resource-usage.mjs",
@@ -168,7 +178,8 @@
       ],
       "scope": "Real point-in-time capture/native/OCR process counters; not whole-duration resource acceptance.",
       "modes": [],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "d300a6a59ba0633ce5db861f691474ceecba2713e3ba707c066b40ea751d194c"
     },
     {
       "file": "scripts/verify-user-data-preservation.mjs",
@@ -180,7 +191,8 @@
       "modes": [
         "--backup DIR"
       ],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "6aa4e9fd26342cfb996b9f57c2959af468a132db2212c8a650ea2787ba7a0183"
     },
     {
       "file": "scripts/verify-voice-conversation.mjs",
@@ -194,7 +206,10 @@
       "modes": [
         "--devices: actual microphone frames and output playback; audibility/barge-in remain unverified"
       ],
-      "execution": "NOT_RUN_BY_INVENTORY"
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "originalAuditByteSha256": "7e90e7f384436b408eb9ec13af66226bd4d59acb9ac79972904a53afebe8ca99"
     }
-  ]
+  ],
+  "hashEncoding": "UTF8_LF",
+  "hashScope": "Source text with CRLF normalized to LF only; original Windows audit byte hashes retained. Not binary artifact hashing."
 }
