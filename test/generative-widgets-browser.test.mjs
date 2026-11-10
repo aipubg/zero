@@ -98,6 +98,28 @@ test('production widgets preserve outcomes and actual hold RPC blocks media inpu
   await page.getByRole('button', { name: 'Action unavailable', exact: true }).waitFor();
   assert.equal(host.computerHold.held, true);
   assert.ok(!(await mediaButton.innerText()).includes('Done'));
+  await page.addStyleTag({path:path.join(repo,'app/zero-control-ui/index.css')});
+  // Controlled status projection only; this does not substitute for the
+  // separate real headset capture evidence.
+  await page.evaluate(async()=>{
+    const {mountVoiceControl}=await import('/voice-control.js');
+    const button=document.createElement('button');button.id='voice-effect-contract';document.body.append(button);
+    window.voiceEffectStatus={status:'PARTIAL',sessions:[]};window.voiceEffectFailure=false;
+    window.disposeVoiceEffect=mountVoiceControl(button,{sessions:{selectedKey:'voice-effect-contract'},request:async()=>{if(window.voiceEffectFailure)throw Error('Disconnected');return window.voiceEffectStatus;}});
+  });
+  await page.locator('#voice-effect-contract[data-voice-state="idle"]').waitFor();
+  await page.evaluate(()=>{window.voiceEffectStatus.sessions=[{sessionId:'voice-effect-contract',microphoneActive:true,capture:{lastFrameAt:Date.now(),lastFrameRms:3000}}];});
+  await page.locator('#voice-effect-contract[data-voice-state="listening"]').waitFor();
+  assert.equal(await page.locator('#voice-effect-contract').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#voice-effect-contract').evaluate(e=>e.style.getPropertyValue('--zero-mic-level')),'0.5');
+  assert.equal(await page.locator('#voice-effect-contract i').first().evaluate(e=>getComputedStyle(e).animationName),'zero-mic-breathe');
+  await page.evaluate(()=>{window.voiceEffectStatus.sessions[0].capture.lastFrameAt=0;});
+  await page.locator('#voice-effect-contract[data-voice-state="waiting"]').waitFor();
+  assert.equal(await page.locator('#voice-effect-contract i').first().evaluate(e=>getComputedStyle(e).animationName),'none');
+  await page.evaluate(()=>{window.voiceEffectFailure=true;});
+  await page.locator('#voice-effect-contract[data-voice-state="idle"]').waitFor();
+  assert.equal(await page.locator('#voice-effect-contract').getAttribute('aria-pressed'),'false');
+  await page.evaluate(()=>window.disposeVoiceEffect());
   await page.evaluate(() => window.widgetSocket.close());
   // Exercise the real product MutationObserver rather than manually invoking
   // the renderer, which previously hid missing live-chat enhancement.

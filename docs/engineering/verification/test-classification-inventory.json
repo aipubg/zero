@@ -584,7 +584,7 @@
     {
       "id": "phase4",
       "file": "test/phase4-multi-agent.test.mjs",
-      "sha256": "243323dc7daa5a9ccf90ef71b04f4e6a3fb3f3e1465997b0123485f615812b86",
+      "sha256": "8a9e16dddedf779a45e36b34c1e89c73f11285d0839f19da1ef0cbafff65699b",
       "prerequisites": [
         "node24",
         "host18789"
@@ -830,7 +830,7 @@
     {
       "id": "phase6",
       "file": "test/phase6-skills-plugins.test.mjs",
-      "sha256": "df8be593561616cebc852e043f0daec9424e4bba1dfd3c2d3144aaa154e6e4b1",
+      "sha256": "d7790f056faa35eb1f5863d804b9068debdd6d35a7fc157d976d6edb17b02991",
       "prerequisites": [
         "node24",
         "host18789"
@@ -840,7 +840,7 @@
         {
           "id": "phase6:01",
           "title": "6.1 Skill Discovery & Parsing of Installed SKILL.md Packages",
-          "line": 102,
+          "line": 103,
           "labels": [
             "CONTRACT"
           ],
@@ -859,7 +859,7 @@
         {
           "id": "phase6:02",
           "title": "6.2 Natural Language Skill Trigger Matching",
-          "line": 121,
+          "line": 122,
           "labels": [
             "CONTRACT"
           ],
@@ -878,7 +878,7 @@
         {
           "id": "phase6:03",
           "title": "6.3 Dynamic Skill Package Creation and Hot Discovery",
-          "line": 132,
+          "line": 133,
           "labels": [
             "INTEGRATION"
           ],
@@ -897,7 +897,7 @@
         {
           "id": "phase6:04",
           "title": "6.4 Dynamic Plugin Installation, Tool Registration & Execution",
-          "line": 158,
+          "line": 159,
           "labels": [
             "INTEGRATION"
           ],
@@ -906,9 +906,11 @@
             "INTEGRATION"
           ],
           "claim": "6.4 Dynamic Plugin Installation, Tool Registration & Execution",
-          "proves": "Installs fixture manifest, checks execution metadata and lifecycle.",
+          "proves": "Imports a real locally authored fixture module via path, invokes its registered handler over RPC, checks echoed arguments/status/plugin ID, disable refusal, enable and uninstall.",
           "gaps": [
-            "Function handler is dropped by JSON serialization; no dotProduct assertion or external executable."
+            "No expected dotProduct or independent filesystem effect assertion; locally authored fixture is not an actual third-party package.",
+            "No actual UI/restart coverage; suite targets fixed owner port and must not run against the owner host.",
+            "Cleanup trusts returned skill path and fixture temporary path; this source review does not authorize execution."
           ],
           "claimStatus": "PARTIAL",
           "verificationStatus": "UNVERIFIED"
@@ -2988,5 +2990,6 @@
     "scope": "Search provenance and backup script; this audit created no commit."
   },
   "hashEncoding": "UTF8_LF",
-  "hashScope": "Source text with CRLF normalized to LF only; original Windows audit byte hashes retained. Not binary artifact hashing."
+  "hashScope": "Source text with CRLF normalized to LF only; original Windows audit byte hashes retained. Not binary artifact hashing.",
+  "lastSourceReview": "2026-11-11: reviewed previously committed b7a3476a phase4 goal/deadline changes and phase6 executable local fixture/lifecycle rewrite. No legacy suite executed against owner host."
 }

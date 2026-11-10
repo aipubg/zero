@@ -8,6 +8,7 @@
  */
 
 import { ComputerOperator } from "./operator.js";
+import { MEDIA_COMMANDS } from "../../../../packages/media-control/index.mjs";
 
 const coordinate = { type: "integer", minimum: 0, maximum: 32767 };
 
@@ -56,6 +57,8 @@ export const ZERO_COMPUTER_TOOL_PARAMETERS = Object.freeze({
         "web_search",
         "navigate",
         "play",
+        "media_control",
+        "spotify_control",
         "clipboard_get",
         "clipboard_set",
         "get_elements",
@@ -122,15 +125,18 @@ export const ZERO_COMPUTER_TOOL_PARAMETERS = Object.freeze({
       maxLength: 2000,
       description: "Web URL to open in default browser (must start with http:// or https://).",
     },
+    query: { type: "string", maxLength: 2000, description: "Search phrase or song title for browser play/search." },
     target: {
       description: "Window title or process ID to focus or control.",
     },
     command: {
       type: "string",
-      enum: ["restore", "minimize", "maximize", "close"],
+      enum: ["restore", "minimize", "maximize", "close", "status", ...MEDIA_COMMANDS],
       default: "restore",
-      description: "Window control command.",
+      description: "Window or media control command. set_volume requires volume_percent; set_speed requires playback_rate.",
     },
+    volume_percent: { type: "number", minimum: 0, maximum: 100 },
+    playback_rate: { type: "number", minimum: 0.25, maximum: 4 },
   },
 });
 

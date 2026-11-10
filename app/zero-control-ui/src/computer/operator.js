@@ -11,6 +11,7 @@
  */
 
 import { MediaController } from "../../../../packages/media-control/index.mjs";
+import { controlSpotify } from "../../../../packages/media-control/windows-session.mjs";
 import { ObservationCoordinator } from "./observation-coordinator.js";
 import * as Driver from "./windows-driver.js";
 import { modeManager } from "../../../../rules/mode-manager.mjs";
@@ -53,6 +54,7 @@ export const COMPUTER_ACTIONS = Object.freeze([
   "navigate",
   "play",
   "media_control",
+  "spotify_control",
   "clipboard_get",
   "clipboard_set",
   "get_elements",
@@ -375,7 +377,7 @@ export class ComputerOperator {
           const target = params.target ?? params.title ?? params.app ?? params.pid;
           const cmd = String(params.command ?? "restore").toLowerCase();
           const res = await Driver.focusWindow({ target, command: cmd }, signal);
-          return { ok: true, action: normalizedAction, target, command: cmd, details: res };
+          return { ok: res?.ok !== false && res?.focused !== false, executed: res?.focused === true, verified: false, action: normalizedAction, target, command: cmd, details: res };
         }
 
         case "launch_app":
@@ -383,7 +385,7 @@ export class ComputerOperator {
           const app = String(params.app ?? params.name ?? params.command ?? "");
           if (!app) return { ok: false, message: "Missing app name for launch_app" };
           const res = await Driver.launchApp(app, signal);
-          return { ok: true, action: "launch_app", app, details: res };
+          return { ok: res?.ok !== false, executed: Boolean(res?.launched || res?.ok === true), verified: false, action: "launch_app", app, details: res };
         }
 
         case "browser":
@@ -396,7 +398,7 @@ export class ComputerOperator {
           const query = String(params.query ?? params.search ?? params.text ?? params.prompt ?? "");
 
           if (normalizedAction === "play") {
-            return await this.mediaController.play({ url, query }, signal);
+            return await this.mediaController.play({ ...params, url, query }, signal);
           }
           if (!url && query) url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
           else if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
@@ -412,7 +414,10 @@ export class ComputerOperator {
         }
 
         case "media_control":
-          return await this.mediaController.control(params.command, signal);
+          return await this.mediaController.control(params.command, signal, params);
+
+        case "spotify_control":
+          return await controlSpotify(params, signal);
 
         case "get_elements":
         case "get_uia_elements": {

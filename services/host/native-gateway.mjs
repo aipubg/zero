@@ -20,6 +20,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { prepareToolBatch } from './tool-batch.mjs';
+import { MEDIA_COMMANDS } from '../../packages/media-control/index.mjs';
 import { createAutomationDispatcher } from './automation-dispatcher.mjs';
 import { LocalGgufEngineService } from '../../backend/gateway/server/local-gguf-service.ts';
 import { LocalChatTransport } from '../../packages/model-fabric/local-chat-transport.mjs';
@@ -2044,12 +2045,14 @@ export class ZeroNativeHost {
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
               },
               app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
               text: { type: 'string', description: 'Text to type into the focused window' },
               query: { type: 'string', description: 'Search term or song name to play on YouTube' },
-              command: { type: 'string', enum: ['play', 'pause', 'play_pause', 'volume_up', 'volume_down', 'mute', 'unmute', 'next', 'previous', 'fullscreen', 'focus'], description: 'For media_control: affects only the visible player opened by ZERO. Play/pause and mute/unmute are explicit states; audio audibility is not measured.' },
+              command: { type: 'string', enum: [...MEDIA_COMMANDS, 'status'], description: 'media_control: ZERO-owned browser player. spotify_control: status/play/pause/next/previous/set_volume on the exact Windows Spotify session. set_volume uses volume_percent; browser set_speed uses playback_rate. If Spotify has no active track use open_app Spotify then desktop_control to select a track, not global media keys.' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Exact player volume, e.g. 5 for 5%. Supported by play and media_control set_volume.' },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Exact playback speed, e.g. 2 for 2x. Supported by play and media_control set_speed.' },
               url: { type: 'string', description: 'URL to open in the browser' },
               key: { type: 'string', description: 'Key or shortcut to press' },
               x: { type: 'number', description: 'X screen coordinate' },
@@ -2067,7 +2070,7 @@ export class ZeroNativeHost {
             type: 'object',
             required: ['app'],
             properties: {
-              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
+              app: { type: 'string', description: 'Installed app name or executable path. Spotify and Camera use Windows packaged-app discovery. Camera launch is not photo capture; inspect the real app with desktop_control and verify saved photo before claiming capture.' },
             },
           },
         },
@@ -2082,6 +2085,8 @@ export class ZeroNativeHost {
             properties: {
               action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search'] },
               query: { type: 'string', description: 'Search query or song name to play on YouTube' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100 },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
               url: { type: 'string', description: 'Web page URL' },
             },
           },

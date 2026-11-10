@@ -602,19 +602,51 @@ function Dispatch-Action($req) {
         { $_ -in "launch_app", "open_app" } {
             $app = Coalesce-Val $req.app $req.name (Coalesce-Val $req.command "" "")
             if ($app) {
-                $p = Start-Process -FilePath $app -PassThru -ErrorAction Stop
-                $waited = 0
-                while ($waited -lt 10 -and ($p.MainWindowHandle -eq [IntPtr]::Zero)) {
-                    Start-Sleep -Milliseconds 150
-                    $p.Refresh()
-                    $waited++
+                $alias = ([string]$app).Trim().ToLowerInvariant()
+                $packageName = if ($alias -in @('camera', 'windows camera')) { 'Camera' } elseif ($alias -eq 'spotify') { 'Spotify' } else { $null }
+                $displayTarget = if ($packageName) { $packageName } else { [System.IO.Path]::GetFileNameWithoutExtension([string]$app) }
+                if ($packageName) {
+                    $installed = @(Get-StartApps | Where-Object { $_.Name -eq $packageName })
+                    if ($installed.Count -ne 1) { throw "No unique installed app found for $packageName" }
+                    Start-Process -FilePath 'explorer.exe' -ArgumentList ('shell:AppsFolder\' + $installed[0].AppID) -WindowStyle Hidden
+                    $result['appId'] = $installed[0].AppID
+                } else {
+                    $p = Start-Process -FilePath $app -PassThru -ErrorAction Stop
+                    $result['pid'] = $p.Id
                 }
-                if ($p.MainWindowHandle -ne [IntPtr]::Zero) {
-                    [WinApiCore]::ForceForeground($p.MainWindowHandle) | Out-Null
+                $script:launchedWindow = [IntPtr]::Zero
+                $until = [DateTime]::UtcNow.AddSeconds(8)
+                while ([DateTime]::UtcNow -lt $until -and $script:launchedWindow -eq [IntPtr]::Zero) {
+                    $callback = [WinApiCore+EnumWindowsProc]{
+                        param($hwnd, $lparam)
+                        if ([WinApiCore]::IsWindowVisible($hwnd)) {
+                            $text = New-Object System.Text.StringBuilder 512
+                            [WinApiCore]::GetWindowText($hwnd, $text, $text.Capacity) | Out-Null
+                            $windowProcessId = 0
+                            [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$windowProcessId) | Out-Null
+                            $windowProcess = Get-Process -Id $windowProcessId -ErrorAction SilentlyContinue
+                            if ($text.ToString() -like "*$displayTarget*" -or $windowProcess.ProcessName -ieq $displayTarget) {
+                                $script:launchedWindow = $hwnd
+                                return $false
+                            }
+                        }
+                        return $true
+                    }
+                    [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                    if ($script:launchedWindow -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 160 }
                 }
-                $result["launched"] = $app
-                $result["pid"] = $p.Id
-                $result["focused"] = ($p.MainWindowHandle -ne [IntPtr]::Zero)
+                $result['launched'] = [string]$app
+                $result['focused'] = $false
+                if ($script:launchedWindow -ne [IntPtr]::Zero) {
+                    [WinApiCore]::ForceForeground($script:launchedWindow) | Out-Null
+                    $result['hwnd'] = [int64]$script:launchedWindow
+                    $result['focused'] = ([WinApiCore]::GetForegroundWindow() -eq $script:launchedWindow)
+                }
+                if ($packageName -eq 'Camera') {
+                    $devices = @(Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue | Where-Object { $_.PNPClass -in @('Camera', 'Image') -and $_.Status -eq 'OK' })
+                    $result['cameraDevicesAvailable'] = $devices.Count
+                    $result['photoCaptured'] = $false
+                }
             } else {
                 throw "Missing app parameter"
             }

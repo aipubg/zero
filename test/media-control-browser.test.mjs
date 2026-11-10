@@ -15,7 +15,7 @@ test('visible controlled media playback and idempotent controls affect the same 
   const server=http.createServer((req,res)=>{
     if(req.url==='/sound.wav'){res.writeHead(200,{'Content-Type':'audio/wav','Content-Length':wav.length});res.end(wav);return;}
     res.writeHead(200,{'Content-Type':'text/html'});
-    res.end(req.url==='/empty' ? '<title>No player</title>' : '<title>ZERO controlled media test</title><audio controls src="/sound.wav"></audio>');
+    res.end(req.url==='/empty' ? '<title>No player</title>' : req.url==='/multi' ? '<title>Main player with previews</title><audio controls src="/sound.wav"></audio><audio style="display:none" src="/sound.wav"></audio><div id="movie_player"><video class="html5-main-video" controls width="320" height="180" src="/sound.wav"></video></div>' : '<title>ZERO controlled media test</title><audio controls src="/sound.wav"></audio>');
   });
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const controller=new MediaController(),operator=new ComputerOperator({mediaController:controller});
@@ -35,9 +35,16 @@ test('visible controlled media playback and idempotent controls affect the same 
     assert.equal(actual.volume,result.after.volume);
   }
   const invalid=await operator.execute('media_control',{command:'invented'});assert.equal(invalid.ok,false);assert.equal(invalid.executed,false);
+  const exactVolume=await operator.execute('media_control',{command:'set_volume',volume_percent:5});assert.equal(exactVolume.verified,true);assert.ok(Math.abs(await media.evaluate(e=>e.volume)-0.05)<0.0001);
+  const exactSpeed=await operator.execute('media_control',{command:'set_speed',playback_rate:2});assert.equal(exactSpeed.verified,true);assert.equal(await media.evaluate(e=>e.playbackRate),2);
+  const invalidSpeed=await operator.execute('media_control',{command:'set_speed',playback_rate:0});assert.equal(invalidSpeed.ok,false);assert.equal(invalidSpeed.executed,false);assert.equal(await media.evaluate(e=>e.playbackRate),2);
   const unsupported=await operator.execute('media_control',{command:'next'});assert.equal(unsupported.ok,false);assert.equal(unsupported.executed,false);
   const focused=await operator.execute('media_control',{command:'focus'});assert.equal(focused.executed,true);assert.equal(focused.verified,false);
   const fullscreen=await operator.execute('media_control',{command:'fullscreen'});assert.equal(fullscreen.verified,true,JSON.stringify(fullscreen));
+  const multiple=await operator.execute('play',{url:url+'multi',volume_percent:5,playback_rate:2});assert.equal(multiple.verified,true,JSON.stringify(multiple));
+  assert.equal(await controller.page.locator('video').evaluate(e=>e.paused),false);
+  assert.equal(await controller.page.locator('audio').first().evaluate(e=>e.paused),true,'Preview player must remain untouched');
+  assert.ok(Math.abs(await controller.page.locator('video').evaluate(e=>e.volume)-0.05)<0.0001);assert.equal(await controller.page.locator('video').evaluate(e=>e.playbackRate),2);
   await controller.close();
   const unavailable=await operator.execute('media_control',{command:'pause'});assert.equal(unavailable.ok,false);assert.equal(unavailable.verified,false);
   const abort=new AbortController();abort.abort(new Error('Explicit media cancellation'));

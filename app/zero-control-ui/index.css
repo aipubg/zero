@@ -2180,5 +2180,14 @@ openclaw-mascot {
   background: transparent !important;
 }
 
+.zero-voice-control { position: relative; gap: 8px !important; transition: box-shadow .2s, border-color .2s; }
+.zero-voice-meter { display: inline-flex; align-items: center; justify-content: center; gap: 2px; height: 19px; width: 24px; }
+.zero-voice-meter i { display: block; width: 3px; height: 4px; border-radius: 4px; background: currentColor; opacity: .4; transition: height .18s ease, opacity .2s; }
+.zero-voice-control[data-voice-state="listening"] { color: #74ffe0 !important; border-color: #3bdcba !important; box-shadow: 0 0 0 3px #3bdcba19, 0 0 18px #3bdcba30; }
+.zero-voice-control[data-voice-state="listening"] .zero-voice-meter i { height: calc(5px + var(--zero-mic-level, 0) * 13px); opacity: 1; animation: zero-mic-breathe .9s ease-in-out infinite alternate; animation-delay: calc(var(--bar) * -.13s); }
+.zero-voice-control[data-voice-state="waiting"] .zero-voice-meter i { opacity: .7; background: #ffce79; }
+@keyframes zero-mic-breathe { from { transform: scaleY(.5); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .zero-voice-control .zero-voice-meter i { animation: none !important; } }
+
 
 

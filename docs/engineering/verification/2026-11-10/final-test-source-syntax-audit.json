@@ -237,7 +237,7 @@
     },
     {
       "file": "test/generative-widgets-browser.test.mjs",
-      "sha256": "d79977f8de96ec0b84e7a43a6ec4869ec8ea5a3f7f77ff05bc641333d5522905",
+      "sha256": "60fd2ea334528056a43a7e4da36dab9063a161af1278accaffdb900bb42e5c76",
       "literalDeclarations": 1
     },
     {
@@ -287,7 +287,7 @@
     },
     {
       "file": "test/media-control-browser.test.mjs",
-      "sha256": "cadd9d7c36b18290be592fdcc4cf1ec4fec832b104847188ab461c6ece0e9903",
+      "sha256": "8fd1f2287deeb30f94b54ac4999ec1baa5725f920540554728a67e92626591ad",
       "literalDeclarations": 2
     },
     {
@@ -382,7 +382,7 @@
     },
     {
       "file": "test/phase4-multi-agent.test.mjs",
-      "sha256": "243323dc7daa5a9ccf90ef71b04f4e6a3fb3f3e1465997b0123485f615812b86",
+      "sha256": "8a9e16dddedf779a45e36b34c1e89c73f11285d0839f19da1ef0cbafff65699b",
       "literalDeclarations": 7
     },
     {
@@ -392,7 +392,7 @@
     },
     {
       "file": "test/phase6-skills-plugins.test.mjs",
-      "sha256": "df8be593561616cebc852e043f0daec9424e4bba1dfd3c2d3144aaa154e6e4b1",
+      "sha256": "d7790f056faa35eb1f5863d804b9068debdd6d35a7fc157d976d6edb17b02991",
       "literalDeclarations": 5
     },
     {

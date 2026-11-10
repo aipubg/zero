@@ -3,7 +3,7 @@
 Open [Zero](http://127.0.0.1:18789/chat/zero). The existing Windows build is available for the owner's live use. The 11 November handoff observed the real Orbital chat window, Connected status, active computer control and a selected model. No new test conversation or microphone recording was started for that handoff.
 
 1. Select the main chat and type in **Message Zero** to send a task.
-2. For ZERO's native headset conversation, click the **Voice** button in the top status tray. It changes to **Voice: Listening** when the server microphone is active. Click the same button again to stop listening. This is the existing native voice control; the lower composer's microphone is a separate host control.
+2. For ZERO's native headset conversation, click the **Voice** button in the top status tray. **Voice: Listening** with green animated bars means fresh audio frames are arriving; bar height follows the received level. Amber **Waiting for audio** means capture has not supplied fresh frames. Click the same button again to stop listening. This is the native voice control; the lower composer's microphone is a separate host control.
 3. Use the sidebar for Computer, Memory, Search, Models, Agents, Skills and Plugins. **Alt+K** opens Zero navigation.
 4. After a PC restart, run `E:\zero\zero-host.cmd`, keep its host window running, then open the same address. If ZERO is already Connected, use the existing host instead of starting another copy. Initial dependency setup uses `zero-setup.cmd`; it is not needed again merely to open the installed build.
 
@@ -14,5 +14,7 @@ The earlier delivery receipt records 104 UI-package checks, 72 selected core che
 Cleanup removed 186 obsolete generated UI folders (25,038,178 bytes), retained the active build and two prior verified generations, removed unreachable legacy test bodies, and reduced unnecessary layout spacing. Chats, model files, owner settings and unrelated temporary files were retained.
 
 An actual external-model chat → visible video → media card → pause workflow now has evidence; the former statement that the entire model/media path had no proof is superseded by that specific result. Arbitrary app players and speaker audibility are outside that media proof. Mobile/cloud/remote acceptance still needs unavailable devices or workers. Full independent production acceptance and the corrected complete human voice runner remain open. The owner accepts the existing tested build for live use; that handoff does not convert unrun gates into PASS.
+
+[Live workflow repairs](verification/2026-11-11/live-workflow-repairs.md) add real YouTube main-player selection, exact2×/5% controls and verified Spotify playback/50% app volume. Camera launches correctly, but the current PC exposes no camera device. Requested obsolete-copy cleanup is still blocked by automatic approval review; it has not been claimed as deleted.
 
 See the [delivery receipt](verification/2026-11-10/windows-ready-delivery.json), [widget fixes and real browser evidence](verification/2026-11-10/widget-outcome-and-gateway-fix.json), and [current acceptance matrix](verification/CURRENT-ACCEPTANCE.md).

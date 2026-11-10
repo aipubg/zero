@@ -498,6 +498,9 @@ export async function focusWindow({ target, command = "restore" } = {}, signal =
  * Launch an application or executable.
  */
 export async function launchApp(appNameOrPath, signal = null) {
+  if (/^(camera|windows camera|spotify)$/i.test(String(appNameOrPath).trim())) {
+    return await runNativeWinAction("launch_app", { app: appNameOrPath }, signal);
+  }
   const driver = await getCuaDriver();
   if (driver) {
     try {

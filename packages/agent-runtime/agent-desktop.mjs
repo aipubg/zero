@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+const execFileAsync = promisify(execFile);
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 export const AGENT_DESKTOP_VERSION = '1.2.0';
@@ -26,6 +28,11 @@ export class AgentDesktop {
     if (!fs.existsSync(this.binary)) throw new Error('agent-desktop runtime missing; run node scripts/install-agent-desktop.mjs');
     if (createHash('sha256').update(await fs.promises.readFile(this.binary)).digest('hex') !== AGENT_DESKTOP_SHA256) throw new Error('agent-desktop binary differs from pinned verified release');
     fs.mkdirSync(this.stateDir, { recursive: true });
+    if (!this.privateStateReady) {
+      this.privateStateReady = execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', fileURLToPath(new URL('./private-state.ps1', import.meta.url)), '-Directory', this.stateDir], { windowsHide: true, timeout: 10000, maxBuffer: 65536, signal }).catch(error => { this.privateStateReady = null; throw error; });
+    }
+    await this.privateStateReady;
+    signal?.throwIfAborted();
     const argv = [...(headed ? ['--headed'] : []), command, ...args, ...(input !== undefined ? ['--stdin'] : [])];
     return new Promise(resolve => {
       const child = spawn(this.binary, argv, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'], signal, env: { ...process.env, AGENT_DESKTOP_HOME: this.stateDir } });
