@@ -1,0 +1,15 @@
+{
+  "productionChange": "Observation tool runtime now matches declared object/additionalProperties=false schema: malformed or unknown inputs reject before consulting engine",
+  "verification": [
+    { "command": "node --test app/zero-control-ui/test/observation-tool.test.mjs app/zero-control-ui/test/computer-hold.test.mjs", "passed": 35, "scope": "Supplied engine/rows/Gateway/DOM/window/clock contracts and pure projections; not browser/capture acceptance" },
+    { "command": "pnpm test in app/zero-control-ui", "passed": 103, "log": "artifacts/observation-schema-ui-regression.log" },
+    { "command": "node --test test/verification/classification-runner.test.mjs", "passed": 16 }
+  ],
+  "strongerAssertions": "Invalid input never reaches engine getter; registered executable tool invocation on supplied disabled engine returns observation-disabled and zero records",
+  "titleCorrection": "Pure route-state helper no longer named as actual navigation",
+  "additionalReviewedFiles": 82,
+  "additionalUnreviewedFiles": 7,
+  "limits": "No new actual screen recording, live desktop hold or browser navigation proved by these test files; running owner host loads source changes at next restart",
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

@@ -45,16 +45,260 @@
     },
     {
       "file": "app/zero-control-ui/test/computer-hold.test.mjs",
-      "sha256": "17a5cf06b617f11a13c2c13e6f97ac6c3cca84a18a498777c30385ef93e6cbba",
+      "sha256": "0ad7539e16f811c293b46050cd0420aa13621faf9f9d2b3b3c0941f0349e1fb8",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Supplied null/string/array/incomplete snapshots normalize to unknown rather than inferred state. Supplied snapshot keeps canonical ownership/lease/scope fields and drops lease alias/invalid time. Pure supplied phase/snapshot projection distinguishes loading/unavailable/unknown/free/owned/other and denies release without usable lease. Pure supplied view labels scope without exposing lease in public labels. Supplied disconnected flag overrides cached ownership and disables client actions. Fake Gateway response routes canonical status request and applies supplied free snapshot. Fake Gateway take/release requests use canonical action and controlLeaseId only. Deferred fake Gateway take coalesces duplicate method calls without second request. Deferred fake status older than take cannot replace newer supplied owned snapshot. Fake Gateway conflict triggers status reread and retains other-owner state. Fake rejected release rereads state, drops lease and never renders free success. Fake Gateway call count unchanged on release without owned lease. Fake missing-method error produces unavailable client state. Fake malformed snapshot yields unknown with no inferred release permission. Fake disconnect clears ownership, blocks requests and reconnect rereads supplied state. Deferred fake status after disconnect cannot restore stale lease. Client dispose ignores late supplied response without emitting new state. Pure supplied FakeElement attachment/population determines reusable wrapper. Fake DOM renders state/action controls from fake Gateway responses; dispose removes nodes. Fake DOM renders supplied Gateway error rather than free/success. Client leave sends one fake release for its own lease and prevents subsequent calls. Client leave sends no fake release for another owner or free state. Disconnected client leave sends no request to fake Gateway. Client dispose alone sends no release to fake Gateway. Deferred fake take completing after leave releases returned lease once. Client leave does not duplicate an already pending fake release. Fake window pagehide sends this-view release, dispose removes fake listener and DOM nodes. Pure supplied handle leave is best effort and handles missing/throwing callbacks. Pure supplied route/DOM state selects leave/unmount/reuse/remount; no actual navigation. Failed deferred fake take after leave still releases previously owned lease.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "All Gateway responses/events, DOM/window and route flags supplied; no actual browser, network, desktop, live hold or navigation."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "normalizeSnapshot rejects unusable payloads instead of guessing",
+          "line": 111,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied null/string/array/incomplete snapshots normalize to unknown rather than inferred state."
+        },
+        {
+          "title": "normalizeSnapshot keeps canonical fields and drops lease aliases",
+          "line": 120,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied snapshot keeps canonical ownership/lease/scope fields and drops lease alias/invalid time."
+        },
+        {
+          "title": "holdView reports every explicit state without inferring ownership",
+          "line": 139,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Pure supplied phase/snapshot projection distinguishes loading/unavailable/unknown/free/owned/other and denies release without usable lease."
+        },
+        {
+          "title": "holdView exposes the global scope and never exposes a lease in the label",
+          "line": 167,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Pure supplied view labels scope without exposing lease in public labels."
+        },
+        {
+          "title": "disconnected state overrides a cached snapshot and forbids actions",
+          "line": 183,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied disconnected flag overrides cached ownership and disables client actions."
+        },
+        {
+          "title": "refresh uses the canonical method and action and applies the snapshot",
+          "line": 197,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake Gateway response routes canonical status request and applies supplied free snapshot."
+        },
+        {
+          "title": "take and release use action/controlLeaseId with no leaseId alias",
+          "line": 212,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake Gateway take/release requests use canonical action and controlLeaseId only."
+        },
+        {
+          "title": "a duplicate take click while one is in flight sends only one request",
+          "line": 238,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Deferred fake Gateway take coalesces duplicate method calls without second request."
+        },
+        {
+          "title": "a status response that predates take is ignored",
+          "line": 259,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Deferred fake status older than take cannot replace newer supplied owned snapshot."
+        },
+        {
+          "title": "a take conflict re-reads status instead of claiming success",
+          "line": 277,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake Gateway conflict triggers status reread and retains other-owner state."
+        },
+        {
+          "title": "a rejected release drops the lease and never renders success",
+          "line": 294,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake rejected release rereads state, drops lease and never renders free success."
+        },
+        {
+          "title": "release without a lease never calls the Gateway",
+          "line": 315,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake Gateway call count unchanged on release without owned lease."
+        },
+        {
+          "title": "a missing method renders unavailable, not free",
+          "line": 328,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake missing-method error produces unavailable client state."
+        },
+        {
+          "title": "a malformed snapshot renders unknown, not free",
+          "line": 340,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake malformed snapshot yields unknown with no inferred release permission."
+        },
+        {
+          "title": "disconnect clears the lease, blocks actions, and reconnect re-reads state",
+          "line": 354,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake disconnect clears ownership, blocks requests and reconnect rereads supplied state."
+        },
+        {
+          "title": "a stale status that resolves after a disconnect is ignored",
+          "line": 380,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Deferred fake status after disconnect cannot restore stale lease."
+        },
+        {
+          "title": "dispose stops emitting and ignores late responses",
+          "line": 395,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Client dispose ignores late supplied response without emitting new state."
+        },
+        {
+          "title": "the hold wrapper is reused only while attached and populated",
+          "line": 416,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Pure supplied FakeElement attachment/population determines reusable wrapper."
+        },
+        {
+          "title": "mountComputerHold renders the hold bar with explicit state and actions",
+          "line": 437,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake DOM renders state/action controls from fake Gateway responses; dispose removes nodes."
+        },
+        {
+          "title": "mountComputerHold shows a Gateway error instead of a success state",
+          "line": 488,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake DOM renders supplied Gateway error rather than free/success."
+        },
+        {
+          "title": "leave hands back this client's hold once and stops acting",
+          "line": 517,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Client leave sends one fake release for its own lease and prevents subsequent calls."
+        },
+        {
+          "title": "leave never releases a hold this client does not own",
+          "line": 539,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Client leave sends no fake release for another owner or free state."
+        },
+        {
+          "title": "leave while disconnected sends nothing",
+          "line": 559,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Disconnected client leave sends no request to fake Gateway."
+        },
+        {
+          "title": "dispose alone never hands back a hold",
+          "line": 572,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Client dispose alone sends no release to fake Gateway."
+        },
+        {
+          "title": "a take in flight when leaving releases the lease it returns",
+          "line": 585,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Deferred fake take completing after leave releases returned lease once."
+        },
+        {
+          "title": "a release already in flight is not duplicated when leaving",
+          "line": 606,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Client leave does not duplicate an already pending fake release."
+        },
+        {
+          "title": "pagehide hands back this view's hold and dispose removes the listener",
+          "line": 624,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake window pagehide sends this-view release, dispose removes fake listener and DOM nodes."
+        },
+        {
+          "title": "handBackComputer is best-effort and null-safe",
+          "line": 660,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Pure supplied handle leave is best effort and handles missing/throwing callbacks."
+        },
+        {
+          "title": "computerSurfaceAction chooses hand-back for supplied route departure state",
+          "line": 687,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Pure supplied route/DOM state selects leave/unmount/reuse/remount; no actual navigation."
+        },
+        {
+          "title": "a failed take in flight still hands back the hold this view had",
+          "line": 701,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Failed deferred fake take after leave still releases previously owned lease."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/computer-live-action.test.mjs",
@@ -263,16 +507,61 @@
     },
     {
       "file": "app/zero-control-ui/test/observation-tool.test.mjs",
-      "sha256": "cb6b2a6536e01be3a2f42dd6a07d4cfc0f4fcaa4df0cb8006e95611403ebac35",
+      "sha256": "309872d9b3d237d2f6e110b507087798ad417f60309c304e080e2de9be3e2900",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Supplied engine disabled/private/unavailable/empty outcomes are explicit; tool metadata declares read-only shape. Supplied rows sanitize/bound quoted untrusted text, metadata and credentials; no raw pixel/database fields returned. Supplied candidates and fixed clock test disabled-default suggestion behavior, evidence threshold/cooldown/limit and non-actionable metadata. Malformed params/unknown keys/ranges/types reject before supplied engine getter; actual manifest/schema source matches declared contracts. Supplied SDK API registers executable observation tool; invoking it on supplied disabled engine returns explicit disabled refusal and zero records.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Supplied observation engine/rows/config/candidates/clock and SDK registration; no capture, persistent memory, CLI/browser or native screen context retrieval."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "observation tool is read-only, requires enabled non-private observation, and handles empty states",
+          "line": 57,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied engine disabled/private/unavailable/empty outcomes are explicit; tool metadata declares read-only shape."
+        },
+        {
+          "title": "observation tool returns bounded sanitized quoted records with no raw frame or database internals",
+          "line": 94,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied rows sanitize/bound quoted untrusted text, metadata and credentials; no raw pixel/database fields returned."
+        },
+        {
+          "title": "observation tool suggestions are disabled by default and opt-in candidates are rate-limited and non-actionable",
+          "line": 128,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied candidates and fixed clock test disabled-default suggestion behavior, evidence threshold/cooldown/limit and non-actionable metadata."
+        },
+        {
+          "title": "observation tool rejects invalid parameters and exposes only the safe manifest contracts",
+          "line": 167,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Malformed params/unknown keys/ranges/types reject before supplied engine getter; actual manifest/schema source matches declared contracts."
+        },
+        {
+          "title": "plugin registration exposes the observation tool through the supported registerTool seam",
+          "line": 190,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied SDK API registers executable observation tool; invoking it on supplied disabled engine returns explicit disabled refusal and zero records."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/observation.test.mjs",

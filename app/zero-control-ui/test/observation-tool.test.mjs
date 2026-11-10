@@ -165,10 +165,14 @@ test("observation tool suggestions are disabled by default and opt-in candidates
 });
 
 test("observation tool rejects invalid parameters and exposes only the safe manifest contracts", async () => {
-  const tool = createObservationTool({ getObservationEngine: () => fakeEngine() });
+  let engineReads = 0;
+  const tool = createObservationTool({ getObservationEngine: () => { engineReads++; return fakeEngine(); } });
+  for (const invalid of [null, [], "invalid", 17]) await assert.rejects(() => tool.execute("id", invalid), /must be an object/);
+  await assert.rejects(() => tool.execute("id", { unrecognized: true }), /unexpected parameter/);
   await assert.rejects(() => tool.execute("id", { limit: 21 }), /limit/);
   await assert.rejects(() => tool.execute("id", { query: "x".repeat(201) }), /query/);
   await assert.rejects(() => tool.execute("id", { includeSuggestions: "yes" }), /includeSuggestions/);
+  assert.equal(engineReads, 0, "Malformed input must reject before consulting observation memory");
 
   const manifest = JSON.parse(await readFile(path.join(root, "openclaw.plugin.json"), "utf8"));
   assert.ok(manifest.contracts.tools.includes(OBSERVATION_TOOL_NAME));
@@ -216,4 +220,8 @@ test("plugin registration exposes the observation tool through the supported reg
   assert.ok(obsTool);
   assert.equal(typeof obsTool.execute, "function");
   assert.equal(obsTool.parameters.additionalProperties, false);
+  const result = await obsTool.execute("registered-tool-check", {});
+  assert.equal(result.details.ok, false);
+  assert.equal(result.details.reason, "observation-disabled");
+  assert.equal(result.details.count, 0);
 });

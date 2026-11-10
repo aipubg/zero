@@ -684,7 +684,7 @@ test("handBackComputer is best-effort and null-safe", () => {
   );
 });
 
-test("computerSurfaceAction hands back only on a real route departure", () => {
+test("computerSurfaceAction chooses hand-back for supplied route departure state", () => {
   const desktop = new FakeElement("div");
   const hostEl = new FakeElement("div");
   const bar = new FakeElement("section");

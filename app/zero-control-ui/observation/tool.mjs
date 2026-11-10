@@ -49,7 +49,13 @@ export const OBSERVATION_TOOL_PARAMETERS = Object.freeze({
 });
 
 function readParams(params) {
-  const value = params && typeof params === "object" && !Array.isArray(params) ? params : {};
+  const value = params === undefined ? {} : params;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("zero_screen_context parameters must be an object.");
+  }
+  for (const key of Object.keys(value)) {
+    if (!Object.hasOwn(OBSERVATION_TOOL_PARAMETERS.properties, key)) throw new Error(`zero_screen_context rejected unexpected parameter: ${key}`);
+  }
   const query = value.query === undefined ? "" : value.query;
   if (typeof query !== "string" || query.length > 200) {
     throw new Error("zero_screen_context.query must be a string of at most 200 characters.");
