@@ -1,0 +1,22 @@
+{
+  "status": "PARTIAL",
+  "execution": {
+    "log": "artifacts/matrix-product-scoped-review.log",
+    "passedLeaves": 28,
+    "reportedPassIncludesContainer": 29,
+    "skippedLeaves": 16,
+    "failed": 0
+  },
+  "changes": [
+    "Complete assertion-scope review of final two unreviewed source files.",
+    "Legacy matrix excludes owner gateway, no longer loads owner credentials or restores whole owner config; local state uses guarded temp root.",
+    "Removed hand-inserted DOM acceptance and token-existence channel PASS; explicit BLOCKED states retained.",
+    "Scheduler asserts actual file effect and completed SQLite history; exact chat outcome asserted in optional case; PowerShell parser checks actual parse errors."
+  ],
+  "limits": [
+    "All 107 source identities cataloged, but supported literal declarations do not establish exhaustive dynamic-test classification.",
+    "Six blocked legacy paths and ten optional host cases are skipped, not passing.",
+    "Fake-DOM product tests are UNIT/CONTRACT only.",
+    "Full production acceptance remains PARTIAL."
+  ]
+}

@@ -1,38 +1,9 @@
-/**
- * @fileoverview Zero AI — Comprehensive E2E Acceptance Matrix Runner (T01–T25)
- * 
- * Validates all 25 acceptance scenarios defined in the Zero AI Master Engineering Directive:
- * T01: Clean installation / environment validation
- * T02: Independent native startup without openclaw runtime
- * T03: Chat page loaded cleanly in browser without broken assets
- * T04: All 29 registered settings/UI routes return 200 OK + RPC data + form persistence
- * T05: WebSocket RPC Protocol 4 handshake & contract dispatch
- * T06: Provider catalog reflects actual configured models
- * T07: Model switching reaches selected provider
- * T08: Normal chat turn produces real model-generated completion
- * T09: Streaming produces genuine incremental token deltas with strictly 1 upstream request
- * T10: Multi-step tool orchestration loop with execution feedback
- * T11: Notepad automation with verified UIAutomation read-back (COMPLETED, verified, exact match)
- * T12: YouTube browser automation with playback verification & unverified acoustic audio
- * T13: Media and progress cards emitted from real execution events
- * T14: Human takeover hold blocks unauthorized computer actions
- * T15: Turn cancellation halts active execution via chat.abort
- * T16: Session lifecycle (create, get, list, patch, delete, setInvolvement)
- * T17: Restart recovery sweeps and persists across reboots
- * T18: Persistent semantic memory store (remember & recall)
- * T19: Sub-agent delegation and child task execution
- * T20: Durable cron automation triggers due jobs
- * T21: Plugin capability registration and execution via production lifecycle
- * T22: Channel message round-trip handling (truthful BLOCKED classification when credentials unconfigured)
- * T23: Negative testing: unauthorized, forbidden, and invalid frames rejected
- * T24: Secret scan proves 0 credentials in tracked repository
- * T25: Windows packaging and single supervisor launcher integrity
- */
-
+/** Historical matrix: scoped contracts and isolated local integration, not production sign-off. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync, spawn } from 'node:child_process';
 const WS = globalThis.WebSocket;
@@ -50,20 +21,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-const envFile = path.join(REPO_ROOT, '.env');
-if (fs.existsSync(envFile) && typeof process.loadEnvFile === 'function') {
-  try { process.loadEnvFile(envFile); } catch (_) {}
+// External legacy cases require a disposable host; no owner credentials loaded.
+const BASE_URL = process.env.ZERO_MATRIX_TEST_HOST || '';
+if (BASE_URL) {
+  const url = new URL(BASE_URL);
+  assert.equal(url.protocol, 'http:');
+  assert.equal(url.hostname, '127.0.0.1');
+  assert.notEqual(url.port, '18789', 'Owner gateway is excluded');
 }
-
-const PORT = 18789;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
-const WS_URL = `ws://127.0.0.1:${PORT}/`;
-const cfgFilePath = path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
-let origConfig = null;
-try {
-  if (fs.existsSync(cfgFilePath)) origConfig = fs.readFileSync(cfgFilePath, 'utf8');
-} catch (_) {}
-
+const WS_URL = BASE_URL.replace(/^http:/, 'ws:') + '/';
 // Helper to obtain the active loopback UI token from the running host
 async function getLoopbackToken() {
   try {
@@ -80,10 +46,17 @@ async function getLoopbackToken() {
   return '';
 }
 
-test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
+test('Zero AI historical matrix with explicit assertion scope', { timeout: 120000 }, async (suite) => {
+  const tempRoot = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'zero-matrix-')));
+  suite.after(() => {
+    const resolved = fs.realpathSync.native(tempRoot);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-matrix-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
+  });
 
-  // T01: Clean installation / environment validation
-  await suite.test('T01: Clean installation / environment validation', async () => {
+
+  await suite.test('T01: Current runtime and packaging file presence', async (t) => {
     assert.ok(process.version.startsWith('v24'), `Running on Node.js ${process.version}`);
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'backend', 'package.json')), 'Backend package.json exists');
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json')), 'Zero system config exists');
@@ -91,8 +64,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'dist', 'web', 'index.html')), 'Web UI application entry point exists');
   });
 
-  // T02: Independent native startup without openclaw runtime
-  await suite.test('T02: Independent native startup without openclaw runtime', async () => {
+  await suite.test('T02: Legacy shared-default child-host path', { skip: "BLOCKED: Legacy child host has shared defaults; use isolated native-host verification" }, async (t) => {
     // 1. Verify live control plane is running natively
     const res = await fetch(`${BASE_URL}/health`);
     assert.equal(res.status, 200);
@@ -166,8 +138,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.ok(stdout.includes('T02_ISOLATED_OK'), 'Subprocess verified native independence, UI, RPC, and tools');
   });
 
-  // T03: Chat page loaded cleanly in browser without broken assets
-  await suite.test('T03: Chat page loads without broken assets', async () => {
+  await suite.test('T03: HTTP shell and asset response contracts', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const res = await fetch(`${BASE_URL}/chat/zero`);
     assert.equal(res.status, 200);
     const html = await res.text();
@@ -187,8 +158,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.ok(cssRes.headers.get('content-type')?.includes('css'));
   });
 
-  // T04: All 29 registered settings/UI routes return 200 OK + RPC data + form persistence
-  await suite.test('T04: Settings & UI route catalog, RPC data, and form persistence', async () => {
+  await suite.test('T04: Browser title/body smoke and direct RPC config readback', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const routes = [
       '/', '/chat', '/chat/zero', '/settings', '/settings/model-providers',
       '/settings/about', '/settings/agents', '/settings/appearance',
@@ -241,11 +211,6 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
 
     // Verify underlying settings RPCs and form data persistence
     const token = await getLoopbackToken();
-    const cfgFilePath = path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
-    let origConfig = null;
-    try {
-      if (fs.existsSync(cfgFilePath)) origConfig = fs.readFileSync(cfgFilePath, 'utf8');
-    } catch (_) {}
 
     const ws = new WS(WS_URL);
     await new Promise((r) => { ws.onopen = r; });
@@ -309,14 +274,10 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
       assert.equal(rbRes.payload.config?.ui?.appearance?.testTheme, patchVal, 'Setting persisted into config');
     } finally {
       ws.close();
-      if (origConfig) {
-        try { fs.writeFileSync(cfgFilePath, origConfig, 'utf8'); } catch (_) {}
-      }
     }
   });
 
-  // T05: WebSocket RPC Protocol 4 handshake & contract dispatch
-  await suite.test('T05: WebSocket RPC Protocol 4 handshake & contract dispatch', async () => {
+  await suite.test('T05: Actual WebSocket handshake and response shapes', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const token = await getLoopbackToken();
     const ws = new WS(WS_URL);
     await new Promise((resolve, reject) => {
@@ -400,14 +361,10 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
       assert.ok(Array.isArray(authRes.payload.providers));
     } finally {
       ws.close();
-      if (origConfig) {
-        try { fs.writeFileSync(cfgFilePath, origConfig, 'utf8'); } catch (_) {}
-      }
     }
   });
 
-  // T06: Provider catalog reflects actual configured models
-  await suite.test('T06: Provider catalog reflects actual configured models', async () => {
+  await suite.test('T06: Configured HTTP catalog identifiers', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const res = await fetch(`${BASE_URL}/v1/models`);
     assert.equal(res.status, 200);
     const data = await res.json();
@@ -418,8 +375,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.ok(modelIds.includes('nvidia/nemotron-3-ultra-550b-a55b'), 'Includes Nemotron 550B');
   });
 
-  // T07: Model switching reaches selected provider
-  await suite.test('T07: Model switching reaches selected provider', async () => {
+  await suite.test('T07: Explicit model resolution and completion model label', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const fabric = new ModelFabric({
       configPath: path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
       aliases: { 'zero-lead': 'nvidia/nemotron-3.5-lightning-30b-a3b' },
@@ -450,8 +406,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.equal(switchedRes.model, 'nvidia/nemotron-3.5-super-vl-120b-a12b', 'Outgoing completion targeted switched model');
   });
 
-  // T08: Normal chat turn produces real model-generated completion
-  await suite.test('T08: Normal chat turn produces real model-generated completion', async () => {
+  await suite.test('T08: Exact requested chat completion', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const res = await fetch(`${BASE_URL}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -466,12 +421,11 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     const json = await res.json();
     assert.ok(json.choices && json.choices.length > 0);
     const content = json.choices[0].message?.content || json.choices[0].message?.reasoning_content || '';
-    assert.ok(content.length > 0 || json.choices[0].message?.role === 'assistant', 'Real completion content returned');
+    assert.equal(content.trim(), 'ZERO_VERIFIED', 'Requested exact completion outcome');
     assert.equal(json.choices[0].finish_reason, 'stop');
   });
 
-  // T09: Streaming produces genuine incremental token deltas with strictly 1 upstream request
-  await suite.test('T09: Streaming produces genuine incremental token deltas with strictly 1 upstream request', async () => {
+  await suite.test('T09: Fabric request counter and buffered HTTP SSE content', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const statusBeforeRes = await fetch(`${BASE_URL}/health`);
     assert.equal(statusBeforeRes.status, 200);
 
@@ -535,8 +489,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.ok(accumulatedContent.length > 0, 'Accumulated token text agrees with stream deltas');
   });
 
-  // T10: Multi-step tool orchestration loop with execution feedback
-  await suite.test('T10: Multi-step tool orchestration loop with execution feedback', async () => {
+  await suite.test('T10: Chat reply existence without tool-loop proof', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const token = await getLoopbackToken();
     const ws = new WS(WS_URL);
     await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
@@ -590,8 +543,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     }
   });
 
-  // T11: Notepad automation with verified UIAutomation read-back
-  await suite.test('T11: Notepad automation with verified UIAutomation read-back (COMPLETED, verified, exact match)', async () => {
+  await suite.test('T11: Legacy native Notepad readback path', { skip: "BLOCKED: Legacy Notepad input lacks qualified owned-window isolation; use real agent-desktop fixture runners" }, async (t) => {
     const np = spawn('notepad.exe', [], { detached: true, stdio: 'ignore' });
     const targetPid = np.pid;
     assert.ok(targetPid, 'Test-owned Notepad PID acquired');
@@ -624,8 +576,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     }
   });
 
-  // T12: YouTube browser automation with playback verification & unverified acoustic audio
-  await suite.test('T12: YouTube browser automation with playback verification & unverified acoustic audio', async () => {
+  await suite.test('T12: Legacy browser playback metadata path', { skip: "BLOCKED: Legacy media playback changes live browser; dedicated playback qualification required" }, async (t) => {
     const playResult = await canonicalCapabilityEngine.execute({
       agentId: 'zero',
       toolName: 'zero_computer_action',
@@ -646,51 +597,11 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.equal(playResult.audioAudible, 'UNVERIFIED', 'Acoustic hearing remains unverified without physical microphone capture');
   });
 
-  // T13: Media and progress cards emitted from real execution events rendered in live browser
-  await suite.test('T13: Media and progress cards emitted from real execution events', async () => {
-    const bundleRes = await fetch(`${BASE_URL}/assets/zero-control-ui.js`);
-    assert.equal(bundleRes.status, 200);
-    const bundleText = await bundleRes.text();
-    assert.ok(bundleText.includes('zero-gen-media') || bundleText.includes('zero-gen-progress') || bundleText.includes('zero-ui:media') || bundleText.includes('YouTube Media'), 'UI bundle contains card renderer');
-
-    const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-    const { chromium } = await import('playwright-core');
-    const browser = await chromium.launch({ executablePath: chromePath, headless: true });
-    const page = await browser.newPage();
-    await page.goto(`${BASE_URL}/chat/zero`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1500);
-
-    const widgetRendered = await page.evaluate(() => {
-      const container = document.createElement('div');
-      container.id = 't13-widget-test-container';
-
-      const media = document.createElement('div');
-      media.className = 'zero-gen-widget zero-gen-media';
-      media.setAttribute('data-widget', 'media');
-      media.innerHTML = '<div class="zero-media-title">Verified Track</div><button class="zero-media-btn">Pause</button>';
-      container.appendChild(media);
-
-      const prog = document.createElement('div');
-      prog.className = 'zero-gen-widget zero-gen-progress';
-      prog.setAttribute('data-widget', 'progress');
-      prog.innerHTML = '<div class="zero-progress-step">Step 1: Done</div>';
-      container.appendChild(prog);
-
-      document.body.appendChild(container);
-
-      return {
-        hasMedia: !!document.querySelector('.zero-gen-media'),
-        hasProgress: !!document.querySelector('.zero-gen-progress'),
-      };
-    });
-
-    assert.ok(widgetRendered.hasMedia, '.zero-gen-media rendered in live browser DOM');
-    assert.ok(widgetRendered.hasProgress, '.zero-gen-progress rendered in live browser DOM');
-    await browser.close();
+  await suite.test('T13: Missing real media/progress renderer verification', { skip: "BLOCKED: Hand-inserted DOM widgets are not production renderer verification" }, async (t) => {
+    t.skip('BLOCKED: real execution-event renderer interactions require dedicated browser acceptance');
   });
 
-  // T14: Human takeover hold blocks unauthorized computer actions
-  await suite.test('T14: Human takeover hold blocks unauthorized computer actions', async () => {
+  await suite.test('T14: Legacy canonical hold path', { skip: "BLOCKED: Legacy canonical hold may bypass strict policy; covered by isolated strict-policy tests" }, async (t) => {
     canonicalCapabilityEngine.operator.setHumanHold(true);
     const blockedRes = await canonicalCapabilityEngine.execute({
       agentId: 'zero',
@@ -704,14 +615,8 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     canonicalCapabilityEngine.operator.setHumanHold(false);
   });
 
-  // T15: Turn cancellation halts active execution via chat.abort
-  await suite.test('T15: Turn cancellation halts active execution via chat.abort', async () => {
+  await suite.test('T15: Chat abort acknowledgement', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const token = await getLoopbackToken();
-    const cfgFilePath = path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
-    let origConfig = null;
-    try {
-      if (fs.existsSync(cfgFilePath)) origConfig = fs.readFileSync(cfgFilePath, 'utf8');
-    } catch (_) {}
 
     const ws = new WS(WS_URL);
     await new Promise((r) => { ws.onopen = r; });
@@ -764,15 +669,12 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
       assert.equal(abortRes.payload.aborted, true, 'Active turn aborted');
     } finally {
       ws.close();
-      if (origConfig) {
-        try { fs.writeFileSync(cfgFilePath, origConfig, 'utf8'); } catch (_) {}
-      }
     }
   });
 
-  // T16: Session lifecycle (create, get, list, patch, delete, setInvolvement)
-  await suite.test('T16: Session lifecycle (create, get, list, patch, delete, setInvolvement)', async () => {
+  await suite.test('T16: In-memory session CRUD', async (t) => {
     const sm = new SessionManager({ dbPath: ':memory:' });
+    t.after(() => sm.close());
     const sess = sm.createSession('test-sess-1', 'Initial Title', 'zero');
     assert.equal(sess.id, 'test-sess-1');
 
@@ -795,9 +697,8 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.equal(sm.getSession('test-sess-1'), null);
   });
 
-  // T17: Restart recovery sweeps and persists across reboots
-  await suite.test('T17: Restart recovery sweeps and persists across reboots', async () => {
-    const testDb = path.join(REPO_ROOT, '.zero-data', `test-rec-${Date.now()}.sqlite`);
+  await suite.test('T17: Same-process SQLite reopen recovery', async (t) => {
+    const testDb = path.join(tempRoot, 'recovery.sqlite');
     const tm1 = new TaskStateMachine({ dbPath: testDb });
     const t1 = tm1.createTask({ agentId: 'zero', goal: 'Survive restart' });
     tm1.enqueueTask(t1.id);
@@ -812,18 +713,18 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     try { fs.unlinkSync(testDb); } catch (_) {}
   });
 
-  // T18: Persistent semantic memory store (remember & recall)
-  await suite.test('T18: Persistent semantic memory store (remember & recall)', async () => {
+  await suite.test('T18: Keyword recall of supplied in-memory record', async (t) => {
     const mem = new PersistentMemoryStore({ dbPath: ':memory:' });
+    t.after(() => mem.close());
     mem.remember({ category: 'facts', content: 'Zero operates natively on 18789', tags: ['port'] });
     const recall = mem.recall('18789');
     assert.ok(recall.length >= 1);
     assert.ok(recall[0].content.includes('18789'));
   });
 
-  // T19: Sub-agent delegation and child task execution
-  await suite.test('T19: Sub-agent delegation and child task execution', async () => {
+  await suite.test('T19: Child task executes supplied callback', async (t) => {
     const tm = new TaskStateMachine({ dbPath: ':memory:' });
+    t.after(() => tm.close());
     const parent = tm.createTask({ agentId: 'zero', goal: 'Master Task' });
     tm.enqueueTask(parent.id);
     tm.startTask(parent.id);
@@ -835,7 +736,7 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
 
     // Execute actual child task step via execution runtime (no manual fake mark)
     const execChild = await tm.executeChildTask(childTask.id, async (task) => {
-      return { computation: 'Real child agent execution complete', resultValue: 42 };
+      return { computation: 'Supplied callback arithmetic', resultValue: 6 * 7 };
     });
 
     assert.equal(execChild.status, 'COMPLETED');
@@ -846,10 +747,13 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.ok(steps.some(s => s.toolName === 'subagent_execution'), 'Recorded child execution step');
   });
 
-  // T20: Durable cron automation triggers due jobs
-  await suite.test('T20: Durable cron automation triggers due jobs', async () => {
-    const testAutoDb = path.join(REPO_ROOT, '.zero-data', `test-auto-${Date.now()}.sqlite`);
-    const auto1 = new AutomationScheduler({ dbPath: testAutoDb });
+  await suite.test('T20: Due-time executor effect and same-process SQLite reopen', async (t) => {
+    const testAutoDb = path.join(tempRoot, 'automation.sqlite');
+    const effect = path.join(tempRoot, 'scheduled-effect.txt');
+    const auto1 = new AutomationScheduler({ dbPath: testAutoDb, executor: async () => {
+      fs.appendFileSync(effect, 'executed\n');
+      return { ok: true, executed: true };
+    } });
     const job = auto1.registerJob({
       title: 'Scheduled Task',
       cronExpr: '* * * * *',
@@ -866,14 +770,15 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     const jobs = auto2.listJobs();
     assert.equal(jobs.length, 1);
     assert.equal(jobs[0].id, job.id);
-    const runs = auto2.listRuns(job.id);
+    const runs = auto2.listRuns({ jobId: job.id });
     assert.equal(runs.length, 1);
+    assert.equal(runs[0].status, 'completed');
+    assert.equal(fs.readFileSync(effect, 'utf8'), 'executed\n');
     auto2.close();
     try { fs.unlinkSync(testAutoDb); } catch (_) {}
   });
 
-  // T21: Plugin capability registration and execution via production lifecycle
-  await suite.test('T21: Plugin capability registration and execution via production lifecycle', async () => {
+  await suite.test('T21: In-process supplied plugin handler arithmetic', async (t) => {
     const engine = new CapabilityEngine();
     const pluginManifest = {
       id: 'plugin-scientific-math',
@@ -909,23 +814,11 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     assert.ok(execResult.auditId, 'Audit ID recorded');
   });
 
-  // T22: Channel message round-trip handling
-  await suite.test('T22: Channel message round-trip handling', async (t) => {
-    const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
-    const discordToken = process.env.DISCORD_BOT_TOKEN;
-
-    if (!telegramToken && !discordToken) {
-      // Truthful BLOCKED classification as mandated by Blocker 4
-      t.skip('BLOCKED: Real external channel transport requires configured bot token (TELEGRAM_BOT_TOKEN or DISCORD_BOT_TOKEN)');
-      return;
-    }
-
-    // When credentials present, perform verified channel test
-    assert.ok(telegramToken || discordToken);
+  await suite.test('T22: Missing external channel round trip', { skip: "BLOCKED: Real external channel send/receive is not implemented by token existence" }, async (t) => {
+    t.skip('BLOCKED: credentials alone cannot prove external send/receive');
   });
 
-  // T23: Negative testing: unauthorized, forbidden, and invalid frames rejected
-  await suite.test('T23: Negative testing: unauthorized, forbidden, and invalid frames rejected', async () => {
+  await suite.test('T23: Validation and viewer RPC rejection', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     // 1. Invalid protocol version rejected
     const badHandshake = validateHandshake({ protocol: 999 });
     assert.equal(badHandshake.ok, false, 'Invalid protocol rejected');
@@ -990,25 +883,21 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
       assert.ok(unkMsg.toLowerCase().includes('not found'));
     } finally {
       ws.close();
-      if (origConfig) {
-        try { fs.writeFileSync(cfgFilePath, origConfig, 'utf8'); } catch (_) {}
-      }
     }
   });
 
-  // T24: Secret scan proves 0 credentials in tracked repository
-  await suite.test('T24: Secret scan proves 0 credentials in tracked repository', async () => {
+  await suite.test('T24: Configured tracked-file credential-pattern scan', async (t) => {
     const scannerPath = path.join(REPO_ROOT, 'backend', 'scripts', 'scan-secrets.mjs');
     const proc = spawnSync(process.execPath, [scannerPath], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
+      timeout: 30000,
     });
     assert.equal(proc.status, 0);
     assert.ok(proc.stdout.includes('0 exposed credentials found'), 'Scanner found 0 exposed credentials');
   });
 
-  // T25: Windows packaging, paths, user data separation, and single supervisor launcher integrity
-  await suite.test('T25: Windows packaging and single supervisor launcher integrity', async () => {
+  await suite.test('T25: Launcher source/file presence and PowerShell syntax', async (t) => {
     const startScript = path.join(REPO_ROOT, 'start-all.ps1');
     const hostScript = path.join(REPO_ROOT, 'zero-host.ps1');
     assert.ok(fs.existsSync(startScript), 'start-all.ps1 exists');
@@ -1028,8 +917,8 @@ test('Zero AI Master Acceptance Test Suite (T01–T25)', async (suite) => {
     const checkPs = spawnSync('powershell.exe', [
       '-NoProfile',
       '-Command',
-      `[System.Management.Automation.Language.Parser]::ParseFile('${hostScript.replace(/'/g, "''")}', [ref]$null, [ref]$null) | Out-Null; $?`
-    ], { encoding: 'utf8' });
+      `$tokens = $null; $parseErrors = $null; [System.Management.Automation.Language.Parser]::ParseFile('${hostScript.replace(/'/g, "''")}', [ref]$tokens, [ref]$parseErrors) | Out-Null; if ($parseErrors.Count -gt 0) { exit 1 }; 'True'`
+    ], { encoding: 'utf8', timeout: 30000 });
     assert.equal(checkPs.status, 0);
     assert.ok(checkPs.stdout.includes('True'), 'PowerShell syntax check passed');
 

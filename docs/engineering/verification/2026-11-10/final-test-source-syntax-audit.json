@@ -1,0 +1,980 @@
+{
+  "status": "PASS_FOR_DECLARED_SOURCE_SCOPE_ONLY",
+  "method": "TypeScript 6.0.3 AST parse of current 107 test sources; node:test import bindings inspected, supported direct test/t.test/suite.test/describe/it calls compared with catalog literal line extraction.",
+  "sourceFiles": 107,
+  "declarationsIncludingContainers": 608,
+  "unsupported": [],
+  "entries": [
+    {
+      "file": "app/test/bridge.test.mjs",
+      "sha256": "7824540b214aa911708a64803a935aea4caf250f12ad58e463d9555315b8879b",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-hold.test.mjs",
+      "sha256": "0ad7539e16f811c293b46050cd0420aa13621faf9f9d2b3b3c0941f0349e1fb8",
+      "literalDeclarations": 30
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-live-action.test.mjs",
+      "sha256": "c7ca341b3fe915fadb87dd2e366cf082e3c8e7b5efefd187aa57695feee8ae39",
+      "literalDeclarations": 6
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-operator.test.mjs",
+      "sha256": "efafd430fb3a9653f7bf234d3cee531ceb6ff7117c8d1b2ed5ecef0b5e70cbc8",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-tools-live.test.mjs",
+      "sha256": "4493a2b6470c2c443a9558298cd0ac3cb66f94bc2d92dadae3e9e8accd3e9fac",
+      "literalDeclarations": 13
+    },
+    {
+      "file": "app/zero-control-ui/test/delegation-gateway.test.mjs",
+      "sha256": "0e36921932507d433a33f465719604eb19dd876447432aa4619dc5dba74a95a3",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "app/zero-control-ui/test/mount.test.mjs",
+      "sha256": "f2b0ed77b5952ff37ea9f2b98ea6af5fa3a0d38995dd534ef2ff7942624758e8",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "app/zero-control-ui/test/observation-lifecycle.test.mjs",
+      "sha256": "8f8eed4a942ac5b93622d0a2f2111bbdf1131f3c9ce93536cdc75640f7a3f0c2",
+      "literalDeclarations": 18
+    },
+    {
+      "file": "app/zero-control-ui/test/observation-tool.test.mjs",
+      "sha256": "309872d9b3d237d2f6e110b507087798ad417f60309c304e080e2de9be3e2900",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "app/zero-control-ui/test/observation.test.mjs",
+      "sha256": "f5a16442b94275c729087ed0b28d114a35b85dc070e4b96a9d5b271f546eff9c",
+      "literalDeclarations": 21
+    },
+    {
+      "file": "app/zero-control-ui/test/product-path.test.mjs",
+      "sha256": "dea6902d596ec67ba4a3cadcbe0a100861f0fdda80fa783c3c745079e4130bc6",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "app/zero-control-ui/test/product-surface.test.mjs",
+      "sha256": "31eb89b10f0c327f0547016789a0567a11e302b9fabdc6e8e13cf0382013312c",
+      "literalDeclarations": 19
+    },
+    {
+      "file": "backend/plugin/legacy-redirects.test.mjs",
+      "sha256": "39ca45ffe629209c681dff9a6d2dceb2b68be966fcc770a6666378180754c428",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "backend/scripts/test/migrate-zero-only-agents.test.mjs",
+      "sha256": "6598707eb8b3c638bf6d457b719d3f967cc725a92047829eef5a1ed8e1d9e8ba",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "backend/scripts/test/sync-zero-instructions.test.mjs",
+      "sha256": "1005ad2f718412ca998f0c199d4cde1fa83a3a57ab41926d500ea1a30eefdd96",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "packages/agent-runtime/test/agent-delegation.test.mjs",
+      "sha256": "87bb7a97b652d49317037d6fa5db0547afff42193088ae54c80799abc4c49dac",
+      "literalDeclarations": 4
+    },
+    {
+      "file": "packages/agent-runtime/test/agent-runtime.test.mjs",
+      "sha256": "45525dbe4c20a8ae1fb6b34ef09151af0b3368aff060231a52d0eed7bf73af5d",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "packages/automation/test/automation.test.mjs",
+      "sha256": "3052b9586840e149b6caad40ddc213d58bcb072bc351e65d2fe3861da5ef7832",
+      "literalDeclarations": 9
+    },
+    {
+      "file": "packages/capability-engine/test/capability-engine.test.mjs",
+      "sha256": "e87cc992e71625de2dd5e87b04d717cd9b42d396af409643e2a61e57c754858a",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "packages/gateway-protocol/test/gateway-protocol.test.mjs",
+      "sha256": "2fadce677b596b2b42fbdd89963d10daf181144b234ac9c35b0f6c3ffe6f5a38",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "packages/memory/test/memory.test.mjs",
+      "sha256": "0d001f3c84699800e8fde29e9c835145b16aacf69ea81d3347961b93e4732194",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "packages/model-fabric/test/model-fabric.test.mjs",
+      "sha256": "c80ae6aa72863773c29914a5a8433ab1a837d1716c04f13b647378434efb6d09",
+      "literalDeclarations": 6
+    },
+    {
+      "file": "packages/screen-intelligence/screen-intelligence.test.mjs",
+      "sha256": "e6cbc976038e94a12855de8b11f55ed87852d169f5fe962731d3baa493077cc9",
+      "literalDeclarations": 10
+    },
+    {
+      "file": "packages/sessions/test/sessions.test.mjs",
+      "sha256": "548713292ec21d351ca3fa8ead17845ccefa08c33b6601b1b53ede63b7f59292",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "packages/voice-engine/test/windows-native.integration.test.mjs",
+      "sha256": "590f66a371dd815d08d510aca6881ab5d120928caec17a90b5a705fd85e92ac1",
+      "literalDeclarations": 6
+    },
+    {
+      "file": "packages/voice-engine/test/windows-voice.test.mjs",
+      "sha256": "5f16567dd971222b101ba5d2ec93cd2d9d836433de5ab4ed1cfa724d7c6570f9",
+      "literalDeclarations": 28
+    },
+    {
+      "file": "test/additional-test-catalog.test.mjs",
+      "sha256": "fb48e5bd8b9a3b8979a7a6e78ec3d4244a65a655e81286d3ce578e9c8e595374",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/agent-completion-contract.test.mjs",
+      "sha256": "470accf0125a945a0a7c3c24e01e0bbc461e5b90d8a4a4a9a5b7ad0c500e1c43",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/agent-desktop-real.test.mjs",
+      "sha256": "ec2afaa61aa0c8a8d09a4924c30c9d9b31ef5c604c4570230a5d5f609715ea79",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/agent-desktop-rpc-real.test.mjs",
+      "sha256": "54c8ddc25f31090f6e4e583ea2be4c7ac2349c99a50f9a990bd4bc7759983d3a",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/assistant-receipts.test.mjs",
+      "sha256": "593ecc6365854f1b310c4b9b5f85fd56d4aa0e7d87048618bd498bd137d15aed",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/assistant-tool-batch-contract.test.mjs",
+      "sha256": "fc1c43cd6588854bab6f28bc7237d786443e79fce3c2a10fcc83488dcbd57f2d",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/assistant-write-scopes.test.mjs",
+      "sha256": "1556d86623ea7e15fe62f65fbfb3c960ce2d3b3788d5acb732064b3ef3f2252c",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/automation-failure-outcomes.test.mjs",
+      "sha256": "7e953e570fdd440fbf9cecaee073afca8099566c0475670a71d095118fa5d31b",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "test/backup-encrypted-records-real.test.mjs",
+      "sha256": "b9aa72a90e73ed2609f8da3181c7870e0d93893317a7a642853103919bc4c16c",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/backup-mcp-restore-real.test.mjs",
+      "sha256": "269d6a83fa78b64b6f4265e8863b1afa564e355a6cbf9949c0d415f8002b5919",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/backup-plugin-restore.test.mjs",
+      "sha256": "bee942bb8d16123269613cadece71f9d064e9d66657ee127d32789c1e8d8aa76",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/backup-skills-restore.test.mjs",
+      "sha256": "eb0d1b05447bd8aafddf6b6a28340fd564045933e18fff7fe33decd4a75e2bb5",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/capability-lease-lifecycle.test.mjs",
+      "sha256": "8fa3871d38b663a64f2190cbd8c295d2e4a267d1597979c707e13ab83296aa7e",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/capability-result-honesty.test.mjs",
+      "sha256": "e18ad7b20464e5716486bd83695dab0c3977a53b1bdc865fb76343360648a75f",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/connector-probes.test.mjs",
+      "sha256": "e053d592d2f7b0a2fd2db93fd40d3b1ae6fa248ce41127aad2333156ccdfdb45",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/desktop-session-persistence.test.mjs",
+      "sha256": "09e7da89d6ddca07c00eef1207b9a00f9805f254ad88890776706e94d4ff902c",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/e2e-matrix.test.mjs",
+      "sha256": "61de5ef36e162875643191e800d23179a7915a5013680c8036a22c7a926ee218",
+      "literalDeclarations": 26
+    },
+    {
+      "file": "test/e2e-scenarios.test.mjs",
+      "sha256": "5fa3255d0a230ebab9857e55de9c014cb93fd3b224e2a18967995c230383cd8c",
+      "literalDeclarations": 16
+    },
+    {
+      "file": "test/functional-browser-options.test.mjs",
+      "sha256": "0fbfb5273ccb4950e51ac93b70704bcb62d4684f57aa14b6da4f7eca38e58ec4",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/gguf-download-file-integration.test.mjs",
+      "sha256": "ae71639457c7b2f68db5eedb3fae571983b87c590628b0b19422e0ffe81492d9",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/huggingface-catalog-contract.test.mjs",
+      "sha256": "535069a166c67f5b0adbefba008e29b375b6f6a45300f00b65b547bbcb974723",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/huggingface-download-real.test.mjs",
+      "sha256": "7a3c01008e3c2d78a4975a3b27081c789cb07278f7b3c60874d9aa031b508c32",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/local-chat-wrapper.test.mjs",
+      "sha256": "e3e14ad9d2cd07c7b78d60ebc2336fdeb649760c5a6d7db252ceca4644b483cc",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/local-gguf-continuation.test.mjs",
+      "sha256": "a8e62620cafe44dc04141d93cf05f449044e80f05c3b816423e5ddd22034ad57",
+      "literalDeclarations": 4
+    },
+    {
+      "file": "test/local-gguf-delete-preservation.test.mjs",
+      "sha256": "57f2ca5a01afea0be839ce740921c5ceba8437df0042a6609669b5c8e07f87ef",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/local-gguf-runtime-real.test.mjs",
+      "sha256": "d14e6950847ca336764dffe1d75b99430c5d3df3212b34e7771fbda786ef24a7",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/local-gguf-tool-calls.test.mjs",
+      "sha256": "3b92a7c91f8b1d2b049d6e46618dbe355811cf36dcfe40915f9858759a06dd06",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/local-tools.integration.test.mjs",
+      "sha256": "be330a45c02687f54722a7bdf42f520030d40c2d7db4553cca0d598018508003",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/model-config-import.test.mjs",
+      "sha256": "33dd9d00802f115e8f62f5c61a72e3fd31552635ed5b933c607939761326ac51",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/model-settings.test.mjs",
+      "sha256": "9459d7227a4ac29a9935e4db8e3fb54ff1ff187d1204668c234ce986ef0dc062",
+      "literalDeclarations": 4
+    },
+    {
+      "file": "test/model-stream-channels.test.mjs",
+      "sha256": "a56b64a38634184229f2de68cb3fe73ca2264442febccb6a6b590d04ec19cc2f",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/native-gateway.test.mjs",
+      "sha256": "adbfc5854c34c14f8fcf46d544f596b70e6fa2796a9d4eaf1d4666435f3622ea",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/native-observation-lifecycle.test.mjs",
+      "sha256": "4ba223ec3eafc6874539e6f03457ae8d0d18554ca62f6742cdf30729b5ca13eb",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/observation-encryption.integration.test.mjs",
+      "sha256": "026ff7ce71ef250e5121791e4a8f44592533f6809507ad5fe798ee42aade4df2",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/owned-process-resources.test.mjs",
+      "sha256": "0540b379cdd10100746fd100b2bb83734729a5e039cad8cb084b0833fdd4e4c4",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/phase1-host-contracts.test.mjs",
+      "sha256": "54a361f17b67ef9583b2fc7dc8eafd62832d8238a800bcaf355a8078b38af3d5",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "test/phase10-research-engine.test.mjs",
+      "sha256": "382bdfa506ffba0e3df20ef3eb9317e8254c5e8543b05ad18d2fe545c2ee08ee",
+      "literalDeclarations": 6
+    },
+    {
+      "file": "test/phase11-automation-connectors.test.mjs",
+      "sha256": "6f051d16659d8683cf21138ded5d300cdbc8b20107e5b4206e5825f4acc52b05",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "test/phase12-workspaces-workers.test.mjs",
+      "sha256": "d5116bd7316889d2a3d7326ffad9b2278dd6976e4a1da855fe1786c58ab67d04",
+      "literalDeclarations": 4
+    },
+    {
+      "file": "test/phase13-project-workflows.test.mjs",
+      "sha256": "a938d5740e2ba9b0e4f4ec8438bb006a2d3c60a69e7f9b0a5665f5abf6f78016",
+      "literalDeclarations": 4
+    },
+    {
+      "file": "test/phase14-device-protocol.test.mjs",
+      "sha256": "ff18fc7bbc45b4199d876d7877ac73f498ab62961c2603f02d9048784dc7789c",
+      "literalDeclarations": 8
+    },
+    {
+      "file": "test/phase15-voice-engine.test.mjs",
+      "sha256": "fabe75685b1c5f81d83a5590c4421853bea265c9ec621876a458c66376d06c35",
+      "literalDeclarations": 8
+    },
+    {
+      "file": "test/phase16-zero-experience.test.mjs",
+      "sha256": "0fb8b54bddb4f3e35c1956b619a7e361ddd31a64cddb0f227b6b73842b27f4b9",
+      "literalDeclarations": 6
+    },
+    {
+      "file": "test/phase17-production-release.test.mjs",
+      "sha256": "ccc3720cdbf132d43d9e1bbb5c262ed8db67a3a4dc2d99aec57a9edaa67906a8",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "sha256": "ad62a0afc6a5803ce7bd8f909d8a847db2e3459958d0ba3bf5d4ac364dd08381",
+      "literalDeclarations": 9
+    },
+    {
+      "file": "test/phase3-model-fabric.test.mjs",
+      "sha256": "85b69bbb34fab3ef8301d948ebabc5cde31f1204116420d44f9dde9e3e2a5f14",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "test/phase4-multi-agent.test.mjs",
+      "sha256": "243323dc7daa5a9ccf90ef71b04f4e6a3fb3f3e1465997b0123485f615812b86",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "sha256": "4649615a5488167ac5e1dcf0d72dbc7223aaa351f6119e58504cc75f84844cd5",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "test/phase6-skills-plugins.test.mjs",
+      "sha256": "df8be593561616cebc852e043f0daec9424e4bba1dfd3c2d3144aaa154e6e4b1",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "test/phase7-computer-operator.test.mjs",
+      "sha256": "71c16355953e01635545db4c0bfd1253f63a7ebc671b164630981300e42daed4",
+      "literalDeclarations": 7
+    },
+    {
+      "file": "test/phase8-screen-intelligence.test.mjs",
+      "sha256": "c60f4e61bfc07b486f3dae309bdeec7181977fd0d1fbe30bc7cc05607875ad95",
+      "literalDeclarations": 5
+    },
+    {
+      "file": "test/phase9-unified-memory.test.mjs",
+      "sha256": "6d9d1a600766718eadcdc2483dd7a8e7b99c12383ca34eaf64f01f41bbf02034",
+      "literalDeclarations": 6
+    },
+    {
+      "file": "test/plugin-sdk-lifecycle.test.mjs",
+      "sha256": "42b5a866b2c4900c8fa7fb392d2bb56e6578951d5d513836930afcd9574d507f",
+      "literalDeclarations": 11
+    },
+    {
+      "file": "test/real-world-requirements-48.test.mjs",
+      "sha256": "0476c73d8c6d825bbd906385051b031e79e2046fa4dbc8c2d436bfd654815d8f",
+      "literalDeclarations": 49
+    },
+    {
+      "file": "test/restore-host-process-real.test.mjs",
+      "sha256": "f5b534b0c92b7d1555d6a52fa022398921436109d2f649eff38d1a2b3b6f04a6",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/restore-user-state.test.mjs",
+      "sha256": "518c90a025077c17dce260eea9497b39dca789659b35643e77cc40175a18318b",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/rpc-contracts.test.mjs",
+      "sha256": "742ef7e6213a3877c299b2fc6484a18abdb760b6e9cd02830eb2567b38bfe9e2",
+      "literalDeclarations": 21
+    },
+    {
+      "file": "test/runner-catalog.test.mjs",
+      "sha256": "1cb361dce05cb171c7e1482d1153a258d7a42ef2023796d03373a9e9c8a4dd3d",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/runtime-workers.integration.test.mjs",
+      "sha256": "482c0e346ffe62c44a3ad3110b1364fcbf9bdab2dee892d2ac4c041d73003622",
+      "literalDeclarations": 16
+    },
+    {
+      "file": "test/runtime-workers.live.test.mjs",
+      "sha256": "df3469b9fa63fe0dc8a4f999ade560e29991ba6ad8ed7099cafe0ddddee5687b",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/screen-automation.test.mjs",
+      "sha256": "57f81ff977afd53dece416f1c3767ce2b5142084dc1614e27bc9cdefa11ed3e1",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/screen-resource-totals.test.mjs",
+      "sha256": "2d39e158596b08f14a4539b1c333db4675cf690bde7a2d84116d44d0c636483b",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/screen-vision-pipeline.test.mjs",
+      "sha256": "66d98d459bbf2d8a671caab865c95e5d5fb6a87c2e5fad3d9e953b6fc32c6557",
+      "literalDeclarations": 4
+    },
+    {
+      "file": "test/search-provenance.test.mjs",
+      "sha256": "a5c553c48dd09e75a9f70599e3dfcec60c21fd94ab3260f5911c5506da6bd0c6",
+      "literalDeclarations": 6
+    },
+    {
+      "file": "test/session-run-identity.test.mjs",
+      "sha256": "a4708bd4c868734ce2dc56d6143a49d779c8bb06ab65caa90598c97c8a93900a",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/session-tool-continuity.test.mjs",
+      "sha256": "c9c2d665004990e0a7875857ff6efb0b030eced92239268dc08a201d6f4f9c66",
+      "literalDeclarations": 3
+    },
+    {
+      "file": "test/skill-sdk-integration.test.mjs",
+      "sha256": "6ec33b7327f5083723c03ce51cfc021aa3ce47b6f33843fb9f2e0cac4287f4c8",
+      "literalDeclarations": 11
+    },
+    {
+      "file": "test/startup-settings-persistence.test.mjs",
+      "sha256": "e8fa783c96e0bf5145c845c664a84ef2dc7c33875cf928ca8ae46f266a90a214",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/team-process-recovery.test.mjs",
+      "sha256": "7cf5fa23ac92b1e6fcde44d2281e8d1e2ea2b84256e1024b030e7fd20c3f1a1a",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/user-data-audit.test.mjs",
+      "sha256": "c9d138446501db76f57ce650b36300ca63acbc99c63252e7c1173f541a7b9fc4",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/verification/classification-runner.test.mjs",
+      "sha256": "9bb49f5f02433a1ddb92484e86fc99fa287438b1a7844ef4c0ad53c0c0e80728",
+      "literalDeclarations": 16
+    },
+    {
+      "file": "test/voice-acoustic-real.test.mjs",
+      "sha256": "0a2f0b162d2a945c4a2f47bbf9ac69b810b549f10d08187f8f095137295b7235",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/voice-completion-honesty.test.mjs",
+      "sha256": "125c5ddbe53152bf71b85fcefbdbd020edd391d7bf00cf41e615f6d35739445b",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/voice-conversation-real.test.mjs",
+      "sha256": "e8e46d9c852c6a1186ebf5153d9518f18c2b808c75578c66c41821484e41f41d",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/voice-conversation.test.mjs",
+      "sha256": "6d1ff2177463764d7704b6e3fb52c488461a88f32ce226fd1e4ce13a4dcac004",
+      "literalDeclarations": 4
+    },
+    {
+      "file": "test/voice-device-selection-real.test.mjs",
+      "sha256": "8d83f6b1ff01482398b33513b61e8cb1fcf0f8ca6780871304106d057db9df52",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/voice-human-barge-in-real.test.mjs",
+      "sha256": "d055b6839d86f8b36b524c52f598a742d400050dc77693dbcfa8a0ee96f97217",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/voice-human-microphone-real.test.mjs",
+      "sha256": "b792dcbad8a7ba81af23dce3b50b8a0ac2c0b172aaa64659256d97fc819c077d",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/voice-language-rpc-real.test.mjs",
+      "sha256": "4d5d63db68f7435f20ceb91e80d198c9800f65f55f821e23e3c8efc1128c4d6c",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/voice-quiet-playback-real.test.mjs",
+      "sha256": "4db0fff42184416c5e43eb357ebbf1bb472ea6f3a4dbab73ed7aeced35625daf",
+      "literalDeclarations": 1
+    },
+    {
+      "file": "test/whisper-native-real.test.mjs",
+      "sha256": "1b2de43e2d7976de5313b2c8f64f357f37aed571539dfe74a474eaddfe0fb3bf",
+      "literalDeclarations": 1
+    }
+  ],
+  "imports": [
+    {
+      "file": "app/test/bridge.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-hold.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-live-action.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-operator.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/computer-tools-live.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/delegation-gateway.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/mount.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/observation-lifecycle.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/observation-tool.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/observation.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/product-path.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "app/zero-control-ui/test/product-surface.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "backend/plugin/legacy-redirects.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "backend/scripts/test/migrate-zero-only-agents.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "backend/scripts/test/sync-zero-instructions.test.mjs",
+      "bindings": "{ after, test }"
+    },
+    {
+      "file": "packages/agent-runtime/test/agent-delegation.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/agent-runtime/test/agent-runtime.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/automation/test/automation.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/capability-engine/test/capability-engine.test.mjs",
+      "bindings": "{ describe, it, after }"
+    },
+    {
+      "file": "packages/gateway-protocol/test/gateway-protocol.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/memory/test/memory.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/model-fabric/test/model-fabric.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/screen-intelligence/screen-intelligence.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/sessions/test/sessions.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/voice-engine/test/windows-native.integration.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "packages/voice-engine/test/windows-voice.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/additional-test-catalog.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/agent-completion-contract.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/agent-desktop-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/agent-desktop-rpc-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/assistant-receipts.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/assistant-tool-batch-contract.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/assistant-write-scopes.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/automation-failure-outcomes.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/backup-encrypted-records-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/backup-mcp-restore-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/backup-plugin-restore.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/backup-skills-restore.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/capability-lease-lifecycle.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/capability-result-honesty.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/connector-probes.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/desktop-session-persistence.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/e2e-matrix.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/e2e-scenarios.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/functional-browser-options.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/gguf-download-file-integration.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/huggingface-catalog-contract.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/huggingface-download-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/local-chat-wrapper.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/local-gguf-continuation.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/local-gguf-delete-preservation.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/local-gguf-runtime-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/local-gguf-tool-calls.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/local-tools.integration.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/model-config-import.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/model-settings.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/model-stream-channels.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/native-gateway.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/native-observation-lifecycle.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/observation-encryption.integration.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/owned-process-resources.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase1-host-contracts.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase10-research-engine.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase11-automation-connectors.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase12-workspaces-workers.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase13-project-workflows.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase14-device-protocol.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase15-voice-engine.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase16-zero-experience.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase17-production-release.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase2-ui-interaction.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase3-model-fabric.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase4-multi-agent.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase5-durable-tasks.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase6-skills-plugins.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase7-computer-operator.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase8-screen-intelligence.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/phase9-unified-memory.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/plugin-sdk-lifecycle.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/real-world-requirements-48.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/restore-host-process-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/restore-user-state.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/rpc-contracts.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/runner-catalog.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/runtime-workers.integration.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/runtime-workers.live.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/screen-automation.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/screen-resource-totals.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/screen-vision-pipeline.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/search-provenance.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/session-run-identity.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/session-tool-continuity.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/skill-sdk-integration.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/startup-settings-persistence.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/team-process-recovery.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/user-data-audit.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/verification/classification-runner.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-acoustic-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-completion-honesty.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-conversation-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-conversation.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-device-selection-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-human-barge-in-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-human-microphone-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-language-rpc-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/voice-quiet-playback-real.test.mjs",
+      "bindings": "test"
+    },
+    {
+      "file": "test/whisper-native-real.test.mjs",
+      "bindings": "test"
+    }
+  ],
+  "limits": [
+    "No test execution, product acceptance, reachable workflow completeness or independent verification of every application behavior.",
+    "608 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
+    "Classification applies to current cataloged files and declaration syntax; new sources/syntax require review.",
+    "CLI integrity remains conservative REQUIRES_FINAL_SCOPE_AUDIT and release BLOCKED; this separate receipt must be reviewed alongside actual execution evidence."
+  ]
+}

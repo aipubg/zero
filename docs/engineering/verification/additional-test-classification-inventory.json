@@ -1170,14 +1170,186 @@
       "file": "app/zero-control-ui/test/product-surface.test.mjs",
       "sha256": "31eb89b10f0c327f0547016789a0567a11e302b9fabdc6e8e13cf0382013312c",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Pure route/state predicates, FakeElement/document/window/history, supplied host request responses and errors, actual source/built-manifest/CSS text assertions. No actual browser, RPC wire, CLI, MCP connector, observation capture or persisted product effect.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Fake DOM clicks and stubbed RPC status are not real browser behavior or live integration reachability.",
+        "Source/CSS strings establish only listed text contracts, not runtime network absence, backend uniqueness or actual rendered layout."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "route policy keeps native destinations and classifies legacy duplicates",
+          "line": 29,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: route policy keeps native destinations and classifies legacy duplicates. No real browser/network or persistence."
+        },
+        {
+          "title": "specialist config pages cannot expose or invoke Set Default",
+          "line": 127,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: specialist config pages cannot expose or invoke Set Default. No real browser/network or persistence."
+        },
+        {
+          "title": "specialist roster cards and admin pages expose no second chat entry",
+          "line": 243,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: specialist roster cards and admin pages expose no second chat entry. No real browser/network or persistence."
+        },
+        {
+          "title": "owned source converges on one canonical chat route",
+          "line": 315,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: owned source converges on one canonical chat route. No executed user workflow or runtime absence proof."
+        },
+        {
+          "title": "interceptor keeps native routes and re-targets duplicate destinations",
+          "line": 454,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: interceptor keeps native routes and re-targets duplicate destinations. No real browser/network or persistence."
+        },
+        {
+          "title": "native About content states the Zero identity with no external links",
+          "line": 592,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About content states the Zero identity with no external links. No real browser/network or persistence."
+        },
+        {
+          "title": "native About local integrations report CLI/MCP status without secrets or links",
+          "line": 624,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About local integrations report CLI/MCP status without secrets or links. No real browser/network or persistence."
+        },
+        {
+          "title": "native About Private Mode toggles through the existing observation control and shows cleared state",
+          "line": 719,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About Private Mode toggles through the existing observation control and shows cleared state. No real browser/network or persistence."
+        },
+        {
+          "title": "native About shows an explicit start failure without claiming capture and keeps controls",
+          "line": 774,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About shows an explicit start failure without claiming capture and keeps controls. No real browser/network or persistence."
+        },
+        {
+          "title": "native About reports Private Mode exit failure without unsafe capture",
+          "line": 848,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About reports Private Mode exit failure without unsafe capture. No real browser/network or persistence."
+        },
+        {
+          "title": "native About prevents duplicate observation start clicks while the request is pending",
+          "line": 924,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About prevents duplicate observation start clicks while the request is pending. No real browser/network or persistence."
+        },
+        {
+          "title": "native About reconciles a late control completion after its UI timeout",
+          "line": 996,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About reconciles a late control completion after its UI timeout. No real browser/network or persistence."
+        },
+        {
+          "title": "observation error sanitizer keeps safe categories and removes credential shapes",
+          "line": 1077,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: observation error sanitizer keeps safe categories and removes credential shapes. No real browser/network or persistence."
+        },
+        {
+          "title": "native About integration status fails closed on timeout and malformed responses",
+          "line": 1128,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: native About integration status fails closed on timeout and malformed responses. No real browser/network or persistence."
+        },
+        {
+          "title": "plugin activation registers no duplicate pages or navigation",
+          "line": 1157,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: plugin activation registers no duplicate pages or navigation. No real browser/network or persistence."
+        },
+        {
+          "title": "built bundle integrates native surfaces and has no duplicate product backend",
+          "line": 1190,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: built bundle integrates native surfaces and has no duplicate product backend. No executed user workflow or runtime absence proof."
+        },
+        {
+          "title": "no duplicate Zero page module remains in the product source",
+          "line": 1254,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: no duplicate Zero page module remains in the product source. No executed user workflow or runtime absence proof."
+        },
+        {
+          "title": "owned manifests describe Zero, not the upstream product",
+          "line": 1283,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: owned manifests describe Zero, not the upstream product. No executed user workflow or runtime absence proof."
+        },
+        {
+          "title": "roster, gateway and computer helpers keep explicit state",
+          "line": 1301,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: roster, gateway and computer helpers keep explicit state. No real browser/network or persistence."
+        }
+      ]
     },
     {
       "file": "backend/plugin/legacy-redirects.test.mjs",
@@ -2774,16 +2946,262 @@
     },
     {
       "file": "test/e2e-matrix.test.mjs",
-      "sha256": "e74b1223add1888559f13b99e25662f8fb2ceddc40c31d0322ecbeac1046d28a",
+      "sha256": "61de5ef36e162875643191e800d23179a7915a5013680c8036a22c7a926ee218",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION",
+        "REAL_BROWSER",
+        "REAL_OS",
+        "REAL_EXTERNAL"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Historical matrix scoped by declaration; safe default only current files/source, actual in-memory/temp SQLite, supplied callback/plugin arithmetic, actual due-time file effect and scanner. Optional HTTP/browser checks use explicit disposable host. Shared-state/native media legacy paths and missing renderer/channel proof are BLOCKED, not PASS.",
+      "gaps": [
+        "Six legacy paths are explicitly blocked and ten HTTP/browser paths skip without disposable host; not a complete E2E runner.",
+        "Response model label is not upstream identity attestation; buffered SSE is not time-separated rendering; chat prose does not prove tool use; callbacks are not independent agents.",
+        "Browser title/body and source asset checks do not prove forms/click workflows. Other dedicated real acceptance receipts are separate."
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_MATRIX_TEST_HOST supplies disposable http://127.0.0.1 host excluding owner port18789",
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION",
+            "REAL_BROWSER",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Ten optional legacy HTTP/browser/RPC cases execute; physical/shared-default/missing-renderer/channel paths remain BLOCKED. Config readback is direct RPC, not form interactions."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "Zero AI historical matrix with explicit assertion scope",
+          "line": 49,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Suite container only, not an acceptance workflow."
+        },
+        {
+          "title": "T01: Current runtime and packaging file presence",
+          "line": 59,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Runtime version and file existence only; no clean installation."
+        },
+        {
+          "title": "T02: Legacy shared-default child-host path",
+          "line": 67,
+          "labels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "scope": "BLOCKED legacy shared-default child host; not run."
+        },
+        {
+          "title": "T03: HTTP shell and asset response contracts",
+          "line": 141,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Optional HTTP shell/asset shape, not browser rendering."
+        },
+        {
+          "title": "T04: Browser title/body smoke and direct RPC config readback",
+          "line": 161,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION",
+            "REAL_BROWSER"
+          ],
+          "scope": "Optional Chrome/Edge title/body smoke and separate direct config RPC readback; no actual form click/save."
+        },
+        {
+          "title": "T05: Actual WebSocket handshake and response shapes",
+          "line": 280,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Optional real WebSocket protocol/auth/subscription/provider status shapes; no upstream authentication proof."
+        },
+        {
+          "title": "T06: Configured HTTP catalog identifiers",
+          "line": 367,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Optional model catalog contains configured IDs; not model inference."
+        },
+        {
+          "title": "T07: Explicit model resolution and completion model label",
+          "line": 378,
+          "labels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Optional model resolution plus returned model label; no independent provider target identity."
+        },
+        {
+          "title": "T08: Exact requested chat completion",
+          "line": 409,
+          "labels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Optional exact requested ZERO_VERIFIED response, not merely role/nonempty text."
+        },
+        {
+          "title": "T09: Fabric request counter and buffered HTTP SSE content",
+          "line": 428,
+          "labels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Optional direct fabric request count and buffered HTTP SSE content/[DONE]; no temporal incremental rendering assertion."
+        },
+        {
+          "title": "T10: Chat reply existence without tool-loop proof",
+          "line": 492,
+          "labels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Optional chat response exists; no tool request/result/step assertion."
+        },
+        {
+          "title": "T11: Legacy native Notepad readback path",
+          "line": 546,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "BLOCKED legacy native Notepad path; dedicated owned fixture acceptance is separate."
+        },
+        {
+          "title": "T12: Legacy browser playback metadata path",
+          "line": 579,
+          "labels": [
+            "REAL_OS",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "BLOCKED legacy browser playback metadata; acoustic output not independently established."
+        },
+        {
+          "title": "T13: Missing real media/progress renderer verification",
+          "line": 600,
+          "labels": [
+            "REAL_BROWSER"
+          ],
+          "scope": "BLOCKED missing production event-to-widget browser proof; hand-inserted DOM fixture removed."
+        },
+        {
+          "title": "T14: Legacy canonical hold path",
+          "line": 604,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "BLOCKED canonical hold path with owner bypass; strict-policy checks are separate."
+        },
+        {
+          "title": "T15: Chat abort acknowledgement",
+          "line": 618,
+          "labels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Optional chat.abort acknowledgement; no independent cessation/no-late-effects assertion."
+        },
+        {
+          "title": "T16: In-memory session CRUD",
+          "line": 675,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual in-memory SQLite session CRUD/involvement; no restart."
+        },
+        {
+          "title": "T17: Same-process SQLite reopen recovery",
+          "line": 700,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual temp SQLite recovery via close/reopen in same process; no reboot."
+        },
+        {
+          "title": "T18: Keyword recall of supplied in-memory record",
+          "line": 716,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Supplied fact keyword recall using in-memory SQLite; no semantic embedding."
+        },
+        {
+          "title": "T19: Child task executes supplied callback",
+          "line": 725,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied callback arithmetic and child task transitions/step; no independent specialist agent/model."
+        },
+        {
+          "title": "T20: Due-time executor effect and same-process SQLite reopen",
+          "line": 750,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual due-time dispatcher writes file and records completed history, same-process SQLite reopen."
+        },
+        {
+          "title": "T21: In-process supplied plugin handler arithmetic",
+          "line": 781,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied in-process plugin handler calculates 2^8 and audit; no external installation/lifecycle/restart."
+        },
+        {
+          "title": "T22: Missing external channel round trip",
+          "line": 817,
+          "labels": [
+            "REAL_EXTERNAL"
+          ],
+          "scope": "BLOCKED external channel send/receive not implemented by token existence; no message sent."
+        },
+        {
+          "title": "T23: Validation and viewer RPC rejection",
+          "line": 821,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Optional supplied invalid handshake/tool plus real viewer RPC privileged and unknown-method rejection."
+        },
+        {
+          "title": "T24: Configured tracked-file credential-pattern scan",
+          "line": 889,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual bounded configured-pattern scan of included tracked working-tree files; not all credentials/data."
+        },
+        {
+          "title": "T25: Launcher source/file presence and PowerShell syntax",
+          "line": 900,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual launcher/file presence and PowerShell parse-error count; no install/launch/supervision qualification."
+        }
+      ]
     },
     {
       "file": "test/e2e-scenarios.test.mjs",
