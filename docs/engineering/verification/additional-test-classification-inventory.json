@@ -1415,29 +1415,94 @@
     },
     {
       "file": "test/model-config-import.test.mjs",
-      "sha256": "76af2d01ec30680135d30df9f26b3250c3398d1a1a6dd71a11ab0fbbaf68a69e",
+      "sha256": "33dd9d00802f115e8f62f5c61a72e3fd31552635ed5b933c607939761326ac51",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Real config merge preserves supplied credentials/private fields and backups; redacted round-trip retains secrets; entire invalid batch refuses writes. Injected internal progress exception rolls back exact provider/binding bytes, removes pending journal and preserves both exact-original backups. Actual writer reaches first-file checkpoint, self-terminates with platform-specific status, cannot execute trailing marker, and leaves pending import that blocks model resolution; fresh Node recovery restores both exact originals.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Fixture provider/binding files; no real inference, browser import or restarted native host. Crash test kills separate writer and invokes fresh recovery helper."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] imports merge providers, preserve private round-trip data and validate the entire batch before writing",
+          "line": 23,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real config merge preserves supplied credentials/private fields and backups; redacted round-trip retains secrets; entire invalid batch refuses writes."
+        },
+        {
+          "title": "[INTEGRATION] interrupted two-file write rolls back exact originals and leaves recoverable backups",
+          "line": 38,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Injected internal progress exception rolls back exact provider/binding bytes, removes pending journal and preserves both exact-original backups."
+        },
+        {
+          "title": "[INTEGRATION] killed writer blocks model resolution until fresh-process rollback restores both files",
+          "line": 48,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual writer reaches first-file checkpoint, self-terminates with platform-specific status, cannot execute trailing marker, and leaves pending import that blocks model resolution; fresh Node recovery restores both exact originals."
+        }
+      ]
     },
     {
       "file": "test/model-settings.test.mjs",
-      "sha256": "d72c62b79cbb2312b946543cf24e5dc5d308a4c28a60325e6bd6539ad04b42df",
+      "sha256": "9459d7227a4ac29a9935e4db8e3fb54ff1ff187d1204668c234ce986ef0dc062",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Actual provider edit/enable/disable/delete retains private/unrelated fields and original backup; disabled provider does not resolve and duplicate model IDs refuse mutation. Actual controlled loopback HTTP receives supplied Authorization and returns catalog or 503; memory-only fabric cannot persist; retrieved metadata remains unverified. Actual loopback HTTP supplied empty/malformed/duplicate/oversized catalogs remain distinct; 8 MiB bound and public metadata projection asserted. Actual fixture model assignment preserves other bindings/defaults and backup; same-process new fabric sees assignments; invalid/disabled/corrupt states refuse model resolution.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual fixture files and controlled loopback catalog HTTP; no real external catalog, inference, browser interaction or stopped/restarted native host."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] provider edits retain private credentials, preserve original backup and honor disabled routing",
+          "line": 11,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual provider edit/enable/disable/delete retains private/unrelated fields and original backup; disabled provider does not resolve and duplicate model IDs refuse mutation."
+        },
+        {
+          "title": "[CONTRACT] actual HTTP provider probe retrieves a model catalog and preserves failure instead of testing key existence",
+          "line": 30,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual controlled loopback HTTP receives supplied Authorization and returns catalog or 503; memory-only fabric cannot persist; retrieved metadata remains unverified."
+        },
+        {
+          "title": "[CONTRACT] provider catalogs distinguish empty data from malformed IDs and bound actual HTTP response bytes",
+          "line": 44,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual loopback HTTP supplied empty/malformed/duplicate/oversized catalogs remain distinct; 8 MiB bound and public metadata projection asserted."
+        },
+        {
+          "title": "[INTEGRATION] model assignment persists across reopen, preserves unrelated settings and backs up original bytes",
+          "line": 62,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual fixture model assignment preserves other bindings/defaults and backup; same-process new fabric sees assignments; invalid/disabled/corrupt states refuse model resolution."
+        }
+      ]
     },
     {
       "file": "test/model-stream-channels.test.mjs",
@@ -2172,16 +2237,27 @@
     },
     {
       "file": "test/startup-settings-persistence.test.mjs",
-      "sha256": "f1bd30ef4de893e1281a25d06395818f30e672b143642c84b1c8dfa4197eb5bd",
+      "sha256": "e8fa783c96e0bf5145c845c664a84ef2dc7c33875cf928ca8ae46f266a90a214",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Actual connector and worker SQLite records retain supplied owner names/config/capabilities across manager reopen; only heartbeat timestamp may advance.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual fixture SQLite close/reopen in same process, not a stopped/restarted host or actual connector/worker execution."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] startup defaults preserve owner connector config and worker definitions across database reopen",
+          "line": 9,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual connector and worker SQLite records retain supplied owner names/config/capabilities across manager reopen; only heartbeat timestamp may advance."
+        }
+      ]
     },
     {
       "file": "test/team-process-recovery.test.mjs",

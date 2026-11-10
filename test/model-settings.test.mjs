@@ -10,7 +10,7 @@ import { once } from 'node:events';
 
 test('[INTEGRATION] provider edits retain private credentials, preserve original backup and honor disabled routing', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-provider-settings-'));
-  t.after(() => { assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); });
+  t.after(() => { const resolved = fs.realpathSync.native(root); assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir())); assert.ok(["zero-provider-settings-","zero-model-settings-"].some(prefix => path.basename(resolved).startsWith(prefix))); fs.rmSync(resolved, { recursive: true, force: true }); });
   const configPath = path.join(root, 'providers.json');
   const original = JSON.stringify([{ id: 'private', name: 'Original', baseUrl: 'https://example.invalid/v1', apiKey: 'saved-secret', apiKeys: ['saved-secret'], models: ['one'], retained: 123 }]);
   fs.writeFileSync(configPath, original);
@@ -61,7 +61,7 @@ test('[CONTRACT] provider catalogs distinguish empty data from malformed IDs and
 
 test('[INTEGRATION] model assignment persists across reopen, preserves unrelated settings and backs up original bytes', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-model-settings-'));
-  t.after(() => { assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); });
+  t.after(() => { const resolved = fs.realpathSync.native(root); assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir())); assert.ok(["zero-provider-settings-","zero-model-settings-"].some(prefix => path.basename(resolved).startsWith(prefix))); fs.rmSync(resolved, { recursive: true, force: true }); });
   const configPath = path.join(root, 'providers.json'); const agentBindingsPath = path.join(root, 'bindings.json');
   fs.writeFileSync(configPath, JSON.stringify([{ id: 'local', baseUrl: 'http://127.0.0.1:1/v1', apiKey: 'private-test-value', models: ['one', { id: 'two', apiKey: 'private-model-value' }] }]));
   const original = JSON.stringify({ retained: { value: 123 }, defaults: { thinking: 'default' }, agentBindings: { specialist: { model: 'one' }, zero: { model: 'one', retained: true } } });

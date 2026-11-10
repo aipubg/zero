@@ -30,7 +30,7 @@ test('[INTEGRATION] startup defaults preserve owner connector config and worker 
     assert.ok(afterTime >= beforeTime);
   } finally {
     events.close(); await workers.close();
-    assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir()));
-    fs.rmSync(directory, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(directory); assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir())); assert.ok(["zero-owner-settings-"].some(prefix => path.basename(resolved).startsWith(prefix)));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });

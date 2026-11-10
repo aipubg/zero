@@ -1,0 +1,19 @@
+{
+  "command": "node --test test/model-config-import.test.mjs test/model-settings.test.mjs test/startup-settings-persistence.test.mjs",
+  "finalResult": "PASS",
+  "tests": 8,
+  "historicalFailure": "An intermediate stronger assertion required signal=SIGKILL; actual Windows self-kill produces status=1, signal=null. Intermediate run had 2 PASS/1 FAIL and is not reclassified.",
+  "correctionEvidence": "Independent actual self-kill probe confirmed Windows exit shape. Writer now emits a synchronous first-write checkpoint, self-kills, and cannot emit trailing marker. Test requires no spawn error and platform-specific termination status.",
+  "actualEvidence": [
+    "Fresh recovery process restores exact provider and binding originals after actual writer termination",
+    "Pending import blocks model resolution, not an actual inference request",
+    "Both rollback backup files explicitly compared with original bytes",
+    "Actual fixture configuration preserves supplied private/unrelated fields",
+    "Controlled loopback catalog malformed/empty/oversized response outcomes tested"
+  ],
+  "limitations": "No real external inference/provider, browser import, native host restart or actual connector/worker job in this run",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 58,
+  "additionalUnreviewedFiles": 31,
+  "releaseStatus": "BLOCKED"
+}
