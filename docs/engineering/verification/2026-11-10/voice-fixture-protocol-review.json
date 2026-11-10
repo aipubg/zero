@@ -1,0 +1,17 @@
+{
+  "command": "node --test test/voice-conversation.test.mjs packages/voice-engine/test/windows-voice.test.mjs",
+  "passed": 32,
+  "classifications": ["UNIT", "CONTRACT"],
+  "scope": "All audio, process, recognition, playback and shared-executor adapters supplied; actual local Promises/timers/PCM buffering exercise protocol and state transitions only",
+  "changes": [
+    "Misleading native/actual process and executor titles explicitly named as supplied fixtures",
+    "Conversation bridge cleanup registered even on failed assertions",
+    "Microphone teardown fixture now awaits engine close"
+  ],
+  "notProven": "No real microphone, native device output, process, external inference or human spoken interaction was tested by this command",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 68,
+  "additionalUnreviewedFiles": 21,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

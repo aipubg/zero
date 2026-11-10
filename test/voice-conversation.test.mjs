@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { VoiceConversation } from '../packages/voice-engine/conversation.mjs';
 
 function engine(overrides = {}) {
-  return Object.assign(new EventEmitter(), { transcribe: async () => ({ transcribed: true, text: 'actual transcript fixture' }),
+  return Object.assign(new EventEmitter(), { transcribe: async () => ({ transcribed: true, text: 'supplied transcript fixture' }),
     synthesizeSpeech: async (_id, _text) => ({ played: false, pcmByteLength: 3200 }), cancelSpeech() {}, ...overrides });
 }
 
@@ -34,28 +34,30 @@ test('[CONTRACT] resumed speech preserves one pending utterance and explicit pro
     assert.equal(turns, 2, 'Detached sessions must not execute a late utterance');
   } finally { await bridge.close(); }
 });
-test('[CONTRACT] speech end uses the shared executor and routes the actual reply to speech', async () => {
+test('[CONTRACT] supplied speech end routes supplied executor reply into the speech adapter', async t => {
   const calls = [];
   const voice = engine({ synthesizeSpeech: async (id, text, options) => { calls.push({ id, text, playback: options.playback }); return { played: false, pcmByteLength: 3200 }; } });
   const bridge = new VoiceConversation({ engine: voice, executeTurn: async input => {
     calls.push({ transcript: input.text, sessionId: input.sessionId });
     return { ok: true, content: 'Observed reply\n```zero-ui:progress\n{"status":"completed"}\n```', taskId: 'persisted-task' };
   } });
+  t.after(() => bridge.close());
   bridge.attach('same-chat', { ownerId: 'owner', playback: false });
   const completed = new Promise(resolve => bridge.once('turn-complete', resolve));
   voice.emit('voice:speech_end', { sessionId: 'same-chat' });
   const result = await completed;
   assert.equal(result.taskId, 'persisted-task');
-  assert.deepEqual(calls[0], { transcript: 'actual transcript fixture', sessionId: 'same-chat' });
+  assert.deepEqual(calls[0], { transcript: 'supplied transcript fixture', sessionId: 'same-chat' });
   assert.deepEqual(calls[1], { id: 'same-chat', text: 'Observed reply', playback: false });
   await bridge.close();
 });
-test('[CONTRACT] interruption cancels an in-flight shared turn and prevents late synthesis', async () => {
+test('[CONTRACT] interruption cancels an in-flight shared turn and prevents late synthesis', async t => {
   let release, entered;
   const started = new Promise(resolve => { entered = resolve; });
   let spoken = 0;
   const voice = engine({ synthesizeSpeech: async () => { spoken++; return {}; } });
   const bridge = new VoiceConversation({ engine: voice, executeTurn: async ({ signal }) => { entered(signal); return new Promise(resolve => { release = resolve; }); } });
+  t.after(() => bridge.close());
   bridge.attach('chat', { ownerId: 'owner' });
   const pending = bridge.process('chat');
   const signal = await started;
@@ -71,10 +73,11 @@ test('[CONTRACT] interruption cancels an in-flight shared turn and prevents late
   assert.equal(spoken, 0);
   await bridge.close();
 });
-test('[CONTRACT] empty recognition, actual executor failure and stop do not produce speech completion', async () => {
+test('[CONTRACT] supplied empty recognition and executor failure never produce speech completion', async t => {
   let called = 0;
   const voice = engine({ transcribe: async () => ({ transcribed: false, text: '' }) });
   const bridge = new VoiceConversation({ engine: voice, executeTurn: async () => { called++; return { ok: false, error: 'inference unavailable' }; } });
+  t.after(() => bridge.close());
   bridge.attach('chat', { ownerId: 'owner' });
   assert.equal((await bridge.process('chat')).empty, true);
   assert.equal(called, 0);

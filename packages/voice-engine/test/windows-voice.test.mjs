@@ -5,6 +5,7 @@ import { PassThrough } from 'node:stream';
 import { VoiceEngine, AudioRouter, WindowsSpeechBackend, VoiceError } from '../index.mjs';
 
 const samples = Buffer.from([0, 0, 20, 1, 40, 2, 20, 1]);
+// All adapters/processes/audio below are supplied fixtures, never device acceptance.
 const cancelled = () => new VoiceError('VOICE_CANCELLED', 'Cancelled by test');
 function deferred() {
   let resolve, reject;
@@ -308,7 +309,7 @@ function response(child, message) {
   child.emit('close', 0);
 }
 
-test('PowerShell receives hostile text only as JSON stdin; output is PCM16', async () => {
+test('supplied process receives hostile text only as JSON stdin and returns fixture PCM', async () => {
   const text = 'Hello "; $(throw "injected"); 中文';
   const native = new WindowsSpeechBackend({ platform: 'win32', spawn: (file, args, options) => {
     assert.equal(options.windowsHide, true);
@@ -337,7 +338,7 @@ test('unsupported platforms and missing PowerShell report unavailability', async
   await assert.rejects(missing.synthesize('Hello'), { code: 'VOICE_BACKEND_UNAVAILABLE' });
 });
 
-test('native cancellation requests device cleanup and rejects even after a late success', async () => {
+test('supplied process cancellation receives cleanup command and rejects late fixture success', async () => {
   const controller = new AbortController();
   const requested = deferred();
   let cleanups = 0;
@@ -353,7 +354,7 @@ test('native cancellation requests device cleanup and rejects even after a late 
   assert.equal(cleanups, 1);
 });
 
-test('native protocol errors and Windows API errors are never replaced by success', async () => {
+test('supplied process protocol and Windows error fixtures never become success', async () => {
   const native = new WindowsSpeechBackend({ platform: 'win32', spawn: () => fakeProcess((line, child) => {
     if (line === 'cancel') setImmediate(() => child.emit('close', 1));
     else setImmediate(() => child.stdout.write('not JSON\n'));
@@ -404,7 +405,7 @@ test('[UNIT] cancelled recognizer result never publishes transcript and preserve
   assert.equal(engine.getStatus().sessions[0].router.bufferedInputBytes, samples.length);
 });
 
-test('native capture streams PCM only after explicit start and handles split protocol lines', async () => {
+test('supplied capture process streams fixture PCM and handles split protocol lines', async () => {
   const received = [];
   let child;
   const native = new WindowsSpeechBackend({ platform: 'win32', spawn: () => {
@@ -427,7 +428,7 @@ test('native capture streams PCM only after explicit start and handles split pro
 test('[UNIT] a new session waits for cancelled microphone native ownership to finish', async t => {
   const first = deferred(); const second = deferred(); let opens = 0;
   const engine = new VoiceEngine({ backend: backend({ startMicrophone: () => ({ ready: Promise.resolve({}), done: ++opens === 1 ? first.promise : second.promise }) }) });
-  t.after(() => { first.resolve(); second.resolve(); engine.close(); });
+  t.after(() => { first.resolve(); second.resolve(); return engine.close(); });
   engine.startSession('first');
   const alreadyCancelled = new AbortController(); alreadyCancelled.abort();
   await assert.rejects(engine.startMicrophone('first', { signal: alreadyCancelled.signal }), { code: 'VOICE_CANCELLED' });

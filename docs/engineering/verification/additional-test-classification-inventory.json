@@ -841,16 +841,244 @@
     },
     {
       "file": "packages/voice-engine/test/windows-voice.test.mjs",
-      "sha256": "b9a746e691982191d2d8b45d72901fd22c49ed40ec66eb213eb3796f4af5a8cd",
+      "sha256": "5f16567dd971222b101ba5d2ec93cd2d9d836433de5ab4ed1cfa724d7c6570f9",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Supplied audio/process/model/executor fixtures; Supplied deferred recognizer cancellation settles before next call; new input retained exactly. Supplied availability response enumerated without microphone/output adapter invocation; no duplex/echo-cancellation claim. Supplied PCM passes through synthesis/playback callbacks and emitted audio; output queue drained. playback=false exposes supplied PCM without calling playback adapter. Supplied synthesis failure rejects and leaves idle/error status. Supplied constant-energy PCM aborts deferred synthesis and prevents late audio publication. Supplied quiet/fluctuation/strong PCM exercises noise gate and cancellation state snapshot; no actual noise recording. Supplied superseded synthesis cannot publish/reset newer turn. Session stop cancels supplied synthesis and removes session. Local AbortController and cancelSpeech reject supplied operations. Empty input and supplied unrecognized result never claim transcription. Supplied recognizer error restores original PCM before newly supplied bytes. Concurrent recognition rejects and session stop cancels supplied recognizer. Supplied microphone callback/ready/done lifecycle retains PCM, excludes second session and stops accepting late callback. Supplied capture rejection exposes error and leaves microphone/duplex unavailable. Supplied capture/playback start callbacks jointly establish duplex flag; synthesis alone does not. Malformed supplied PCM/base64 rejects; split supplied energy frames trigger listening. In-memory router preserves newest bounded input/output and counts dropped bytes. Fake child-process stdin captures hostile text as JSON rather than arguments; fixture PCM decoded. Forced unsupported platform and fake ENOENT process report unavailable. Fake process receives cancel command once; late fixture success cannot override cancellation. Fake process malformed JSON and supplied Windows error propagate structured failures. Fake process missing/invalid PCM returns protocol failure. Supplied speech-energy frames cancel deferred recognition and suppress stale transcript. Supplied cancelled recognizer result rejects, emits no transcript and retains input. Fake capture process emits split ready/audio lines and concatenated fixture PCM reaches callback. Supplied prior microphone teardown must settle before next session acquires ownership; pre-aborted request opens nothing. Invalid supplied synthesis/rate/format/PCM/duration rejects before spawn adapter invocation.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No actual Windows process, microphone, headset output, speech recognition/synthesis, human audibility, external model or full live conversation; native device acceptance remains separate."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[UNIT] next recognition waits for cancelled native operation settlement and retains new input",
+          "line": 38,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied deferred recognizer cancellation settles before next call; new input retained exactly."
+        },
+        {
+          "title": "session creation enumerates capabilities without opening microphone/output",
+          "line": 63,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied availability response enumerated without microphone/output adapter invocation; no duplex/echo-cancellation claim."
+        },
+        {
+          "title": "speech routes adapter PCM and default playback consumes output queue",
+          "line": 73,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied PCM passes through synthesis/playback callbacks and emitted audio; output queue drained."
+        },
+        {
+          "title": "playback:false exposes PCM without accessing audio hardware",
+          "line": 87,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "playback=false exposes supplied PCM without calling playback adapter."
+        },
+        {
+          "title": "speech errors reject, return to idle, and preserve the actual error in status",
+          "line": 94,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied synthesis failure rejects and leaves idle/error status."
+        },
+        {
+          "title": "VAD barge-in cancels pending synthesis without publishing late audio",
+          "line": 103,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied constant-energy PCM aborts deferred synthesis and prevents late audio publication."
+        },
+        {
+          "title": "[UNIT] playback noise gate preserves output for background fluctuations and still cancels stronger speech",
+          "line": 125,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied quiet/fluctuation/strong PCM exercises noise gate and cancellation state snapshot; no actual noise recording."
+        },
+        {
+          "title": "superseded synthesis cannot reset the newer turn or publish stale audio",
+          "line": 148,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied superseded synthesis cannot publish/reset newer turn."
+        },
+        {
+          "title": "stopping a session cancels speech and never emits late audio",
+          "line": 163,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Session stop cancels supplied synthesis and removes session."
+        },
+        {
+          "title": "external cancellation and explicit cancelSpeech stop operations",
+          "line": 172,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Local AbortController and cancelSpeech reject supplied operations."
+        },
+        {
+          "title": "empty and unrecognized audio never claim successful transcription",
+          "line": 185,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Empty input and supplied unrecognized result never claim transcription."
+        },
+        {
+          "title": "failed transcription restores exact input ahead of newly arriving audio",
+          "line": 197,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied recognizer error restores original PCM before newly supplied bytes."
+        },
+        {
+          "title": "concurrent transcription is rejected and stop cancels a running recognizer",
+          "line": 209,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Concurrent recognition rejects and session stop cancels supplied recognizer."
+        },
+        {
+          "title": "microphone starts explicitly, streams PCM, and waits for stop cleanup",
+          "line": 219,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied microphone callback/ready/done lifecycle retains PCM, excludes second session and stops accepting late callback."
+        },
+        {
+          "title": "capture failure is exposed without claiming microphone or duplex availability",
+          "line": 239,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied capture rejection exposes error and leaves microphone/duplex unavailable."
+        },
+        {
+          "title": "duplex requires simultaneous started capture and playback, not synthesis alone",
+          "line": 248,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied capture/playback start callbacks jointly establish duplex flag; synthesis alone does not."
+        },
+        {
+          "title": "PCM validation rejects malformed data and VAD handles split network frames",
+          "line": 270,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Malformed supplied PCM/base64 rejects; split supplied energy frames trigger listening."
+        },
+        {
+          "title": "router bounds input/output, preserves the newest input, and reports dropped bytes",
+          "line": 282,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "In-memory router preserves newest bounded input/output and counts dropped bytes."
+        },
+        {
+          "title": "supplied process receives hostile text only as JSON stdin and returns fixture PCM",
+          "line": 312,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake child-process stdin captures hostile text as JSON rather than arguments; fixture PCM decoded."
+        },
+        {
+          "title": "unsupported platforms and missing PowerShell report unavailability",
+          "line": 327,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Forced unsupported platform and fake ENOENT process report unavailable."
+        },
+        {
+          "title": "supplied process cancellation receives cleanup command and rejects late fixture success",
+          "line": 341,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake process receives cancel command once; late fixture success cannot override cancellation."
+        },
+        {
+          "title": "supplied process protocol and Windows error fixtures never become success",
+          "line": 357,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake process malformed JSON and supplied Windows error propagate structured failures."
+        },
+        {
+          "title": "missing or malformed PCM from the native bridge is a structured protocol failure",
+          "line": 372,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake process missing/invalid PCM returns protocol failure."
+        },
+        {
+          "title": "new user speech cancels obsolete STT without publishing a late transcript",
+          "line": 381,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied speech-energy frames cancel deferred recognition and suppress stale transcript."
+        },
+        {
+          "title": "[UNIT] cancelled recognizer result never publishes transcript and preserves retry input",
+          "line": 399,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied cancelled recognizer result rejects, emits no transcript and retains input."
+        },
+        {
+          "title": "supplied capture process streams fixture PCM and handles split protocol lines",
+          "line": 408,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake capture process emits split ready/audio lines and concatenated fixture PCM reaches callback."
+        },
+        {
+          "title": "[UNIT] a new session waits for cancelled microphone native ownership to finish",
+          "line": 428,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied prior microphone teardown must settle before next session acquires ownership; pre-aborted request opens nothing."
+        },
+        {
+          "title": "invalid synthesis, format and capture options fail before any native process",
+          "line": 448,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Invalid supplied synthesis/rate/format/PCM/duration rejects before spawn adapter invocation."
+        }
+      ]
     },
     {
       "file": "test/additional-test-catalog.test.mjs",
@@ -2944,16 +3172,51 @@
     },
     {
       "file": "test/voice-conversation.test.mjs",
-      "sha256": "0b88def6de6e040857c207b1433fa5f592d91b68fdd763c10953c2cb49cf91de",
+      "sha256": "6d1ff2177463764d7704b6e3fb52c488461a88f32ce226fd1e4ce13a4dcac004",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Supplied audio/process/model/executor fixtures; Supplied speech events and buffered word fixture exercise short-pause endpoint delay, resume, manual processing and detach without duplicate turns. Supplied transcription/executor reply routes same session and task ID to supplied synthesis adapter; progress code fence removed; playback=false. Supplied speech-start event aborts deferred shared executor and blocks late synthesis. Supplied empty result bypasses executor, failed executor rejects and marks error, different owner attach rejects and detach clears session.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No actual Windows process, microphone, headset output, speech recognition/synthesis, human audibility, external model or full live conversation; native device acceptance remains separate."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] resumed speech preserves one pending utterance and explicit processing or detach prevents duplicate turns",
+          "line": 11,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied speech events and buffered word fixture exercise short-pause endpoint delay, resume, manual processing and detach without duplicate turns."
+        },
+        {
+          "title": "[CONTRACT] supplied speech end routes supplied executor reply into the speech adapter",
+          "line": 37,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied transcription/executor reply routes same session and task ID to supplied synthesis adapter; progress code fence removed; playback=false."
+        },
+        {
+          "title": "[CONTRACT] interruption cancels an in-flight shared turn and prevents late synthesis",
+          "line": 54,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied speech-start event aborts deferred shared executor and blocks late synthesis."
+        },
+        {
+          "title": "[CONTRACT] supplied empty recognition and executor failure never produce speech completion",
+          "line": 76,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied empty result bypasses executor, failed executor rejects and marks error, different owner attach rejects and detach clears session."
+        }
+      ]
     },
     {
       "file": "test/voice-device-selection-real.test.mjs",
