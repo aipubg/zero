@@ -1,0 +1,5 @@
+# Standalone UI builds do not install the host's OpenClaw peer distribution.
+# The peer remains required when this package is used as an OpenClaw plugin.
+autoInstallPeers: false
+allowBuilds:
+  esbuild: true

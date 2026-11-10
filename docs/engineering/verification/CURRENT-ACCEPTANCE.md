@@ -8,6 +8,8 @@ Newest combined browser run: [16 workflows PASS, provider catalog probe HTTP502 
 
 Subsequent voice correction: [native quiet-input playback and actual human interruption/recovery PASS](2026-11-10/voice-playback-noise-and-recovery.json). An adaptive playback onset gate and delayed utterance endpoint address observed background triggers and short-pause prefix loss. [Matching automatic human turn, complete native playback and user-confirmed audible response now evidenced](2026-11-10/voice-automatic-endpoint-outcome.json). Its overall run remains FAIL because the recall assertion rejected a valid Markdown “blue and bird” answer; the assertion was corrected and checked against the actual answer plus negative cases, but the corrected full end-to-end rerun is NOT_RUN. None of the earlier failures was reclassified.
 
+[Fresh Windows source setup](2026-11-10/fresh-windows-source-setup.json) now has actual outside-repository dependency origins, native bootstrap, browser persistence, native desktop effects, real process restart, pinned setup/npm-bootstrap paths and selected file-preservation evidence. The initial import/build failures are retained. This is same-PC/shared-cache verification; clean-machine installation, upgrade/uninstall/rollback and full release gates remain open.
+
 Evidence keys used below:
 
 - **UI:** [actual persisted UI/reconnect/scroll/search](2026-11-02/browser-per-workflow-classification.json); [recent nine-workflow regression and actual 3B tool recall](2026-11-10/qwen-3b-real-ui-recall.json).

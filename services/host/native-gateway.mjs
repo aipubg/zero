@@ -96,6 +96,7 @@ const MIME_TYPES = {
 // Dynamically load ws from available installed location
 async function loadWs() {
   const candidates = [
+    path.join(REPO_ROOT, 'backend', 'node_modules', 'ws', 'index.js'),
     path.join(REPO_ROOT, 'app', 'node_modules', 'ws', 'index.js'),
     path.join(REPO_ROOT, 'backend', 'node_modules', '.pnpm', 'node_modules', 'ws', 'index.js'),
   ];

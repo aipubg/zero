@@ -1,11 +1,12 @@
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-// SDK installs use the declared dependency. The host monorepo ships YAML with OpenClaw.
+// Standalone SDK installs use their declared dependency. The native host owns
+// its declared YAML dependency in backend; do not borrow OpenClaw transitives.
 let yaml;
 try { yaml = require('yaml'); } catch (error) {
   if (error.code !== 'MODULE_NOT_FOUND') throw error;
-  yaml = createRequire(require.resolve('openclaw'))('yaml');
+  yaml = createRequire(new URL('../../backend/package.json', import.meta.url))('yaml');
 }
 
 export function parseSkillMarkdown(raw, fallbackName, filePath) {

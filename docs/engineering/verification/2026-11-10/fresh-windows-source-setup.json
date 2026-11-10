@@ -1,0 +1,237 @@
+{
+  "classification": [
+    "REAL_BROWSER",
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PARTIAL",
+  "baselineCommit": "8112979054b02d93efb942b1284dda595590e600",
+  "sourceLocation": "Outside owner repository in owned Windows temporary source directory",
+  "scope": "Fresh-directory same-PC installation, actual UI persistence, executable desktop effect and real process restart. Shared package cache/installed Node/Chrome; not clean-machine or full release acceptance",
+  "initialFailures": [
+    {
+      "stage": "inside-repository proof",
+      "outcome": "DISQUALIFIED",
+      "reason": "Ancestor node_modules supplied undeclared busboy; import success not accepted as isolation proof"
+    },
+    {
+      "stage": "outside-repository import",
+      "outcome": "FAIL",
+      "reason": "Undeclared busboy; after declaring it, Skill YAML fallback could not resolve sibling backend OpenClaw"
+    },
+    {
+      "stage": "UI parent-workspace install",
+      "outcome": "FAIL",
+      "reason": "Child invocation installed parent app dependencies; esbuild absent"
+    },
+    {
+      "stage": "standalone UI frozen install",
+      "outcome": "FAIL",
+      "reason": "Auto-install peer OpenClaw absent from UI lockfile; child workspace now disables automatic peer install, compatibility peer retained"
+    },
+    {
+      "stage": "offline cache/policy checks",
+      "outcome": "FAIL",
+      "reason": "Drive-specific package cache and missing policy metadata; successful cached/online verification followed without disabling policy"
+    },
+    {
+      "stage": "origin assertion",
+      "outcome": "FAIL",
+      "reason": "Short8dot3root compared with long package path; native canonicalization now applied to both paths"
+    }
+  ],
+  "actualUi": {
+    "classification": [
+      "REAL_BROWSER",
+      "INTEGRATION",
+      "REAL_OS"
+    ],
+    "status": "PASS",
+    "scope": "Fresh source outside owner repository, frozen installed dependencies/shared pnpm store; actual native bootstrap and UI persisted toggle. Same Windows machine, not clean-machine or whole-product acceptance",
+    "dependencyOrigins": {
+      "ws": {
+        "insideFreshSource": true
+      },
+      "busboy": {
+        "insideFreshSource": true
+      },
+      "yaml": {
+        "insideFreshSource": true
+      },
+      "openclaw": {
+        "insideFreshSource": true
+      },
+      "node-llama-cpp": {
+        "insideFreshSource": true
+      }
+    },
+    "initialOriginAssertion": "Short8dot3root vs long dependency path caused false comparison; native filesystem canonicalization now used on both paths",
+    "actualComposerInput": true,
+    "actualUiDisabledPersistedAfterReload": true,
+    "actualUiReenabled": true,
+    "modelsUiInteractive": true,
+    "pageErrors": []
+  },
+  "nativeDesktop": [
+    {
+      "classification": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "scope": "Owned native Windows Forms fixture; not general application accuracy benchmark",
+      "backend": "agent-desktop",
+      "runtimeVersion": "1.2.0",
+      "actualCanonicalHostRegisteredTool": true,
+      "actualUnicodeEffect": {
+        "text": "ZERO सत्यापित input",
+        "clicks": 1
+      },
+      "nativeSetDisposition": {
+        "delivery": "delivered_verified",
+        "retry": "unsafe"
+      },
+      "nativeClickDisposition": {
+        "delivery": "delivered_unverified",
+        "retry": "unsafe"
+      },
+      "malformedRefRejectedWithoutSecondClick": true,
+      "manualHoldPreserved": true,
+      "observationDuringHold": true,
+      "actualCallerLeaseOrder": [
+        "acquired:native-one",
+        "released:native-one",
+        "acquired:native-two",
+        "released:native-two"
+      ],
+      "leaseReleasedAfterNativeSettlement": true
+    }
+  ],
+  "skillsRegression": {
+    "passed": 12,
+    "failed": 0,
+    "logReference": "outside-source/skill-regression.log"
+  },
+  "actualProcessRestart": {
+    "classification": [
+      "REAL_BROWSER",
+      "REAL_OS",
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "priorPid": 17532,
+    "restartedPid": 13684,
+    "scope": "Actual stopped/new native host process on same isolated source/data, persisted UI Skill state; not clean-machine or power-loss certification",
+    "disabledStateVisibleAfterNewProcess": true,
+    "reenabledThroughUi": true
+  },
+  "setupPaths": {
+    "existingExactPnpm": "PASS",
+    "npmExecPinnedPnpm": "PASS",
+    "version": "11.25.0",
+    "node": "24.22.1",
+    "normalSelectedFilePreservation": {
+      "classification": [
+        "INTEGRATION",
+        "REAL_OS"
+      ],
+      "status": "PASS",
+      "scope": "Successful actual setup with four selected owner-file fixtures byte-preserved; absent preferences file remains absent. Same-PC warm package cache, not all-user-data or clean-machine acceptance",
+      "before": {
+        ".env": "625ec582b8ea62aadaec4518a53fed2ef9a7e4a6c13990ea05f1acb14679576d",
+        "skills/.zero-skills.json": "fda76ee7f26e4681f1f0479dd221dfd0dc65a846e498d756941a3bacd0d78e49",
+        "zero-system/config/zero.json": "efd3a96195c91a10ff3c54bea4758c2c79a21a23516d585cc24a56637c8f7208",
+        "zero-system/config/user-prefs.json": null
+      },
+      "after": {
+        ".env": "625ec582b8ea62aadaec4518a53fed2ef9a7e4a6c13990ea05f1acb14679576d",
+        "skills/.zero-skills.json": "fda76ee7f26e4681f1f0479dd221dfd0dc65a846e498d756941a3bacd0d78e49",
+        "zero-system/config/zero.json": "efd3a96195c91a10ff3c54bea4758c2c79a21a23516d585cc24a56637c8f7208",
+        "zero-system/config/user-prefs.json": null
+      }
+    },
+    "expectedFrozenFailure": {
+      "classification": [
+        "INTEGRATION",
+        "REAL_OS"
+      ],
+      "status": "PASS",
+      "scope": "Real frozen-manifest mismatch refuses setup, nonzero exit and retained FAIL receipt; selected actual owner-file fixtures byte-preserved, manifest restored. Not production install or all-user-data preservation proof",
+      "expectedSetupExit": 1,
+      "watchedFilesUnchanged": [
+        ".env",
+        "skills/.zero-skills.json",
+        "zero-system/config/zero.json",
+        "zero-system/config/user-prefs.json"
+      ],
+      "hashesBefore": {
+        ".env": "625ec582b8ea62aadaec4518a53fed2ef9a7e4a6c13990ea05f1acb14679576d",
+        "skills/.zero-skills.json": "70a63429182e01c75055c5a842cc601d59d59a2763a13532396492efe147a896",
+        "zero-system/config/zero.json": "efd3a96195c91a10ff3c54bea4758c2c79a21a23516d585cc24a56637c8f7208",
+        "zero-system/config/user-prefs.json": null
+      },
+      "hashesAfter": {
+        ".env": "625ec582b8ea62aadaec4518a53fed2ef9a7e4a6c13990ea05f1acb14679576d",
+        "skills/.zero-skills.json": "70a63429182e01c75055c5a842cc601d59d59a2763a13532396492efe147a896",
+        "zero-system/config/zero.json": "efd3a96195c91a10ff3c54bea4758c2c79a21a23516d585cc24a56637c8f7208",
+        "zero-system/config/user-prefs.json": null
+      },
+      "actualSetupReceipts": [
+        {
+          "id": "20261110T035039Z-d44f0a5aa1b6483385814206d78d94b5",
+          "status": "PASS",
+          "pnpmSource": "existing-exact-version"
+        },
+        {
+          "id": "20261110T035126Z-0b4d2cd9f3fe473aab1adb0df87d47a5",
+          "status": "PASS",
+          "pnpmSource": "npm-exec-pinned-version"
+        },
+        {
+          "id": "20261110T035235Z-1fcbce8ec0aa4d7c8d6be3af5c052d93",
+          "status": "FAIL",
+          "pnpmSource": "existing-exact-version"
+        }
+      ]
+    }
+  },
+  "isolatedTestHostsStopped": true,
+  "ownerHostRestarted": false,
+  "sourceHashes": {
+    "backend/package.json": "c06569e519e31545f6988e8ad968753344c297c950f169ea92db3575accee572",
+    "backend/pnpm-lock.yaml": "fe7812a6a53e291eb580b7e892630d27b332fd9b6cbbe505e8fca6f6480b5470",
+    "packages/skill-sdk/frontmatter.mjs": "6f3baa62d3ee0e049049bdddd5fd4ee9a174343096c46165677cacf4562cad20",
+    "services/host/native-gateway.mjs": "5bece3ce97da36b96493960804e6fabeef5f5f66fcc19fe93db2d96a66a55ff9",
+    "app/zero-control-ui/pnpm-workspace.yaml": "c43dfea72fee82418179be631ef0ee6e6ccf2389b8af220704ed690031ad6380",
+    "app/zero-control-ui/pnpm-lock.yaml": "729a36aa97f5af00824a1da6e6957580903edfbcd4a5e7eb8aa508026c16c14a",
+    "zero-setup.ps1": "27dba6dfd7d34c587ae547f53549bfc4266e457fde9e32270ce3d306bb79dee7",
+    "zero-setup.cmd": "6433182364dd1a1b23b75faa2c44e0486fd133daac078fd7a4ea539671a06f89"
+  },
+  "remainingGates": [
+    "Clean Windows machine/VM",
+    "Full inference and external device prerequisites",
+    "Upgrade/uninstall/rollback acceptance",
+    "Independent complete-product verification"
+  ],
+  "nativeDesktopCancellation": {
+    "classification": [
+      "REAL_OS",
+      "INTEGRATION"
+    ],
+    "status": "PASS",
+    "actualSpawnedPid": 14900,
+    "cancelledCommand": "DESKTOP_CANCELLED",
+    "capabilityOutcome": "CANCELLED",
+    "disposition": {
+      "delivery": "unknown",
+      "retry": "unsafe"
+    },
+    "requiresObservation": true,
+    "verified": false,
+    "recoveredStatus": true,
+    "scope": "Real CLI process cancellation through actual capability engine, not proof that a physical action was interrupted before delivery"
+  },
+  "nativeDesktopTestCount": 2,
+  "uiGenerationUnchangedFromOwnerBuild": true
+}

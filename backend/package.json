@@ -9,8 +9,11 @@
   },
   "dependencies": {
     "@trycua/cua-driver": "0.32.0",
+    "busboy": "1.6.0",
     "node-llama-cpp": "3.22.2",
-    "openclaw": "2026.10.6"
+    "openclaw": "2026.10.6",
+    "ws": "8.22.0",
+    "yaml": "2.9.1"
   },
   "optionalDependencies": {
     "@node-llama-cpp/win-x64": "3.22.2",
