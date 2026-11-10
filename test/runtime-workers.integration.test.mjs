@@ -27,9 +27,10 @@ function temporary(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-runtime-workers-'));
   cleanup(t, () => {
     // Cleanup is confined to the exact directory created above.
-    assert.equal(path.dirname(root), fs.realpathSync(os.tmpdir()));
-    assert.ok(path.basename(root).startsWith('zero-runtime-workers-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-runtime-workers-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   });
   return root;
 }
@@ -37,7 +38,7 @@ function temporary(t) {
 const subtask = (id, agentId = 'coder', dependsOn = []) => ({ id, agentId, dependsOn, goal: `Execute ${id}`, tools: [] });
 const processJob = (script) => ({ type: 'process', command: process.execPath, args: ['-e', script] });
 
-test('real ModelFabric HTTP transport overlaps assigned models, executes tools and consolidates durably', { timeout: 10000 }, async (t) => {
+test('controlled ModelFabric HTTP overlaps supplied model responses, executes file tools and consolidates durably', { timeout: 10000 }, async (t) => {
   const root = temporary(t);
   const dbPath = path.join(root, 'tasks.sqlite');
   const requests = [];
@@ -428,7 +429,7 @@ test('restart reconciliation applies recorded worker evidence to child and paren
   assert.equal(sm.getTaskSteps(parent.id).filter((step) => step.status === 'completed').length, 1);
 });
 
-test('legacy completion-only handoffs migrate to unverified and queued restart requires explicit resume', async (t) => {
+test('legacy completion-only handoffs migrate to unverified without execution evidence', async (t) => {
   const root = temporary(t);
   const dbPath = path.join(root, 'workers.sqlite');
   const db = new DatabaseSync(dbPath);

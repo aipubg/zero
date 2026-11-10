@@ -105,7 +105,7 @@ test('LIVE NVIDIA: two assigned models run concurrently, execute real tools and 
     assert.equal(sm.getTask(outcome.masterTaskId).status, 'COMPLETED');
     assert.equal(new AgentMessageBus({ db: sm.db }).getMessageHistory(outcome.masterTaskId).at(-1).type, 'TASK_COMPLETED');
     assert.ok(sm.getLatestCheckpoint(outcome.masterTaskId).stateSnapshot.consolidatedResult.synthesis);
-    report.restartVerified = true;
+    report.sameProcessReopenVerified = true;
     report.status = 'PASS';
   } catch (error) {
     failure = error;
@@ -117,9 +117,10 @@ test('LIVE NVIDIA: two assigned models run concurrently, execute real tools and 
     fs.writeFileSync(reportPath, redact(JSON.stringify(report, null, 2)));
     console.log(JSON.stringify({ liveAgentStatus: report.status, reportPath, assignments: report.assignments, parallelOverlapMs: report.parallelOverlapMs,
       requests: report.requests.map(({ modelId, phase, ok, durationMs, httpStatus }) => ({ modelId, phase, ok, durationMs, httpStatus })), toolEvidenceCount: report.tools.length }));
-    assert.equal(path.dirname(root), fs.realpathSync(os.tmpdir()));
-    assert.ok(path.basename(root).startsWith('zero-live-agents-'));
-    fs.rmSync(root, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-live-agents-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
   if (failure) throw new Error(redact(failure.message));
 });

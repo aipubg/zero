@@ -18,7 +18,15 @@ test('[INTEGRATION] killed team process resumes same durable children without re
 const sm=new TaskStateMachine({dbPath:${JSON.stringify(dbPath)}});const team=new AgentTeamOrchestrator({stateMachine:sm});
 await team.executeTeamWorkflow({goal:'Recover actual two-child process',timeoutMs:120000,subtasks:[{id:'a',agentId:'coder',goal:'Create once',tools:[],dependsOn:[]},{id:'b',agentId:'researcher',goal:'Finish later',tools:[],dependsOn:[]}],taskExecutors:{a:async()=>{fs.writeFileSync(${JSON.stringify(effect)},'ONCE',{flag:'wx'});return {status:'success',output:'ONCE'}},b:()=>new Promise(()=>{})}});`);
   const child = spawn(process.execPath, [script], { windowsHide: true, stdio: 'ignore' });
-  t.after(() => { if (child.exitCode === null) child.kill(); assert.equal(fs.realpathSync(path.dirname(root)), fs.realpathSync(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); });
+  t.after(async () => {
+    if (child.exitCode === null && child.signalCode === null) {
+      const closed = once(child, 'close'); child.kill(); await closed;
+    }
+    const resolved = fs.realpathSync.native(root);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-team-recovery-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
+  });
   let sm; let master; const deadline = Date.now() + 7000;
   while (Date.now() < deadline) {
     if (fs.existsSync(dbPath) && fs.existsSync(effect)) {

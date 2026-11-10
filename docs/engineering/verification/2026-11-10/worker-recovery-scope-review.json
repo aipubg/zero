@@ -1,0 +1,29 @@
+{
+  "command": "node --test test/runtime-workers.integration.test.mjs test/team-process-recovery.test.mjs test/runtime-workers.live.test.mjs",
+  "passed": 17,
+  "failed": 0,
+  "skipped": 1,
+  "skippedScenario": "LIVE NVIDIA opt-in not selected in this run; no new external inference PASS",
+  "scope": "Actual local processes, files, loopback HTTP and SQLite recovery plus explicitly supplied model/adapter contracts",
+  "actualProcessEvidence": [
+    "Worker process stdout, cwd and real file output",
+    "Ready-file-confirmed child cancellation and absence of delayed output",
+    "Fresh fixture process exits after real file effect without settling handoff, followed by explicit recovery",
+    "Killed team process resumes same durable children without replaying completed exclusive effect",
+    "Parallel Node worker ready-file barrier and consolidated results"
+  ],
+  "honestyCorrections": [
+    "Controlled model HTTP test title now says supplied responses",
+    "Legacy migration title no longer claims a queued-restart assertion absent from its body",
+    "Live report sameProcessReopenVerified replaces misleading restartVerified",
+    "Task-owned canonical temporary roots checked before cleanup; team child teardown awaited before removal"
+  ],
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 45,
+  "additionalUnreviewedFiles": 44,
+  "limitations": [
+    "No new external model inference, remote/cloud handoff or supported mobile-device run",
+    "Most persistence checks are same-process reopen; actual subprocess cases explicitly distinguished",
+    "Release remains BLOCKED"
+  ]
+}

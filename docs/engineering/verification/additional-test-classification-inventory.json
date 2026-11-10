@@ -1547,29 +1547,193 @@
     },
     {
       "file": "test/runtime-workers.integration.test.mjs",
-      "sha256": "59d588cb21e6d9eff82862fc95a68a19a0ac38c4130210175e91f5b2d704462c",
+      "sha256": "482c0e346ffe62c44a3ad3110b1364fcbf9bdab2dee892d2ac4c041d73003622",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Controlled loopback HTTP overlaps supplied model responses; real capability file writes and SQLite messages/checkpoints persist through same-process reopen. Actual in-memory task DB settles supplied child outcomes only after siblings and preserves escalation/duplicate identity rejection. Missing fabric makes task fail and transitive dependencies block in actual task DB. Invalid/cyclic/duplicate DAG inputs reject before any task row is created. Supplied deferred executors receive timeout/parent cancellation; late supplied completion does not change recorded state. Missing child executor fails and supplied never-settling executor rejects on parent cancellation. Real Node worker writes a file and stdout in workspace; attached child outcome and checkpoint persist and a fresh Node process reads completed handoff. Actual child exit7, ready-file-confirmed process cancellation, duplicate task rejection and manager shutdown preserve failure/cancelled states. Unconfigured remote stays blocked on heartbeat/handoff; supplied nonterminating adapter cancellation remains interrupted/unconfirmed. Fresh fixture process executes a real file-writing child then exits without settlement; new manager retains interrupted evidence and explicit resume runs a real process. Actual parallel Node workers use ready-file barrier and return stdout through team children; supplied reviewer consumes results without duplicate settlement. Supplied queued/registered executor results cannot mark team or worker completed. Supplied model/tool adapters exercise thrown tool, unassigned tool, empty output and coordinator failure; actual SQLite failure/step/checkpoint assertions. Actual stalled loopback HTTP is disconnected on workflow deadline with one request and no retry. Real process output persisted before task bridge attachment reconciles actual SQLite child/parent once after same-process close/reopen. Actual legacy SQLite completion-only row migrates to legacy_unverified and cannot return ok without evidence.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Controlled local model responses and supplied adapters are not external inference or a real remote/cloud/mobile worker; most reopens are same process except explicitly described child-process cases."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "controlled ModelFabric HTTP overlaps supplied model responses, executes file tools and consolidates durably",
+          "line": 41,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Controlled loopback HTTP overlaps supplied model responses; real capability file writes and SQLite messages/checkpoints persist through same-process reopen."
+        },
+        {
+          "title": "parallel child settlement waits for siblings and preserves escalation",
+          "line": 122,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual in-memory task DB settles supplied child outcomes only after siblings and preserves escalation/duplicate identity rejection."
+        },
+        {
+          "title": "failures block transitive dependencies; missing executors and tools cannot fabricate success",
+          "line": 138,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Missing fabric makes task fail and transitive dependencies block in actual task DB."
+        },
+        {
+          "title": "invalid DAGs fail before task creation",
+          "line": 149,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Invalid/cyclic/duplicate DAG inputs reject before any task row is created."
+        },
+        {
+          "title": "workflow deadlines and parent cancellation abort work and ignore late completion",
+          "line": 159,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied deferred executors receive timeout/parent cancellation; late supplied completion does not change recorded state."
+        },
+        {
+          "title": "child executor is required and its cancellation is bounded",
+          "line": 184,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Missing child executor fails and supplied never-settling executor rejects on parent cancellation."
+        },
+        {
+          "title": "real process handoff persists stdout, filesystem output and attached child result",
+          "line": 199,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real Node worker writes a file and stdout in workspace; attached child outcome and checkpoint persist and a fresh Node process reads completed handoff."
+        },
+        {
+          "title": "process failures, cancellation, duplicates and manager shutdown produce durable states",
+          "line": 232,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual child exit7, ready-file-confirmed process cancellation, duplicate task rejection and manager shutdown preserve failure/cancelled states."
+        },
+        {
+          "title": "external registration never claims execution and adapter cancellation remains unconfirmed",
+          "line": 258,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Unconfigured remote stays blocked on heartbeat/handoff; supplied nonterminating adapter cancellation remains interrupted/unconfirmed."
+        },
+        {
+          "title": "fresh process restart preserves interrupted evidence and requires explicit re-execution",
+          "line": 281,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Fresh fixture process executes a real file-writing child then exits without settlement; new manager retains interrupted evidence and explicit resume runs a real process."
+        },
+        {
+          "title": "team can await parallel local process workers without double-completing child tasks",
+          "line": 307,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual parallel Node workers use ready-file barrier and return stdout through team children; supplied reviewer consumes results without duplicate settlement."
+        },
+        {
+          "title": "a queued adapter or handoff registration cannot complete a task",
+          "line": 332,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied queued/registered executor results cannot mark team or worker completed."
+        },
+        {
+          "title": "tool exceptions, unassigned calls, empty output and synthesis failure persist as failures",
+          "line": 347,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied model/tool adapters exercise thrown tool, unassigned tool, empty output and coordinator failure; actual SQLite failure/step/checkpoint assertions."
+        },
+        {
+          "title": "deadline cancels a real in-flight ModelFabric HTTP request",
+          "line": 382,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual stalled loopback HTTP is disconnected on workflow deadline with one request and no retry."
+        },
+        {
+          "title": "restart reconciliation applies recorded worker evidence to child and parent exactly once",
+          "line": 406,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real process output persisted before task bridge attachment reconciles actual SQLite child/parent once after same-process close/reopen."
+        },
+        {
+          "title": "legacy completion-only handoffs migrate to unverified without execution evidence",
+          "line": 432,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual legacy SQLite completion-only row migrates to legacy_unverified and cannot return ok without evidence."
+        }
+      ]
     },
     {
       "file": "test/runtime-workers.live.test.mjs",
-      "sha256": "4822b668b65867ca1710d4860237e9cc955c4d3283eaac7ba20b46bda8fe5da7",
+      "sha256": "df3469b9fa63fe0dc8a4f999ade560e29991ba6ad8ed7099cafe0ddddee5687b",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_EXTERNAL",
+        "INTEGRATION"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Opt-in configured NVIDIA distinct assigned models request actual exclusive local evidence writes, overlap upstream requests, consolidate and persist messages; SQLite only reopens in same process.",
+      "gaps": [
+        "Default is skip/NOT_RUN; credentials required, opaque provider backend mapping unverified; no real stopped/restarted host or mobile/cloud/remote worker."
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_RUN_LIVE_AGENTS === '1' with configured distinct provider models and credentials",
+          "labels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "scope": "External token-spending execution opt-in; absent selection is skipped and not PASS."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "LIVE NVIDIA: two assigned models run concurrently, execute real tools and consolidate",
+          "line": 13,
+          "labels": [
+            "REAL_EXTERNAL",
+            "INTEGRATION"
+          ],
+          "scope": "Opt-in configured NVIDIA distinct assigned models request actual exclusive local evidence writes, overlap upstream requests, consolidate and persist messages; SQLite only reopens in same process."
+        }
+      ]
     },
     {
       "file": "test/screen-automation.test.mjs",
@@ -1851,16 +2015,27 @@
     },
     {
       "file": "test/team-process-recovery.test.mjs",
-      "sha256": "78224381a6e7be7c9a97279592da0b1f4ba6db26600bbda7af28d504816547ce",
+      "sha256": "7cf5fa23ac92b1e6fcde44d2281e8d1e2ea2b84256e1024b030e7fd20c3f1a1a",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Actual spawned team process writes one effect, is killed after durable checkpoint, and new orchestrator resumes same children in parent process without replaying completed effect; supplied task executors, no external models.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual process kill is tested, but resumed specialist handlers are supplied local callbacks; no external model interruption or remote handoff."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] killed team process resumes same durable children without replaying completed effects",
+          "line": 12,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual spawned team process writes one effect, is killed after durable checkpoint, and new orchestrator resumes same children in parent process without replaying completed effect; supplied task executors, no external models."
+        }
+      ]
     },
     {
       "file": "test/user-data-audit.test.mjs",
