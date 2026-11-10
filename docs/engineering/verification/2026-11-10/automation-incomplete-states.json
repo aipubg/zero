@@ -1,0 +1,26 @@
+{
+  "change": "Reject incomplete status and outcome case-insensitively despite positive ok/success acknowledgement",
+  "negativeStates": ["BLOCKED", "FAILED", "CANCELLED", "DELIVERY_UNKNOWN", " pending ", "Interrupted"],
+  "verification": [
+    {
+      "command": "node --test test/automation-failure-outcomes.test.mjs packages/automation/test/automation.test.mjs",
+      "result": "PASS",
+      "tests": 12,
+      "scope": "Controlled status/outcome combinations checked through scheduler persisted history and event rules; existing actual temporary file and isolated memory effects remain passing"
+    },
+    {
+      "command": "node --test test/verification/classification-runner.test.mjs",
+      "result": "PASS",
+      "tests": 16,
+      "scope": "Audit tooling only, not product acceptance"
+    }
+  ],
+  "classificationReview": {
+    "file": "test/search-provenance.test.mjs",
+    "declarations": 6,
+    "scope": "Five controlled provider CONTRACT assertions and one actual loopback stalled-body INTEGRATION assertion",
+    "additionalReviewedFiles": 27,
+    "additionalUnreviewedFiles": 62
+  },
+  "releaseStatus": "BLOCKED"
+}

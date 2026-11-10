@@ -24,7 +24,11 @@ test('[CONTRACT] resolved action failures cannot become completed scheduled or e
 });
 
 test('[CONTRACT] absent and unconfirmed dispatchers never report automation success', async () => {
-  for (const executor of [undefined, async () => undefined, async () => ({}), async () => ({ ok: true, queued: true }), async () => ({ success: true, completed: false })]) {
+  for (const executor of [undefined, async () => undefined, async () => ({}), async () => ({ ok: true, queued: true }), async () => ({ success: true, completed: false }),
+    ...['BLOCKED', 'FAILED', 'CANCELLED', 'DELIVERY_UNKNOWN', ' pending ', 'Interrupted'].flatMap(state => [
+      async () => ({ ok: true, status: state }), async () => ({ success: true, outcome: state }),
+    ]),
+  ]) {
     const scheduler = new AutomationScheduler({ executor });
     const events = new EventAutomationEngine({ executor });
     try {

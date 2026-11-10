@@ -586,7 +586,7 @@
     },
     {
       "file": "test/automation-failure-outcomes.test.mjs",
-      "sha256": "7d86802c68dc16d60e87e0aaa21ab859eac692aa3850ae7bd90a9e227b389977",
+      "sha256": "7e953e570fdd440fbf9cecaee073afca8099566c0475670a71d095118fa5d31b",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -617,7 +617,7 @@
         },
         {
           "title": "[INTEGRATION] scheduled and event dispatchers produce independently read file effects",
-          "line": 40,
+          "line": 44,
           "labels": [
             "INTEGRATION"
           ],
@@ -625,7 +625,7 @@
         },
         {
           "title": "[CONTRACT] overlapping timer and manual triggers dispatch each due job once",
-          "line": 67,
+          "line": 71,
           "labels": [
             "CONTRACT"
           ],
@@ -633,7 +633,7 @@
         },
         {
           "title": "[CONTRACT] unserializable results record failure without stranding the scheduler",
-          "line": 89,
+          "line": 93,
           "labels": [
             "CONTRACT"
           ],
@@ -641,7 +641,7 @@
         },
         {
           "title": "[INTEGRATION] host dispatcher executes memory consolidation against isolated SQLite",
-          "line": 100,
+          "line": 104,
           "labels": [
             "INTEGRATION"
           ],
@@ -649,7 +649,7 @@
         },
         {
           "title": "[CONTRACT] research routes to its service and desktop action cannot be replaced by params",
-          "line": 117,
+          "line": 121,
           "labels": [
             "CONTRACT"
           ],
@@ -1396,14 +1396,66 @@
       "file": "test/search-provenance.test.mjs",
       "sha256": "a5c553c48dd09e75a9f70599e3dfcec60c21fd94ab3260f5911c5506da6bd0c6",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Five explicitly supplied provider-response contracts plus a real stalled loopback HTTP body deadline check.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No live public search provider, retrieved document content accuracy, real browser or production host execution in this test source; separate live receipts cover bounded external runs."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] malformed JSON and invalid response shapes are failures, never empty retrievals",
+          "line": 7,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied fetch responses assert parsing, provenance, truthful result states, domain filtering or rejection of actual observed navigation URL shapes; no external HTTP executed."
+        },
+        {
+          "title": "[INTEGRATION] actual HTTP headers without a completed body cannot bypass the search deadline",
+          "line": 17,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual local HTTP server sends headers and stalls body; both provider requests time out, return unavailable and no citations."
+        },
+        {
+          "title": "[CONTRACT] retrieved search entries carry provenance without claiming source verification",
+          "line": 33,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied fetch responses assert parsing, provenance, truthful result states, domain filtering or rejection of actual observed navigation URL shapes; no external HTTP executed."
+        },
+        {
+          "title": "[CONTRACT] empty provider responses are distinct from offline and HTTP failures",
+          "line": 46,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied fetch responses assert parsing, provenance, truthful result states, domain filtering or rejection of actual observed navigation URL shapes; no external HTTP executed."
+        },
+        {
+          "title": "[CONTRACT] source domain filters apply to retrieved URLs",
+          "line": 59,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied fetch responses assert parsing, provenance, truthful result states, domain filtering or rejection of actual observed navigation URL shapes; no external HTTP executed."
+        },
+        {
+          "title": "[CONTRACT] DuckDuckGo query and category navigation cannot become retrieved source citations",
+          "line": 68,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied fetch responses assert parsing, provenance, truthful result states, domain filtering or rejection of actual observed navigation URL shapes; no external HTTP executed."
+        }
+      ]
     },
     {
       "file": "test/session-run-identity.test.mjs",
