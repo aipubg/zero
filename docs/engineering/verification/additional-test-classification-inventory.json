@@ -44,16 +44,78 @@
     },
     {
       "file": "app/zero-control-ui/test/computer-operator.test.mjs",
-      "sha256": "12a07116c7c4eba05ccff1682881d4dd21af986c4349a40ba76e87db6e3e9e9a",
+      "sha256": "efafd430fb3a9653f7bf234d3cee531ceb6ff7117c8d1b2ed5ecef0b5e70cbc8",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "REAL_OS"
+      ],
+      "scope": "Supplied string frames produce stable/different hashes and dedup decisions; no captured image. Supplied frame strings/action counts update/reset local observation counters; no model receives a frame. Supplied strict policy hold/freshness state permits observations and blocks input; evaluateSafety alone never clears freshness. Supplied desktop adapter failure/status/version/wait/clipboard observations retain freshness; successful snapshot clears; late snapshot cannot clear newly set requirement. Tool factory metadata/schema/declaration match expected exported constants. Invalid tool params reject, actual native screen-size and cursor queries return valid dimensions/coordinates; no input action. Computer tool factory returns expected named tools; no execution.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Most checks use supplied frame/policy/desktop adapters; only screen geometry and cursor queries are native. No mouse/keyboard input, browser, actual snapshot freshness acceptance or general application accuracy."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Observation Coordinator: frame hashing and deduplication",
+          "line": 25,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied string frames produce stable/different hashes and dedup decisions; no captured image."
+        },
+        {
+          "title": "Observation Coordinator: metrics and coordinate tracking",
+          "line": 43,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied frame strings/action counts update/reset local observation counters; no model receives a frame."
+        },
+        {
+          "title": "Computer Operator: safety arbitration with human hold",
+          "line": 70,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied strict policy hold/freshness state permits observations and blocks input; evaluateSafety alone never clears freshness."
+        },
+        {
+          "title": "successful supplied snapshot clears freshness while failed and non-screen observations retain it",
+          "line": 121,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied desktop adapter failure/status/version/wait/clipboard observations retain freshness; successful snapshot clears; late snapshot cannot clear newly set requirement."
+        },
+        {
+          "title": "Computer Tool: declaration and schema contract",
+          "line": 147,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Tool factory metadata/schema/declaration match expected exported constants."
+        },
+        {
+          "title": "Computer Tool: parameter validation and execution",
+          "line": 156,
+          "labels": [
+            "CONTRACT",
+            "REAL_OS"
+          ],
+          "scope": "Invalid tool params reject, actual native screen-size and cursor queries return valid dimensions/coordinates; no input action."
+        },
+        {
+          "title": "Computer Tool: createAllComputerTools factory",
+          "line": 182,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Computer tool factory returns expected named tools; no execution."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/computer-tools-live.test.mjs",
@@ -72,14 +134,35 @@
       "file": "app/zero-control-ui/test/delegation-gateway.test.mjs",
       "sha256": "0e36921932507d433a33f465719604eb19dd876447432aa4619dc5dba74a95a3",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Actual local config projection and installed resolveSpawnAdmission deny supplied legacy spawn targets/missing ID with zero-only settings; no live agent execution. Repository policy source string assertions for one assistant identity; not runtime behavior.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Reads configuration projection and calls installed OpenClaw admission function with supplied active-run counter; no actual spawned agent/model or browser. Policy text is static evidence only."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "production config template is zero-only and cannot spawn workers",
+          "line": 59,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual local config projection and installed resolveSpawnAdmission deny supplied legacy spawn targets/missing ID with zero-only settings; no live agent execution."
+        },
+        {
+          "title": "repository-owned Zero policy is single-agent and delegation-free",
+          "line": 96,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Repository policy source string assertions for one assistant identity; not runtime behavior."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/mount.test.mjs",

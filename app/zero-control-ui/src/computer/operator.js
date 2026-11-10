@@ -79,6 +79,7 @@ export class ComputerOperator {
     this.logger = logger;
     this.humanHold = false;
     this.requireFreshSnapshot = false;
+    this.freshnessGeneration = 0;
     this.requireFreshSnapshotAfterRelease = requireFreshSnapshotAfterRelease;
     this.strictPolicy = strictPolicy;
     this.coordinator = new ObservationCoordinator();
@@ -87,12 +88,14 @@ export class ComputerOperator {
   setHumanHold(active) {
     const wasActive = this.humanHold;
     this.humanHold = Boolean(active);
+    if (wasActive !== this.humanHold) this.freshnessGeneration++;
     if (wasActive && !this.humanHold && this.requireFreshSnapshotAfterRelease) {
       this.requireFreshSnapshot = true;
     }
   }
 
   setFreshSnapshotRequired(required) {
+    this.freshnessGeneration++;
     this.requireFreshSnapshot = Boolean(required);
   }
 
@@ -121,10 +124,7 @@ export class ComputerOperator {
 
     // 2. Post-handover freshness gate: require a fresh screenshot before taking input
     if (freshnessNeeded) {
-      if (action === "screenshot" || action === "get_window_state" || action === "get_elements" || action === "wait") {
-        this.requireFreshSnapshot = false;
-        if (policy) policy.needsFreshSnapshot = false;
-      } else if (!isObserve) {
+      if (!isObserve) {
         return {
           allowed: false,
           error: "computer-hold:stale-frame",
@@ -156,6 +156,20 @@ export class ComputerOperator {
    * Main entrypoint for computer tool executions.
    */
   async execute(action, params = {}, signal = null) {
+    const generation = this.freshnessGeneration;
+    const result = await this._executeAction(action, params, signal);
+    const normalized = String(action || "").toLowerCase().trim();
+    const freshObservation = ["screenshot", "get_window_state", "get_elements", "get_uia_elements"].includes(normalized)
+      || (normalized === "desktop" && ["snapshot", "screenshot", "find", "get", "list-windows"].includes(params.command) && result?.observed === true);
+    const policy = typeof this.getPolicyState === "function" ? this.getPolicyState() : null;
+    if (freshObservation && generation === this.freshnessGeneration && result?.ok === true && !signal?.aborted && !this.humanHold && !policy?.hold) {
+      this.requireFreshSnapshot = false;
+      if (policy) policy.needsFreshSnapshot = false;
+    }
+    return result;
+  }
+
+  async _executeAction(action, params = {}, signal = null) {
     signal?.throwIfAborted?.();
     const normalizedAction = String(action || "").toLowerCase().trim();
 

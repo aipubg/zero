@@ -1,6 +1,8 @@
 process.env.ZERO_STRICT_POLICY_TEST = "1";
 import assert from "node:assert/strict";
 import test from "node:test";
+import { stopDaemon } from "../src/computer/windows-driver.js";
+test.after(() => stopDaemon());
 
 import {
   screenFrameHash,
@@ -106,14 +108,40 @@ test("Computer Operator: safety arbitration with human hold", () => {
   assert.equal(staleCheck.allowed, false);
   assert.equal(staleCheck.error, "computer-hold:stale-frame");
 
-  // Screenshot clears the freshness gate
+  // Checking permission to observe is not an actual observation.
   const clearCheck = operator.evaluateSafety("screenshot");
   assert.equal(clearCheck.allowed, true);
-  assert.equal(policyState.needsFreshSnapshot, false, "screenshot should clear needsFreshSnapshot");
+  assert.equal(policyState.needsFreshSnapshot, true, "Permission check must preserve needsFreshSnapshot");
 
-  // Now input is allowed again
+  // Input remains blocked until observation execution succeeds.
   const resumeCheck = operator.evaluateSafety("click");
-  assert.equal(resumeCheck.allowed, true);
+  assert.equal(resumeCheck.allowed, false);
+});
+
+test("successful supplied snapshot clears freshness while failed and non-screen observations retain it", async () => {
+  const policy = { hold: null, needsFreshSnapshot: true };
+  let result = { ok: false, error: "capture failed" };
+  const operator = new ComputerOperator({ strictPolicy: true, getPolicyState: () => policy,
+    agentDesktop: { execute: async () => result } });
+  await operator.execute("desktop", { command: "snapshot" });
+  assert.equal(policy.needsFreshSnapshot, true);
+  result = { ok: true, observed: true };
+  for (const command of ["status", "version", "wait", "clipboard-get"]) {
+    await operator.execute("desktop", { command });
+    assert.equal(policy.needsFreshSnapshot, true, command);
+  }
+  await operator.execute("desktop", { command: "snapshot" });
+  assert.equal(policy.needsFreshSnapshot, false);
+  assert.equal(operator.evaluateSafety("click").allowed, true);
+  let release;
+  policy.needsFreshSnapshot = true;
+  operator.agentDesktop.execute = () => new Promise(resolve => { release = resolve; });
+  const pending = operator.execute("desktop", { command: "snapshot" });
+  operator.setFreshSnapshotRequired(true);
+  release({ ok: true, observed: true });
+  await pending;
+  assert.equal(operator.requireFreshSnapshot, true, "Old capture must not clear a newer freshness requirement");
+  assert.equal(policy.needsFreshSnapshot, true);
 });
 
 test("Computer Tool: declaration and schema contract", () => {

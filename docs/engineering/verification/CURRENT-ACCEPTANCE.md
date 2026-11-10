@@ -32,7 +32,7 @@ Latest owner-delivery checkpoint: [usable local build, conservative cleanup and 
 
 | Clause | Required outcome | Current scope/status | Evidence and remaining limit |
 |---|---|---|---|
-| Honesty 1 | Classify all acceptance tests using the seven exact labels | PARTIAL | Original 137 leaves/18 files and 13 runner entrypoints plus 71 reviewed additional source files now inventoried with explicit declaration/mode scope. 107 total source files; 18 additional files remain NOT_REVIEWED. Integrity check explicitly reports exhaustiveClassification NOT_ESTABLISHED; see ADDITIONAL-TEST-CLASSIFICATION.md. |
+| Honesty 1 | Classify all acceptance tests using the seven exact labels | PARTIAL | Original 137 leaves/18 files and 13 runner entrypoints plus 73 reviewed additional source files now inventoried with explicit declaration/mode scope. 107 total source files; 16 additional files remain NOT_REVIEWED. Integrity check explicitly reports exhaustiveClassification NOT_ESTABLISHED; see ADDITIONAL-TEST-CLASSIFICATION.md. |
 | Honesty 2 | Replace weak assertions with intended-outcome tests | PARTIAL | UI, Skills, Plugins, Agents, Screen, Voice and Desktop provide actual effects; legacy source/existence assertions remain explicitly insufficient. |
 | Honesty 3 | Remove misleading production-completion claims | PARTIAL | Current notices withdraw historical sign-off; exhaustive remaining claim scan/release audit still required. |
 | Honesty 4 | Preserve failing/blocked scenarios without PASS conversion | EVIDENCED | Voice interruption FAIL, prior local-model recall failures, interrupted endurance and external prerequisites retained. No global pass inference. |
