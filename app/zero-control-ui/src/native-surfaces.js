@@ -708,8 +708,6 @@ function installNativeSurfaces(host) {
     }
   };
 
-
-
   const removeExternalLearnMoreLinks = () => {
     for (const el of document.querySelectorAll(
       "[href*='openclaw.ai'], [href*='docs.openclaw'], [href*='permission-modes'], [href*='tweakcn.com'], a[href*='tweakcn'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"

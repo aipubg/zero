@@ -20,7 +20,6 @@ export class AutomationScheduler {
     this.executor = options.executor;
     this.events = new EventEmitter();
     this.db = new DatabaseSync(this.dbPath);
-    this._timer = null;
     this._initSchema();
   }
 

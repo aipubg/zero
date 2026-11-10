@@ -1,0 +1,45 @@
+{
+  "scope": "Owner-requested usable Windows build and conservative cleanup; not complete production acceptance",
+  "ownerScopeChange": {
+    "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+    "action": "STOP-file graceful drain; original process and owned capture/model processes exited",
+    "historicalRun": "artifacts/screen-intelligence/endurance-combined-20261109T173132Z/summary.json",
+    "elapsedHours": 15.315428510999999,
+    "historicalStatus": "interrupted",
+    "completed24Hours": false
+  },
+  "setup": {
+    "command": "zero-setup.cmd -StoreDirectory E:\\.pnpm-store",
+    "result": "PASS",
+    "receipt": "artifacts/setup/20261110T085046Z-18f95f6820f141b4881783e5dcbfee31/report.json",
+    "note": "Previous EPERM failure retained; this fresh frozen install completed after endurance processes exited"
+  },
+  "cleanup": [
+    "Removed unused AutomationScheduler timer field; actual host timer retained",
+    "Removed excessive blank gaps in native gateway and native surface source",
+    "Reduced model/provider page outer padding and section gaps; existing routes/forms/features retained",
+    "Rebuilt and visually inspected current generation 1b10fd2d66b5c728918d20b49cbcc8488334d9ff8b26454dffc2bc3c77a683f9"
+  ],
+  "verification": {
+    "uiPackageTests": { "passed": 103, "scope": "Supplied DOM/contracts, source and local storage checks; not real browser acceptance" },
+    "selectedCoreTests": { "passed": 59, "scope": "Sessions, memory, model fabric/settings/import, automation, worker and killed-process recovery; mixed supplied contracts and actual local integration" },
+    "modelsProvidersImportBrowser": { "passedWorkflows": 11, "receipt": "artifacts/functional-browser/1794300691251/report.json" },
+    "externalLifecycleBrowser": { "passedWorkflows": 14, "receipt": "artifacts/functional-browser/1794300789704/report.json", "scope": "Actual external chat, Stop/recovery, 84-entry provider catalog, external Skill artifact/counter, executable MCP file effect/crash/restart/disable/remove, scroll and reconnect" },
+    "auditToolTests": { "passed": 18, "log": "artifacts/ready-audit-tests.log" }
+  },
+  "localRuntime": {
+    "url": "http://127.0.0.1:18789",
+    "pidAtCheckpoint": 18616,
+    "health": "HTTP200 status=ok; health alone is not functionality proof",
+    "browser": "Actual authenticated protocol4 connection and rendered composer, no owner chat message sent",
+    "receipt": "artifacts/local-ready-host/ui-check.json",
+    "offlineSpeech": "Pinned Whisper assets SHA-verified and selected in private local .env; previous environment preserved privately, existing credentials untouched"
+  },
+  "remaining": [
+    "31 additional test source files remain unreviewed; exhaustive classification not established",
+    "Full voice acceptance and broader regression/release audit remain open",
+    "Mobile/cloud/remote device prerequisites remain unavailable, not passing",
+    "No clean-machine or universal desktop/model accuracy certification"
+  ],
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

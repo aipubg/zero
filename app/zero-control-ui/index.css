@@ -59,11 +59,11 @@
 .zero-models-view {
   max-width: 1080px;
   margin: 0 auto;
-  padding: clamp(20px, 4vw, 44px);
+  padding: clamp(16px, 3vw, 28px);
   color: var(--text-primary, var(--fg, #edf0f7));
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .zero-providers-view__header {
@@ -1320,10 +1320,10 @@ select.zero-modal__select {
 .zero-models-page {
   max-width: 1040px;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 20px 20px 36px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 18px;
   box-sizing: border-box;
 }
 

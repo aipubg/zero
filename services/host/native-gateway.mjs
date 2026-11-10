@@ -1706,10 +1706,6 @@ export class ZeroNativeHost {
         await this.voiceConversation.detach(params.sessionId);
         return await this.voiceEngine.stopMicrophone(params.sessionId);
 
-
-
-
-
       // Control UI Lifecycle & Capability Handlers
       case 'sessions.subscribe':
       case 'sessions.messages.subscribe':

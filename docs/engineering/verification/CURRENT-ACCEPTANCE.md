@@ -12,7 +12,12 @@ Subsequent voice correction: [native quiet-input playback and actual human inter
 
 [Browser selector corrections](2026-11-10/browser-selector-and-scope.json) now reject unknown, missing-parent and conflicting modes before build/browser import. Help is explicitly NOT_RUN; successful workflow reports state requested modes and BASELINE_ONLY versus EXPLICIT_MODES. A fresh-source selected provider-settings run passed nine actual UI workflows; it does not supersede the failed provider catalog probe. Supplied-result/operator contracts are named as fixtures, and an actual missing-model prerequisite is BLOCKED with zero passes.
 
+
+**Owner scope update — 10 November 2026:** The owner explicitly withdrew the 24-hour endurance requirement. The existing run was stopped through its STOP-file drain path after 15.3154 hours, with status interrupted and completed24Hours=false; its owned capture/model processes exited. This is NOT_REQUIRED_BY_OWNER for the current delivery, not an endurance PASS. Other unfinished implementation/verification and unavailable external targets remain recorded.
+
 Evidence keys used below:
+
+Latest owner-delivery checkpoint: [usable local build, conservative cleanup and fresh regressions](2026-11-10/local-ready-cleanup-checkpoint.json). Frozen setup now succeeds; 103 UI-package checks, 59 selected core checks, 11 model/settings/import browser workflows and 14 external-lifecycle browser workflows passed at this checkpoint. The new external provider catalog retrieved84entries; the earlier HTTP502 remains a historical FAIL. Native local host is running with an authenticated browser connection and selected pinned Whisper assets. This is a usable local checkpoint, not a full production sign-off or exhaustive audit.
 
 - **UI:** [actual persisted UI/reconnect/scroll/search](2026-11-02/browser-per-workflow-classification.json); [recent nine-workflow regression and actual 3B tool recall](2026-11-10/qwen-3b-real-ui-recall.json).
 - **Skills:** [actual external bundle/task/artifact/UI lifecycle](2026-11-02/skills-external-ui-execution.json); [backup/restore bundle execution](2026-11-09/skills-bundle-restore.json).
@@ -47,7 +52,7 @@ Evidence keys used below:
 | Screen 4 | Five-minute bounded RAM buffer | EVIDENCED | Actual capture resource samples enforce 300000ms/262144000-byte owned-buffer bounds; process/model RAM is separately measured. |
 | Screen 5 | Events reach persistent observation memory | EVIDENCED | Screen encrypted SQLite persistence/reopen; not an event inserted manually. |
 | Screen 6 | Real screen changes and ZERO retrieval | EVIDENCED | Screen controlled visible changes plus actual registered recall tool/result. |
-| Screen 7 | Real 24-hour CPU/RAM endurance | PARTIAL | Original PID24180 independently live on this checkpoint; latest inspected runtime exceeded6hours, not24. No completed24Hours claim. |
+| Screen 7 | Real 24-hour CPU/RAM endurance | NOT_REQUIRED_BY_OWNER | Explicitly withdrawn on 10 November; PID24180 stopped cleanly through STOP file after15.3154h. Historical interrupted result retained; no24h performance certification. |
 | Screen 8 | Dummy buffers do not count as continuous capture | EVIDENCED | Native capture/OCR counters and owned process measurements retained separately from buffer unit tests. |
 | Skills/plugins 1 | Install compatible external Skill | EVIDENCED | Skills pins actual anthropics frontend-design source revision. |
 | Skills/plugins 2 | Execute through ZERO task/capability system | EVIDENCED | Skills actual external model task/tool execution, not metadata listing. |
@@ -76,6 +81,6 @@ Evidence keys used below:
 
 ## Open acceptance gates
 
-No overall production sign-off, clean-machine installation, exhaustive regression or independent full-product review has passed. Physical mobile/cloud/remote targets are unavailable. The 24-hour process remains unfinished. Full voice automatic-turn and interruption acceptance remains open. General desktop/app/model accuracy is not established by selected native UIA fixtures or local inference. No new permission popup was introduced; owner authorization, existing human hold and internal execution leases remain distinct concerns.
+No overall production sign-off, clean-machine installation, exhaustive regression or independent full-product review has passed. Physical mobile/cloud/remote targets are unavailable. The 24-hour requirement was withdrawn by the owner; the interrupted run is retained without a passing endurance claim. Full voice automatic-turn and interruption acceptance remains open. General desktop/app/model accuracy is not established by selected native UIA fixtures or local inference. No new permission popup was introduced; owner authorization, existing human hold and internal execution leases remain distinct concerns.
 
 Current change log: [November9/10 progress](2026-11-09/PROGRESS.md). Earlier [November2 progress](2026-11-02/PROGRESS.md) and [classification audit](CLASSIFICATION-AUDIT.md) remain dated evidence; they are not current blanket status tables.
