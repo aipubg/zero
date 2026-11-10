@@ -2,9 +2,9 @@
 // AGENTS.md merge/sync path. Temporary workspaces only; no .zero-data access.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import {
@@ -22,7 +22,10 @@ const policyPath = join(backend, "agents", "zero", "delegation-policy.md");
 const tempRoot = mkdtempSync(join(tmpdir(), "zero-instructions-"));
 
 after(() => {
-  rmSync(tempRoot, { recursive: true, force: true });
+  const resolved = realpathSync.native(tempRoot);
+  assert.equal(dirname(resolved), realpathSync.native(tmpdir()));
+  assert.ok(basename(resolved).startsWith("zero-instructions-"));
+  rmSync(resolved, { recursive: true, force: true });
 });
 
 let counter = 0;
@@ -53,6 +56,7 @@ test("sync inserts one managed block and preserves owner content", () => {
   const first = syncZeroInstructions({ workspace: root, policyPath });
   assert.equal(first.changed, true);
   const text = readFileSync(agentsPath, "utf8");
+  assert.ok(text.startsWith(owner), "Exact original owner prefix must remain");
   assert.match(text, /# Owner notes/);
   assert.match(text, /Keep this line\./);
   assert.equal(text.split(MANAGED_BEGIN).length - 1, 1);
@@ -69,6 +73,7 @@ test("managed block updates without touching surrounding owner text", () => {
   const agentsPath = join(root, "AGENTS.md");
   writeFileSync(agentsPath, "BEFORE\n", "utf8");
   syncZeroInstructions({ workspace: root, policyPath });
+  writeFileSync(agentsPath, readFileSync(agentsPath, "utf8") + "AFTER\n", "utf8");
 
   const updatedPolicy = join(tempRoot, "updated-policy.md");
   writeFileSync(updatedPolicy, "## Delegation\n\nUPDATED_POLICY\n", "utf8");
@@ -79,6 +84,8 @@ test("managed block updates without touching surrounding owner text", () => {
   assert.equal(result.changed, true);
   const text = readFileSync(agentsPath, "utf8");
   assert.match(text, /^BEFORE/);
+  assert.ok(text.startsWith("BEFORE\n"));
+  assert.ok(text.endsWith("AFTER\n"));
   assert.match(text, /UPDATED_POLICY/);
   assert.doesNotMatch(text, /Research[^\n]*`researcher`/i);
   assert.equal(text.split(MANAGED_BEGIN).length - 1, 1);

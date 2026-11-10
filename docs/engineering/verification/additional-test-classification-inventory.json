@@ -191,40 +191,123 @@
       "file": "backend/plugin/legacy-redirects.test.mjs",
       "sha256": "39ca45ffe629209c681dff9a6d2dceb2b68be966fcc770a6666378180754c428",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Supplied route registration verifies path/auth metadata and handler308/Location/end behavior, legacy specialist aliases and canonical zero no-op.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Supplied registration API/request/response objects; no HTTP server, browser navigation or real gateway authentication."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "legacy worker settings and new-chat routes redirect without a chat surface",
+          "line": 18,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied route registration verifies path/auth metadata and handler308/Location/end behavior, legacy specialist aliases and canonical zero no-op."
+        }
+      ]
     },
     {
       "file": "backend/scripts/test/migrate-zero-only-agents.test.mjs",
       "sha256": "6598707eb8b3c638bf6d457b719d3f967cc725a92047829eef5a1ed8e1d9e8ba",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Supplied legacy config produces expected unset paths and patch/tool metadata; no file mutation or actual permission granted. Actual repository template JSON satisfies zero-only metadata invariant; does not execute runtime. Supplied before/after config has matching model/provider signature, expected zero-only metadata and rejects worker entry drift.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Pure patch/signature fixtures and repository template inspection; no migration applied to owner config, actual tool grant, worker removal or live delegation."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "zero-only patch removes workers, disables delegation, and grants computer",
+          "line": 48,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied legacy config produces expected unset paths and patch/tool metadata; no file mutation or actual permission granted."
+        },
+        {
+          "title": "the repository template is already zero-only and keeps computer on Zero",
+          "line": 63,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Actual repository template JSON satisfies zero-only metadata invariant; does not execute runtime."
+        },
+        {
+          "title": "model/provider signature ignores tool migration and rejects worker drift",
+          "line": 69,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied before/after config has matching model/provider signature, expected zero-only metadata and rejects worker entry drift."
+        }
+      ]
     },
     {
       "file": "backend/scripts/test/sync-zero-instructions.test.mjs",
-      "sha256": "3028716eaf319b4fcdf832b8e9f57d6cb3f6533c087dbe917f8bfd17a1665360",
+      "sha256": "1005ad2f718412ca998f0c199d4cde1fa83a3a57ab41926d500ea1a30eefdd96",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Repository policy source contains expected instructions/keywords; no runtime execution or delegation proof. Actual temp AGENTS.md gains one managed block with exact owner prefix preserved; second sync returns no-op and exact bytes unchanged. Actual temp managed policy replaced while exact BEFORE prefix and AFTER suffix preserved; one marker pair retained. Actual malformed/duplicate temp marker files reject sync with exact original bytes unchanged. Actual temporary config resolves workspace; check mode writes no AGENTS.md, real sync writes and final check sees no change.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual task-owned temporary files and supplied policies/config, not owner workspace or running assistant behavior; policy string presence is not runtime enforcement."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "repository policy is single-agent and delegation-free",
+          "line": 39,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Repository policy source contains expected instructions/keywords; no runtime execution or delegation proof."
+        },
+        {
+          "title": "sync inserts one managed block and preserves owner content",
+          "line": 50,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual temp AGENTS.md gains one managed block with exact owner prefix preserved; second sync returns no-op and exact bytes unchanged."
+        },
+        {
+          "title": "managed block updates without touching surrounding owner text",
+          "line": 71,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual temp managed policy replaced while exact BEFORE prefix and AFTER suffix preserved; one marker pair retained."
+        },
+        {
+          "title": "malformed or duplicate markers are refused without writing",
+          "line": 94,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual malformed/duplicate temp marker files reject sync with exact original bytes unchanged."
+        },
+        {
+          "title": "configured workspace resolves from a temp config and check mode writes nothing",
+          "line": 117,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual temporary config resolves workspace; check mode writes no AGENTS.md, real sync writes and final check sees no change."
+        }
+      ]
     },
     {
       "file": "packages/agent-runtime/test/agent-delegation.test.mjs",

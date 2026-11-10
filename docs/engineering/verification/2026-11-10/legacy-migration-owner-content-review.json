@@ -1,0 +1,16 @@
+{
+  "command": "node --test backend/plugin/legacy-redirects.test.mjs backend/scripts/test/migrate-zero-only-agents.test.mjs backend/scripts/test/sync-zero-instructions.test.mjs",
+  "passed": 9,
+  "scope": "Supplied redirect request/response contracts, pure migration patches and actual temporary instruction/config files",
+  "changes": [
+    "Managed sync checks exact owner prefix and both surrounding BEFORE/AFTER segments during update",
+    "Canonical temporary root and task-prefix checked before recursive cleanup",
+    "Nine declarations classified with actual limits; legacy config fixtures never applied to owner state"
+  ],
+  "limits": "No browser redirect, actual runtime delegation/tool permission grant, owner workspace mutation or running assistant behavior verified by source string checks",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 71,
+  "additionalUnreviewedFiles": 18,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}
