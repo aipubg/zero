@@ -28,7 +28,9 @@ test('[INTEGRATION] additive run identity migration preserves old messages and s
     assert.equal(messages[1].id, appended.id);
   } finally {
     manager?.close();
-    assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir()));
-    fs.rmSync(directory, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(directory);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-session-identity-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   }
 });

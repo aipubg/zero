@@ -1,0 +1,17 @@
+{
+  "command": "node --test test/connector-probes.test.mjs test/session-run-identity.test.mjs test/screen-resource-totals.test.mjs test/model-stream-channels.test.mjs test/local-tools.integration.test.mjs test/owned-process-resources.test.mjs",
+  "result": "PASS",
+  "tests": 10,
+  "classifications": ["UNIT", "CONTRACT", "INTEGRATION", "REAL_OS"],
+  "scope": "Six source files reviewed against actual assertions and executed on Windows; exact declaration scopes and limitations recorded in the additional catalog",
+  "changes": [
+    "Canonical temp parent and task-prefix checks precede recursive cleanup in local-tools and session identity tests",
+    "Streaming is controlled loopback SSE, connector probes are reachability/version only, session reopen is same process, resource totals are supplied counters",
+    "Windows owned-process test actually allocates memory and samples processes; it is not endurance proof"
+  ],
+  "auditToolRegression": { "tests": 16, "result": "PASS" },
+  "additionalReviewedFiles": 33,
+  "additionalUnreviewedFiles": 56,
+  "exhaustiveClassification": "NOT_ESTABLISHED",
+  "releaseStatus": "BLOCKED"
+}

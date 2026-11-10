@@ -816,14 +816,25 @@
       "file": "test/connector-probes.test.mjs",
       "sha256": "e053d592d2f7b0a2fd2db93fd40d3b1ae6fa248ce41127aad2333156ccdfdb45",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Real loopback HEAD requests return 204/503; actual node --version, missing binary and unsupported connector are probed.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No real remote service or functional connector task; functionalExecutionVerified stays false."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] connector probes execute actual HTTP and CLI operations with limited claims",
+          "line": 7,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real loopback HEAD requests return 204/503; actual node --version, missing binary and unsupported connector are probed."
+        }
+      ]
     },
     {
       "file": "test/desktop-session-persistence.test.mjs",
@@ -1124,16 +1135,35 @@
     },
     {
       "file": "test/local-tools.integration.test.mjs",
-      "sha256": "77018889a044f5f0aa37a9d038d9a97c0c1e2f039619d05679d404a067fd2825",
+      "sha256": "be330a45c02687f54722a7bdf42f520030d40c2d7db4553cca0d598018508003",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Real capability file write/read, argument-safe Node child stdout, exit7 and hanging-process deadline; immediate AbortController cancellation returns incomplete.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Cancellation assertion does not independently establish child start before abort; no browser, desktop UI or external program workflow."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] local tools write/read real files and execute a real argument-safe subprocess",
+          "line": 9,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real capability write/read with independent file readback; actual Node arguments preserve shell metacharacters, stdout and nonzero exit7."
+        },
+        {
+          "title": "[INTEGRATION] actual process deadline and cancellation are failures, not verified outputs",
+          "line": 34,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual hanging Node child reaches its deadline and returns unverified failure; immediate abort returns CANCELLED/completed=false without proving prior child start."
+        }
+      ]
     },
     {
       "file": "test/model-config-import.test.mjs",
@@ -1165,14 +1195,45 @@
       "file": "test/model-stream-channels.test.mjs",
       "sha256": "a56b64a38634184229f2de68cb3fe73ca2264442febccb6a6b590d04ec19cc2f",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Actual controlled loopback SSE through ModelFabric checks length termination, truncated stream rejection, reasoning separation and progressing versus stalled body deadlines.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Server emits supplied chunks; no real model inference, provider credentials or endurance proof."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] actual SSE preserves token-limit termination and rejects an unterminated response",
+          "line": 7,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual loopback SSE with supplied chunks preserves finish_reason=length and rejects response without terminal marker."
+        },
+        {
+          "title": "[CONTRACT] real SSE transport separates reasoning from reply tokens",
+          "line": 26,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual loopback SSE with supplied reasoning/content fields keeps reasoning out of visible reply and marks final completion."
+        },
+        {
+          "title": "[CONTRACT] progressing streams outlive connection deadline while stalled streams time out",
+          "line": 45,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Actual timed loopback SSE emits nine content chunks beyond the connect deadline; a stalled body fails its idle deadline."
+        }
+      ]
     },
     {
       "file": "test/native-gateway.test.mjs",
@@ -1217,14 +1278,33 @@
       "file": "test/owned-process-resources.test.mjs",
       "sha256": "0540b379cdd10100746fd100b2bb83734729a5e039cad8cb084b0833fdd4e4c4",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Actual Windows Node child allocates 64 MiB; native resource samples include root/child, exclude sampler, sum reported working/private bytes and remove exited child.",
+      "gaps": [
+        "Bounded samples only; no continuous peak, unique physical RAM or 24-hour measurement; non-Windows execution skips."
+      ],
+      "modes": [
+        {
+          "condition": "process.platform === 'win32'",
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Native Windows execution only; other platforms skip and cannot become PASS."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "[REAL_OS] resource window includes actual owned allocation and excludes its sampler",
+          "line": 7,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual Windows Node child allocates 64 MiB; native resource samples include root/child, exclude sampler, sum reported working/private bytes and remove exited child."
+        }
+      ]
     },
     {
       "file": "test/plugin-sdk-lifecycle.test.mjs",
@@ -1370,14 +1450,33 @@
       "file": "test/screen-resource-totals.test.mjs",
       "sha256": "2d39e158596b08f14a4539b1c333db4675cf690bde7a2d84116d44d0c636483b",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT"
+      ],
+      "scope": "Supplied cumulative CPU counters cover repeated samples, PID reuse, stale/regressing counters, missing identity and rejection of embedded capture double accounting.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No actual process measurements or endurance execution."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[UNIT] repeated cumulative samples, reused PIDs and stale measurements cannot inflate CPU totals",
+          "line": 5,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied repeated cumulative counters and reused PID identities do not double count CPU; peak values and process identity count are asserted."
+        },
+        {
+          "title": "[UNIT] counter regression and absent identity are visible; embedded capture cannot be added twice",
+          "line": 17,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied counter regression and missing identity remain visible; embedded capture role is refused and final lifetime counters remain unverified."
+        }
+      ]
     },
     {
       "file": "test/screen-vision-pipeline.test.mjs",
@@ -1459,16 +1558,27 @@
     },
     {
       "file": "test/session-run-identity.test.mjs",
-      "sha256": "6d57aae71f639246ff75d218e65aa1d670cc66f18e90d55703aacaec9a4d7f0a",
+      "sha256": "a4708bd4c868734ce2dc56d6143a49d779c8bb06ab65caa90598c97c8a93900a",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Real temporary SQLite legacy schema is migrated additively; Unicode message and appended run identity/status survive close and reopen in the same process.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Not killed-process or native gateway restart recovery."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] additive run identity migration preserves old messages and survives reopen",
+          "line": 9,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Real temporary SQLite legacy schema is migrated additively; Unicode message and appended run identity/status survive close and reopen in the same process."
+        }
+      ]
     },
     {
       "file": "test/session-tool-continuity.test.mjs",

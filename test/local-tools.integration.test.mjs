@@ -8,7 +8,12 @@ import { registerLocalTools } from '../packages/capability-engine/local-tools.mj
 
 test('[INTEGRATION] local tools write/read real files and execute a real argument-safe subprocess', async t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-local-tools-'));
-  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  t.after(() => {
+    const resolved = fs.realpathSync.native(directory);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-local-tools-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
+  });
   const engine = new CapabilityEngine({ operator: {} });
   registerLocalTools(engine, { cwd: directory });
   const written = await engine.execute({ toolName: 'write_file', args: { path: 'nested/proof.txt', content: 'actual local file' } });
