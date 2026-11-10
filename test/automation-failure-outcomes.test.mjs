@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { AutomationScheduler } from '../packages/automation/index.mjs';
 import { EventAutomationEngine } from '../packages/automation/event-automation.mjs';
+import { createAutomationDispatcher } from '../services/host/automation-dispatcher.mjs';
+import { UnifiedMemoryEngine } from '../packages/memory/unified-memory.mjs';
 
 test('[CONTRACT] resolved action failures cannot become completed scheduled or event runs', async () => {
   const executor = async () => ({ ok: false, error: 'Actual adapter rejected the action' });
@@ -93,4 +95,34 @@ test('[CONTRACT] unserializable results record failure without stranding the sch
     assert.match(scheduler.listRuns({ jobId: 'serialize' })[0].error, /BigInt/i);
     assert.equal((await scheduler.triggerDueJobs()).triggeredCount, 0);
   } finally { scheduler.close(); }
+});
+
+test('[INTEGRATION] host dispatcher executes memory consolidation against isolated SQLite', async () => {
+  const memoryEngine = new UnifiedMemoryEngine();
+  const executor = createAutomationDispatcher({ memoryEngine });
+  const scheduler = new AutomationScheduler({ executor });
+  try {
+    const old = memoryEngine.remember({ layer: 'semantic', content: 'temporary low confidence fixture', confidence: 0.2 });
+    memoryEngine.remember({ layer: 'semantic', content: 'preserved high confidence fixture', confidence: 1 });
+    memoryEngine.db.prepare('UPDATE zero_unified_memories SET updated_at = ? WHERE id = ?').run(Date.now() - 30 * 86400000, old.id);
+    scheduler.registerJob({ id: 'memory', title: 'Memory', cronExpr: '* * * * *', targetAction: 'memory.consolidate', params: { olderThanDays: 14 }, nextRunAt: Date.now() - 1000 });
+    const result = await scheduler.triggerDueJobs();
+    assert.equal(result.runs[0].status, 'completed');
+    assert.equal(result.runs[0].result.prunedCount, 1);
+    const rows = memoryEngine.db.prepare('SELECT content FROM zero_unified_memories').all();
+    assert.deepEqual(rows.map(row => row.content), ['preserved high confidence fixture']);
+  } finally { scheduler.close(); memoryEngine.close(); }
+});
+
+test('[CONTRACT] research routes to its service and desktop action cannot be replaced by params', async () => {
+  const memoryEngine = {};
+  let request;
+  const executor = createAutomationDispatcher({ memoryEngine,
+    researchEngine: { executeResearchWorkflow: async args => { request = args; return { ok: false, status: 'unavailable' }; } },
+    capabilityEngine: { execute: async args => { request = args; return { ok: true }; } },
+  });
+  assert.equal((await executor('research.workflow.execute', { query: 'fixture', limit: 2, taskId: 'test' })).ok, false);
+  assert.deepEqual(request, { topic: 'fixture', limit: 2, taskId: 'test', memoryEngine });
+  await executor('get_window_state', { action: 'type_text', text: 'fixture' });
+  assert.deepEqual(request, { agentId: 'zero', toolName: 'zero_computer_action', args: { action: 'get_window_state', text: 'fixture' } });
 });

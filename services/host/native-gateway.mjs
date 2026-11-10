@@ -20,6 +20,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { prepareToolBatch } from './tool-batch.mjs';
+import { createAutomationDispatcher } from './automation-dispatcher.mjs';
 import { LocalGgufEngineService } from '../../backend/gateway/server/local-gguf-service.ts';
 import { LocalChatTransport } from '../../packages/model-fabric/local-chat-transport.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -245,13 +246,17 @@ export class ZeroNativeHost {
     tool('skill_execute', 'Execute an enabled installed skill through a durable task and the model/tool loop.', { type: 'object', properties: { name: { type: 'string' }, goal: { type: 'string' } }, required: ['name', 'goal'] }, (args, signal) => this.skillLoader.executeSkill(args.name, args, { signal }));
 
 
+    const automationExecutor = createAutomationDispatcher({
+      memoryEngine: this.unifiedMemory, researchEngine: this.researchEngine,
+      capabilityEngine: canonicalCapabilityEngine,
+    });
     this.automation = new AutomationScheduler({
       dbPath: path.join(dataDir, 'zero-automation.sqlite'),
-      executor: async (action, params) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action, ...params } }),
+      executor: automationExecutor,
     });
     this.eventAutomation = new EventAutomationEngine({
       dbPath: path.join(dataDir, 'zero-event-automation.sqlite'),
-      executor: async (action, params) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action, ...params } }),
+      executor: automationExecutor,
     });
     this.screenAutomation = connectScreenAutomation(this.screenObserver, this.eventAutomation);
 

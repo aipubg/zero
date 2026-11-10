@@ -586,16 +586,76 @@
     },
     {
       "file": "test/automation-failure-outcomes.test.mjs",
-      "sha256": "b708d8da8d9993cec6e79e4d843e3175ce23f908c5f2503e013e221f96889e5d",
+      "sha256": "7d86802c68dc16d60e87e0aaa21ab859eac692aa3850ae7bd90a9e227b389977",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Supplied dispatcher negative outcomes, shared in-flight scheduling, SQLite run history, actual temporary file effects and isolated real memory consolidation through the host dispatcher.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No wall-clock scheduler, real browser, production host process, external research provider or arbitrary desktop effect verification; callbacks and research routing fixtures are explicitly supplied."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] resolved action failures cannot become completed scheduled or event runs",
+          "line": 11,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Controlled dispatcher results and bookkeeping assertions only; no external or native desktop execution."
+        },
+        {
+          "title": "[CONTRACT] absent and unconfirmed dispatchers never report automation success",
+          "line": 26,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Controlled dispatcher results and bookkeeping assertions only; no external or native desktop execution."
+        },
+        {
+          "title": "[INTEGRATION] scheduled and event dispatchers produce independently read file effects",
+          "line": 40,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual temporary Unicode file append and independent readback through scheduler and event callbacks."
+        },
+        {
+          "title": "[CONTRACT] overlapping timer and manual triggers dispatch each due job once",
+          "line": 67,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Controlled dispatcher results and bookkeeping assertions only; no external or native desktop execution."
+        },
+        {
+          "title": "[CONTRACT] unserializable results record failure without stranding the scheduler",
+          "line": 89,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Controlled dispatcher results and bookkeeping assertions only; no external or native desktop execution."
+        },
+        {
+          "title": "[INTEGRATION] host dispatcher executes memory consolidation against isolated SQLite",
+          "line": 100,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual memory service and scheduler use isolated SQLite; low-confidence old fixture pruned and high-confidence fixture retained."
+        },
+        {
+          "title": "[CONTRACT] research routes to its service and desktop action cannot be replaced by params",
+          "line": 117,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Controlled dispatcher results and bookkeeping assertions only; no external or native desktop execution."
+        }
+      ]
     },
     {
       "file": "test/backup-encrypted-records-real.test.mjs",
