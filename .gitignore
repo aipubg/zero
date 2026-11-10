@@ -45,6 +45,7 @@ blob-report/
 /workspaces/
 /temp/
 skills/.zero-skills.json
+.perch/
 
 # OS/editor files
 .DS_Store

@@ -52,7 +52,21 @@ export class AgentDesktop {
           const result = JSON.parse(stdout.trim());
           if (typeof result.ok !== 'boolean' || result.command !== command || (code !== 0 && result.ok)) throw new Error('Invalid desktop protocol response');
           const disposition = result.data?.disposition || result.error?.disposition;
-          resolve({ ...result, backend: 'agent-desktop', runtimeVersion: AGENT_DESKTOP_VERSION, verified: result.ok && disposition?.delivery === 'delivered_verified', requiresObservation: Boolean(disposition && disposition.delivery !== 'delivered_verified' && disposition.retry !== 'safe'), ...(result.ok && disposition?.delivery === 'delivered_verified' ? { evidence: { disposition } } : {}), ...(disposition ? { disposition } : {}), ...(DESKTOP_OBSERVATIONS.has(command) && result.ok ? { observed: true } : {}) });
+          const isObserved = DESKTOP_OBSERVATIONS.has(command) && result.ok;
+          const isDelivered = disposition?.delivery === 'delivered_verified';
+          const verified = result.ok && (isDelivered || isObserved);
+          resolve({
+            ...result,
+            backend: 'agent-desktop',
+            runtimeVersion: AGENT_DESKTOP_VERSION,
+            verified,
+            completed: verified,
+            outcome: verified ? 'COMPLETED' : (result.ok ? 'UNVERIFIED' : 'FAILED'),
+            requiresObservation: Boolean(disposition && disposition.delivery !== 'delivered_verified' && disposition.retry !== 'safe' && !isObserved),
+            ...(verified ? { evidence: { disposition: disposition || { delivery: 'observed_verified', command } } } : {}),
+            ...(disposition ? { disposition } : {}),
+            ...(isObserved ? { observed: true } : {})
+          });
         } catch (error) { resolve(failure('DESKTOP_PROTOCOL_FAILED', `Native protocol failure: ${error.message}; inspect live state${stderr ? '; native diagnostics available' : ''}`, started)); }
       });
       child.stdin.on('error', () => {}); child.stdin.end(input || '');

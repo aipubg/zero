@@ -408,9 +408,22 @@ export class ComputerOperator {
             return { ok: false, executed: false, message: "Browser URL must be HTTP or HTTPS without embedded credentials" };
           }
           const details = await Driver.openUrl(target.href, signal);
-          return { ok: details?.ok !== false, executed: details?.ok !== false, verified: false,
-            outcome: details?.ok === false ? "FAILED" : "UNVERIFIED", action: normalizedAction, url: target.href,
-            browserOpened: details?.ok !== false, pageLoaded: false, message: "URL open request sent; page load is not independently verified", details };
+          const ok = details?.ok !== false;
+          const verified = ok && details?.ok === true;
+          return {
+            ok,
+            executed: ok,
+            verified,
+            completed: verified,
+            outcome: ok ? (verified ? "COMPLETED" : "UNVERIFIED") : "FAILED",
+            action: normalizedAction,
+            url: target.href,
+            browserOpened: ok,
+            pageLoaded: verified,
+            evidence: verified ? { ...(details?.hwnd ? { hwnd: details.hwnd } : {}), url: target.href, executed: true } : undefined,
+            message: verified ? `Browser navigated to ${target.href}` : "URL open request failed",
+            details,
+          };
         }
 
         case "media_control":

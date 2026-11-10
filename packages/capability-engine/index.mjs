@@ -217,8 +217,9 @@ export class CapabilityEngine {
         const executed = returned.executed ?? (returned.outcome !== 'BLOCKED');
         const hasEvidence = (returned.evidence != null && returned.evidence !== '')
           || (returned.verification != null && returned.verification !== false)
-          || (typeof returned.verifiedText === 'string' && returned.verifiedText.length > 0);
-        const verified = ok && executed && returned.verified === true && Boolean(hasEvidence);
+          || (typeof returned.verifiedText === 'string' && returned.verifiedText.length > 0)
+          || Boolean(returned.observed);
+        const verified = ok && executed && (returned.verified === true || Boolean(returned.observed)) && Boolean(hasEvidence);
         const outcome = !ok
           ? (['BLOCKED', 'CANCELLED', 'FAILED'].includes(returned.outcome) ? returned.outcome : 'FAILED')
           : (verified ? 'COMPLETED' : 'UNVERIFIED');
@@ -359,7 +360,7 @@ export class CapabilityEngine {
     } else if (execResult.ok === false) {
       verified = false;
       outcome = ['FAILED', 'BLOCKED', 'CANCELLED', 'UNVERIFIED'].includes(outcome) ? outcome : 'FAILED';
-    } else if (!outcome) {
+    } else if (!outcome || outcome === 'UNVERIFIED') {
       outcome = executed ? (verified ? 'COMPLETED' : 'UNVERIFIED') : 'FAILED';
     }
 
