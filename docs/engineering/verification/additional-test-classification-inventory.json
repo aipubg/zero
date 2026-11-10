@@ -1168,7 +1168,7 @@
     },
     {
       "file": "app/zero-control-ui/test/product-surface.test.mjs",
-      "sha256": "31eb89b10f0c327f0547016789a0567a11e302b9fabdc6e8e13cf0382013312c",
+      "sha256": "1c661d93107aa3d39dd7a654f5905e2b1a5d4f13dfe3c4508bacbacc5ed95f10",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -1348,6 +1348,15 @@
             "CONTRACT"
           ],
           "scope": "Pure helpers, FakeElement/browser globals and supplied host callbacks only: roster, gateway and computer helpers keep explicit state. No real browser/network or persistence."
+        },
+        {
+          "title": "generative widgets preserve supplied outcomes and use authenticated host dispatch",
+          "line": 1347,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied minimal DOM/buttons/host callback checks outcome labels, numeric input escaping, authenticated dispatch parameters, confirmed hold, unverified media acknowledgement and explicit refusal; not actual browser or native media."
         }
       ]
     },
@@ -2946,7 +2955,7 @@
     },
     {
       "file": "test/e2e-matrix.test.mjs",
-      "sha256": "61de5ef36e162875643191e800d23179a7915a5013680c8036a22c7a926ee218",
+      "sha256": "b05313dff06be97a5741c299db9ab5bdb05f2e66f4cd4ab4503114eaed752fd8",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -2978,7 +2987,7 @@
       "declarations": [
         {
           "title": "Zero AI historical matrix with explicit assertion scope",
-          "line": 49,
+          "line": 48,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -2987,7 +2996,7 @@
         },
         {
           "title": "T01: Current runtime and packaging file presence",
-          "line": 59,
+          "line": 58,
           "labels": [
             "CONTRACT"
           ],
@@ -2995,7 +3004,7 @@
         },
         {
           "title": "T02: Legacy shared-default child-host path",
-          "line": 67,
+          "line": 66,
           "labels": [
             "INTEGRATION",
             "REAL_OS"
@@ -3004,7 +3013,7 @@
         },
         {
           "title": "T03: HTTP shell and asset response contracts",
-          "line": 141,
+          "line": 70,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -3013,7 +3022,7 @@
         },
         {
           "title": "T04: Browser title/body smoke and direct RPC config readback",
-          "line": 161,
+          "line": 90,
           "labels": [
             "CONTRACT",
             "INTEGRATION",
@@ -3023,7 +3032,7 @@
         },
         {
           "title": "T05: Actual WebSocket handshake and response shapes",
-          "line": 280,
+          "line": 209,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -3032,7 +3041,7 @@
         },
         {
           "title": "T06: Configured HTTP catalog identifiers",
-          "line": 367,
+          "line": 296,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -3041,7 +3050,7 @@
         },
         {
           "title": "T07: Explicit model resolution and completion model label",
-          "line": 378,
+          "line": 307,
           "labels": [
             "INTEGRATION",
             "REAL_EXTERNAL"
@@ -3050,7 +3059,7 @@
         },
         {
           "title": "T08: Exact requested chat completion",
-          "line": 409,
+          "line": 338,
           "labels": [
             "INTEGRATION",
             "REAL_EXTERNAL"
@@ -3059,7 +3068,7 @@
         },
         {
           "title": "T09: Fabric request counter and buffered HTTP SSE content",
-          "line": 428,
+          "line": 357,
           "labels": [
             "INTEGRATION",
             "REAL_EXTERNAL"
@@ -3068,7 +3077,7 @@
         },
         {
           "title": "T10: Chat reply existence without tool-loop proof",
-          "line": 492,
+          "line": 421,
           "labels": [
             "INTEGRATION",
             "REAL_EXTERNAL"
@@ -3077,7 +3086,7 @@
         },
         {
           "title": "T11: Legacy native Notepad readback path",
-          "line": 546,
+          "line": 475,
           "labels": [
             "REAL_OS"
           ],
@@ -3085,7 +3094,7 @@
         },
         {
           "title": "T12: Legacy browser playback metadata path",
-          "line": 579,
+          "line": 479,
           "labels": [
             "REAL_OS",
             "REAL_EXTERNAL"
@@ -3094,7 +3103,7 @@
         },
         {
           "title": "T13: Missing real media/progress renderer verification",
-          "line": 600,
+          "line": 483,
           "labels": [
             "REAL_BROWSER"
           ],
@@ -3102,7 +3111,7 @@
         },
         {
           "title": "T14: Legacy canonical hold path",
-          "line": 604,
+          "line": 487,
           "labels": [
             "CONTRACT"
           ],
@@ -3110,7 +3119,7 @@
         },
         {
           "title": "T15: Chat abort acknowledgement",
-          "line": 618,
+          "line": 491,
           "labels": [
             "INTEGRATION",
             "REAL_EXTERNAL"
@@ -3119,7 +3128,7 @@
         },
         {
           "title": "T16: In-memory session CRUD",
-          "line": 675,
+          "line": 548,
           "labels": [
             "INTEGRATION"
           ],
@@ -3127,7 +3136,7 @@
         },
         {
           "title": "T17: Same-process SQLite reopen recovery",
-          "line": 700,
+          "line": 573,
           "labels": [
             "INTEGRATION"
           ],
@@ -3135,7 +3144,7 @@
         },
         {
           "title": "T18: Keyword recall of supplied in-memory record",
-          "line": 716,
+          "line": 589,
           "labels": [
             "INTEGRATION"
           ],
@@ -3143,7 +3152,7 @@
         },
         {
           "title": "T19: Child task executes supplied callback",
-          "line": 725,
+          "line": 598,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -3152,7 +3161,7 @@
         },
         {
           "title": "T20: Due-time executor effect and same-process SQLite reopen",
-          "line": 750,
+          "line": 623,
           "labels": [
             "INTEGRATION"
           ],
@@ -3160,7 +3169,7 @@
         },
         {
           "title": "T21: In-process supplied plugin handler arithmetic",
-          "line": 781,
+          "line": 654,
           "labels": [
             "UNIT",
             "CONTRACT"
@@ -3169,7 +3178,7 @@
         },
         {
           "title": "T22: Missing external channel round trip",
-          "line": 817,
+          "line": 690,
           "labels": [
             "REAL_EXTERNAL"
           ],
@@ -3177,7 +3186,7 @@
         },
         {
           "title": "T23: Validation and viewer RPC rejection",
-          "line": 821,
+          "line": 694,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -3186,7 +3195,7 @@
         },
         {
           "title": "T24: Configured tracked-file credential-pattern scan",
-          "line": 889,
+          "line": 762,
           "labels": [
             "INTEGRATION"
           ],
@@ -3194,7 +3203,7 @@
         },
         {
           "title": "T25: Launcher source/file presence and PowerShell syntax",
-          "line": 900,
+          "line": 773,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -3399,6 +3408,32 @@
             "INTEGRATION"
           ],
           "scope": "invalid and help CLI modes settle before browser dependencies, build or owner-file mutation"
+        }
+      ]
+    },
+    {
+      "file": "test/generative-widgets-browser.test.mjs",
+      "sha256": "98f1227df9df02c04c6c5f1fed5995302fa6b2040197511e19f46d1281ef1c1c",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "scope": "Actual Chrome/Edge mounts production widget factories from source, authenticates to isolated actual ZeroNativeHost, clicks Take Over, independently checks server held state and actual media refusal. No owner state or physical input. Actual markdown language code fence renders without removing earlier chat content; unsafe source URL and unsupported Verified label rejected.",
+      "gaps": [
+        "Component/RPC acceptance, not generated model event-to-widget pipeline, native media playback, audio or provider execution."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "production widgets preserve outcomes and actual hold RPC blocks media input",
+          "line": 15,
+          "labels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "scope": "Actual Chrome/Edge mounts production widget factories from source, authenticates to isolated actual ZeroNativeHost, clicks Take Over, independently checks server held state and actual media refusal. No owner state or physical input. Actual markdown language code fence renders without removing earlier chat content; unsafe source URL and unsupported Verified label rejected."
         }
       ]
     },

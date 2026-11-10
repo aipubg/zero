@@ -8,22 +8,27 @@
  */
 
 import { escapeHtml } from "../shared/dom.js";
+import { gatewayRequest } from "../gateway/client.js";
 
 /**
  * Creates an interactive multi-step progress card
  */
 export function createProgressWidget({
-  title = "OpenMausBot Computer Execution",
-  step = 4,
-  totalSteps = 4,
-  status = "completed",
+  title = "Zero Computer Execution",
+  step = 0,
+  totalSteps = 0,
+  status = "unverified",
   details = "",
   logs = [],
-} = {}) {
+} = {}, { host } = {}) {
+  step = Number.isFinite(Number(step)) ? Math.max(0, Math.floor(Number(step))) : 0;
+  totalSteps = Number.isFinite(Number(totalSteps)) ? Math.max(0, Math.floor(Number(totalSteps))) : 0;
+  logs = Array.isArray(logs) ? logs.map(String) : [];
   const percent = Math.min(100, Math.round((step / Math.max(1, totalSteps)) * 100));
-  const isDone = step >= totalSteps || status === "completed";
-  const statusColor = isDone ? "#10b981" : status === "error" ? "#ef4444" : "#3b82f6";
-  const statusLabel = isDone ? "COMPLETED" : status.toUpperCase();
+  const normalized = String(status).toLowerCase();
+  const isDone = normalized === "completed";
+  const statusColor = isDone ? "#10b981" : ["error", "failed", "blocked"].includes(normalized) ? "#ef4444" : "#f59e0b";
+  const statusLabel = normalized.toUpperCase();
 
   const el = document.createElement("div");
   el.className = "zero-gen-widget zero-gen-progress";
@@ -49,7 +54,7 @@ export function createProgressWidget({
           ${escapeHtml(statusLabel)} (${step}/${totalSteps})
         </span>
         <button class="zero-takeover-btn" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; cursor: pointer;">
-          Take Over (F8)
+          Take Over
         </button>
       </div>
     </div>
@@ -63,7 +68,7 @@ export function createProgressWidget({
       <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
         ${logs.map((l) => `
           <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cbd5e1; background: #151b28; padding: 4px 8px; border-radius: 4px; border: 1px solid #1e293b;">
-            <span style="color: #10b981; font-weight: bold;">✔</span>
+            <span style="color: ${l.startsWith("✔") ? "#10b981" : "#f59e0b"}; font-weight: bold;">${l.startsWith("✔") ? "✔" : "⚠"}</span>
             <span style="flex: 1; font-family: -apple-system, sans-serif;">${escapeHtml(l.replace(/^[✔\s]+/, ''))}</span>
           </div>
         `).join("")}
@@ -74,16 +79,16 @@ export function createProgressWidget({
   `;
 
   el.querySelector(".zero-takeover-btn")?.addEventListener("click", async () => {
+    const btn = el.querySelector(".zero-takeover-btn");
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
     try {
-      const net = window["fetch"] || globalThis["fetch"];
-      await net?.("/api/zero/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "bailout" }),
-      });
-      const btn = el.querySelector(".zero-takeover-btn");
-      if (btn) btn.textContent = "Hold Active";
-    } catch {}
+      const result = await gatewayRequest(host, "zero.computer.control", { action: "take" });
+      if (result?.ok !== true || result.held !== true) throw new Error("Hold not confirmed");
+      btn.textContent = "Hold Active";
+    } catch {
+      btn.textContent = "Hold unavailable";
+    } finally { btn.disabled = false; }
   });
 
   return el;
@@ -163,14 +168,17 @@ export function createMediaWidget({
   videoId = "",
   url = "",
   thumbnail = "",
-  status = "playing",
+  status = "unverified",
   artist = "YouTube Music",
   details = "",
   durationSeconds = 0,
   sceneSummary = "",
   frameCount = 1,
   transcripts = [],
-} = {}) {
+} = {}, { host } = {}) {
+  const mediaStatus = String(status).toLowerCase();
+  const statusLabel = mediaStatus === "playing" ? "Playing" : mediaStatus === "paused" ? "Paused" : "Playback unverified";
+  const statusColor = mediaStatus === "playing" ? "#10b981" : "#f59e0b";
   const thumbUrl = thumbnail || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "");
   const el = document.createElement("div");
   el.className = "zero-gen-widget zero-gen-media";
@@ -195,11 +203,11 @@ export function createMediaWidget({
       ` : ""}
       <div style="flex: 1; min-width: 0;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-          <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
-            Playing Now
+          <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: ${statusColor}; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 8px ${statusColor};"></span>
+            ${escapeHtml(statusLabel)}
           </span>
-          <span style="color: #64748b; font-size: 11px;">Desktop Chrome</span>
+          <span style="color: #64748b; font-size: 11px;">Desktop media</span>
         </div>
         <div style="font-size: 14px; font-weight: 700; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px;">
           ${escapeHtml(title)}
@@ -227,26 +235,27 @@ export function createMediaWidget({
     </div>
   `;
 
-  // Hook interactive clicks to /api/zero/media
+  // Reuse the authenticated connection; no separate unauthenticated endpoint.
   const btns = el.querySelectorAll(".zero-media-btn");
   for (const btn of btns) {
     btn.addEventListener("click", async () => {
+      if (btn.disabled) return;
       const act = btn.getAttribute("data-action");
-      const origText = btn.innerHTML;
-      btn.innerHTML = `⏳ Executing...`;
-      btn.style.opacity = "0.7";
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Executing…";
       try {
-        const net = window["fetch"] || globalThis["fetch"];
-        await net?.("/api/zero/media", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: act }),
-        });
-        btn.innerHTML = `✔ Done!`;
-        setTimeout(() => { btn.innerHTML = origText; btn.style.opacity = "1"; }, 1000);
-      } catch (err) {
-        btn.innerHTML = `❌ Error`;
-        setTimeout(() => { btn.innerHTML = origText; btn.style.opacity = "1"; }, 1500);
+        const params = act === "focus"
+          ? { action: "focus_window", target: "YouTube", command: "restore" }
+          : { action: "media_control", command: act };
+        const result = await gatewayRequest(host, "zero.computer.control", params);
+        if (result?.ok !== true || result.executed !== true) throw new Error("Execution not confirmed");
+        btn.textContent = result.verified === true ? "Verified" : "Sent; effect unverified";
+      } catch {
+        btn.textContent = "Action unavailable";
+      } finally {
+        btn.disabled = false;
+        btn.title = originalText;
       }
     });
   }
@@ -255,9 +264,10 @@ export function createMediaWidget({
 }
 
 /**
- * Creates an interactive verified sources carousel card
+ * Creates source links without treating model-supplied metadata as verification.
  */
 export function createSourcesWidget({ query = "Research Topic", sources = [] } = {}) {
+  sources = Array.isArray(sources) ? sources.filter(source => source && typeof source === 'object') : [];
   const el = document.createElement("div");
   el.className = "zero-gen-widget zero-gen-sources";
   el.style.cssText = `
@@ -273,7 +283,7 @@ export function createSourcesWidget({ query = "Research Topic", sources = [] } =
   const header = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
       <span style="font-weight: 600; color: #38bdf8;">🔍 Sources for "${escapeHtml(query)}"</span>
-      <span style="color: #64748b; font-size: 11px;">${sources.length} Verified Sources</span>
+      <span style="color: #64748b; font-size: 11px;">${sources.length} Source links</span>
     </div>
   `;
 
@@ -282,8 +292,8 @@ export function createSourcesWidget({ query = "Research Topic", sources = [] } =
       (s) => `
     <div style="background: #1e293b; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <a href="${escapeHtml(s.url || "#")}" rel="noreferrer" style="font-weight: 600; color: #60a5fa; text-decoration: none; font-size: 12px;">${escapeHtml(s.title || s.url || "Source")}</a>
-        <span style="font-size: 10px; background: rgba(34,197,94,0.15); color: #4ade80; padding: 1px 4px; border-radius: 3px;">Verified</span>
+        <a href="${escapeHtml(safeSourceUrl(s.url))}" rel="noreferrer" style="font-weight: 600; color: #60a5fa; text-decoration: none; font-size: 12px;">${escapeHtml(s.title || s.url || "Source")}</a>
+        <span style="font-size: 10px; color: #94a3b8; padding: 1px 4px;">Source link</span>
       </div>
       ${s.snippet ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 4px; line-height: 1.3;">${escapeHtml(s.snippet)}</div>` : ""}
     </div>
@@ -298,19 +308,28 @@ export function createSourcesWidget({ query = "Research Topic", sources = [] } =
 /**
  * Scans an element or document for ````zero-ui:* blocks and replaces them with interactive widgets
  */
-export function renderGenerativeWidgets(container) {
+function safeSourceUrl(value) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : '#';
+  } catch { return '#'; }
+}
+
+export function renderGenerativeWidgets(container, options = {}) {
   if (!container || typeof container.querySelectorAll !== "function") return;
 
   const codeBlocks = Array.from(container.querySelectorAll("pre, code, div, p"));
   for (const block of codeBlocks) {
     if (!block.isConnected) continue;
+    if (block.closest('.zero-gen-widget')) continue;
     const text = block.textContent || "";
-    if (!text.includes("zero-ui:")) continue;
+    const language = `${block.className || ''} ${block.getAttribute('data-language') || ''} ${block.querySelector('code')?.className || ''}`;
+    if (!text.includes("zero-ui:") && !language.includes('zero-ui:')) continue;
 
     // 1. Is it a dedicated code or pre block?
     const isCodeOrPre = block.tagName.toLowerCase() === "pre" || block.tagName.toLowerCase() === "code";
     if (isCodeOrPre) {
-      const typeMatch = text.match(/zero-ui:(media|progress|diff|sources)/);
+      const typeMatch = language.match(/zero-ui:(media|progress|diff|sources)/) || text.match(/zero-ui:(media|progress|diff|sources)/);
       if (typeMatch) {
         const type = typeMatch[1];
         const jsonMatch = text.match(/(\{[\s\S]*\})/);
@@ -318,8 +337,8 @@ export function renderGenerativeWidgets(container) {
           try {
             const data = JSON.parse(jsonMatch[1]);
             let widget = null;
-            if (type === "media") widget = createMediaWidget(data);
-            else if (type === "progress") widget = createProgressWidget(data);
+            if (type === "media") widget = createMediaWidget(data, options);
+            else if (type === "progress") widget = createProgressWidget(data, options);
             else if (type === "diff") widget = createDiffWidget(data);
             else if (type === "sources") widget = createSourcesWidget(data);
 
@@ -334,6 +353,8 @@ export function renderGenerativeWidgets(container) {
     }
 
     // 2. Container element containing zero-ui blocks
+    // Only replace a text leaf; an ancestor's text includes all chat messages.
+    if (block.children.length || block.closest('pre, code')) continue;
     const blockRegex = /`{3,4}zero-ui:(media|progress|diff|sources)\s*(\{[\s\S]*?\})\s*`{3,4}/g;
     if (blockRegex.test(text)) {
       blockRegex.lastIndex = 0;
@@ -354,12 +375,16 @@ export function renderGenerativeWidgets(container) {
           const type = m[1];
           const data = JSON.parse(m[2]);
           let widget = null;
-          if (type === "media") widget = createMediaWidget(data);
-          else if (type === "progress") widget = createProgressWidget(data);
+          if (type === "media") widget = createMediaWidget(data, options);
+          else if (type === "progress") widget = createProgressWidget(data, options);
           else if (type === "diff") widget = createDiffWidget(data);
           else if (type === "sources") widget = createSourcesWidget(data);
           if (widget) frag.appendChild(widget);
-        } catch {}
+        } catch {
+          const original = document.createElement('span');
+          original.textContent = m[0];
+          frag.appendChild(original);
+        }
       }
       if (matchedAny) {
         const textAfter = text.slice(lastIndex);

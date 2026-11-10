@@ -1,0 +1,39 @@
+{
+  "status": "PASS_FOR_SCOPED_CHECKS",
+  "changes": [
+    "Progress counters cannot override FAILED/BLOCKED/UNVERIFIED/CANCELLED status; default no longer falsely completed. Numeric counters normalized before HTML.",
+    "Media badge respects supplied paused/unverified status.",
+    "Removed nonexistent unauthenticated HTTP endpoint; production widgets use authenticated host.request zero.computer.control.",
+    "Controls refuse failed dispatch and show sent/effect-unverified unless verified true; pending clicks disabled.",
+    "Production renderer now forwards existing host context to widget factories.",
+    "Markdown language-code fences recognized; renderer limits text replacement to leaf nodes and preserves malformed source blocks.",
+    "Source cards/header no longer claim Verified from model-supplied metadata; non-http(s) and credential-bearing source URLs are inert."
+  ],
+  "execution": {
+    "contract": {
+      "passed": 20,
+      "log": "artifacts/widget-outcome-regression.log",
+      "scope": "Product surface checks include one supplied widget regression"
+    },
+    "actualBrowser": {
+      "passed": 1,
+      "log": "artifacts/widget-real-browser.log",
+      "scope": "Actual production component, real authenticated Gateway hold state and media refusal; no physical input"
+    },
+    "rendererInitial": {
+      "status": "FAIL",
+      "log": "artifacts/widget-renderer-browser-regression.log",
+      "reason": "Real browser found remaining misleading Verified Sources header; original failure retained."
+    },
+    "rendererCorrected": {
+      "status": "PASS",
+      "passed": 21,
+      "log": "artifacts/widget-renderer-browser-corrected.log",
+      "scope": "Twenty product surface contracts and one real browser component/RPC test; includes real code-fence rendering with sibling preservation and unsafe source-link refusal."
+    }
+  },
+  "limits": [
+    "Real generated execution-event to renderer and native media playback remain separately unverified.",
+    "Actual browser test uses component factories, not hand-inserted widget HTML; no model loop is claimed."
+  ]
+}

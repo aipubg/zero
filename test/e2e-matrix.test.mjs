@@ -5,17 +5,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { spawnSync, spawn } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 const WS = globalThis.WebSocket;
 
-import { CapabilityEngine, canonicalCapabilityEngine } from '../packages/capability-engine/index.mjs';
+import { CapabilityEngine } from '../packages/capability-engine/index.mjs';
 import { SessionManager } from '../packages/sessions/index.mjs';
 import { TaskStateMachine } from '../packages/agent-runtime/index.mjs';
 import { AutomationScheduler } from '../packages/automation/index.mjs';
 import { PersistentMemoryStore } from '../packages/memory/index.mjs';
 import { ModelFabric, canonicalModelFabric } from '../packages/model-fabric/index.mjs';
-import { PROTOCOL_VERSION, validateHandshake, RPC_ERROR_CODES } from '../packages/gateway-protocol/index.mjs';
-import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
+import { validateHandshake, RPC_ERROR_CODES } from '../packages/gateway-protocol/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,77 +64,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
   });
 
   await suite.test('T02: Legacy shared-default child-host path', { skip: "BLOCKED: Legacy child host has shared defaults; use isolated native-host verification" }, async (t) => {
-    // 1. Verify live control plane is running natively
-    const res = await fetch(`${BASE_URL}/health`);
-    assert.equal(res.status, 200);
-    const health = await res.json();
-    assert.equal(health.status, 'ok');
-    assert.equal(health.runtime, 'zero-native', 'Confirmed running in native Zero Gateway/Host mode');
-    assert.equal(health.gateway, 'zero-gateway');
-
-    // 2. Spawn an isolated Node subprocess on port 18798 that explicitly runs without openclaw package resolution
-    const childScript = `
-      import { ZeroNativeHost } from './services/host/native-gateway.mjs';
-      import { canonicalCapabilityEngine } from './packages/capability-engine/index.mjs';
-      import assert from 'node:assert/strict';
-
-      const host = new ZeroNativeHost({ port: 18798, host: '127.0.0.1' });
-      await host.start();
-
-      const hRes = await fetch('http://127.0.0.1:18798/health');
-      assert.equal(hRes.status, 200);
-      const hData = await hRes.json();
-      assert.equal(hData.runtime, 'zero-native');
-
-      const uiRes = await fetch('http://127.0.0.1:18798/chat/zero');
-      assert.equal(uiRes.status, 200);
-
-      const sessionRes = await fetch('http://127.0.0.1:18798/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'admin' }),
-      }).then(r => r.json());
-      assert.equal(sessionRes.ok, true);
-
-      const ws = new WebSocket('ws://127.0.0.1:18798/');
-      await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
-      const hsPromise = new Promise(r => {
-        ws.onmessage = e => {
-          const m = JSON.parse(e.data);
-          if (m.id === 'hs') r(m);
-        };
-      });
-      ws.send(JSON.stringify({ type: 'req', id: 'hs', method: 'connect', params: { minProtocol: 4, token: sessionRes.token } }));
-      const hs = await hsPromise;
-      assert.equal(hs.ok, true);
-      ws.close();
-
-      const toolRes = await canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action: 'list_windows' } });
-      assert.equal(toolRes.ok, true);
-      assert.equal(toolRes.executed, true);
-
-      await host.close();
-      console.log('T02_ISOLATED_OK');
-      process.exit(0);
-    `;
-
-    const sub = spawn(process.execPath, ['--input-type=module', '-e', childScript], {
-      cwd: REPO_ROOT,
-      env: { ...process.env, ZERO_PORT: '18798', ZERO_RUNTIME_MODE: 'native' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    let stdout = '';
-    let stderr = '';
-    sub.stdout.on('data', (d) => { stdout += d.toString(); });
-    sub.stderr.on('data', (d) => { stderr += d.toString(); });
-
-    const exitCode = await new Promise((resolve) => {
-      sub.on('exit', resolve);
-    });
-
-    assert.equal(exitCode, 0, `Isolated native subprocess exited with code ${exitCode}: ${stderr}`);
-    assert.ok(stdout.includes('T02_ISOLATED_OK'), 'Subprocess verified native independence, UI, RPC, and tools');
+    t.skip('BLOCKED: superseded unsafe shared-state path; dedicated isolated verification required');
   });
 
   await suite.test('T03: HTTP shell and asset response contracts', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
@@ -544,57 +473,11 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
   });
 
   await suite.test('T11: Legacy native Notepad readback path', { skip: "BLOCKED: Legacy Notepad input lacks qualified owned-window isolation; use real agent-desktop fixture runners" }, async (t) => {
-    const np = spawn('notepad.exe', [], { detached: true, stdio: 'ignore' });
-    const targetPid = np.pid;
-    assert.ok(targetPid, 'Test-owned Notepad PID acquired');
-    np.unref();
-
-    try {
-      await new Promise((r) => setTimeout(r, 1500));
-
-      const testToken = `ZERO_E2E_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const result = await canonicalCapabilityEngine.execute({
-        agentId: 'zero',
-        toolName: 'zero_computer_action',
-        args: { action: 'type_text', text: testToken, targetPid },
-      });
-
-      assert.equal(result.ok, true, 'Result ok must be true');
-      assert.equal(result.executed, true, 'Executed must be true');
-      assert.equal(result.verified, true, 'Verified must be true');
-      assert.equal(result.completed, true, 'Completed must be true');
-      assert.equal(result.outcome, 'COMPLETED', 'Outcome must be COMPLETED');
-      assert.equal(result.verifiedText, testToken, 'Read-back text must exactly match typed token');
-    } finally {
-      if (targetPid) {
-        try {
-          process.kill(targetPid);
-        } catch (_) {
-          spawnSync('powershell.exe', ['-Command', `Stop-Process -Id ${targetPid} -Force -ErrorAction SilentlyContinue`]);
-        }
-      }
-    }
+    t.skip('BLOCKED: superseded unsafe shared-state path; dedicated isolated verification required');
   });
 
   await suite.test('T12: Legacy browser playback metadata path', { skip: "BLOCKED: Legacy media playback changes live browser; dedicated playback qualification required" }, async (t) => {
-    const playResult = await canonicalCapabilityEngine.execute({
-      agentId: 'zero',
-      toolName: 'zero_computer_action',
-      args: { action: 'play', query: 'lofi hip hop radio' },
-    });
-
-    assert.equal(playResult.ok, true);
-    assert.equal(playResult.executed, true);
-    assert.equal(playResult.action, 'play');
-    assert.ok(playResult.browserOpened || playResult.data?.browserOpened, 'Browser opened verified');
-    assert.ok(playResult.pageLoaded || playResult.data?.pageLoaded, 'Page loaded verified');
-
-    // Strict acceptance criteria per P1: must be PLAYING, verified, and COMPLETED (PAUSED and UNVERIFIED fail)
-    assert.equal(playResult.playbackState, 'PLAYING', 'Playback state must be confirmed PLAYING');
-    assert.equal(playResult.verified, true, 'Verification must be true');
-    assert.equal(playResult.outcome, 'COMPLETED', 'Outcome must be COMPLETED');
-    assert.equal(playResult.audioActive, true, 'Audio active must be true when playing');
-    assert.equal(playResult.audioAudible, 'UNVERIFIED', 'Acoustic hearing remains unverified without physical microphone capture');
+    t.skip('BLOCKED: superseded unsafe shared-state path; dedicated isolated verification required');
   });
 
   await suite.test('T13: Missing real media/progress renderer verification', { skip: "BLOCKED: Hand-inserted DOM widgets are not production renderer verification" }, async (t) => {
@@ -602,17 +485,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
   });
 
   await suite.test('T14: Legacy canonical hold path', { skip: "BLOCKED: Legacy canonical hold may bypass strict policy; covered by isolated strict-policy tests" }, async (t) => {
-    canonicalCapabilityEngine.operator.setHumanHold(true);
-    const blockedRes = await canonicalCapabilityEngine.execute({
-      agentId: 'zero',
-      toolName: 'zero_computer_action',
-      args: { action: 'left_click', x: 100, y: 100 },
-    });
-    assert.equal(blockedRes.ok, false);
-    assert.equal(blockedRes.executed, false);
-    assert.equal(blockedRes.outcome, 'BLOCKED');
-    assert.equal(blockedRes.error, 'computer-hold:human-control');
-    canonicalCapabilityEngine.operator.setHumanHold(false);
+    t.skip('BLOCKED: superseded unsafe shared-state path; dedicated isolated verification required');
   });
 
   await suite.test('T15: Chat abort acknowledgement', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {

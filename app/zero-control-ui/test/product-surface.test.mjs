@@ -1342,3 +1342,40 @@ test("roster, gateway and computer helpers keep explicit state", async () => {
   assert.equal(computer.computerScopeLabel(null), "Global hold · all sessions");
   assert.equal(computer.computerScopeLabel({ scope: "session" }), "Session hold");
 });
+
+
+test("generative widgets preserve supplied outcomes and use authenticated host dispatch", async () => {
+  const { createProgressWidget, createMediaWidget } = await import("../src/spaces/generative-widgets.js");
+  const originalDocument = globalThis.document;
+  let buttons = [];
+  globalThis.document = { createElement: () => ({ style: {}, innerHTML: "", querySelector: () => buttons[0], querySelectorAll: () => buttons }) };
+  const makeButton = (action) => ({ disabled: false, textContent: "Control", addEventListener(_event, handler) { this.handler = handler; }, getAttribute() { return action; } });
+  try {
+    buttons = [];
+    for (const status of ["failed", "blocked", "unverified", "cancelled"]) {
+      const widget = createProgressWidget({ step: 3, totalSteps: 3, status });
+      assert.ok(widget.innerHTML.includes(status.toUpperCase()));
+      assert.ok(!widget.innerHTML.includes("COMPLETED"), "Counter completion cannot override an unsuccessful outcome");
+    }
+    assert.ok(createProgressWidget({ status: "completed" }).innerHTML.includes("COMPLETED"));
+    assert.ok(!createProgressWidget({ step: '<img src=x onerror=bad>', totalSteps: 1 }).innerHTML.includes('<img'));
+    buttons = [makeButton("take")];
+    const holdCalls = [];
+    createProgressWidget({}, { host: { request: async (method, params) => { holdCalls.push([method, params]); return { ok: true, held: true }; } } });
+    await buttons[0].handler();
+    assert.deepEqual(holdCalls, [["zero.computer.control", { action: "take" }]]);
+    assert.equal(buttons[0].textContent, "Hold Active");
+    buttons = [makeButton("play_pause")];
+    const calls = [];
+    const media = createMediaWidget({ status: "paused" }, { host: { request: async (method, params) => { calls.push([method, params]); return { ok: true, executed: true, verified: false }; } } });
+    assert.ok(media.innerHTML.includes("Paused"));
+    assert.ok(!media.innerHTML.includes("Playing Now"));
+    await buttons[0].handler();
+    assert.deepEqual(calls, [["zero.computer.control", { action: "media_control", command: "play_pause" }]]);
+    assert.equal(buttons[0].textContent, "Sent; effect unverified");
+    buttons = [makeButton("focus")];
+    createMediaWidget({}, { host: { request: async () => ({ ok: false, executed: false }) } });
+    await buttons[0].handler();
+    assert.equal(buttons[0].textContent, "Action unavailable");
+  } finally { globalThis.document = originalDocument; }
+});

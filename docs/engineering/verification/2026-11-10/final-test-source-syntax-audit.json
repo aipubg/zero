@@ -1,8 +1,8 @@
 {
   "status": "PASS_FOR_DECLARED_SOURCE_SCOPE_ONLY",
-  "method": "TypeScript 6.0.3 AST parse of current 107 test sources; node:test import bindings inspected, supported direct test/t.test/suite.test/describe/it calls compared with catalog literal line extraction.",
-  "sourceFiles": 107,
-  "declarationsIncludingContainers": 608,
+  "method": "TypeScript 6.0.3 AST parse of current 108 test sources, direct declarations compared against catalog extraction; node:test bindings inspected.",
+  "sourceFiles": 108,
+  "declarationsIncludingContainers": 610,
   "unsupported": [],
   "entries": [
     {
@@ -62,8 +62,8 @@
     },
     {
       "file": "app/zero-control-ui/test/product-surface.test.mjs",
-      "sha256": "31eb89b10f0c327f0547016789a0567a11e302b9fabdc6e8e13cf0382013312c",
-      "literalDeclarations": 19
+      "sha256": "1c661d93107aa3d39dd7a654f5905e2b1a5d4f13dfe3c4508bacbacc5ed95f10",
+      "literalDeclarations": 20
     },
     {
       "file": "backend/plugin/legacy-redirects.test.mjs",
@@ -217,7 +217,7 @@
     },
     {
       "file": "test/e2e-matrix.test.mjs",
-      "sha256": "61de5ef36e162875643191e800d23179a7915a5013680c8036a22c7a926ee218",
+      "sha256": "b05313dff06be97a5741c299db9ab5bdb05f2e66f4cd4ab4503114eaed752fd8",
       "literalDeclarations": 26
     },
     {
@@ -229,6 +229,11 @@
       "file": "test/functional-browser-options.test.mjs",
       "sha256": "0fbfb5273ccb4950e51ac93b70704bcb62d4684f57aa14b6da4f7eca38e58ec4",
       "literalDeclarations": 2
+    },
+    {
+      "file": "test/generative-widgets-browser.test.mjs",
+      "sha256": "98f1227df9df02c04c6c5f1fed5995302fa6b2040197511e19f46d1281ef1c1c",
+      "literalDeclarations": 1
     },
     {
       "file": "test/gguf-download-file-integration.test.mjs",
@@ -723,6 +728,10 @@
       "bindings": "test"
     },
     {
+      "file": "test/generative-widgets-browser.test.mjs",
+      "bindings": "test"
+    },
+    {
       "file": "test/gguf-download-file-integration.test.mjs",
       "bindings": "test"
     },
@@ -973,8 +982,9 @@
   ],
   "limits": [
     "No test execution, product acceptance, reachable workflow completeness or independent verification of every application behavior.",
-    "608 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
+    "610 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
     "Classification applies to current cataloged files and declaration syntax; new sources/syntax require review.",
     "CLI integrity remains conservative REQUIRES_FINAL_SCOPE_AUDIT and release BLOCKED; this separate receipt must be reviewed alongside actual execution evidence."
-  ]
+  ],
+  "followup": "Retired unreachable unsafe shared-default/physical legacy bodies; declaration census unchanged. These tests remain BLOCKED, not PASS."
 }
