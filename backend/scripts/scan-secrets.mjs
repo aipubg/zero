@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,19 +42,25 @@ const SECRET_PATTERNS = [
   { name: 'Generic Live Key', regex: /"apiKey"\s*:\s*"(?!env:)[A-Za-z0-9_-]{35,}"/ },
 ];
 
-function scanDirectory(dir, findings = []) {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    if (EXCLUDED_DIRS.has(entry.name)) continue;
-
-    const fullPath = path.join(dir, entry.name);
-    const relPath = path.relative(REPO_ROOT, fullPath);
-
-    if (entry.isDirectory()) {
-      scanDirectory(fullPath, findings);
-    } else if (entry.isFile()) {
-      if (EXCLUDED_FILES.has(entry.name) || entry.name.endsWith('.png') || entry.name.endsWith('.webp') || entry.name.endsWith('.gguf')) {
+function scanTrackedFiles(findings = []) {
+  // Never traverse ignored owner data, downloaded models, artifacts or dependencies.
+  // Failure to enumerate tracked paths is an error, never an empty clean scan.
+  const tracked = execFileSync('git', ['ls-files', '--cached', '-z'], {
+    cwd: REPO_ROOT, encoding: 'utf8', timeout: 30000, maxBuffer: 32 * 1024 * 1024,
+  }).split('\0').filter(Boolean);
+  for (const relPath of tracked) {
+    const parts = relPath.split('/');
+    const name = parts.at(-1);
+    if (parts.slice(0, -1).some(part => EXCLUDED_DIRS.has(part))) continue;
+    const fullPath = path.resolve(REPO_ROOT, relPath);
+    const relative = path.relative(REPO_ROOT, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('Tracked path escapes repository');
+    // A deleted tracked file has no working-tree bytes to inspect.
+    if (!fs.existsSync(fullPath)) continue;
+    const stat = fs.lstatSync(fullPath);
+    if (stat.isSymbolicLink()) throw new Error(`Cannot scan tracked symlink: ${relPath}`);
+    if (stat.isFile()) {
+      if (EXCLUDED_FILES.has(name) || name.endsWith('.png') || name.endsWith('.webp') || name.endsWith('.gguf')) {
         continue;
       }
 
@@ -61,12 +68,11 @@ function scanDirectory(dir, findings = []) {
       try {
         content = fs.readFileSync(fullPath, 'utf8');
       } catch {
-        continue; // Binary or unreadable
+        throw new Error(`Cannot read tracked file: ${relPath}`);
       }
 
       for (const pattern of SECRET_PATTERNS) {
-        const match = content.match(pattern.regex);
-        if (match) {
+        for (const match of content.matchAll(new RegExp(pattern.regex.source, 'g'))) {
           // Check if it's explicitly masked or redacted
           if (match[0].includes('REDACTED') || match[0].includes('placeholder') || match[0].includes('0000000000000000')) {
             continue;
@@ -74,7 +80,6 @@ function scanDirectory(dir, findings = []) {
           findings.push({
             file: relPath,
             rule: pattern.name,
-            snippet: match[0].slice(0, 8) + '...' + match[0].slice(-4),
           });
         }
       }
@@ -84,16 +89,16 @@ function scanDirectory(dir, findings = []) {
   return findings;
 }
 
-console.log('Zero AI Secret Scanner: Scanning repository for credential leaks...');
-const findings = scanDirectory(REPO_ROOT);
+console.log('Zero AI Secret Scanner: Scanning included tracked working-tree files for credential patterns...');
+const findings = scanTrackedFiles();
 
 if (findings.length > 0) {
   console.error(`\n❌ FAIL: Found ${findings.length} potential credential leaks:`);
   for (const f of findings) {
-    console.error(`  - ${f.file} (${f.rule}): ${f.snippet}`);
+    console.error(`  - ${f.file} (${f.rule})`);
   }
   process.exit(1);
 } else {
-  console.log('✔ PASS: 0 exposed credentials found across repository.');
+  console.log('✔ PASS: 0 exposed credentials found by configured patterns in included tracked files. Ignored/untracked files and excluded paths are not covered.');
   process.exit(0);
 }

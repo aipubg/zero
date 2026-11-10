@@ -1,30 +1,10 @@
-/**
- * @fileoverview Zero AI — End-to-End Scenario Verification Suite (T01–T15)
- * 
- * Programmatically exercises and validates all 15 core architectural scenarios
- * mandated by the Master Engineering Execution Directive:
- * 
- * T01: Clean Environment Launch
- * T02: Standalone Gateway Startup (Port 18789)
- * T03: First-Turn Chat Completion
- * T04: Multi-Turn Tool Use (Model-Driven Loop)
- * T05: Tool Authorization Gate (Hold & Schema Enforcement)
- * T06: Desktop Tool Execution (Windows OS Driver)
- * T07: Human Hold (Takeover Safety Contract)
- * T08: Sub-Agent Task Delegation
- * T09: Interrupted Task Startup Recovery
- * T10: Durable Automation & Cron Engine
- * T11: Persistent Semantic Memory Retrieval
- * T12: Sliding-Window Context Compaction
- * T13: Model Fabric Circuit Breaker Failover
- * T14: Model Catalog Hot-Reload
- * T15: Secret Leak Prevention & Hygiene Scan
- */
-
+/** Historical scenarios: assertion-scoped checks, not full product acceptance. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import { stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -40,10 +20,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (t) => {
+test('ZERO AI — scoped historical T01–T15 scenarios', { timeout: 90000 }, async (t) => {
+  const tempRoot = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'zero-scenario-')));
+  t.after(() => {
+    stopDaemon();
+    const resolved = fs.realpathSync.native(tempRoot);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-scenario-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
+  });
+  const liveHost = process.env.ZERO_SCENARIO_TEST_HOST;
+  if (liveHost) {
+    const url = new URL(liveHost);
+    assert.equal(url.protocol, 'http:');
+    assert.equal(url.hostname, '127.0.0.1');
+    assert.notEqual(url.port, '18789', 'Use a disposable test host, not the owner gateway');
+  }
+  const liveOptions = { skip: liveHost ? false : 'BLOCKED: disposable local host with configured inference is not supplied' };
 
-  // T01: Clean Environment Launch
-  await t.test('T01: Clean Environment Launch (zero-host.ps1 integrity)', async () => {
+
+  await t.test('T01: Launcher source contract only', async (t) => {
     const scriptPath = path.join(REPO_ROOT, 'zero-host.ps1');
     assert.ok(fs.existsSync(scriptPath), 'zero-host.ps1 exists');
 
@@ -54,23 +50,21 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     assert.ok(content.includes('Remove-Item Env:\\ZERO_GATEWAY_KEY'), 'Cleans sensitive env before launch');
   });
 
-  // T02: Standalone Gateway Startup
-  await t.test('T02: Standalone Gateway Startup (Port 18789 Health & Models)', async () => {
-    const res = await fetch('http://127.0.0.1:18789/health');
+  await t.test('T02: Supplied disposable host health and catalog HTTP contracts', liveOptions, async (t) => {
+    const res = await fetch(new URL('/health', liveHost), { signal: AbortSignal.timeout(10000) });
     assert.equal(res.status, 200, '/health returns 200 OK');
     const health = await res.json();
     assert.equal(health.status, 'ok', 'Status is ok');
     assert.ok(health.gateway || health.service, 'Gateway or service identifier present');
 
-    const modelsRes = await fetch('http://127.0.0.1:18789/v1/models');
+    const modelsRes = await fetch(new URL('/v1/models', liveHost), { signal: AbortSignal.timeout(10000) });
     assert.equal(modelsRes.status, 200, '/v1/models returns 200 OK');
     const modelsData = await modelsRes.json();
     assert.ok(Array.isArray(modelsData.data), 'Returns model list');
     assert.ok(modelsData.data.length > 0, 'Catalog has available models');
   });
 
-  // T03: First-Turn Chat Completion
-  await t.test('T03: First-Turn Chat Completion (Gateway HTTP Inference)', async () => {
+  await t.test('T03: Supplied disposable host exact inference response', liveOptions, async (t) => {
     const payload = {
       model: 'nvidia/nemotron-3.5-lightning-30b-a3b',
       messages: [
@@ -81,7 +75,8 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
       stream: false,
     };
 
-    const res = await fetch('http://127.0.0.1:18789/v1/chat/completions', {
+    const res = await fetch(new URL('/v1/chat/completions', liveHost), {
+      signal: AbortSignal.timeout(30000),
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -91,14 +86,13 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     const data = await res.json();
     assert.ok(data.choices && data.choices.length > 0, 'Contains choices');
     const content = data.choices[0].message?.content;
-    assert.ok(typeof content === 'string' && content.length > 0, 'Message contains non-empty content');
+    assert.equal(content?.trim(), 'HELLO_FROM_ZERO_AI', 'Assert requested outcome, not merely nonempty prose');
   });
 
-  // T04: Multi-Turn Tool Use (Model-Driven Loop)
-  await t.test('T04: Multi-Turn Tool Use (Model-Driven Execution Loop)', async () => {
+  await t.test('T04: Direct native window observation through capability engine', async (t) => {
     const engine = new CapabilityEngine();
     
-    // Simulate model-driven tool calling turn:
+    // Direct caller-supplied request; no model execution is claimed.
     const toolCall = {
       name: 'zero_computer_action',
       args: { action: 'list_windows' },
@@ -114,15 +108,10 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     assert.equal(toolResult.ok, true, 'Tool executed successfully');
     assert.ok(toolResult.auditId, 'Audit ID assigned');
 
-    const followUp = {
-      role: 'assistant',
-      content: `I checked the open windows. Audit reference: ${toolResult.auditId}.`,
-    };
-    assert.ok(followUp.content.includes('audit_'), 'Follow-up completes turn');
+    assert.ok(engine.getAuditLog().some(entry => entry.auditId === toolResult.auditId), 'Actual dispatch has audit receipt');
   });
 
-  // T05: Tool Authorization Gate
-  await t.test('T05: Tool Authorization Gate (Disallowed Action Rejection)', async () => {
+  await t.test('T05: Tool schema disallowed-action rejection', async (t) => {
     const engine = new CapabilityEngine();
 
     // 1. Unknown tool
@@ -134,16 +123,14 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     assert.equal(disallowedAction.valid, false, 'Disallowed action is rejected');
   });
 
-  // T06: Desktop Tool Execution
-  await t.test('T06: Desktop Tool Execution (Windows OS Observation & Actions)', async () => {
+  await t.test('T06: Native read-only window state shape', async (t) => {
     const operator = new ComputerOperator();
     const result = await operator.execute('get_window_state', {});
     assert.equal(result.ok, true, 'get_window_state succeeds');
     assert.ok(result.window !== undefined, 'Returns window info');
   });
 
-  // T07: Human Hold (Takeover Safety Contract)
-  await t.test('T07: Human Hold (Takeover Safety Arbitration)', async () => {
+  await t.test('T07: Hold freshness requires actual screen capture', async (t) => {
     const operator = new ComputerOperator({ requireFreshSnapshotAfterRelease: true, strictPolicy: true });
     
     // Set human hold active
@@ -166,17 +153,21 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     assert.equal(staleBlocked.allowed, false, 'Coordinate action blocked while stale');
     assert.equal(staleBlocked.error, 'computer-hold:stale-frame', 'Anti-stale gate enforced');
 
-    // Fresh observation clears staleness
-    const freshCapture = operator.evaluateSafety('screenshot');
-    assert.equal(freshCapture.allowed, true, 'Observation allowed to refresh state');
+    // Only an executed observation may clear staleness
+    assert.equal(operator.evaluateSafety('screenshot').allowed, true);
+    assert.equal(operator.evaluateSafety('left_click').allowed, false, 'Safety query alone cannot clear freshness');
+    const freshCapture = await operator.execute('screenshot', {});
+    assert.equal(freshCapture.ok, true, 'Actual screen capture succeeds');
+    const pixels = Buffer.from(freshCapture.data ?? '', 'base64');
+    assert.equal(pixels.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', 'A real PNG is required, not geometry-only success');
 
     const allowedAfterCapture = operator.evaluateSafety('left_click');
     assert.equal(allowedAfterCapture.allowed, true, 'Coordinate action allowed after fresh capture');
   });
 
-  // T08: Sub-Agent Task Delegation
-  await t.test('T08: Sub-Agent Task Delegation (Parent-Child Execution)', async () => {
+  await t.test('T08: Supplied parent-child task bookkeeping', async (t) => {
     const runtime = new TaskStateMachine({ dbPath: ':memory:' });
+    t.after(() => runtime.close());
     
     // Create parent task
     const parent = runtime.createTask({
@@ -194,7 +185,7 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     });
     assert.equal(childTask.parentTaskId, parent.id, 'Parent ID correctly linked');
 
-    runtime.completeChildTask(childTask.id, { leaksFound: 0, verifiedClean: true });
+    runtime.completeChildTask(childTask.id, { suppliedResult: 'fixture-result' });
 
     const parentAfter = runtime.getTask(parent.id);
     assert.equal(parentAfter.status, 'RUNNING', 'Parent resumed to RUNNING after child completed');
@@ -202,12 +193,11 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     const childAfter = runtime.getTask(childTask.id);
     assert.equal(childAfter.parentTaskId, parent.id, 'Child links to parent');
     assert.equal(childAfter.status, 'COMPLETED', 'Child status COMPLETED');
-    assert.equal(childAfter.result.verifiedClean, true, 'Child result retained');
+    assert.equal(childAfter.result.suppliedResult, 'fixture-result', 'Supplied result retained; no agent was run');
   });
 
-  // T09: Interrupted Task Recovery
-  await t.test('T09: Interrupted Task Recovery (SQLite Host Restart Recovery)', async () => {
-    const dbPath = path.join(REPO_ROOT, '.zero-data', `test-recovery-${Date.now()}.sqlite`);
+  await t.test('T09: SQLite reopen recovery in the same Node process', async (t) => {
+    const dbPath = path.join(tempRoot, 'recovery.sqlite');
     
     // Simulate previous host running a task that was interrupted by a crash or reboot
     const hostA = new TaskStateMachine({ dbPath });
@@ -230,16 +220,21 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     try { fs.unlinkSync(dbPath); } catch (_) {}
   });
 
-  // T10: Durable Automation & Cron Engine
-  await t.test('T10: Durable Automation & Cron Engine (Schedule & Run History)', async () => {
-    const scheduler = new AutomationScheduler({ dbPath: ':memory:' });
+  await t.test('T10: Explicit due-time dispatch produces a real file effect', async (t) => {
+    const outputPath = path.join(tempRoot, 'scheduler-output.txt');
+    const scheduler = new AutomationScheduler({ dbPath: ':memory:', executor: async (action, params) => {
+      assert.equal(action, 'write-fixture');
+      fs.appendFileSync(outputPath, params.text);
+      return { ok: true, executed: true };
+    } });
+    t.after(() => scheduler.close());
     
     // Register recurring job
     const job = scheduler.registerJob({
-      title: 'Daily Security Sweep',
+      title: 'Fixture output',
       cronExpr: '0 0 * * *',
-      targetAction: 'scan-secrets',
-      params: { directory: 'backend/config' },
+      targetAction: 'write-fixture',
+      params: { text: 'one actual dispatch\n' },
     });
     assert.ok(job.id, 'Job registered with ID');
     assert.ok(job.nextRun > Date.now(), 'Next run calculated');
@@ -251,11 +246,14 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     const history = scheduler.listRuns({ jobId: job.id });
     assert.ok(history.length >= 1, 'Execution history recorded');
     assert.equal(history[0].status, 'completed', 'Run status completed');
+    assert.equal(fs.readFileSync(outputPath, 'utf8'), 'one actual dispatch\n');
+    await scheduler.checkAndTriggerDueJobs(job.nextRun + 1000);
+    assert.equal(fs.readFileSync(outputPath, 'utf8'), 'one actual dispatch\n', 'Same due time cannot repeat effect');
   });
 
-  // T11: Persistent Semantic Memory Retrieval
-  await t.test('T11: Persistent Semantic Memory Retrieval (Recall & Weighting)', async () => {
+  await t.test('T11: Keyword recall of supplied in-memory records', async (t) => {
     const memory = new PersistentMemoryStore({ dbPath: ':memory:' });
+    t.after(() => memory.close());
     
     memory.remember({
       category: 'infrastructure',
@@ -274,9 +272,9 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     assert.ok(search[0].content.includes('18789'), 'Top result matches query');
   });
 
-  // T12: Context Compaction
-  await t.test('T12: Sliding-Window Context Compaction (Session Compaction)', async () => {
+  await t.test('T12: Context projection preserves original transcript', async (t) => {
     const sessions = new SessionManager({ dbPath: ':memory:' });
+    t.after(() => sessions.close());
     const session = sessions.createSession('test_compaction_sess', 'Test Compaction');
 
     // Append 15 messages
@@ -297,11 +295,14 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
 
     const after = sessions.getTranscript(session.id);
     assert.ok(after.some((m) => m.content.includes('Context compacted')), 'Compaction summary marker appended');
-    assert.ok(after.length <= 7, 'Transcript size bounded');
+    assert.equal(after.length, 16, 'Original messages plus marker remain');
+    assert.deepEqual(after.filter(m => m.role !== 'system').map(m => m.content), before.map(m => m.content));
+    const context = sessions.getModelContext(session.id);
+    assert.equal(context.length, 6, 'Provider context has marker and five recent messages');
+    assert.deepEqual(context.filter(m => m.role !== 'system').map(m => m.content), before.slice(-5).map(m => m.content));
   });
 
-  // T13: Model Fabric Circuit Breaker Failover
-  await t.test('T13: Model Fabric Circuit Breaker Failover (Health & Tripping)', async () => {
+  await t.test('T13: Supplied provider failure counters and degraded state', async (t) => {
     const fabric = new ModelFabric({
       providers: [
         {
@@ -325,9 +326,8 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     assert.equal(providerHealth.consecutiveFailures, 5, 'Failure count tracked');
   });
 
-  // T14: Model Catalog Hot-Reload
-  await t.test('T14: Model Catalog Hot-Reload (Reload Without Restart)', async () => {
-    const tempConfig = path.join(REPO_ROOT, '.zero-data', `temp-providers-${Date.now()}.json`);
+  await t.test('T14: Explicit provider file reload without inference', async (t) => {
+    const tempConfig = path.join(tempRoot, 'providers.json');
     fs.writeFileSync(tempConfig, JSON.stringify([
       { id: 'initial-provider', models: ['initial-model-v1'] },
     ]));
@@ -348,16 +348,42 @@ test('ZERO AI — End-to-End Scenarios T01–T15 Full Execution Matrix', async (
     try { fs.unlinkSync(tempConfig); } catch (_) {}
   });
 
-  // T15: Secret Leak Prevention & Hygiene Scan
-  await t.test('T15: Secret Leak Prevention (Full Repository Secrets Scan)', async () => {
+  await t.test('T15: Secret scanner on its configured included paths', async (t) => {
     const scannerPath = path.join(REPO_ROOT, 'backend', 'scripts', 'scan-secrets.mjs');
     const proc = spawnSync(process.execPath, [scannerPath], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
+      timeout: 30000,
     });
 
     assert.equal(proc.status, 0, 'Secret scanner exits with 0');
     assert.ok(proc.stdout.includes('0 exposed credentials found'), 'Zero credentials found');
+    // Exercise the actual scanner in a separate Git working tree, including a
+    // redacted first match followed by a detectable value on the same line.
+    const fixture = path.join(tempRoot, 'scanner-fixture');
+    const scripts = path.join(fixture, 'backend', 'scripts');
+    fs.mkdirSync(scripts, { recursive: true });
+    const fixtureScanner = path.join(scripts, 'scan-secrets.mjs');
+    fs.copyFileSync(scannerPath, fixtureScanner);
+    const git = (...args) => {
+      const result = spawnSync('git', args, { cwd: fixture, encoding: 'utf8', timeout: 10000 });
+      assert.equal(result.status, 0, 'Fixture Git command succeeds');
+    };
+    git('init', '--quiet');
+    const detectable = 'nvapi-' + 'Q'.repeat(40);
+    fs.writeFileSync(path.join(fixture, 'included.txt'), 'nvapi-REDACTED' + 'Q'.repeat(40) + ' ' + detectable);
+    fs.writeFileSync(path.join(fixture, '.env'), detectable);
+    git('add', 'included.txt', '.env');
+    const scan = () => spawnSync(process.execPath, [fixtureScanner], { cwd: fixture, encoding: 'utf8', timeout: 10000 });
+    const found = scan();
+    assert.equal(found.status, 1, 'A later real pattern cannot hide behind a redacted first match');
+    assert.ok(found.stderr.includes('included.txt (NVIDIA API Key)'));
+    assert.ok(!found.stderr.includes(detectable), 'No credential bytes are printed');
+    fs.writeFileSync(path.join(fixture, 'included.txt'), 'no credential pattern');
+    fs.writeFileSync(path.join(fixture, 'untracked.txt'), detectable);
+    const clean = scan();
+    assert.equal(clean.status, 0, 'Explicitly excluded .env and untracked files are outside tracked scan scope');
+    assert.ok(clean.stdout.includes('Ignored/untracked files and excluded paths are not covered'));
   });
 
 });

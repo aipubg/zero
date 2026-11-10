@@ -576,6 +576,7 @@ export async function captureScreen({ format = "png", maxWidth = 1600 } = {}, si
         const img = res.images[0];
         const data = String(img.dataBase64 || "").replace(/^data:[^;]+;base64,/u, "");
         const buffer = Buffer.from(data, "base64");
+        if (!buffer.length) throw new Error("Screen capture returned no image bytes");
         return {
           ok: true,
           mimeType: img.mimeType || "image/png",
@@ -590,7 +591,7 @@ export async function captureScreen({ format = "png", maxWidth = 1600 } = {}, si
   // Fallback to native Windows screen capture via daemon
   try {
     const nativeShot = await runNativeWinAction("screenshot", {}, signal);
-    if (nativeShot && nativeShot.base64) {
+    if (nativeShot && nativeShot.base64 && Buffer.from(nativeShot.base64, "base64").length > 0) {
       return {
         ok: true,
         mimeType: nativeShot.mimeType || "image/png",
@@ -603,13 +604,5 @@ export async function captureScreen({ format = "png", maxWidth = 1600 } = {}, si
     }
   } catch {}
 
-  const size = await getScreenSize(signal);
-  return {
-    ok: true,
-    mimeType: "image/png",
-    width: size.width,
-    height: size.height,
-    base64: "",
-    notice: "Screen geometry acquired; full pixel buffer requires interactive GUI session.",
-  };
+  throw new Error("Screen capture unavailable: no image bytes were returned");
 }

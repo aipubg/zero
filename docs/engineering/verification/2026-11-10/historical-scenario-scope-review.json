@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-10",
+  "status": "PARTIAL",
+  "changes": [
+    "Historical scenario names now describe actual assertions; fabricated model follow-up and clean-security child result removed.",
+    "Test SQLite and provider files moved out of owner state. HTTP checks require explicit disposable host and exclude owner port18789.",
+    "Compaction asserts full transcript preservation and bounded provider context. Scheduler proves one real file effect. Freshness requires actual PNG bytes.",
+    "Driver rejects unavailable pixels rather than returning geometry-only capture success.",
+    "Scanner enumerates included tracked working-tree files and detects later matches after redacted text; matched bytes are not printed."
+  ],
+  "execution": {
+    "initial": {
+      "log": "artifacts/scenario-review-initial.log",
+      "passedLeaves": 12,
+      "failedLeaves": 1,
+      "skippedLeaves": 2,
+      "reason": "Recursive scanner exceeded 30-second deadline; original FAIL retained."
+    },
+    "final": {
+      "log": "artifacts/scenario-review-final.log",
+      "passedLeaves": 13,
+      "failedLeaves": 0,
+      "skippedLeaves": 2,
+      "reportedPassIncludesContainer": 14
+    },
+    "regression": {
+      "log": "artifacts/scenario-review-regressions.log",
+      "passed": 26,
+      "skipped": 9,
+      "failed": 0
+    }
+  },
+  "limits": [
+    "Optional HTTP scenarios not executed; skipped is not PASS.",
+    "Read-only native checks do not prove arbitrary physical actions or full model loops.",
+    "Scanner scope excludes ignored/untracked data and declared excluded files; not universal detection.",
+    "24-hour endurance permanently waived by owner; not run."
+  ]
+}

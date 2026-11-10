@@ -2426,16 +2426,169 @@
     },
     {
       "file": "test/e2e-scenarios.test.mjs",
-      "sha256": "e37c92668702934f8c655b99517a075e8fca6d5138e225a41d994d221330ed81",
+      "sha256": "5fa3255d0a230ebab9857e55de9c014cb93fd3b224e2a18967995c230383cd8c",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
-      "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT",
+        "INTEGRATION",
+        "REAL_OS",
+        "REAL_EXTERNAL"
       ],
-      "modes": [],
-      "declarations": null
+      "scope": "Fifteen historical scenarios scoped to actual assertions; temp state, native observations, scheduler file effect, transcript preservation and tracked scanner.",
+      "gaps": [
+        "No clean install, model tool loop, independent agents, killed-process restart, semantic embeddings or provider failover.",
+        "Two HTTP scenarios require disposable loopback host and remain skipped without it."
+      ],
+      "modes": [
+        {
+          "condition": "ZERO_SCENARIO_TEST_HOST supplies disposable loopback host other than owner port18789",
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Health/catalog shape and exact inference response; no host startup or independent model identification."
+        }
+      ],
+      "declarations": [
+        {
+          "title": "ZERO AI — scoped historical T01–T15 scenarios",
+          "line": 23,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "scope": "Container only, no independent acceptance."
+        },
+        {
+          "title": "T01: Launcher source contract only",
+          "line": 42,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Launcher text only, no launch."
+        },
+        {
+          "title": "T02: Supplied disposable host health and catalog HTTP contracts",
+          "line": 53,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Optional disposable HTTP response shape, no startup."
+        },
+        {
+          "title": "T03: Supplied disposable host exact inference response",
+          "line": 67,
+          "labels": [
+            "INTEGRATION",
+            "REAL_EXTERNAL"
+          ],
+          "scope": "Optional exact inference reply; model identity not independently established."
+        },
+        {
+          "title": "T04: Direct native window observation through capability engine",
+          "line": 92,
+          "labels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "scope": "Actual native list_windows and audit, no model loop."
+        },
+        {
+          "title": "T05: Tool schema disallowed-action rejection",
+          "line": 114,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Supplied tool/action validation."
+        },
+        {
+          "title": "T06: Native read-only window state shape",
+          "line": 126,
+          "labels": [
+            "REAL_OS"
+          ],
+          "scope": "Actual read-only native window-state shape."
+        },
+        {
+          "title": "T07: Hold freshness requires actual screen capture",
+          "line": 133,
+          "labels": [
+            "INTEGRATION",
+            "REAL_OS"
+          ],
+          "scope": "Hold and actual PNG freshness, no physical input."
+        },
+        {
+          "title": "T08: Supplied parent-child task bookkeeping",
+          "line": 168,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Supplied task bookkeeping, no agent execution."
+        },
+        {
+          "title": "T09: SQLite reopen recovery in the same Node process",
+          "line": 199,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Same-process SQLite reopen, no process restart."
+        },
+        {
+          "title": "T10: Explicit due-time dispatch produces a real file effect",
+          "line": 223,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Explicit due-time scheduler writes actual file once, no wall-clock cron."
+        },
+        {
+          "title": "T11: Keyword recall of supplied in-memory records",
+          "line": 254,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Supplied keyword records, no semantic embeddings."
+        },
+        {
+          "title": "T12: Context projection preserves original transcript",
+          "line": 275,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "All original transcript retained with bounded model context."
+        },
+        {
+          "title": "T13: Supplied provider failure counters and degraded state",
+          "line": 305,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied failure counters, no network or failover."
+        },
+        {
+          "title": "T14: Explicit provider file reload without inference",
+          "line": 329,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual temp provider file with explicit reload, no inference."
+        },
+        {
+          "title": "T15: Secret scanner on its configured included paths",
+          "line": 351,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual tracked scanner and isolated Git detection fixture; excluded and untracked files outside scope."
+        }
+      ]
     },
     {
       "file": "test/functional-browser-options.test.mjs",
