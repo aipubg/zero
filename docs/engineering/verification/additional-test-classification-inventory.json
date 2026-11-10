@@ -5,16 +5,43 @@
   "entries": [
     {
       "file": "app/test/bridge.test.mjs",
-      "sha256": "55871f4b90b3b91de6584a9e637185cb5b7a007c692ff6cd46d2c2979c573e0e",
+      "sha256": "7824540b214aa911708a64803a935aea4caf250f12ad58e463d9555315b8879b",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Supplied environment config and temp state path validate ws URL/protocol/role/scopes/timeout and absence of credential field names; no network. Actual source/package absence and forbidden-string scan assert legacy path removal, not actual HTTP403 or browser behavior. Actual manifest/browser/source text asserts one surface metadata and no duplicate team/thread store references, not actual UI functionality.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Configuration/source/manifest inspection only; no actual bridge connection, HTTP403 route execution, browser or secret-redaction runtime."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Gateway bridge configuration validates required settings without secrets",
+          "line": 40,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied environment config and temp state path validate ws URL/protocol/role/scopes/timeout and absence of credential field names; no network."
+        },
+        {
+          "title": "legacy CopilotKit product path and its 403 route are absent",
+          "line": 84,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Actual source/package absence and forbidden-string scan assert legacy path removal, not actual HTTP403 or browser behavior."
+        },
+        {
+          "title": "native plugin remains the single Zero UI surface",
+          "line": 126,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Actual manifest/browser/source text asserts one surface metadata and no duplicate team/thread store references, not actual UI functionality."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/computer-hold.test.mjs",
@@ -166,16 +193,60 @@
     },
     {
       "file": "app/zero-control-ui/test/mount.test.mjs",
-      "sha256": "0a2fce8ae5ed9be9238c4eb92e7d6124486959eb98aac4961015a99e99850324",
+      "sha256": "f2b0ed77b5952ff37ea9f2b98ea6af5fa3a0d38995dd534ef2ff7942624758e8",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Supplied FakeElement/document models page mount contains expected text and dispose empties container; no gateway request. Supplied SDK registration captures expected method names and requires an executable handler for every reported registration. Supplied CLI/config responses validate direct handler params, omit fixture credentials and handle supplied config-read failure without secret exposure. Supplied connector config/catalog metadata projects bounded valid tool names and transport/status with reachability remaining unknown and secret-shaped fields omitted. Supplied observation engine direct handlers route start/stop/private/recent and reject invalid actions/extra keys/limits; no actual capture.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Supplied DOM/API/CLI/config/catalog/observation engine and direct handler calls; no actual browser, CLI subprocess, MCP connection, capture or gateway transport."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Providers surface mounts supplied DOM text and disposes without a gateway",
+          "line": 18,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied FakeElement/document models page mount contains expected text and dispose empties container; no gateway request."
+        },
+        {
+          "title": "Runtime registration wires integration status and observation methods",
+          "line": 34,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied SDK registration captures expected method names and requires an executable handler for every reported registration."
+        },
+        {
+          "title": "supplied CLI and connector metadata validate parameters and redact fixture secrets",
+          "line": 74,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied CLI/config responses validate direct handler params, omit fixture credentials and handle supplied config-read failure without secret exposure."
+        },
+        {
+          "title": "OMB connector projection: cached native MCP capabilities are bounded and secret-free",
+          "line": 128,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied connector config/catalog metadata projects bounded valid tool names and transport/status with reachability remaining unknown and secret-shaped fields omitted."
+        },
+        {
+          "title": "observation runtime handlers expose bounded status, control, and recent rows",
+          "line": 177,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied observation engine direct handlers route start/stop/private/recent and reject invalid actions/extra keys/limits; no actual capture."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/observation-lifecycle.test.mjs",

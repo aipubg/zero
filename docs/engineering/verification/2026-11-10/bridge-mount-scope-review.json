@@ -1,0 +1,17 @@
+{
+  "command": "node --test app/test/bridge.test.mjs app/zero-control-ui/test/mount.test.mjs",
+  "passed": 8,
+  "classifications": ["UNIT", "CONTRACT"],
+  "changes": [
+    "Fake DOM mount no longer claims to connect to gateway",
+    "Supplied CLI/config metadata explicitly named as fixtures",
+    "Every method reported as registered must have executable captured handler",
+    "Canonical temporary parent/task prefix checked before bridge fixture cleanup"
+  ],
+  "limits": "Supplied DOM/API/CLI/config/catalog/observation engine, pure metadata and actual source text; no browser, network, CLI subprocess, MCP or native capture in this command",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 75,
+  "additionalUnreviewedFiles": 14,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

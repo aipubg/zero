@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -73,7 +74,10 @@ test('Gateway bridge configuration validates required settings without secrets',
       /ZERO_AGENT_RUN_TIMEOUT_MS/,
     );
   } finally {
-    await rm(stateDir, { recursive: true, force: true });
+    const resolved = realpathSync.native(stateDir);
+    assert.equal(path.dirname(resolved), realpathSync.native(tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-bridge-config-'));
+    await rm(resolved, { recursive: true, force: true });
   }
 });
 

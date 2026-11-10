@@ -15,7 +15,7 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("Zero Providers surface mounts and connects to gateway", async () => {
+test("Providers surface mounts supplied DOM text and disposes without a gateway", async () => {
   installFakeDocument();
   const { mountModelsPage } = await import(
     pathToFileURL(path.join(root, "src/pages/models.js")).href
@@ -68,9 +68,10 @@ test("Runtime registration wires integration status and observation methods", as
   assert.ok(result.registered.includes("zero.observation.status"));
   assert.ok(result.registered.includes("zero.observation.control"));
   assert.ok(result.registered.includes("zero.observation.recent"));
+  for (const name of result.registered) assert.equal(typeof methods.get(name)?.handler, "function", name);
 });
 
-test("PM-06 integration status: CLI discovery, connector MCP status, validation, redaction", async () => {
+test("supplied CLI and connector metadata validate parameters and redact fixture secrets", async () => {
   const cli = [
     {
       id: "claude",
