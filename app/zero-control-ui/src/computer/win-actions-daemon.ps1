@@ -16,6 +16,18 @@ using System.Text;
 using System.Collections.Generic;
 
 public static class WinApiCore {
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr OpenWindowStation(string lpszWinSta, bool fInherit, uint dwDesiredAccess);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SetProcessWindowStation(IntPtr hWinSta);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr OpenDesktop(string lpszDesktop, uint dwFlags, bool fInherit, uint dwDesiredAccess);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool EnumDesktopWindows(IntPtr hDesktop, EnumWindowsProc lpfn, IntPtr lParam);
+
     [DllImport("user32.dll")]
     public static extern bool SetProcessDPIAware();
 
@@ -177,6 +189,10 @@ try {
 # Set DPI awareness for pixel-accurate coordinates
 try {
     [WinApiCore]::SetProcessDPIAware() | Out-Null
+    $hwinsta = [WinApiCore]::OpenWindowStation("WinSta0", $false, 0x037F)
+    if ($hwinsta -ne [IntPtr]::Zero) {
+        [WinApiCore]::SetProcessWindowStation($hwinsta) | Out-Null
+    }
 } catch {}
 
 $script:lastBotX = -1
@@ -545,7 +561,15 @@ function Dispatch-Action($req) {
                 return $true
             }
 
-            [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+            $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+            if ($hdesk -ne [IntPtr]::Zero) {
+                [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
+            } else {
+                [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+            }
+            if ($windowsList.Count -eq 0) {
+                [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+            }
             $result["windows"] = $windowsList
             $result["count"] = $windowsList.Count
         }
@@ -586,7 +610,13 @@ function Dispatch-Action($req) {
                     return $true
                 }
                 $script:matchedHwnd = [IntPtr]::Zero
-                [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+                if ($hdesk -ne [IntPtr]::Zero) {
+                    [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
+                }
+                if ($script:matchedHwnd -eq [IntPtr]::Zero) {
+                    [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                }
                 $foundHwnd = $script:matchedHwnd
             }
 
@@ -690,7 +720,13 @@ function Dispatch-Action($req) {
                         return $true
                     }
                     $script:matchedHwnd = [IntPtr]::Zero
-                    [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                    $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+                    if ($hdesk -ne [IntPtr]::Zero) {
+                        [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
+                    }
+                    if ($script:matchedHwnd -eq [IntPtr]::Zero) {
+                        [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                    }
                     $foundHwnd = $script:matchedHwnd
                 }
                 if ($foundHwnd -ne [IntPtr]::Zero) {
