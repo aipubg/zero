@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseLocalToolCalls } from '../backend/gateway/server/local-gguf-tool-calls.mjs';
 
-test('[CONTRACT] local generated requests use function wire objects and retain every call', () => {
+test('[CONTRACT] supplied local tool envelopes use function wire objects and retain every call', () => {
   const calls = parseLocalToolCalls('<tool_call>{"name":"read","arguments":{"path":"हिंदी.txt"}}</tool_call>\n<tool_call>{"name":"write","arguments":{}}</tool_call>');
   assert.equal(calls.length, 2);
   assert.notEqual(calls[0].id, calls[1].id);

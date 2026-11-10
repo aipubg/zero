@@ -1,6 +1,6 @@
 # Current supplement — 2026-11-10
 
-See the [current correction matrix](CURRENT-ACCEPTANCE.md) for actual workflow evidence and open gates. The [additional test audit](ADDITIONAL-TEST-CLASSIFICATION.md) now records 106 source files, 19 reviewed additional files and 69 unreviewed files beyond the 18 original suite files. Integrity validation is not exhaustive classification or test execution. Source fingerprints explicitly normalize CRLF/LF; original audit byte hashes are retained. The detailed coverage tables below are the historical November 1 assertion audit, not current feature status.
+See the [current correction matrix](CURRENT-ACCEPTANCE.md) for actual workflow evidence and open gates. The [additional test audit](ADDITIONAL-TEST-CLASSIFICATION.md) now records 107 source files, 25 reviewed additional files and 64 unreviewed files beyond the 18 original suite files. Integrity validation is not exhaustive classification or test execution. Source fingerprints explicitly normalize CRLF/LF; original audit byte hashes are retained. The detailed coverage tables below are the historical November 1 assertion audit, not current feature status.
 
 # Historical test classification and acceptance correction — 2026-11-01
 

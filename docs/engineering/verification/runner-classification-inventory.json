@@ -4,14 +4,15 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "d44ea9ef6d69313139f0ed02b202e2cb1384e4904ba8265476b516410f30d6f5",
+      "sha256": "f075e79f8b6f113cb008c49174c37546d591d86db36b701574393481ed9c6ac9",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
         "REAL_EXTERNAL",
-        "REAL_OS"
+        "REAL_OS",
+        "CONTRACT"
       ],
-      "scope": "Isolated UI interactions and persisted effects; optional native devices, capture, model and external skill execution.",
+      "scope": "Isolated actual UI workflows and persisted effects with explicit selector validation; invalid/help invocations execute no product workflows.",
       "modes": [
         "--external: two consecutive actual cloud UI sends on the same page, exact replies, durable transcript run IDs and restart/replay recovery",
         "--models: actual UI assignment, isolated settings restart and independently observed real upstream model request; provider-reported alias retained separately",
@@ -38,10 +39,17 @@
         "--chat-abort (requires --external): actual provider text delta, real UI Stop click, cancelled task/interrupted persisted partial and next exact UI reply",
         "--hf-search: actual official metadata, pinned identity, real bytes, modal close/reopen and settled cancellation through existing UI; no completion/inference claim",
         "--hf-complete: actual UI external full transfer, independent disk SHA, immediate parent catalog refresh, real host restart/persisted catalog and actual UI native load/token-generation/unload; no semantic chat/tool accuracy claim",
-        "--gguf-qwen-3b (requires --gguf): select separately provisioned pinned official 3B weights for unchanged actual local UI/tool/recall gates; model capability requires execution, not installer/catalog success"
+        "--gguf-qwen-3b (requires --gguf): select separately provisioned pinned official 3B weights for unchanged actual local UI/tool/recall gates; model capability requires execution, not installer/catalog success",
+        "--help/-h: CONTRACT selector metadata only, execution NOT_RUN; unknown/missing-parent/conflicting selections exit BLOCKED before build or browser import"
       ],
       "execution": "NOT_RUN_BY_INVENTORY",
-      "originalAuditByteSha256": "d44ea9ef6d69313139f0ed02b202e2cb1384e4904ba8265476b516410f30d6f5"
+      "originalAuditByteSha256": "d44ea9ef6d69313139f0ed02b202e2cb1384e4904ba8265476b516410f30d6f5",
+      "additionalSources": [
+        {
+          "file": "scripts/functional-browser-options.mjs",
+          "sha256": "81e22039db6bb633b5e4e7d1ab636bdf08b66a59be96d50049d4bad03f26b839"
+        }
+      ]
     },
     {
       "file": "scripts/screen-intelligence-endurance.mjs",

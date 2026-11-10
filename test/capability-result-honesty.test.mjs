@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CapabilityEngine } from '../packages/capability-engine/index.mjs';
 
-test('[CONTRACT] dispatched native failure cannot become success from executed/verified flags', async () => {
+test('[CONTRACT] supplied operator failure cannot become success from executed/verified flags', async () => {
   const engine = new CapabilityEngine({ operator: {
     evaluateSafety: () => ({ allowed: true }),
     execute: async () => ({ ok: false, executed: true, verified: true, outcome: 'COMPLETED', error: 'Readback failed' }),

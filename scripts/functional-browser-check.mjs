@@ -11,22 +11,18 @@ import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { chromium } from '../backend/node_modules/playwright-core/index.mjs';
 import { mcpCapabilityName } from '../packages/plugin-sdk/mcp-adapter.mjs';
+import { BROWSER_FLAGS, parseBrowserModes } from './functional-browser-options.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-if (process.argv.includes('--screen-recall') && !process.argv.includes('--screen')) throw new Error('--screen-recall requires --screen');
-if (process.argv.includes('--plugin-crash') && !process.argv.includes('--external-plugins')) throw new Error('--plugin-crash requires --external-plugins');
-if (process.argv.includes('--agent-execution') && !process.argv.includes('--agent-models')) throw new Error('--agent-execution requires --agent-models');
-if (process.argv.includes('--parallel-agents') && !process.argv.includes('--agent-execution')) throw new Error('--parallel-agents requires --agent-execution');
-if (process.argv.includes('--agent-recovery') && !process.argv.includes('--parallel-agents')) throw new Error('--agent-recovery requires --parallel-agents');
-if (process.argv.includes('--gguf-runtime') && !process.argv.includes('--gguf')) throw new Error('--gguf-runtime requires --gguf');
-if (process.argv.includes('--gguf-chat') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-chat requires --gguf-runtime');
-if (process.argv.includes('--gguf-tools') && !process.argv.includes('--gguf-runtime')) throw new Error('--gguf-tools requires --gguf-runtime');
-if (process.argv.includes('--gguf-qwen') && !process.argv.includes('--gguf')) throw new Error('--gguf-qwen requires --gguf');
-if (process.argv.includes('--gguf-qwen-3b') && !process.argv.includes('--gguf')) throw new Error('--gguf-qwen-3b requires --gguf');
-if (process.argv.includes('--gguf-recall') && !process.argv.includes('--gguf-tools')) throw new Error('--gguf-recall requires --gguf-tools');
-if (process.argv.includes('--chat-abort') && !process.argv.includes('--external')) throw new Error('--chat-abort requires --external');
+let selection;
+try { selection = parseBrowserModes(process.argv.slice(2)); }
+catch (error) { console.error(JSON.stringify({ status: 'BLOCKED', execution: 'NOT_RUN', reason: error.message })); process.exit(2); }
+if (selection.help) {
+  console.log(JSON.stringify({ mode: 'HELP', execution: 'NOT_RUN', flags: BROWSER_FLAGS, scope: 'No arguments runs baseline workflows only; explicit modes add only their selected workflows.' }, null, 2));
+  process.exit(0);
+}
+const { chromium } = await import('../backend/node_modules/playwright-core/index.mjs');
 // Exercise current source, never an older immutable UI generation left on disk.
 execFileSync(process.execPath, [path.join(root, 'app/zero-control-ui/build.mjs')], { cwd: root, stdio: 'pipe', windowsHide: true });
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-functional-browser-'));
@@ -42,7 +38,7 @@ await once(listener, 'listening');
 const port = listener.address().port;
 await new Promise(resolve => listener.close(resolve));
 const base = `http://127.0.0.1:${port}`;
-const report = { classification: [], classificationMeaning: 'Selected workflow scope; labels do not imply a passing outcome or product acceptance.', startedAt: new Date().toISOString(), status: 'RUNNING', evidence, checks: [] };
+const report = { classification: [], classificationMeaning: 'Selected workflow scope; labels do not imply a passing outcome or product acceptance.', selection: selection.modes.length ? 'EXPLICIT_MODES' : 'BASELINE_ONLY', requestedModes: selection.modes, startedAt: new Date().toISOString(), status: 'RUNNING', evidence, checks: [] };
 const workflowLabels = new Map([
   ['Chat connects, native plugin activates, composer accepts text', []],
   ['Memory search uses actual persisted records through the UI', []],

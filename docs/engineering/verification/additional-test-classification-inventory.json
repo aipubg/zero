@@ -689,29 +689,68 @@
     },
     {
       "file": "test/capability-lease-lifecycle.test.mjs",
-      "sha256": "a8fcd4940b7900aaa22f6086999666f3c2e3d5e4f4370fd9623ed0bfc9b00898",
+      "sha256": "8fa3871d38b663a64f2190cbd8c295d2e4a267d1597979c707e13ab83296aa7e",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Actual in-memory lease manager with supplied deferred operator verifies ordering, ownership retention and cancelled acquisition.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Two caller IDs are not independent model agents",
+        "Callback ordering is not real native action delivery or timeout/endurance proof"
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] local desktop leases cover supplied execution and hand directly to the next caller",
+          "line": 6,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "local desktop leases cover supplied execution and hand directly to the next caller"
+        },
+        {
+          "title": "[CONTRACT] preowned task lease remains held and cancelled queued acquisition never dispatches",
+          "line": 32,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "preowned task lease remains held and cancelled queued acquisition never dispatches"
+        }
+      ]
     },
     {
       "file": "test/capability-result-honesty.test.mjs",
-      "sha256": "e45a9839b21cc05117513ad22ca338831bad3cc559adb6e2a94ca4431818e1ca",
+      "sha256": "e18ad7b20464e5716486bd83695dab0c3977a53b1bdc865fb76343360648a75f",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Supplied operator results verify failure/cancellation override contradictory executed and verified flags.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No native action delivery, real process or physical effect evidence"
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] supplied operator failure cannot become success from executed/verified flags",
+          "line": 5,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "supplied operator failure cannot become success from executed/verified flags"
+        },
+        {
+          "title": "[CONTRACT] cancellation dominates a late successful native completion",
+          "line": 16,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "cancellation dominates a late successful native completion"
+        }
+      ]
     },
     {
       "file": "test/connector-probes.test.mjs",
@@ -764,6 +803,39 @@
       ],
       "modes": [],
       "declarations": null
+    },
+    {
+      "file": "test/functional-browser-options.test.mjs",
+      "sha256": "0fbfb5273ccb4950e51ac93b70704bcb62d4684f57aa14b6da4f7eca38e58ec4",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "INTEGRATION"
+      ],
+      "scope": "Pure mode-selection validation and actual Node CLI refusals/help in a dependency-free controlled source tree.",
+      "gaps": [
+        "Negative/help process fixtures do not prove actual browser or feature execution; positive selected browser run is separate."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "[UNIT] browser selectors cover actual branches and reject missing, unknown or conflicting modes",
+          "line": 11,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "browser selectors cover actual branches and reject missing, unknown or conflicting modes"
+        },
+        {
+          "title": "[INTEGRATION] invalid and help CLI modes settle before browser dependencies, build or owner-file mutation",
+          "line": 23,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "invalid and help CLI modes settle before browser dependencies, build or owner-file mutation"
+        }
+      ]
     },
     {
       "file": "test/gguf-download-file-integration.test.mjs",
@@ -837,29 +909,78 @@
     },
     {
       "file": "test/local-chat-wrapper.test.mjs",
-      "sha256": "33b8f59ff91d898b1f2a14c0125538ff2ed1aa8d7c88a3ef866f5ad0a3d3bafa",
+      "sha256": "e3e14ad9d2cd07c7b78d60ebc2336fdeb649760c5a6d7db252ceca4644b483cc",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Real pinned GGUF metadata read through SDK and exact text-wrapper context boundary assertions; no native model inference.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Requires actual pinned SmolVLM model; absent weights now BLOCKED/skip, not a passing projection test",
+        "No generated model output or general multimodal compatibility claim"
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] exact registered multimodal template text projection retains model role boundaries",
+          "line": 7,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "exact registered multimodal template text projection retains model role boundaries"
+        }
+      ]
     },
     {
       "file": "test/local-gguf-continuation.test.mjs",
-      "sha256": "bf4b59d83d769aeb04c18624d0654b7da44fcf14562b04aa563b35cac650c245",
+      "sha256": "a8e62620cafe44dc04141d93cf05f449044e80f05c3b816423e5ddd22034ad57",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Supplied message/tool-result fixtures verify history projection, provenance retention and whole-group context pruning.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No actual native inference, executed tool or cross-process transcript persistence"
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] local continuation retains ordered calls, null assistant content and supplied tool results",
+          "line": 5,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "local continuation retains ordered calls, null assistant content and supplied tool results"
+        },
+        {
+          "title": "[CONTRACT] context pruning removes complete user/tool groups and preserves current continuation",
+          "line": 19,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "context pruning removes complete user/tool groups and preserves current continuation"
+        },
+        {
+          "title": "[CONTRACT] earlier null-content calls and failed results survive a later user turn",
+          "line": 37,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "earlier null-content calls and failed results survive a later user turn"
+        },
+        {
+          "title": "[CONTRACT] native continuation preserves roles and raw tool result without re-escaping paths",
+          "line": 48,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "native continuation preserves roles and raw tool result without re-escaping paths"
+        }
+      ]
     },
     {
       "file": "test/local-gguf-delete-preservation.test.mjs",
@@ -903,16 +1024,43 @@
     },
     {
       "file": "test/local-gguf-tool-calls.test.mjs",
-      "sha256": "13f118e6b62b50296735de5b0e2eab5838b677baef8116bc75dcab8082896d5b",
+      "sha256": "3b92a7c91f8b1d2b049d6e46618dbe355811cf36dcfe40915f9858759a06dd06",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT"
+      ],
+      "scope": "Generated-tool wire parser assertions using supplied text envelopes, Unicode arguments and malformed batches.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Supplied text fixtures; no actual model generation, tool execution or disk effect"
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[CONTRACT] supplied local tool envelopes use function wire objects and retain every call",
+          "line": 5,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "supplied local tool envelopes use function wire objects and retain every call"
+        },
+        {
+          "title": "[CONTRACT] JSON strings retain literal envelope tags, escaped quotes and nested objects",
+          "line": 15,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "JSON strings retain literal envelope tags, escaped quotes and nested objects"
+        },
+        {
+          "title": "[CONTRACT] malformed and incomplete requests fail the entire parsed batch",
+          "line": 23,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "malformed and incomplete requests fail the entire parsed batch"
+        }
+      ]
     },
     {
       "file": "test/local-tools.integration.test.mjs",
@@ -1097,13 +1245,13 @@
     },
     {
       "file": "test/runner-catalog.test.mjs",
-      "sha256": "c20da1c56b5287e143b61757eddc64bf9554828158e9c2b419c2376624d3a020",
+      "sha256": "1cb361dce05cb171c7e1482d1153a258d7a42ef2023796d03373a9e9c8a4dd3d",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "CONTRACT"
       ],
-      "scope": "Controlled script/source/metadata fixtures enforce runner inventory identity, known labels and refusal on missing coverage; no product execution.",
+      "scope": "Controlled runner/helper source and metadata fixtures enforce identity and refusals without executing application workflows.",
       "gaps": [
         "Controlled metadata/reporting fixtures do not establish application, external-service or native device outcomes."
       ],

@@ -15,11 +15,19 @@ test('[CONTRACT] runner catalog audits source identity and fails closed on missi
   const directory = path.join(root, 'docs/engineering/verification'); fs.mkdirSync(directory, { recursive: true });
   const inventory = path.join(directory, 'runner-classification-inventory.json');
   fs.writeFileSync(inventory, JSON.stringify(catalog));
-  for (const row of catalog.runners) fs.copyFileSync(path.join(repo, row.file), path.join(root, row.file));
+  for (const row of catalog.runners) {
+    fs.copyFileSync(path.join(repo, row.file), path.join(root, row.file));
+    for (const helper of row.additionalSources || []) fs.copyFileSync(path.join(repo, helper.file), path.join(root, helper.file));
+  }
   assert.equal(validateRunnerCatalog(root).runners.length, catalog.runners.length);
   const source = path.join(root, catalog.runners[0].file); fs.appendFileSync(source, '\n// changed\n');
   assert.throws(() => validateRunnerCatalog(root), /source drift/);
   fs.copyFileSync(path.join(repo, catalog.runners[0].file), source);
+  const helper = catalog.runners.find(row => row.file === 'scripts/functional-browser-check.mjs').additionalSources?.find(row => row.file === 'scripts/functional-browser-options.mjs');
+  assert.ok(helper, 'Browser selector helper must be fingerprinted');
+  fs.appendFileSync(path.join(root, helper.file), '\n// modified helper\n');
+  assert.throws(() => validateRunnerCatalog(root), /helper source drift/);
+  fs.copyFileSync(path.join(repo, helper.file), path.join(root, helper.file));
   fs.writeFileSync(path.join(root, 'scripts/verify-unclassified.mjs'), '');
   assert.throws(() => validateRunnerCatalog(root), /coverage drift/);
   fs.unlinkSync(path.join(root, 'scripts/verify-unclassified.mjs'));

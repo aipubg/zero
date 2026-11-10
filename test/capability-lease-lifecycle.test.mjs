@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { CapabilityEngine } from '../packages/capability-engine/index.mjs';
 import { DesktopLeaseManager } from '../packages/agent-runtime/desktop-lease.mjs';
 
-test('[CONTRACT] local desktop leases cover execution and hand directly to the next agent', async t => {
+test('[CONTRACT] local desktop leases cover supplied execution and hand directly to the next caller', async t => {
   const lease = new DesktopLeaseManager(); t.after(() => lease.forceRelease('test cleanup'));
   let release; const held = new Promise(resolve => { release = resolve; });
   const order = [];

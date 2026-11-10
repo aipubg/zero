@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { localContinuationPrompt, localNativeContinuation, localHistoricalTurns, fitLocalHistoricalTurns } from '../backend/gateway/server/local-gguf-continuation.mjs';
 
-test('[CONTRACT] local continuation retains ordered calls, null assistant content and actual tool results', () => {
+test('[CONTRACT] local continuation retains ordered calls, null assistant content and supplied tool results', () => {
   const messages = [
     { role: 'assistant', content: null, tool_calls: [{ id: 'a', type: 'function', function: { name: 'read', arguments: '{"path":"x"}' } }] },
     { role: 'tool', tool_call_id: 'a', content: '{"ok":false,"error":"missing हिंदी"}' },
