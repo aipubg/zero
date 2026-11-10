@@ -21,6 +21,8 @@ Actual installed Spotify and Camera launches both returned real foreground HWNDs
 
 `artifacts/ui-design/working-fixes-final-regression.log`:24 PASS across same-player media/multiple previews/exact controls/cancellation, voice visual projection, capability outcomes/leases, assistant batch handling and classification tooling. Supplied voice-status projection is a browser contract, not a new hardware capture test. `working-fixes-ui.log`:104 UI-package PASS. `working-fixes-real-desktop.log`:2 actual native UIA effect/cancellation PASS after state-directory correction. Overlapping counts are not additive acceptance totals.
 
+Subsequent [actual native microphone meter proof](native-microphone-meter.json) is PASS:122 real device0 input frames,12 real browser observations with varying visual level, active listening animation and animation stopped after capture ended. This uses the production voice-status Gateway path without supplied capture metadata. No STT/model conversation or raw audio file was produced; the owner runtime was not restarted. This closes the hardware-to-visual-meter gap left by the earlier supplied-status projection, without extending the result into full speech or audibility acceptance.
+
 The source audit also reviewed preexisting committed b7a3476a phase4/phase6 changes so inventory integrity no longer fails on stale fingerprints. Those legacy fixed-port suites were NOT_RUN against the owner host; the local plugin fixture still does not assert its expected dot product or prove a real third-party installation.
 
 ## Requested preservation cleanup

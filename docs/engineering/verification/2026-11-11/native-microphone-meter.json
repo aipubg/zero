@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-11",
+  "status": "PASS",
+  "classification": ["REAL_OS", "REAL_BROWSER", "INTEGRATION"],
+  "scope": "Actual native Windows input device0 PCM capture metadata reaches the production voice button through a real isolated Gateway; actual browser animation and varying visual levels observed, then stop verified.",
+  "execution": {
+    "nativeFrames": 122,
+    "browserSamples": 12,
+    "minimumObservedVisualLevel": 0.06846683267046845,
+    "maximumObservedVisualLevel": 0.07647835606731658,
+    "animationWhileReceivingFrames": "zero-mic-breathe",
+    "animationAfterCaptureStopped": "none",
+    "modelConversations": 0,
+    "rawAudioSaved": false,
+    "ownerRuntimeRestarted": false
+  },
+  "privateEvidence": {
+    "report": "artifacts/ui-design/native-microphone-meter-proof.json",
+    "log": "artifacts/ui-design/native-microphone-meter-proof.log"
+  },
+  "limits": [
+    "Seconds-long bounded input/visualization proof; no endurance certification.",
+    "No speech transcription, semantic recognition or synthesized-output audibility tested in this run.",
+    "Device index is explicit; this receipt does not independently identify the physical microphone model.",
+    "Not an overall product completion or release sign-off."
+  ]
+}
