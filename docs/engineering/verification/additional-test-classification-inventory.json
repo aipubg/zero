@@ -1004,16 +1004,27 @@
     },
     {
       "file": "test/desktop-session-persistence.test.mjs",
-      "sha256": "cb82bdeabad05654476c59f74b4cf65a6580ab6a50cdf548f6ba231b3727adb2",
+      "sha256": "09e7da89d6ddca07c00eef1207b9a00f9805f254ad88890776706e94d4ff902c",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "INTEGRATION"
+      ],
+      "scope": "Actual file-backed session store omits raw bearer token, fresh Node helper restores scopes and revokes session; subsequent store sees revocation and rejects invalid/expired sessions/corrupt file.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual fresh helper process, not a restarted native host or browser login; expiry is supplied in the past and invalid/corrupt files are fixtures."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] fresh process restores session scopes without stored bearer tokens and persists revocation",
+          "line": 10,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual file-backed session store omits raw bearer token, fresh Node helper restores scopes and revokes session; subsequent store sees revocation and rejects invalid/expired sessions/corrupt file."
+        }
+      ]
     },
     {
       "file": "test/e2e-matrix.test.mjs",
@@ -1416,29 +1427,89 @@
     },
     {
       "file": "test/native-observation-lifecycle.test.mjs",
-      "sha256": "b0aab34d1d0a22d2ac071189d90c81d6a2ccb9145b50089ce00793abe6f1f499",
+      "sha256": "4ba223ec3eafc6874539e6f03457ae8d0d18554ca62f6742cdf30729b5ca13eb",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Actual file preferences and encrypted SQLite summaries from supplied frames survive lifecycle reopen; unrelated owner preference preserved; enabled start/stop persists. Supplied frames populate volatile ring; Private Mode clears it, persists across lifecycle reopen and resumes only enabled observation. Supplied throwing capture reports start failure; actual malformed preference file remains unchanged and blocks capture startup.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Frames, foreground metadata and OCR are supplied and key is fixed; lifecycle reopen is same process, no real Windows capture/OCR/model or host restart."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[INTEGRATION] observation preferences and real SQLite summaries survive lifecycle reopen",
+          "line": 26,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual file preferences and encrypted SQLite summaries from supplied frames survive lifecycle reopen; unrelated owner preference preserved; enabled start/stop persists."
+        },
+        {
+          "title": "[INTEGRATION] Private Mode clears volatile frames, persists and resumes only an enabled preference",
+          "line": 47,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Supplied frames populate volatile ring; Private Mode clears it, persists across lifecycle reopen and resumes only enabled observation."
+        },
+        {
+          "title": "[CONTRACT] failed capture and malformed preferences never report successful capture",
+          "line": 63,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Supplied throwing capture reports start failure; actual malformed preference file remains unchanged and blocks capture startup."
+        }
+      ]
     },
     {
       "file": "test/observation-encryption.integration.test.mjs",
-      "sha256": "fb1c80d630ed62849555822b6ec0a86b1c114ef5bf7c04eaffbde4b4aafa9604",
+      "sha256": "026ff7ce71ef250e5121791e4a8f44592533f6809507ad5fe798ee42aade4df2",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Actual Windows DPAPI protects persisted key; real SQLite sensitive columns are ciphertext, plaintext marker absent in closed active DB and retrieval succeeds on same-process reopen. Actual missing DPAPI key refuses reopening without creating a replacement; swapped authenticated columns cause authentication failure. Actual plaintext SQLite migration retains readable backup, removes marker from active database and avoids repeating migration on reopen.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual current-user DPAPI only; no second Windows user, actual captured desktop content, full disk forensics or continuous observation. Plaintext migration backup intentionally remains recoverable."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "[REAL_OS] persistent observation fields encrypt with a Windows-user-bound key and reopen for retrieval",
+          "line": 19,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Actual Windows DPAPI protects persisted key; real SQLite sensitive columns are ciphertext, plaintext marker absent in closed active DB and retrieval succeeds on same-process reopen."
+        },
+        {
+          "title": "[REAL_OS] missing keys and swapped authenticated ciphertext fail without replacing stored data",
+          "line": 36,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Actual missing DPAPI key refuses reopening without creating a replacement; swapped authenticated columns cause authentication failure."
+        },
+        {
+          "title": "[REAL_OS] plaintext migration preserves a recoverable snapshot and removes plaintext from the active database",
+          "line": 51,
+          "labels": [
+            "REAL_OS",
+            "INTEGRATION"
+          ],
+          "scope": "Actual plaintext SQLite migration retains readable backup, removes marker from active database and avoids repeating migration on reopen."
+        }
+      ]
     },
     {
       "file": "test/owned-process-resources.test.mjs",

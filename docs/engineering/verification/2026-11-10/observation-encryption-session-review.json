@@ -1,0 +1,21 @@
+{
+  "command": "node --test test/native-observation-lifecycle.test.mjs test/observation-encryption.integration.test.mjs test/desktop-session-persistence.test.mjs",
+  "passed": 7,
+  "failed": 0,
+  "actualEvidence": [
+    "Windows current-user DPAPI key protection and encrypted SQLite fields/retrieval",
+    "Missing key and swapped authenticated columns refuse reopening",
+    "Plaintext migration retains recoverable backup while active database no longer contains marker",
+    "Fresh Node helper restores session scopes and persists revocation without storing raw bearer token"
+  ],
+  "fixtureLimits": [
+    "Observation lifecycle uses supplied frames/OCR/fixed key and same-process reopen, not actual capture",
+    "No second Windows user, restarted native host, browser login or continuous observation",
+    "Migration backup intentionally retains recoverable plaintext"
+  ],
+  "changes": "Three exact test files classified; canonical temporary parent/prefix cleanup guards added and session child gets a bounded 10-second deadline",
+  "postChangeRegression": { "command": "node --test test/desktop-session-persistence.test.mjs test/verification/classification-runner.test.mjs", "passed": 17 },
+  "additionalReviewedFiles": 49,
+  "additionalUnreviewedFiles": 40,
+  "releaseStatus": "BLOCKED"
+}

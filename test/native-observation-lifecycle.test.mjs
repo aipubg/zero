@@ -16,7 +16,12 @@ function setup() {
     const observer = createScreenObserver({ dataDir: directory, encryptionKey: Buffer.alloc(32, 7), captureFrame: capture, captureIntervalMs: 60000 });
     return createNativeObservationLifecycle({ observer, prefsPath });
   };
-  return { directory, prefsPath, open, cleanup() { assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir())); fs.rmSync(directory, { recursive: true, force: true }); } };
+  return { directory, prefsPath, open, cleanup() {
+    const resolved = fs.realpathSync.native(directory);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-observation-lifecycle-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
+  } };
 }
 test('[INTEGRATION] observation preferences and real SQLite summaries survive lifecycle reopen', async () => {
   const context = setup();

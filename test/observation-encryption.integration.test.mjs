@@ -9,9 +9,10 @@ import { SemanticObservationStore } from '../packages/screen-intelligence/semant
 function workspace(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-encryption-'));
   t.after(() => {
-    assert.equal(fs.realpathSync(path.dirname(directory)), fs.realpathSync(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('zero-encryption-'));
-    fs.rmSync(directory, { recursive: true, force: true });
+    const resolved = fs.realpathSync.native(directory);
+    assert.equal(path.dirname(resolved), fs.realpathSync.native(os.tmpdir()));
+    assert.ok(path.basename(resolved).startsWith('zero-encryption-'));
+    fs.rmSync(resolved, { recursive: true, force: true });
   });
   return path.join(directory, 'observations.sqlite');
 }
