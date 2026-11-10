@@ -169,7 +169,7 @@ export function createMediaWidget({
   url = "",
   thumbnail = "",
   status = "unverified",
-  artist = "YouTube Music",
+  artist = "ZERO Media",
   details = "",
   durationSeconds = 0,
   sceneSummary = "",
@@ -205,7 +205,7 @@ export function createMediaWidget({
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
           <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: ${statusColor}; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
             <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 8px ${statusColor};"></span>
-            ${escapeHtml(statusLabel)}
+            <span data-zero-media-status>${escapeHtml(statusLabel)}</span>
           </span>
           <span style="color: #64748b; font-size: 11px;">Desktop media</span>
         </div>
@@ -213,7 +213,7 @@ export function createMediaWidget({
           ${escapeHtml(title)}
         </div>
         <div style="font-size: 12px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          ${escapeHtml(artist || "YouTube Music")} ${details ? `• ${escapeHtml(details)}` : ""}
+          ${escapeHtml(artist || "ZERO Media")} ${details ? `• ${escapeHtml(details)}` : ""}
         </div>
       </div>
     </div>
@@ -245,12 +245,13 @@ export function createMediaWidget({
       btn.disabled = true;
       btn.textContent = "Executing…";
       try {
-        const params = act === "focus"
-          ? { action: "focus_window", target: "YouTube", command: "restore" }
-          : { action: "media_control", command: act };
+        const params = { action: "media_control", command: act };
         const result = await gatewayRequest(host, "zero.computer.control", params);
         if (result?.ok !== true || result.executed !== true) throw new Error("Execution not confirmed");
         btn.textContent = result.verified === true ? "Verified" : "Sent; effect unverified";
+        const playbackState = result.data?.playbackState || result.playbackState;
+        const label = el.querySelector('[data-zero-media-status]');
+        if (label && playbackState) label.textContent = result.verified === true && playbackState === 'PLAYING' ? 'Playing' : result.verified === true && playbackState === 'PAUSED' ? 'Paused' : 'Playback unverified';
       } catch {
         btn.textContent = "Action unavailable";
       } finally {

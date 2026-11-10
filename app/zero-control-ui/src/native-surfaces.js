@@ -1028,6 +1028,8 @@ function installNativeSurfaces(host) {
   const nodeIsRelevant = (node) => {
     if (!node || node.nodeType !== 1) return false;
     if (isInsideZeroTree(node)) return false;
+    if (node.matches?.('code[class*="zero-ui:"], pre') && /zero-ui:/.test(`${node.className || ''} ${node.textContent || ''}`)) return true;
+    if (node.querySelector?.('code[class*="zero-ui:"]')) return true;
     const selector = `${SURFACE_SELECTOR}, ${COMPUTER_SELECTOR}, ${CHROME_SELECTOR}`;
     return Boolean(node.matches?.(selector) || node.querySelector?.(selector));
   };
@@ -1044,6 +1046,7 @@ function installNativeSurfaces(host) {
     if (record.type === "characterData") {
       const parent = record.target?.parentElement;
       if (parent && isInsideZeroTree(parent)) return false;
+      if (parent?.closest?.('code[class*="zero-ui:"]')) return true;
       return Boolean(parent?.closest?.(CHROME_SELECTOR));
     }
     if (record.type === "attributes") return nodeIsRelevant(record.target);
@@ -1051,6 +1054,7 @@ function installNativeSurfaces(host) {
     // children of stable containers; watch those containers as well as the
     // inserted nodes.
     const target = record.target;
+    if (target?.nodeType === 1 && target.closest?.('code[class*="zero-ui:"]')) return true;
     if (
       target?.nodeType === 1 &&
       target.closest?.(

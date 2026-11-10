@@ -166,6 +166,21 @@
       "originalAuditByteSha256": "9ebe2de92252d3d41fcded87a03dc8246faa7fd24147d01f49ee1fd0c01d8761"
     },
     {
+      "file": "scripts/verify-media-control.mjs",
+      "sha256": "c07b0986e78caae60bc6eaaa45b98766854bb533cfcc5445240b27479cb50e38",
+      "labels": [
+        "REAL_BROWSER",
+        "REAL_EXTERNAL",
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "scope": "Explicit actual configured external model chat through current product UI creates a visible browser playing the exact external media URL; actual production widget click must pause the same video element and show PAUSED. Silent/video stream playback is not physical speaker audibility. Isolated host/state with original provider/binding files read only; failures remain FAIL.",
+      "modes": [
+        "--external --visible-media: both required; actual provider/model and installed Chrome/Edge prerequisites. No arguments or invalid selection is BLOCKED/NOT_RUN; --help does not execute workflows."
+      ],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
       "file": "scripts/verify-screen-automation.mjs",
       "sha256": "492927c89b6c7a978dc2adcfdb8a1fdb579d340e4d984c04cb76deaecd5596ed",
       "labels": [

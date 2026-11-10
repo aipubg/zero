@@ -99,4 +99,18 @@ test('production widgets preserve outcomes and actual hold RPC blocks media inpu
   assert.equal(host.computerHold.held, true);
   assert.ok(!(await mediaButton.innerText()).includes('Done'));
   await page.evaluate(() => window.widgetSocket.close());
+  // Exercise the real product MutationObserver rather than manually invoking
+  // the renderer, which previously hid missing live-chat enhancement.
+  await page.goto(`http://127.0.0.1:${port}/chat/zero`);
+  await page.locator('.zero-shell-connection[data-connected="true"]').waitFor();
+  await page.evaluate(() => {
+    const section = document.createElement('section'); section.id = 'live-widget-observer';
+    const before = document.createElement('p'); before.id = 'preserved-observer-text'; before.textContent = 'Preserve surrounding conversation';
+    const pre = document.createElement('pre'), code = document.createElement('code');
+    code.className = 'language-zero-ui:progress'; code.textContent = JSON.stringify({status:'failed',step:2,totalSteps:2});
+    pre.append(code); section.append(before,pre); document.body.append(section);
+  });
+  await page.locator('#live-widget-observer .zero-gen-progress').waitFor();
+  assert.ok((await page.locator('#live-widget-observer .zero-gen-progress').innerText()).includes('FAILED (2/2)'));
+  assert.equal(await page.locator('#preserved-observer-text').innerText(),'Preserve surrounding conversation');
 });

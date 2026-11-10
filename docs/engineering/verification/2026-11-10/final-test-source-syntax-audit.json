@@ -1,8 +1,8 @@
 {
   "status": "PASS_FOR_DECLARED_SOURCE_SCOPE_ONLY",
-  "method": "TypeScript 6.0.3 AST parse of current 111 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
-  "sourceFiles": 111,
-  "declarationsIncludingContainers": 617,
+  "method": "TypeScript 6.0.3 AST parse of current 112 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
+  "sourceFiles": 112,
+  "declarationsIncludingContainers": 619,
   "unsupported": [],
   "entries": [
     {
@@ -232,7 +232,7 @@
     },
     {
       "file": "test/generative-widgets-browser.test.mjs",
-      "sha256": "98f1227df9df02c04c6c5f1fed5995302fa6b2040197511e19f46d1281ef1c1c",
+      "sha256": "d79977f8de96ec0b84e7a43a6ec4869ec8ea5a3f7f77ff05bc641333d5522905",
       "literalDeclarations": 1
     },
     {
@@ -278,6 +278,11 @@
     {
       "file": "test/local-tools.integration.test.mjs",
       "sha256": "be330a45c02687f54722a7bdf42f520030d40c2d7db4553cca0d598018508003",
+      "literalDeclarations": 2
+    },
+    {
+      "file": "test/media-control-browser.test.mjs",
+      "sha256": "cadd9d7c36b18290be592fdcc4cf1ec4fec832b104847188ab461c6ece0e9903",
       "literalDeclarations": 2
     },
     {
@@ -783,6 +788,10 @@
       "bindings": "test"
     },
     {
+      "file": "test/media-control-browser.test.mjs",
+      "bindings": "test"
+    },
+    {
       "file": "test/model-config-import.test.mjs",
       "bindings": "test"
     },
@@ -1009,7 +1018,7 @@
   ],
   "limits": [
     "No test execution, product acceptance, reachable workflow completeness or independent verification of every application behavior.",
-    "617 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
+    "619 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
     "Classification applies to current cataloged files and declaration syntax; new sources/syntax require review.",
     "CLI integrity remains conservative REQUIRES_FINAL_SCOPE_AUDIT and release BLOCKED; this separate receipt must be reviewed alongside actual execution evidence."
   ],

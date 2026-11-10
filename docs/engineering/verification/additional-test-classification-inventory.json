@@ -3413,14 +3413,14 @@
     },
     {
       "file": "test/generative-widgets-browser.test.mjs",
-      "sha256": "98f1227df9df02c04c6c5f1fed5995302fa6b2040197511e19f46d1281ef1c1c",
+      "sha256": "d79977f8de96ec0b84e7a43a6ec4869ec8ea5a3f7f77ff05bc641333d5522905",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION"
       ],
-      "scope": "Actual Chrome/Edge mounts production widget factories from source, authenticates to isolated actual ZeroNativeHost, clicks Take Over, independently checks server held state and actual media refusal. No owner state or physical input. Actual markdown language code fence renders without removing earlier chat content; unsafe source URL and unsupported Verified label rejected.",
+      "scope": "Actual Chrome/Edge mounts production widget factories from source, authenticates to isolated actual ZeroNativeHost, clicks Take Over, independently checks server held state and actual media refusal. No owner state or physical input. Actual markdown language code fence renders without removing earlier chat content; unsafe source URL and unsupported Verified label rejected. Actual product MutationObserver enhances a newly inserted language-tagged widget block without a direct renderer call and preserves adjacent conversation text.",
       "gaps": [
         "Component/RPC acceptance, not generated model event-to-widget pipeline, native media playback, audio or provider execution."
       ],
@@ -3433,7 +3433,7 @@
             "REAL_BROWSER",
             "INTEGRATION"
           ],
-          "scope": "Actual Chrome/Edge mounts production widget factories from source, authenticates to isolated actual ZeroNativeHost, clicks Take Over, independently checks server held state and actual media refusal. No owner state or physical input. Actual markdown language code fence renders without removing earlier chat content; unsafe source URL and unsupported Verified label rejected."
+          "scope": "Actual Chrome/Edge mounts production widget factories from source, authenticates to isolated actual ZeroNativeHost, clicks Take Over, independently checks server held state and actual media refusal. No owner state or physical input. Actual markdown language code fence renders without removing earlier chat content; unsafe source URL and unsupported Verified label rejected. Also exercises actual product live-widget MutationObserver with preserved adjacent text."
         }
       ]
     },
@@ -3740,6 +3740,41 @@
             "INTEGRATION"
           ],
           "scope": "Actual hanging Node child reaches its deadline and returns unverified failure; immediate abort returns CANCELLED/completed=false without proving prior child start."
+        }
+      ]
+    },
+    {
+      "file": "test/media-control-browser.test.mjs",
+      "sha256": "cadd9d7c36b18290be592fdcc4cf1ec4fec832b104847188ab461c6ece0e9903",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_BROWSER",
+        "INTEGRATION"
+      ],
+      "scope": "Real visible installed Chrome or Edge plays decoded local PCM; independent same-player state verifies repeated play/pause, mute/unmute, volume, fullscreen, focus acknowledgement, unsupported command rejection, busy arbitration and in-flight navigation cancellation with closed browser.",
+      "gaps": [
+        "Controlled silent local media and stalled HTTP; no real external model, YouTube search/navigation or physical speaker audibility in these declarations."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "visible controlled media playback and idempotent controls affect the same real player",
+          "line": 8,
+          "labels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "scope": "Real visible installed Chrome or Edge plays decoded local PCM; independent same-player state verifies repeated play/pause, mute/unmute, volume, fullscreen, focus acknowledgement, unsupported command rejection, busy arbitration and in-flight navigation cancellation with closed browser."
+        },
+        {
+          "title": "in-flight media cancellation closes its actual browser and cannot report completed playback",
+          "line": 48,
+          "labels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "scope": "Real visible installed Chrome or Edge plays decoded local PCM; independent same-player state verifies repeated play/pause, mute/unmute, volume, fullscreen, focus acknowledgement, unsupported command rejection, busy arbitration and in-flight navigation cancellation with closed browser."
         }
       ]
     },

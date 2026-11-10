@@ -20,6 +20,9 @@ importers:
       openclaw:
         specifier: 2026.10.6
         version: 2026.10.6
+      playwright-core:
+        specifier: 1.63.0
+        version: 1.63.0
       tar:
         specifier: 7.5.22
         version: 7.5.22
@@ -29,10 +32,6 @@ importers:
       yaml:
         specifier: 2.9.1
         version: 2.9.1
-    devDependencies:
-      playwright-core:
-        specifier: 1.63.0
-        version: 1.63.0
     optionalDependencies:
       '@node-llama-cpp/win-x64':
         specifier: 3.22.2

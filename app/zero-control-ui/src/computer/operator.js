@@ -10,6 +10,7 @@
  * 5. Instant Safety Bailout (triggers human takeover when physical mouse motion or Esc detected).
  */
 
+import { MediaController } from "../../../../packages/media-control/index.mjs";
 import { ObservationCoordinator } from "./observation-coordinator.js";
 import * as Driver from "./windows-driver.js";
 import { modeManager } from "../../../../rules/mode-manager.mjs";
@@ -73,8 +74,9 @@ export const OBSERVATION_ACTIONS = Object.freeze([
 ]);
 
 export class ComputerOperator {
-  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false, agentDesktop = new AgentDesktop() } = {}) {
+  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false, agentDesktop = new AgentDesktop(), mediaController = new MediaController() } = {}) {
     this.agentDesktop = agentDesktop;
+    this.mediaController = mediaController;
     this.getPolicyState = getPolicyState;
     this.logger = logger;
     this.humanHold = false;
@@ -393,245 +395,24 @@ export class ComputerOperator {
           let url = String(params.url ?? params.target ?? params.link ?? "");
           const query = String(params.query ?? params.search ?? params.text ?? params.prompt ?? "");
 
-          const isMusicOrVideo = normalizedAction === "play" || /youtube/i.test(query) || /song|music|video|play|radio|audio|listen|track/i.test(query) || /youtube/i.test(url);
-          let videoId = null;
-          let videoTitle = "";
-
-          if (isMusicOrVideo) {
-            const searchTerm = query || url.replace(/^https?:\/\/(www\.)?youtube\.com\/?/i, "") || "latest trending song";
-            try {
-              const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
-              const httpGet = globalThis["fe" + "tch"];
-              const fetchRes = await httpGet(searchUrl, {
-                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
-              });
-              const html = await fetchRes.text();
-              const idMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
-              const titleMatch = html.match(/"title":\{"runs":\[\{"text":"([^"]+)"/);
-              if (titleMatch && titleMatch[1]) {
-                videoTitle = titleMatch[1];
-              }
-              if (idMatch && idMatch[1]) {
-                videoId = idMatch[1];
-                url = `https://www.youtube.com/watch?v=${videoId}`;
-              } else {
-                url = searchUrl;
-              }
-            } catch (e) {
-              url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
-            }
-            if (!videoTitle) videoTitle = searchTerm;
-          } else if (!url && query) {
-            url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-          } else if (url && !/^https?:\/\//i.test(url)) {
-            url = `https://${url}`;
-          } else if (!url) {
-            url = "https://www.youtube.com";
+          if (normalizedAction === "play") {
+            return await this.mediaController.play({ url, query }, signal);
           }
-
-          const res = await Driver.openUrl(url, signal);
-          let activeWin = null;
-          let clickCoords = null;
-          let playbackState = "UNVERIFIED";
-          let audioActive = false;
-
-          if (isMusicOrVideo) {
-            try {
-              // 1. Poll for foreground browser window (up to 8s)
-              const startWait = Date.now();
-              while (Date.now() - startWait < 8000) {
-                try {
-                  activeWin = await Driver.getWindowState(signal);
-                  const titleLower = String(activeWin?.title || "").toLowerCase();
-                  const procLower = String(activeWin?.process || "").toLowerCase();
-                  if (titleLower.includes("youtube") || procLower.includes("chrome") || procLower.includes("edge") || procLower.includes("brave") || procLower.includes("firefox")) {
-                    break;
-                  }
-                } catch {}
-                await new Promise((r) => setTimeout(r, 400));
-              }
-
-              // 2. Extra 2.5s wait for HTML5 video player DOM and media scripts to render
-              await new Promise((r) => setTimeout(r, 2500));
-
-              // 3. Bring YouTube window to foreground
-              await Driver.focusWindow({ target: "YouTube", command: "restore" }, signal);
-              await new Promise((r) => setTimeout(r, 300));
-
-              // 4. Determine click coordinates on the video player
-              let targetX = null;
-              let targetY = null;
-              try {
-                const uia = await Driver.getElements(signal);
-                if (Array.isArray(uia?.elements)) {
-                  const playEl = uia.elements.find((el) => {
-                    const n = String(el.name || "").toLowerCase();
-                    return n.includes("play (k)") || n === "play" || n.includes("video player") || n.includes("youtube video");
-                  });
-                  if (playEl && playEl.centerX > 0 && playEl.centerY > 0) {
-                    targetX = playEl.centerX;
-                    targetY = playEl.centerY;
-                  }
-                }
-              } catch {}
-
-              if (!targetX || !targetY) {
-                const bounds = activeWin?.bounds;
-                if (bounds && bounds.width > 200 && bounds.height > 200) {
-                  targetX = Math.round(bounds.x + bounds.width * 0.40);
-                  targetY = Math.round(bounds.y + bounds.height * 0.45);
-                } else {
-                  const screen = await Driver.getScreenSize(signal);
-                  targetX = Math.round((screen.width || 1920) * 0.40);
-                  targetY = Math.round((screen.height || 1080) * 0.45);
-                }
-              }
-
-              // 5. Real Physical Mouse Click via Win32 SetCursorPos & mouse_event
-              clickCoords = { x: targetX, y: targetY };
-              console.log(`[Zero ComputerOperator] Executing physical hardware click on Video Player at (${targetX}, ${targetY})...`);
-              await Driver.moveCursor(targetX, targetY, signal);
-              await new Promise((r) => setTimeout(r, 100));
-              await Driver.click({ x: targetX, y: targetY, button: "left", count: 1 }, signal);
-              console.log(`[Zero ComputerOperator] Physical click executed successfully.`);
-
-              // 6. Keyboard Play & Unmute Verification
-              await new Promise((r) => setTimeout(r, 500));
-              await Driver.pressKey("k", signal);
-              await new Promise((r) => setTimeout(r, 200));
-              await Driver.pressKey("up", signal);
-              await Driver.pressKey("volume_up", signal);
-
-              // 7. Independently verify playback state
-              try {
-                const pbCheck = await Driver.inspectMediaPlayback(signal);
-                if (pbCheck?.playbackState && pbCheck.playbackState !== "UNVERIFIED") {
-                  playbackState = pbCheck.playbackState;
-                  audioActive = Boolean(pbCheck.audioPlaying);
-                }
-              } catch {}
-
-              // Secondary check: inspect UIA elements for "Pause (k)" vs "Play (k)"
-              if (playbackState === "UNVERIFIED") {
-                try {
-                  const checkUia = await Driver.getElements(signal);
-                  if (Array.isArray(checkUia?.elements)) {
-                    for (const el of checkUia.elements) {
-                      const n = String(el.name || "").toLowerCase();
-                      if (n.includes("pause (k)") || n.includes("pause video")) {
-                        playbackState = "PLAYING";
-                        audioActive = true;
-                        break;
-                      } else if (n.includes("play (k)") || n.includes("play video")) {
-                        playbackState = "PAUSED";
-                        audioActive = false;
-                        break;
-                      }
-                    }
-                  }
-                } catch {}
-              }
-
-              // Tertiary check: verify video element directly via Playwright browser automation
-              if (playbackState === "UNVERIFIED") {
-                try {
-                  const { chromium } = await import("playwright-core");
-                  const chromePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-                  const b = await chromium.launch({ executablePath: chromePath, headless: true });
-                  const p = await b.newPage();
-                  await p.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
-                  const check = await p.evaluate(async () => {
-                    const v = document.querySelector("video");
-                    if (!v) return null;
-                    v.muted = true;
-                    try { await v.play(); } catch (_) {}
-                    const startT = v.currentTime;
-                    await new Promise((r) => setTimeout(r, 600));
-                    return {
-                      playing: !v.paused,
-                      advanced: v.currentTime >= startT,
-                      title: document.title,
-                    };
-                  });
-                  await b.close();
-                  if (check && check.playing) {
-                    playbackState = "PLAYING";
-                    audioActive = true;
-                    if (check.title && (!videoTitle || videoTitle === "YouTube")) {
-                      videoTitle = check.title.replace(/ - YouTube$/i, "").trim();
-                    }
-                  }
-                } catch (pwErr) {
-                  console.warn("[Zero ComputerOperator] Playwright playback verification fallback warning:", pwErr.message);
-                }
-              }
-
-              // 8. Refresh foreground window state
-              try { activeWin = await Driver.getWindowState(signal); } catch {}
-            } catch (err) {
-              console.warn(`[Zero ComputerOperator] Music playback automation warning:`, err.message);
-            }
-          } else {
-            try { activeWin = await Driver.getWindowState(signal); } catch {}
+          if (!url && query) url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+          else if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+          if (!url) return { ok: false, executed: false, message: "A URL or search query is required" };
+          const target = new URL(url);
+          if (!["http:", "https:"].includes(target.protocol) || target.username || target.password) {
+            return { ok: false, executed: false, message: "Browser URL must be HTTP or HTTPS without embedded credentials" };
           }
-
-          const winTitle = activeWin?.title || "YouTube";
-          const executed = Boolean(res?.ok !== false);
-          const isVerified = (playbackState === "PLAYING");
-          const outcome = isVerified ? "COMPLETED" : (executed ? "UNVERIFIED" : "FAILED");
-
-          return {
-            ok: executed,
-            executed,
-            verified: isVerified,
-            completed: outcome === "COMPLETED",
-            outcome,
-            action: normalizedAction,
-            url,
-            videoId,
-            videoTitle: videoTitle || winTitle,
-            thumbnail: videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "",
-            clickCoordinates: clickCoords,
-            playbackState,
-            browserOpened: Boolean(res?.ok !== false),
-            pageLoaded: Boolean(activeWin !== null),
-            audioPlaying: audioActive,
-            audioActive, // STRICT: Only true when verified playing!
-            audioAudible: "UNVERIFIED",
-            message: `Browser opened at ${url}. ${clickCoords ? `Physical click executed at (${clickCoords.x}, ${clickCoords.y}).` : ""} Playback status: ${playbackState}.`,
-            window: activeWin,
-            details: res,
-          };
+          const details = await Driver.openUrl(target.href, signal);
+          return { ok: details?.ok !== false, executed: details?.ok !== false, verified: false,
+            outcome: details?.ok === false ? "FAILED" : "UNVERIFIED", action: normalizedAction, url: target.href,
+            browserOpened: details?.ok !== false, pageLoaded: false, message: "URL open request sent; page load is not independently verified", details };
         }
 
-        case "media_control": {
-          const cmd = String(params.command || params.action || "").toLowerCase();
-          await Driver.focusWindow({ target: "YouTube", command: "restore" }, signal);
-          await new Promise((r) => setTimeout(r, 200));
-          if (cmd === "next" || cmd === "next_track" || cmd === "skip") {
-            await Driver.pressKey("shift+n", signal);
-            await Driver.pressKey("next_track", signal);
-          } else if (cmd === "prev" || cmd === "previous") {
-            await Driver.pressKey("shift+p", signal);
-          } else if (cmd === "play_pause" || cmd === "pause" || cmd === "play") {
-            await Driver.pressKey("k", signal);
-            await Driver.pressKey("play_pause", signal);
-          } else if (cmd === "volume_up") {
-            await Driver.pressKey("up", signal);
-            await Driver.pressKey("volume_up", signal);
-          } else if (cmd === "volume_down") {
-            await Driver.pressKey("down", signal);
-            await Driver.pressKey("volume_down", signal);
-          } else if (cmd === "mute" || cmd === "unmute") {
-            await Driver.pressKey("m", signal);
-            await Driver.pressKey("volume_mute", signal);
-          } else if (cmd === "fullscreen") {
-            await Driver.pressKey("f", signal);
-          }
-          let activeWin = null;
-          try { activeWin = await Driver.getWindowState(signal); } catch {}
-          return { ok: true, action: "media_control", command: cmd, window: activeWin };
-        }
+        case "media_control":
+          return await this.mediaController.control(params.command, signal);
 
         case "get_elements":
         case "get_uia_elements": {

@@ -2031,11 +2031,12 @@ export class ZeroNativeHost {
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'type_text', 'play', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
               },
               app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
               text: { type: 'string', description: 'Text to type into the focused window' },
               query: { type: 'string', description: 'Search term or song name to play on YouTube' },
+              command: { type: 'string', enum: ['play', 'pause', 'play_pause', 'volume_up', 'volume_down', 'mute', 'unmute', 'next', 'previous', 'fullscreen', 'focus'], description: 'For media_control: affects only the visible player opened by ZERO. Play/pause and mute/unmute are explicit states; audio audibility is not measured.' },
               url: { type: 'string', description: 'URL to open in the browser' },
               key: { type: 'string', description: 'Key or shortcut to press' },
               x: { type: 'number', description: 'X screen coordinate' },
@@ -2296,15 +2297,15 @@ export class ZeroNativeHost {
       if (mediaResult && !finalContent.includes('zero-ui:media')) {
         const isPlaying = mediaResult.playbackState === 'PLAYING';
         const mediaPayload = {
-          title: mediaResult.videoTitle || 'YouTube Music',
+          title: mediaResult.videoTitle || 'ZERO Media',
           videoId: mediaResult.videoId || '',
           url: mediaResult.url || (mediaResult.videoId ? `https://www.youtube.com/watch?v=${mediaResult.videoId}` : 'https://www.youtube.com'),
           thumbnail: mediaResult.thumbnail || (mediaResult.videoId ? `https://i.ytimg.com/vi/${mediaResult.videoId}/hqdefault.jpg` : ''),
           status: isPlaying ? 'playing' : (mediaResult.playbackState === 'PAUSED' ? 'paused' : 'unverified'),
           playbackState: mediaResult.playbackState || 'UNVERIFIED',
           audioAudible: mediaResult.audioAudible || 'UNVERIFIED',
-          artist: 'YouTube',
-          details: `Active Window: ${mediaResult.window?.title || 'YouTube'}`,
+          artist: mediaResult.url ? new URL(mediaResult.url).hostname : 'ZERO Media',
+          details: mediaResult.verificationScope || 'Playback verification unavailable',
         };
         finalContent = (finalContent ? `${finalContent}\n\n` : '') + '```zero-ui:media\n' + JSON.stringify(mediaPayload, null, 2) + '\n```';
       }
@@ -2403,6 +2404,7 @@ export class ZeroNativeHost {
     const skillSourceDrain = this.skillLoader?.closeSources();
     await this.localGguf?.unloadModel(true);
     await this.screenAutomation.close();
+    await canonicalCapabilityEngine.operator?.mediaController?.close();
     if (this.cronInterval) {
       clearInterval(this.cronInterval);
       this.cronInterval = null;
