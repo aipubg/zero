@@ -137,14 +137,42 @@
       "file": "app/zero-control-ui/test/product-path.test.mjs",
       "sha256": "dea6902d596ec67ba4a3cadcbe0a100861f0fdda80fa783c3c745079e4130bc6",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Fake DOM text mount/dispose, pure supplied projections and actual built-file string inspection.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "No actual browser, gateway connection, persisted forms, scrolling or external/model interaction."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Gateway models surface mounts clean slate ready for new gateway",
+          "line": 15,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Fake document and FakeElement mount/dispose plus expected text only; no real gateway connection."
+        },
+        {
+          "title": "pure session and error projections keep Gateway contracts stable",
+          "line": 30,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied session rows and error values exercise pure projections, roles, route prefixes, counts and error formatting."
+        },
+        {
+          "title": "built native bundle contains no CopilotKit product path",
+          "line": 84,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Actual on-disk built manifest/bundle text is inspected for forbidden strings and expected names; no browser interaction or runtime functionality."
+        }
+      ]
     },
     {
       "file": "app/zero-control-ui/test/product-surface.test.mjs",
@@ -2052,7 +2080,7 @@
     },
     {
       "file": "test/verification/classification-runner.test.mjs",
-      "sha256": "98b075f58a9bb536663e2fd890907310f6244d3eb87803cd6b207c9b40ab32d1",
+      "sha256": "6ea93665332e30498501082002b512a6e74db5d6600e54df7e287aadb8e3a7b5",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -2092,7 +2120,7 @@
         },
         {
           "title": "dry audit has no passing assertions or verified requirements",
-          "line": 50,
+          "line": 54,
           "labels": [
             "UNIT"
           ],
@@ -2100,7 +2128,7 @@
         },
         {
           "title": "leaf skip and TODO, including empty reasons, never become PASS",
-          "line": 57,
+          "line": 61,
           "labels": [
             "UNIT"
           ],
@@ -2108,7 +2136,7 @@
         },
         {
           "title": "suite-only skip or setup failure blocks all missing leaves and adds no parent PASS",
-          "line": 66,
+          "line": 70,
           "labels": [
             "UNIT"
           ],
@@ -2116,7 +2144,7 @@
         },
         {
           "title": "failures, cancellation, timeouts and child transport problems cannot become green",
-          "line": 76,
+          "line": 80,
           "labels": [
             "UNIT"
           ],
@@ -2124,7 +2152,7 @@
         },
         {
           "title": "unknown/duplicate leaves and nonzero child exit cannot produce overall PASS",
-          "line": 89,
+          "line": 93,
           "labels": [
             "UNIT"
           ],
@@ -2132,7 +2160,7 @@
         },
         {
           "title": "all passing assertions still leave acceptance and release blocked",
-          "line": 97,
+          "line": 101,
           "labels": [
             "UNIT"
           ],
@@ -2140,7 +2168,7 @@
         },
         {
           "title": "real Node reporter handles passing, skipped, TODO and failed fixtures",
-          "line": 113,
+          "line": 117,
           "labels": [
             "INTEGRATION"
           ],
@@ -2148,7 +2176,7 @@
         },
         {
           "title": "real Node suite skip before declaration blocks inventoried children",
-          "line": 123,
+          "line": 127,
           "labels": [
             "INTEGRATION"
           ],
@@ -2156,7 +2184,7 @@
         },
         {
           "title": "real Node setup failure leaves inventoried assertions blocked",
-          "line": 130,
+          "line": 134,
           "labels": [
             "INTEGRATION"
           ],
@@ -2164,7 +2192,7 @@
         },
         {
           "title": "hung child has a bounded deadline and cannot pass",
-          "line": 138,
+          "line": 142,
           "labels": [
             "INTEGRATION"
           ],
@@ -2172,7 +2200,7 @@
         },
         {
           "title": "CLI rejects implicit execution and invalid selections without touching host",
-          "line": 144,
+          "line": 148,
           "labels": [
             "INTEGRATION"
           ],
@@ -2180,7 +2208,7 @@
         },
         {
           "title": "CLI dry audit returns NOT_RUN and BLOCKED for all 137 leaves",
-          "line": 152,
+          "line": 156,
           "labels": [
             "INTEGRATION"
           ],
@@ -2188,7 +2216,7 @@
         },
         {
           "title": "CLI integrity check exit zero explicitly means no product tests ran",
-          "line": 166,
+          "line": 170,
           "labels": [
             "INTEGRATION"
           ],

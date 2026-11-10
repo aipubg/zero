@@ -1,0 +1,15 @@
+{
+  "change": "Additional scoped-declaration extraction now supports both single- and double-quoted unescaped titles",
+  "auditRegression": { "command": "node --test test/verification/classification-runner.test.mjs", "passed": 16 },
+  "uiCheck": {
+    "command": "node --test app/zero-control-ui/test/product-path.test.mjs",
+    "passed": 3,
+    "scope": "Fake DOM mount/dispose and text, supplied session/error projections, actual on-disk bundle string inspection",
+    "classifications": ["UNIT", "CONTRACT"],
+    "notProven": "Actual browser interaction, gateway connection, persistence, scrolling or model execution"
+  },
+  "grammarLimits": "Template/escaped/dynamically generated titles remain outside supported literal extraction; no exhaustive syntax claim",
+  "additionalReviewedFiles": 46,
+  "additionalUnreviewedFiles": 43,
+  "releaseStatus": "BLOCKED"
+}

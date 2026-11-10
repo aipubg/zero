@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { LABELS, declarations, emptyResults, reconcile, summarize, validateInventory } from './classification-core.mjs';
 import { runChild } from '../run-classified-verification.mjs';
-import { validateAdditionalTestCatalog } from './additional-test-catalog.mjs';
+import { validateAdditionalTestCatalog, reviewedDeclarations } from './additional-test-catalog.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const inventory = JSON.parse(fs.readFileSync(path.join(root, 'docs/engineering/verification/test-classification-inventory.json'), 'utf8'));
@@ -45,6 +45,10 @@ test('classification rejects source drift, missing suites, label drift and title
 test('literal extraction preserves title and exact CRLF line', () => {
   const source = "test('parent', async (suite) => {\r\n\r\n  await suite.test('leaf', () => {});\r\n});";
   assert.deepEqual(declarations(source), [{ title: 'leaf', line: 3 }]);
+  assert.deepEqual(reviewedDeclarations('test("double title", () => {});\r\n\n  await t.test(\'single title\', () => {});'), [
+    { title: 'double title', line: 1 }, { title: 'single title', line: 3 },
+  ]);
+  assert.deepEqual(reviewedDeclarations('test(`dynamic ${value}`, () => {});'), []);
 });
 
 test('dry audit has no passing assertions or verified requirements', () => {
