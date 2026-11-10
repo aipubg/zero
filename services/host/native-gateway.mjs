@@ -160,7 +160,7 @@ export class ZeroNativeHost {
 
     // Initialize persistence & state engines
     const dataDir = options.dataDir || process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data');
-    this.localDesktopSessions = new DesktopSessionStore({ filePath: path.join(dataDir, 'desktop-session-metadata.json') });
+    this.localDesktopSessions = new DesktopSessionStore({ filePath: path.join(dataDir, 'desktop-session-metadata.json'), maxAgeMs: options.desktopSessionMaxAgeMs });
     this.localGguf = new LocalGgufEngineService({ modelsDir: options.localModelsDir || process.env.ZERO_LOCAL_MODELS_DIR || path.join(REPO_ROOT, 'models') });
     // Stable, non-secret storage namespace for the native UI's durable outbox.
     this.recoveryScope = `zero-local:${crypto.createHash('sha256').update(path.resolve(dataDir).toLowerCase()).digest('hex')}`;
@@ -399,7 +399,19 @@ export class ZeroNativeHost {
       let pathname = decodeURIComponent(parsedUrl.pathname);
 
       // Local Desktop Authentication & Session Management
+      if (pathname === '/api/auth/session/renew') {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        if (req.method !== 'POST') { res.statusCode = 405; res.setHeader('Allow', 'POST'); res.end(JSON.stringify({ ok: false })); return; }
+        const cookies = parseCookies(req.headers.cookie);
+        const session = this.localDesktopSessions.renew(cookies.zero_session);
+        if (!session) { res.statusCode = 401; res.end(JSON.stringify({ ok: false, renewalSupported: true })); return; }
+        res.setHeader('Set-Cookie', `zero_session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.ceil(this.localDesktopSessions.maxAgeMs / 1000)}`);
+        res.end(JSON.stringify({ ok: true, renewalSupported: true, session: { role: session.role, scopes: session.scopes, expiresAt: session.expiresAt, maxAgeMs: this.localDesktopSessions.maxAgeMs } }));
+        return;
+      }
       if (pathname === '/api/auth/session') {
+        res.setHeader('Cache-Control', 'no-store');
         if (req.method === 'POST') {
           let body = {};
           try {
@@ -427,10 +439,11 @@ export class ZeroNativeHost {
 
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          res.setHeader('Set-Cookie', `zero_session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`);
+          res.setHeader('Set-Cookie', [`zero_session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.ceil(this.localDesktopSessions.maxAgeMs / 1000)}`, 'zero_signed_out=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0']);
           res.end(JSON.stringify({
             ok: true,
-            session: { role: session.role, scopes: session.scopes, expiresAt: session.expiresAt },
+            renewalSupported: true,
+            session: { role: session.role, scopes: session.scopes, expiresAt: session.expiresAt, maxAgeMs: this.localDesktopSessions.maxAgeMs },
             token: session.id,
           }));
           return;
@@ -443,12 +456,12 @@ export class ZeroNativeHost {
           if (session) {
             res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
-            res.end(JSON.stringify({ ok: true, session: { role: session.role, scopes: session.scopes } }));
+            res.end(JSON.stringify({ ok: true, renewalSupported: true, session: { role: session.role, scopes: session.scopes, expiresAt: session.expiresAt, maxAgeMs: this.localDesktopSessions.maxAgeMs } }));
             return;
           }
           res.statusCode = 401;
           res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          res.end(JSON.stringify({ ok: false, error: 'Unauthorized: active session required' }));
+          res.end(JSON.stringify({ ok: false, renewalSupported: true, bootstrapAllowed: cookies.zero_signed_out !== '1', error: 'Unauthorized: active session required' }));
           return;
         }
       }
@@ -459,7 +472,7 @@ export class ZeroNativeHost {
         if (token) this.localDesktopSessions.delete(token);
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.setHeader('Set-Cookie', 'zero_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
+        res.setHeader('Set-Cookie', ['zero_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0', 'zero_signed_out=1; Path=/; HttpOnly; SameSite=Strict']);
         res.end(JSON.stringify({ ok: true }));
         return;
       }
@@ -618,7 +631,7 @@ export class ZeroNativeHost {
       let session = this.localDesktopSessions.get(cookies['zero_session']);
       if (!session && isLoopbackRemoteAddress(req.socket.remoteAddress)) {
         session = this.localDesktopSessions.create();
-        res.setHeader('Set-Cookie', `zero_session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`);
+        res.setHeader('Set-Cookie', `zero_session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.ceil(this.localDesktopSessions.maxAgeMs / 1000)}`);
       }
 
       const bodyBuffer = Buffer.from(html, 'utf8');

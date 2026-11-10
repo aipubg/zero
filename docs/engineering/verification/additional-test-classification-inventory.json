@@ -1168,7 +1168,7 @@
     },
     {
       "file": "app/zero-control-ui/test/product-surface.test.mjs",
-      "sha256": "1c661d93107aa3d39dd7a654f5905e2b1a5d4f13dfe3c4508bacbacc5ed95f10",
+      "sha256": "f18385e43891cf55628dbfcc638f43b24f0a405f9231feb625979fb392334faa",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
@@ -1322,19 +1322,19 @@
           "labels": [
             "CONTRACT"
           ],
-          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: built bundle integrates native surfaces and has no duplicate product backend. No executed user workflow or runtime absence proof."
+          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: built bundle integrates native surfaces and has no duplicate product backend. No executed user workflow or runtime absence proof. Network source assertions allow exactly the dedicated same-origin HttpOnly-cookie lifecycle fetch; other application data modules retain host.request-only source contract. Runtime cookie behavior is proved separately."
         },
         {
           "title": "no duplicate Zero page module remains in the product source",
-          "line": 1254,
+          "line": 1258,
           "labels": [
             "CONTRACT"
           ],
-          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: no duplicate Zero page module remains in the product source. No executed user workflow or runtime absence proof."
+          "scope": "Reads actual source/bundle/manifest/CSS and asserts listed strings/file presence: no duplicate Zero page module remains in the product source. No executed user workflow or runtime absence proof. Network source assertions allow exactly the dedicated same-origin HttpOnly-cookie lifecycle fetch; other application data modules retain host.request-only source contract. Runtime cookie behavior is proved separately."
         },
         {
           "title": "owned manifests describe Zero, not the upstream product",
-          "line": 1283,
+          "line": 1291,
           "labels": [
             "CONTRACT"
           ],
@@ -1342,7 +1342,7 @@
         },
         {
           "title": "roster, gateway and computer helpers keep explicit state",
-          "line": 1301,
+          "line": 1309,
           "labels": [
             "UNIT",
             "CONTRACT"
@@ -1351,7 +1351,7 @@
         },
         {
           "title": "generative widgets preserve supplied outcomes and use authenticated host dispatch",
-          "line": 1347,
+          "line": 1355,
           "labels": [
             "UNIT",
             "CONTRACT"
@@ -2930,14 +2930,60 @@
       ]
     },
     {
+      "file": "test/desktop-session-browser.test.mjs",
+      "sha256": "dba6feae62c8935b6bb8718fa12ebc4bf47f06b076373cbd488b9ad89e0ddcfa",
+      "execution": "NOT_RUN_BY_INVENTORY",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "REAL_BROWSER",
+        "INTEGRATION",
+        "CONTRACT"
+      ],
+      "scope": "Actual native product UI with four-second session lifetime renews the same HttpOnly cookie beyond original wall-clock expiry; independent persisted metadata/token omission, authenticated memory writes and stopped/restarted host recovery preserve original memory. Expired bearers are not resurrected. Actual cookie expiry and authenticated recovery after Playwright-injected HTTP transport failure; a supplied online event wakes the real keeper. Actual logout cookie prevents automatic rebootstrap across another short real expiry period. Actual HTTP renewal preserves narrow operator scopes despite supplied escalation JSON, omits bearer from response, and returns real 401/405/403 for missing cookie, wrong method and cross-origin request.",
+      "gaps": [
+        "Seconds-long real expiry, not a 24-hour endurance test. Transport fault and online wake are explicitly injected; no external provider, physical mobile or clean-machine release proof."
+      ],
+      "modes": [],
+      "declarations": [
+        {
+          "title": "native UI renews its same HttpOnly session past original expiry and recovers after host restart",
+          "line": 43,
+          "labels": [
+            "REAL_BROWSER",
+            "INTEGRATION"
+          ],
+          "scope": "Actual native product UI with four-second session lifetime renews the same HttpOnly cookie beyond original wall-clock expiry; independent persisted metadata/token omission, authenticated memory writes and stopped/restarted host recovery preserve original memory. Expired bearers are not resurrected."
+        },
+        {
+          "title": "real expired browser cookie recovers after injected transport loss and explicit logout is respected",
+          "line": 65,
+          "labels": [
+            "REAL_BROWSER",
+            "INTEGRATION",
+            "CONTRACT"
+          ],
+          "scope": "Actual cookie expiry and authenticated recovery after Playwright-injected HTTP transport failure; a supplied online event wakes the real keeper. Actual logout cookie prevents automatic rebootstrap across another short real expiry period."
+        },
+        {
+          "title": "actual renewal HTTP route preserves narrow scopes and refuses absent cookies or cross-origin requests",
+          "line": 84,
+          "labels": [
+            "INTEGRATION",
+            "CONTRACT"
+          ],
+          "scope": "Actual HTTP renewal preserves narrow operator scopes despite supplied escalation JSON, omits bearer from response, and returns real 401/405/403 for missing cookie, wrong method and cross-origin request."
+        }
+      ]
+    },
+    {
       "file": "test/desktop-session-persistence.test.mjs",
-      "sha256": "09e7da89d6ddca07c00eef1207b9a00f9805f254ad88890776706e94d4ff902c",
+      "sha256": "d3c3cdd6e6149516bae2469bddd98bf7660ba8968247e7322c8cdce4eeca11f9",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "INTEGRATION"
       ],
-      "scope": "Actual file-backed session store omits raw bearer token, fresh Node helper restores scopes and revokes session; subsequent store sees revocation and rejects invalid/expired sessions/corrupt file.",
+      "scope": "Actual file-backed session store omits raw bearer token, fresh Node helper restores scopes and revokes session; subsequent store sees revocation and rejects invalid/expired sessions/corrupt file. Renewal preserves bearer identity, creation time and narrow scopes without accumulating records; fresh process restores renewed expiry metadata. Invalid bearer/lifetime is rejected. Actual filesystem rename failure rejects renewal, rolls back in-memory expiry and preserves original durable bytes.",
       "gaps": [
         "Actual fresh helper process, not a restarted native host or browser login; expiry is supplied in the past and invalid/corrupt files are fixtures."
       ],
@@ -2949,7 +2995,7 @@
           "labels": [
             "INTEGRATION"
           ],
-          "scope": "Actual file-backed session store omits raw bearer token, fresh Node helper restores scopes and revokes session; subsequent store sees revocation and rejects invalid/expired sessions/corrupt file."
+          "scope": "Actual file-backed session store omits raw bearer token, fresh Node helper restores scopes and revokes session; subsequent store sees revocation and rejects invalid/expired sessions/corrupt file. Renewal preserves bearer identity, creation time and narrow scopes without accumulating records; fresh process restores renewed expiry metadata. Invalid bearer/lifetime is rejected. Actual filesystem rename failure rejects renewal, rolls back in-memory expiry and preserves original durable bytes."
         }
       ]
     },

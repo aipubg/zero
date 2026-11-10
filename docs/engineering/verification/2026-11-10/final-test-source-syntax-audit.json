@@ -1,8 +1,8 @@
 {
   "status": "PASS_FOR_DECLARED_SOURCE_SCOPE_ONLY",
-  "method": "TypeScript 6.0.3 AST parse of current 112 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
-  "sourceFiles": 112,
-  "declarationsIncludingContainers": 619,
+  "method": "TypeScript 6.0.3 AST parse of current 113 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
+  "sourceFiles": 113,
+  "declarationsIncludingContainers": 622,
   "unsupported": [],
   "entries": [
     {
@@ -62,7 +62,7 @@
     },
     {
       "file": "app/zero-control-ui/test/product-surface.test.mjs",
-      "sha256": "1c661d93107aa3d39dd7a654f5905e2b1a5d4f13dfe3c4508bacbacc5ed95f10",
+      "sha256": "f18385e43891cf55628dbfcc638f43b24f0a405f9231feb625979fb392334faa",
       "literalDeclarations": 20
     },
     {
@@ -211,8 +211,13 @@
       "literalDeclarations": 1
     },
     {
+      "file": "test/desktop-session-browser.test.mjs",
+      "sha256": "dba6feae62c8935b6bb8718fa12ebc4bf47f06b076373cbd488b9ad89e0ddcfa",
+      "literalDeclarations": 3
+    },
+    {
       "file": "test/desktop-session-persistence.test.mjs",
-      "sha256": "09e7da89d6ddca07c00eef1207b9a00f9805f254ad88890776706e94d4ff902c",
+      "sha256": "d3c3cdd6e6149516bae2469bddd98bf7660ba8968247e7322c8cdce4eeca11f9",
       "literalDeclarations": 1
     },
     {
@@ -732,6 +737,10 @@
       "bindings": "test"
     },
     {
+      "file": "test/desktop-session-browser.test.mjs",
+      "bindings": "test"
+    },
+    {
       "file": "test/desktop-session-persistence.test.mjs",
       "bindings": "test"
     },
@@ -1018,7 +1027,7 @@
   ],
   "limits": [
     "No test execution, product acceptance, reachable workflow completeness or independent verification of every application behavior.",
-    "619 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
+    "622 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
     "Classification applies to current cataloged files and declaration syntax; new sources/syntax require review.",
     "CLI integrity remains conservative REQUIRES_FINAL_SCOPE_AUDIT and release BLOCKED; this separate receipt must be reviewed alongside actual execution evidence."
   ],

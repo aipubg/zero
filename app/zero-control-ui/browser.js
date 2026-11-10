@@ -4,6 +4,7 @@ import { installZeroShell } from "./src/shell/zero-shell.js";
 import { PLUGIN_ID } from "./src/constants.js";
 import { installLegacyRouteInterceptor } from "./src/legacy-routes.js";
 import { installNativeSurfaces } from "./src/native-surfaces.js";
+import { installDesktopSessionKeepAlive } from "./src/desktop-session.js";
 
 /**
  * Native OpenClaw Control UI contribution.
@@ -29,7 +30,9 @@ export default {
     const disposeRoutes = installLegacyRouteInterceptor(host);
     const disposeSurfaces = installNativeSurfaces(host);
     const disposeShell = installZeroShell(host);
+    const disposeSession = installDesktopSessionKeepAlive();
     return () => {
+      disposeSession?.();
       disposeShell?.();
       disposeSurfaces?.();
       disposeRoutes?.();

@@ -116,7 +116,8 @@ export function parseCookies(cookieHeader) {
  */
 export class DesktopSessionStore {
   constructor(options = {}) {
-    this.maxAgeMs = options.maxAgeMs || 24 * 60 * 60 * 1000; // 24 hours
+    this.maxAgeMs = options.maxAgeMs ?? 24 * 60 * 60 * 1000;
+    if (!Number.isFinite(this.maxAgeMs) || this.maxAgeMs < 1) throw new Error('Desktop session lifetime must be positive');
     this.sessions = new Map();
     this.filePath = options.filePath || null;
     if (this.filePath && fs.existsSync(this.filePath)) {
@@ -145,6 +146,7 @@ export class DesktopSessionStore {
   create(metadata = {}) {
     const sessionId = crypto.randomBytes(32).toString('hex');
     const now = Date.now();
+    for (const [key, record] of this.sessions) if (record.expiresAt <= now) this.sessions.delete(key);
     const session = {
       id: sessionId,
       role: metadata.role || 'operator',
@@ -165,7 +167,7 @@ export class DesktopSessionStore {
     const key = this._key(sessionId);
     const session = this.sessions.get(key);
     if (!session) return null;
-    if (Date.now() > session.expiresAt) {
+    if (Date.now() >= session.expiresAt) {
       this.sessions.delete(key); this._persist();
       return null;
     }
@@ -174,6 +176,17 @@ export class DesktopSessionStore {
 
   has(sessionId) {
     return this.get(sessionId) !== null;
+  }
+
+  renew(sessionId) {
+    const session = this.get(sessionId);
+    if (!session) return null;
+    const key = this._key(sessionId), previous = this.sessions.get(key);
+    const renewed = { ...previous, expiresAt: Date.now() + this.maxAgeMs };
+    this.sessions.set(key, renewed);
+    try { this._persist(); }
+    catch (error) { this.sessions.set(key, previous); throw error; }
+    return { ...renewed, id: sessionId };
   }
 
   delete(sessionId) {

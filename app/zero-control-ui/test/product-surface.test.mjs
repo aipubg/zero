@@ -1196,7 +1196,11 @@ test("built bundle integrates native surfaces and has no duplicate product backe
 
   assert.doesNotMatch(bundle, /copilotkit|@ag-ui|intelligence\/threads|Failed to fetch threads/i);
   assert.doesNotMatch(bundle, /\/api\/copilotkit\/threads/);
-  assert.doesNotMatch(bundle, /\bfetch\s*\(|XMLHttpRequest|sendBeacon|new WebSocket|EventSource/);
+  // Cookie renewal requires HTTP Set-Cookie; application data still uses
+  // host.request. This source contract is not runtime network verification.
+  assert.equal([...bundle.matchAll(/\bfetch\s*\(/g)].length, 1);
+  assert.match(bundle, /\/api\/auth\/session\/renew/);
+  assert.doesNotMatch(bundle, /XMLHttpRequest|sendBeacon|new WebSocket|EventSource/);
   assert.doesNotMatch(bundle, /localStorage|sessionStorage/);
   assert.doesNotMatch(bundle, /window\.open\(|target:\s*"_blank"|target="_blank"/);
   assert.doesNotMatch(bundle, /gateway-link|pairing-store|pairing-keys|zero-types/);
@@ -1267,11 +1271,15 @@ test("no duplicate Zero page module remains in the product source", async () => 
   for (const file of files) {
     const source = await readFile(file, "utf8");
     const relative = path.relative(root, file);
-    assert.doesNotMatch(
-      source,
-      /\bfetch\s*\(|new WebSocket|XMLHttpRequest|sendBeacon|EventSource/,
-      `${relative} must use host.request, not a direct network call`,
-    );
+    if (file === path.join(srcRoot, 'desktop-session.js')) {
+      assert.equal([...source.matchAll(/\bfetch\s*\(/g)].length, 1);
+      assert.match(source, /credentials: 'same-origin'/);
+      assert.match(source, /\/api\/auth\/session\/renew/);
+      assert.doesNotMatch(source, /new WebSocket|XMLHttpRequest|sendBeacon|EventSource|https?:\/\//);
+    } else {
+      assert.doesNotMatch(source, /\bfetch\s*\(|new WebSocket|XMLHttpRequest|sendBeacon|EventSource/,
+        `${relative} must use host.request, not a direct network call`);
+    }
     assert.doesNotMatch(
       source,
       /\/plugin\?plugin=zero-control-ui&id=/,

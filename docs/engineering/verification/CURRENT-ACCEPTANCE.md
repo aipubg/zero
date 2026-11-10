@@ -36,7 +36,7 @@ Latest owner-delivery checkpoint: [usable local build, conservative cleanup and 
 
 | Clause | Required outcome | Current scope/status | Evidence and remaining limit |
 |---|---|---|---|
-| Honesty 1 | Classify all acceptance tests using the seven exact labels | PARTIAL | Original 137 leaves/18 files and 14 runner entrypoints plus 94 reviewed additional source files now inventoried with explicit declaration/mode scope. 112 total source files; 0 additional files remain NOT_REVIEWED. Integrity check explicitly reports exhaustiveClassification REQUIRES_FINAL_SCOPE_AUDIT; see ADDITIONAL-TEST-CLASSIFICATION.md. |
+| Honesty 1 | Classify all acceptance tests using the seven exact labels | PARTIAL | Original 137 leaves/18 files and 14 runner entrypoints plus 95 reviewed additional source files now inventoried with explicit declaration/mode scope. 113 total source files; 0 additional files remain NOT_REVIEWED. Integrity check explicitly reports exhaustiveClassification REQUIRES_FINAL_SCOPE_AUDIT; see ADDITIONAL-TEST-CLASSIFICATION.md. |
 | Honesty 2 | Replace weak assertions with intended-outcome tests | PARTIAL | UI, Skills, Plugins, Agents, Screen, Voice and Desktop provide actual effects; legacy source/existence assertions remain explicitly insufficient. |
 | Honesty 3 | Remove misleading production-completion claims | PARTIAL | Current notices withdraw historical sign-off; exhaustive remaining claim scan/release audit still required. |
 | Honesty 4 | Preserve failing/blocked scenarios without PASS conversion | EVIDENCED | Voice interruption FAIL, prior local-model recall failures, interrupted endurance and external prerequisites retained. No global pass inference. |
@@ -44,7 +44,7 @@ Latest owner-delivery checkpoint: [usable local build, conservative cleanup and 
 | UI 1 | Actual interactions on every important screen | PARTIAL | Named correction surfaces have actual workflows; all-screen/all-state regression breadth not established. |
 | UI 2 | Real scrollTop changes | EVIDENCED | UI records actual wheel input and measured increasing About scrollTop. Not every scrollable container. |
 | UI 3 | Skills, Plugins, Memory, Search, Models, Agents via forms/clicks/persistence | EVIDENCED | UI, Skills, Plugins, Agents; actual HF model lifecycle also in 2026-11-09/huggingface-full-ui-lifecycle.json. Selected workflows, not every setting permutation. |
-| UI 4 | Real gateway connection/reconnection | EVIDENCED | UI old/new process IDs and actual rendered reconnection with persisted memory. Long-expiry renewal remains a separate release concern. |
+| UI 4 | Real gateway connection/reconnection | EVIDENCED | UI old/new process IDs and actual rendered reconnection with persisted memory. [Native cookie renewal](2026-11-10/desktop-session-renewal.md) now has real short-lifetime expiry/recovery, persisted metadata, authenticated effects and restart evidence; this is not a day-long endurance or universal reconnect certification. |
 | UI 5 | CSS/text/HTTP200 alone insufficient | EVIDENCED | Cited workflow tests assert actual effects, disk state, replies and scroll movement. Old weak tests are not acceptance substitutes. |
 | Search 1 | No synthesized verified citations | EVIDENCED | UI retrieved source details retain verifiedClaims=false; search provenance contract assertions are separate from retrieval proof. |
 | Search 2 | Distinguish actual retrieval from query links | EVIDENCED | UI source URLs/provider provenance; packages/research-engine/search.mjs. Query links are not retrieved evidence. |
