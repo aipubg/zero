@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PersistentMemoryStore } from '../index.mjs';
 
-test('Zero Persistent Memory Store & Semantic Retrieval Engine', async (t) => {
+test('Memory SQLite records and keyword retrieval', async (t) => {
   const store = new PersistentMemoryStore({ dbPath: ':memory:' });
 
   t.after(() => {
@@ -49,7 +49,7 @@ test('Zero Persistent Memory Store & Semantic Retrieval Engine', async (t) => {
     assert.deepEqual(updated.tags, ['ui', 'theme', 'emerald']);
   });
 
-  await t.test('recalls memories by semantic relevance, tags, and category filter', () => {
+  await t.test('recalls memories by keyword, tags, and category filter', () => {
     store.remember({
       id: 'doc-1',
       category: 'work',
@@ -77,12 +77,21 @@ test('Zero Persistent Memory Store & Semantic Retrieval Engine', async (t) => {
 
     // Category filtering
     const workOnly = store.recall('', { category: 'work' });
+    assert.deepEqual(workOnly.map(m => m.id), ['doc-1']);
     assert.ok(workOnly.every((m) => m.category === 'work'));
   });
 
   await t.test('lists memories with pagination and category filtering', () => {
     const list = store.listMemories({ limit: 10 });
-    assert.ok(list.length >= 3);
+    assert.equal(list.length, 3);
+    const now = Date.now();
+    for (const [index, id] of ['user-pref-theme', 'doc-1', 'doc-2'].entries()) {
+      store.db.prepare('UPDATE zero_memories SET accessed_at = ? WHERE id = ?').run(now - index, id);
+    }
+    assert.deepEqual(store.listMemories({ limit: 1, offset: 0 }).map(m => m.id), ['user-pref-theme']);
+    assert.deepEqual(store.listMemories({ limit: 1, offset: 1 }).map(m => m.id), ['doc-1']);
+    assert.deepEqual(store.listMemories({ limit: 1, offset: 2 }).map(m => m.id), ['doc-2']);
+    assert.deepEqual(store.listMemories({ limit: 1, offset: 3 }), []);
 
     const filtered = store.listMemories({ category: 'preferences' });
     assert.equal(filtered.length, 1);
@@ -106,10 +115,14 @@ test('Zero Persistent Memory Store & Semantic Retrieval Engine', async (t) => {
     `).run('old-mem', 'temp', 'Temporary note from 100 days ago', '[]', 'user', 1.0, oldTimestamp, oldTimestamp, 1);
 
     assert.ok(store.getMemory('old-mem') !== null);
+    store.remember({ id: 'old-frequent', content: 'Retain frequently used old memory' });
+    store.db.prepare('UPDATE zero_memories SET accessed_at = ?, access_count = 2 WHERE id = ?').run(oldTimestamp, 'old-frequent');
 
     // Prune items older than 90 days with access_count < 2
     store.prune(90);
 
     assert.equal(store.getMemory('old-mem'), null);
+    assert.ok(store.getMemory('old-frequent'));
+    assert.ok(store.getMemory('doc-1'));
   });
 });

@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ModelFabric } from '../index.mjs';
 
-test('Zero Model Fabric Enterprise Inference Engine', async (t) => {
+test('Model metadata routing and inference preflight guards', async (t) => {
+  const previous = Object.fromEntries(['TEST_NIM_KEY', 'NVIDIA_API_KEY'].map(key => [key, process.env[key]]));
+  t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
   const fabric = new ModelFabric({
     providers: [
       {
@@ -38,7 +40,7 @@ test('Zero Model Fabric Enterprise Inference Engine', async (t) => {
     assert.equal(unknown, null);
   });
 
-  await t.test('safely resolves environment credentials without leaks', () => {
+  await t.test('resolves explicitly supplied environment credentials and missing values', () => {
     process.env.TEST_NIM_KEY = 'test-token-12345';
     const resolution = fabric.resolveModel('zero-lead');
     const key = fabric.resolveApiKey(resolution.provider);
@@ -50,7 +52,7 @@ test('Zero Model Fabric Enterprise Inference Engine', async (t) => {
     assert.equal(missing, '');
   });
 
-  await t.test('tracks provider health metrics and circuit breaker state', () => {
+  await t.test('records supplied provider success and failure counters', () => {
     fabric.recordSuccess('test-nim', 120);
     let health = fabric.getHealthReport();
     assert.equal(health['test-nim'].status, 'healthy');

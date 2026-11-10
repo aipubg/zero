@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SessionManager } from '../index.mjs';
 
-test('Zero Session Store & Transcript Persistence Engine', async (t) => {
+test('In-memory SQLite sessions transcripts and context projections', async (t) => {
   const sm = new SessionManager({ dbPath: ':memory:' });
+  t.after(() => sm.close());
 
   await t.test('creates, retrieves, lists, and deletes sessions', () => {
     const session = sm.createSession('test-session-1', 'Main Chat Session', { model: 'zero-lead' });
@@ -83,5 +84,4 @@ test('Zero Session Store & Transcript Persistence Engine', async (t) => {
     assert.match(after[after.length - 1].content, /Context compacted/);
   });
 
-  sm.close();
 });

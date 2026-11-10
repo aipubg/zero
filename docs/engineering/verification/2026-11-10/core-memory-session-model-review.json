@@ -1,0 +1,17 @@
+{
+  "command": "node --test packages/memory/test/memory.test.mjs packages/model-fabric/test/model-fabric.test.mjs packages/sessions/test/sessions.test.mjs",
+  "passedReportedChecks": 18,
+  "scope": "Includes three suite containers; actual in-memory SQLite and supplied model metadata/contracts, not18 independent product acceptance workflows",
+  "changes": [
+    "Removed semantic inference, durable disk persistence and circuit-breaker verification implications absent from assertions",
+    "Memory category assertion requires exact IDs, pagination checks disjoint offsets and empty final page",
+    "Pruning proves retention of old frequent and recent records, not just deletion of an old fixture",
+    "Model environment values restored and session store always closed on failed assertions"
+  ],
+  "limits": "No external inference, embeddings, real model health probe, browser workflow or file-backed restart in these three test sources",
+  "auditRegression": { "passed": 16 },
+  "additionalReviewedFiles": 61,
+  "additionalUnreviewedFiles": 28,
+  "endurance24Hours": "NOT_REQUIRED_BY_OWNER; not restarted",
+  "releaseStatus": "PARTIAL_NOT_FULL_PRODUCTION_SIGNOFF"
+}

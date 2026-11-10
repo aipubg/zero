@@ -374,29 +374,143 @@
     },
     {
       "file": "packages/memory/test/memory.test.mjs",
-      "sha256": "a78eae4d612549c576b3cc939086599d0d340d59b2963b266a7d630dfd6b4b87",
+      "sha256": "0d001f3c84699800e8fde29e9c835145b16aacf69ea81d3347961b93e4732194",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Container for in-memory SQLite memory CRUD, keyword/tag recall, pagination and supplied-age pruning. Empty/null content guard rejects supplied inputs. Actual SQLite memory insert/read/update retains supplied content, tags and access metadata. Actual SQLite recall ranks supplied keyword/tag records and returns exact work-category IDs with access count update. Actual SQLite list returns exact fixture count, disjoint one-record offset pages, empty final page and category result. Actual SQLite forget removes requested fixture and get returns null. Manually dated actual SQLite records: old infrequent fixture pruned, old frequent and recent records retained.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual in-memory SQLite with supplied text/tags and manually dated access values; no disk reopen, embeddings, semantic model inference, UI or automatic learned memory."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Memory SQLite records and keyword retrieval",
+          "line": 5,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Container for in-memory SQLite memory CRUD, keyword/tag recall, pagination and supplied-age pruning."
+        },
+        {
+          "title": "requires non-empty content to remember",
+          "line": 12,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Empty/null content guard rejects supplied inputs."
+        },
+        {
+          "title": "stores, retrieves, and updates memory records",
+          "line": 22,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite memory insert/read/update retains supplied content, tags and access metadata."
+        },
+        {
+          "title": "recalls memories by keyword, tags, and category filter",
+          "line": 52,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite recall ranks supplied keyword/tag records and returns exact work-category IDs with access count update."
+        },
+        {
+          "title": "lists memories with pagination and category filtering",
+          "line": 84,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite list returns exact fixture count, disjoint one-record offset pages, empty final page and category result."
+        },
+        {
+          "title": "forgets memories by id",
+          "line": 101,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite forget removes requested fixture and get returns null."
+        },
+        {
+          "title": "prunes expired and infrequently accessed memories",
+          "line": 109,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Manually dated actual SQLite records: old infrequent fixture pruned, old frequent and recent records retained."
+        }
+      ]
     },
     {
       "file": "packages/model-fabric/test/model-fabric.test.mjs",
-      "sha256": "1fd9becf182fe210a0091cac006e89ed0a23d505bb9ed868cd86afc3116696e5",
+      "sha256": "c80ae6aa72863773c29914a5a8433ab1a837d1716c04f13b647378434efb6d09",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "UNIT",
+        "CONTRACT"
+      ],
+      "scope": "Container for supplied model metadata/alias routing, environment credential resolution, counters and preflight rejection. Supplied model IDs/aliases/capability metadata resolve deterministically and unknown ID returns null. Supplied environment credential resolves then absence returns empty string; original environment values restored at test teardown. Supplied success/failure calls change in-memory counters, latency and degraded status; no actual provider request. Unknown model rejects with404/model_not_found before network execution. Removed supplied credential rejects with401/missing_api_key before network execution.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Supplied metadata, counters and environment; all execution failures are preflight, no external provider call, real health probe, circuit-breaker trip or secret-redaction assertion."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "Model metadata routing and inference preflight guards",
+          "line": 5,
+          "labels": [
+            "UNIT",
+            "CONTRACT"
+          ],
+          "scope": "Container for supplied model metadata/alias routing, environment credential resolution, counters and preflight rejection."
+        },
+        {
+          "title": "resolves canonical model IDs and aliases deterministically",
+          "line": 27,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied model IDs/aliases/capability metadata resolve deterministically and unknown ID returns null."
+        },
+        {
+          "title": "resolves explicitly supplied environment credentials and missing values",
+          "line": 43,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied environment credential resolves then absence returns empty string; original environment values restored at test teardown."
+        },
+        {
+          "title": "records supplied provider success and failure counters",
+          "line": 55,
+          "labels": [
+            "UNIT"
+          ],
+          "scope": "Supplied success/failure calls change in-memory counters, latency and degraded status; no actual provider request."
+        },
+        {
+          "title": "throws 404 on unmapped model execution",
+          "line": 71,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Unknown model rejects with404/model_not_found before network execution."
+        },
+        {
+          "title": "throws 401 on missing API key configuration",
+          "line": 82,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Removed supplied credential rejects with401/missing_api_key before network execution."
+        }
+      ]
     },
     {
       "file": "packages/screen-intelligence/screen-intelligence.test.mjs",
@@ -413,16 +527,61 @@
     },
     {
       "file": "packages/sessions/test/sessions.test.mjs",
-      "sha256": "654469dd252bd993c27e0ff52331235d974a75ae0deb85b5d5b888129b78dd65",
+      "sha256": "548713292ec21d351ca3fa8ead17845ccefa08c33b6601b1b53ede63b7f59292",
       "execution": "NOT_RUN_BY_INVENTORY",
-      "reviewStatus": "NOT_REVIEWED",
-      "labels": [],
-      "scope": "Source identity recorded; actual assertion scope has not yet been reviewed.",
+      "reviewStatus": "REVIEWED_SCOPED",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Container for in-memory session CRUD, transcript ordering, direct events and context projection. Actual SQLite session create/get/list/delete retains supplied title/metadata and removes requested session. Actual SQLite appends supplied user/assistant/tool-call metadata and returns ordered transcript with stable supplied call ID. Direct event emission invokes local subscriber with supplied event/payload and unsubscribe; no WebSocket or real task. Actual in-memory SQLite compaction retains all15 originals plus note, while model projection includes six context messages.",
       "gaps": [
-        "Unreviewed; do not infer classification, pass status or product coverage from title/source presence."
+        "Actual in-memory SQLite and supplied transcript/event data; no file persistence/restart, browser, real tool execution or model context consumption."
       ],
       "modes": [],
-      "declarations": null
+      "declarations": [
+        {
+          "title": "In-memory SQLite sessions transcripts and context projections",
+          "line": 5,
+          "labels": [
+            "CONTRACT",
+            "INTEGRATION"
+          ],
+          "scope": "Container for in-memory session CRUD, transcript ordering, direct events and context projection."
+        },
+        {
+          "title": "creates, retrieves, lists, and deletes sessions",
+          "line": 9,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite session create/get/list/delete retains supplied title/metadata and removes requested session."
+        },
+        {
+          "title": "appends messages and retrieves ordered transcript",
+          "line": 28,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual SQLite appends supplied user/assistant/tool-call metadata and returns ordered transcript with stable supplied call ID."
+        },
+        {
+          "title": "emits real-time events and notifies subscribers",
+          "line": 50,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Direct event emission invokes local subscriber with supplied event/payload and unsubscribe; no WebSocket or real task."
+        },
+        {
+          "title": "compacts context when transcript exceeds retainCount threshold",
+          "line": 64,
+          "labels": [
+            "INTEGRATION"
+          ],
+          "scope": "Actual in-memory SQLite compaction retains all15 originals plus note, while model projection includes six context messages."
+        }
+      ]
     },
     {
       "file": "packages/voice-engine/test/windows-native.integration.test.mjs",
