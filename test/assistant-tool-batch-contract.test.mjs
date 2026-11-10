@@ -9,9 +9,10 @@ import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
 
 test('[CONTRACT] malformed tool batches fail before writes and exhausted loops preserve effects without completion', { timeout: 20000 }, async t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-assistant-batch-'));
-  let mode; let target; let loopRequests = 0;
+  let mode; let target; let loopRequests = 0; let lastModelRequest;
   const upstream = http.createServer(async (req, res) => {
-    for await (const chunk of req) void chunk;
+    const body=[]; for await (const chunk of req) body.push(chunk);
+    lastModelRequest=JSON.parse(Buffer.concat(body).toString('utf8'));
     if (mode === 'text-tool-protocol') {
       res.writeHead(200, { 'content-type': 'text/event-stream' });
       res.end(`data: ${JSON.stringify({ choices: [{ delta: { content: '<tool_call>\n<｜DSML｜function_calls><｜DSML｜invoke name="write_file">' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`);
@@ -91,5 +92,10 @@ test('[CONTRACT] malformed tool batches fail before writes and exhausted loops p
   const recovered = await host._runAssistantRequest({ sessionKey: interruptedSession, runId: 'recovery-request', userContent: 'Continue after cancellation', source: 'contract' });
   assert.equal(recovered.content, 'RECOVERED_RESPONSE'); assert.equal(recovered.status, 'ok');
   assert.equal(host.tasks.getTask(recovered.taskId).status, 'COMPLETED');
+  assert.deepEqual(lastModelRequest.tools,host._assistantToolDefinitions(),'Actual model HTTP request uses the canonical discovery definitions');
+  const offeredComputer=lastModelRequest.tools.find(tool=>tool.function.name==='zero_computer_action').function;
+  assert.ok(offeredComputer.parameters.properties.command.enum.includes('set_speed'));
+  assert.ok(offeredComputer.parameters.properties.action.enum.includes('spotify_control'));
+  assert.ok(!lastModelRequest.tools.some(tool=>tool.function.name==='play'));
   assert.equal(host.sessions.getTranscript(interruptedSession).find(message => message.status === 'interrupted').content, 'ACTUAL_PARTIAL_STREAM');
 });

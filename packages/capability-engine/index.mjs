@@ -147,13 +147,15 @@ export class CapabilityEngine {
       action = args.action || (args.query ? 'play' : 'open_url');
     }
 
-    const normAction = String(action || '').toLowerCase().trim();
+    let normAction = String(action || '').toLowerCase().trim();
     if (!def.allowedActions.includes(normAction)) {
       return {
         valid: false,
         error: `Action '${normAction}' is not permitted for capability '${cleanName}'. Allowed: ${def.allowedActions.join(', ')}`,
       };
     }
+    if (cleanName === 'browser' && normAction === 'open') normAction = 'open_url';
+    if (cleanName === 'browser' && normAction === 'search') normAction = 'web_search';
 
     return {
       valid: true,

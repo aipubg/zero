@@ -2,7 +2,7 @@
   "status": "PASS_FOR_DECLARED_SOURCE_SCOPE_ONLY",
   "method": "TypeScript 6.0.3 AST parse of current 113 sources; direct declarations compared against literal catalog extraction, node:test bindings inspected.",
   "sourceFiles": 113,
-  "declarationsIncludingContainers": 622,
+  "declarationsIncludingContainers": 623,
   "unsupported": [],
   "entries": [
     {
@@ -162,7 +162,7 @@
     },
     {
       "file": "test/assistant-tool-batch-contract.test.mjs",
-      "sha256": "158cbb9424efe59fa7e23c9eb1786ccc130adb32170d437d6965becb9a394cfa",
+      "sha256": "4563a2d7f165793dde3f310eebd0e938fa1af7d41b9b2357b74e4bd3e404be00",
       "literalDeclarations": 1
     },
     {
@@ -202,8 +202,8 @@
     },
     {
       "file": "test/capability-result-honesty.test.mjs",
-      "sha256": "e18ad7b20464e5716486bd83695dab0c3977a53b1bdc865fb76343360648a75f",
-      "literalDeclarations": 2
+      "sha256": "e06fd1494bdd5f993eff07f5578c5e41dbf63af9d810db7bc0fb2e1ca3d3ef50",
+      "literalDeclarations": 3
     },
     {
       "file": "test/connector-probes.test.mjs",
@@ -307,7 +307,7 @@
     },
     {
       "file": "test/native-gateway.test.mjs",
-      "sha256": "adbfc5854c34c14f8fcf46d544f596b70e6fa2796a9d4eaf1d4666435f3622ea",
+      "sha256": "f0aab553e24df84bd7c44de3c28707637087cf853cb616f68e0669334577ed62",
       "literalDeclarations": 2
     },
     {
@@ -1027,9 +1027,9 @@
   ],
   "limits": [
     "No test execution, product acceptance, reachable workflow completeness or independent verification of every application behavior.",
-    "622 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
+    "623 lexical declarations include suite containers; loops can register runtime instances. Not a new 608-leaf acceptance count.",
     "Classification applies to current cataloged files and declaration syntax; new sources/syntax require review.",
     "CLI integrity remains conservative REQUIRES_FINAL_SCOPE_AUDIT and release BLOCKED; this separate receipt must be reviewed alongside actual execution evidence."
   ],
-  "followup": "Retired unreachable unsafe shared-default/physical legacy bodies; declaration census unchanged. These tests remain BLOCKED, not PASS."
+  "followup": "2026-11-11 primary model/discovery canonical schema and browser alias contract review; source census is not test execution."
 }

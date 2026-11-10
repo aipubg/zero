@@ -23,3 +23,14 @@ test('[CONTRACT] cancellation dominates a late successful native completion', as
   assert.equal(result.ok, false); assert.equal(result.verified, false); assert.equal(result.completed, false);
   assert.equal(result.outcome, 'CANCELLED');
 });
+
+test('[CONTRACT] browser open/search aliases reach the supported operator with original arguments', async () => {
+  const calls=[];
+  const engine=new CapabilityEngine({operator:{evaluateSafety:()=>({allowed:true}),execute:async(action,args)=>{calls.push({action,args});return {ok:true,executed:true,verified:false,outcome:'UNVERIFIED'};}}});
+  const opened=await engine.execute({toolName:'browser',args:{action:'open',url:'https://example.com'}});
+  assert.equal(opened.ok,true);assert.equal(opened.verified,false);assert.equal(calls[0].action,'open_url');assert.equal(calls[0].args.url,'https://example.com');
+  const searched=await engine.execute({toolName:'browser',args:{action:'search',query:'original exact query'}});
+  assert.equal(searched.ok,true);assert.equal(searched.verified,false);assert.equal(calls[1].action,'web_search');assert.equal(calls[1].args.query,'original exact query');
+  const refused=await engine.execute({toolName:'browser',args:{action:'made_up'}});
+  assert.equal(refused.ok,false);assert.equal(calls.length,2);
+});

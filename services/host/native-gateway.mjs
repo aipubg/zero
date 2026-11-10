@@ -1353,13 +1353,14 @@ export class ZeroNativeHost {
       case 'tools.effective':
         return {
           ok: true,
-          tools: [
-            { name: 'zero_computer_action', description: 'Directly execute Windows OS computer actions: open_app, type_text, press_key, mouse_move, left_click, list_windows, list_apps, get_window_state, get_screen_size, play, browser.' },
-            { name: 'browser', description: 'Control web browser on Windows: open URLs, search and play songs/videos on YouTube.' },
-            { name: 'open_app', description: 'Launch an application on Windows desktop (e.g. notepad, calc, chrome).' },
-            { name: 'play', description: 'Search and play audio/video on YouTube' },
-            { name: 'type_text', description: 'Type text into the focused window with verification' },
-          ],
+          source: 'canonical-assistant-registry',
+          scope: 'primary-zero-assistant',
+          executionVerified: false,
+          tools: this._assistantToolDefinitions().map(definition => ({
+            name: definition.function.name,
+            description: definition.function.description,
+            parameters: definition.function.parameters,
+          })),
         };
 
       // Computer Hold Takeover Arbitration
@@ -1951,6 +1952,74 @@ export class ZeroNativeHost {
       model: params.model, language: params.language, ...(params.playback !== undefined ? { playback: params.playback } : {}) });
   }
 
+  _assistantToolDefinitions() {
+    const tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'zero_computer_action',
+          description: 'Compatibility Windows actions. Prefer desktop_control for primary accessibility snapshots and qualified-ref interaction. Use these legacy actions for explicitly needed coordinate or existing browser workflows.',
+          parameters: {
+            type: 'object',
+            required: ['action'],
+            properties: {
+              action: {
+                type: 'string',
+                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+              },
+              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
+              text: { type: 'string', description: 'Text to type into the focused window' },
+              query: { type: 'string', description: 'Search term or song name to play on YouTube' },
+              command: { type: 'string', enum: [...MEDIA_COMMANDS, 'status'], description: 'media_control: ZERO-owned browser player. spotify_control: status/play/pause/next/previous/set_volume on the exact Windows Spotify session. set_volume uses volume_percent; browser set_speed uses playback_rate. If Spotify has no active track use open_app Spotify then desktop_control to select a track, not global media keys.' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Exact player volume, e.g. 5 for 5%. Supported by play and media_control set_volume.' },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Exact playback speed, e.g. 2 for 2x. Supported by play and media_control set_speed.' },
+              url: { type: 'string', description: 'URL to open in the browser' },
+              key: { type: 'string', description: 'Key or shortcut to press' },
+              x: { type: 'number', description: 'X screen coordinate' },
+              y: { type: 'number', description: 'Y screen coordinate' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'open_app',
+          description: 'Launch an application on Windows desktop (e.g. notepad, calc, chrome).',
+          parameters: {
+            type: 'object',
+            required: ['app'],
+            properties: {
+              app: { type: 'string', description: 'Installed app name or executable path. Spotify and Camera use Windows packaged-app discovery. Camera launch is not photo capture; inspect the real app with desktop_control and verify saved photo before claiming capture.' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'browser',
+          description: 'Control web browser on Windows: open URLs, search and play songs/videos on YouTube.',
+          parameters: {
+            type: 'object',
+            properties: {
+              action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search'] },
+              query: { type: 'string', description: 'Search query or song name to play on YouTube' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100 },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
+              url: { type: 'string', description: 'Web page URL' },
+            },
+          },
+        },
+      },
+    ];
+
+    for (const definition of canonicalCapabilityEngine.customCapabilities.values()) {
+      if (!definition.disabled) tools.push({ type: 'function', function: { name: definition.name, description: definition.description, parameters: definition.parameters || { type: 'object' } } });
+    }
+    return tools;
+  }
+
   _runAssistantRequest(options) {
     return this.executeAssistantOnce(options, request => this._executeAssistantRequest(request));
   }
@@ -2033,70 +2102,8 @@ export class ZeroNativeHost {
     const turnId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-    const DESKTOP_TOOLS = [
-      {
-        type: 'function',
-        function: {
-          name: 'zero_computer_action',
-          description: 'Compatibility Windows actions. Prefer desktop_control for primary accessibility snapshots and qualified-ref interaction. Use these legacy actions for explicitly needed coordinate or existing browser workflows.',
-          parameters: {
-            type: 'object',
-            required: ['action'],
-            properties: {
-              action: {
-                type: 'string',
-                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
-              },
-              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
-              text: { type: 'string', description: 'Text to type into the focused window' },
-              query: { type: 'string', description: 'Search term or song name to play on YouTube' },
-              command: { type: 'string', enum: [...MEDIA_COMMANDS, 'status'], description: 'media_control: ZERO-owned browser player. spotify_control: status/play/pause/next/previous/set_volume on the exact Windows Spotify session. set_volume uses volume_percent; browser set_speed uses playback_rate. If Spotify has no active track use open_app Spotify then desktop_control to select a track, not global media keys.' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Exact player volume, e.g. 5 for 5%. Supported by play and media_control set_volume.' },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Exact playback speed, e.g. 2 for 2x. Supported by play and media_control set_speed.' },
-              url: { type: 'string', description: 'URL to open in the browser' },
-              key: { type: 'string', description: 'Key or shortcut to press' },
-              x: { type: 'number', description: 'X screen coordinate' },
-              y: { type: 'number', description: 'Y screen coordinate' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'open_app',
-          description: 'Launch an application on Windows desktop (e.g. notepad, calc, chrome).',
-          parameters: {
-            type: 'object',
-            required: ['app'],
-            properties: {
-              app: { type: 'string', description: 'Installed app name or executable path. Spotify and Camera use Windows packaged-app discovery. Camera launch is not photo capture; inspect the real app with desktop_control and verify saved photo before claiming capture.' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'browser',
-          description: 'Control web browser on Windows: open URLs, search and play songs/videos on YouTube.',
-          parameters: {
-            type: 'object',
-            properties: {
-              action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search'] },
-              query: { type: 'string', description: 'Search query or song name to play on YouTube' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100 },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
-              url: { type: 'string', description: 'Web page URL' },
-            },
-          },
-        },
-      },
-    ];
+    const DESKTOP_TOOLS = this._assistantToolDefinitions();
 
-    for (const definition of canonicalCapabilityEngine.customCapabilities.values()) {
-      if (!definition.disabled) DESKTOP_TOOLS.push({ type: 'function', function: { name: definition.name, description: definition.description, parameters: definition.parameters || { type: 'object' } } });
-    }
     try {
       let currentMessages = this.sessions.getModelContext(sessionKey).map((m) => ({
         role: m.role,

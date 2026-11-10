@@ -2607,14 +2607,14 @@
     },
     {
       "file": "test/assistant-tool-batch-contract.test.mjs",
-      "sha256": "158cbb9424efe59fa7e23c9eb1786ccc130adb32170d437d6965becb9a394cfa",
+      "sha256": "4563a2d7f165793dde3f310eebd0e938fa1af7d41b9b2357b74e4bd3e404be00",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "CONTRACT",
         "INTEGRATION"
       ],
-      "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE. Protocol-shaped DSML/tool-call prose without API calls fails before any effect and persists failed receipts.",
+      "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE. Protocol-shaped DSML/tool-call prose without API calls fails before any effect and persists failed receipts. Actual captured controlled-provider HTTP request receives the same canonical schemas, including exact media options and Spotify action, without phantom standalone play.",
       "gaps": [
         "Real native host and local HTTP, but controlled upstream model and supplied notification client; private assistant method invoked directly, no real browser/WebSocket client, external model or process restart."
       ],
@@ -2627,7 +2627,7 @@
             "CONTRACT",
             "INTEGRATION"
           ],
-          "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE. Also rejects protocol-shaped assistant prose without API calls."
+          "scope": "Real isolated host rejects entire malformed tool batch before file writes, records failure on five-turn exhaustion after actual reads, persists interrupted stream/run identity, and completes a subsequent recovery turn from supplied SSE. Also rejects protocol-shaped assistant prose without API calls. Actual controlled-provider request tools are inspected for canonical schemas."
         }
       ]
     },
@@ -2875,13 +2875,13 @@
     },
     {
       "file": "test/capability-result-honesty.test.mjs",
-      "sha256": "e18ad7b20464e5716486bd83695dab0c3977a53b1bdc865fb76343360648a75f",
+      "sha256": "e06fd1494bdd5f993eff07f5578c5e41dbf63af9d810db7bc0fb2e1ca3d3ef50",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "CONTRACT"
       ],
-      "scope": "Supplied operator results verify failure/cancellation override contradictory executed and verified flags.",
+      "scope": "Supplied operator results verify failure/cancellation override contradictory executed and verified flags. Browser open/search alias dispatch is checked against a supplied operator; no native browser effect is asserted.",
       "gaps": [
         "No native action delivery, real process or physical effect evidence"
       ],
@@ -2902,6 +2902,14 @@
             "CONTRACT"
           ],
           "scope": "cancellation dominates a late successful native completion"
+        },
+        {
+          "title": "[CONTRACT] browser open/search aliases reach the supported operator with original arguments",
+          "line": 27,
+          "labels": [
+            "CONTRACT"
+          ],
+          "scope": "Supplied operator records browser open/search normalized to supported actions with original URL/query, while unknown action is refused. No native browser input or external search retrieval."
         }
       ]
     },
@@ -3963,14 +3971,14 @@
     },
     {
       "file": "test/native-gateway.test.mjs",
-      "sha256": "adbfc5854c34c14f8fcf46d544f596b70e6fa2796a9d4eaf1d4666435f3622ea",
+      "sha256": "f0aab553e24df84bd7c44de3c28707637087cf853cb616f68e0669334577ed62",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
         "CONTRACT",
         "INTEGRATION"
       ],
-      "scope": "Container starts actual isolated native host on dynamic port with bounded RPCs and task-owned temporary state. Actual WebSocket challenge/handshake then health/agents/memory remember+recall, job registration and scoped hold take/status/release; no desktop mutation executes.",
+      "scope": "Container starts actual isolated native host on dynamic port with bounded RPCs and task-owned temporary state. Actual WebSocket challenge/handshake then health/agents/memory remember+recall, job registration and scoped hold take/status/release; no desktop mutation executes. Actual authenticated WebSocket tools.effective catalog includes concrete desktop/media schemas, excludes nonexistent standalone action names, and follows actual registered/disabled local fixture capability state. No tool execution proof from listing.",
       "gaps": [
         "Real isolated localhost host/socket and SQLite; automation is registered only, no scheduled action, external inference, browser or process restart."
       ],
@@ -3978,7 +3986,7 @@
       "declarations": [
         {
           "title": "Isolated native gateway real WebSocket RPC and persisted effects",
-          "line": 16,
+          "line": 17,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
@@ -3987,12 +3995,12 @@
         },
         {
           "title": "connects via WebSocket, completes handshake, and dispatches RPC methods",
-          "line": 47,
+          "line": 48,
           "labels": [
             "CONTRACT",
             "INTEGRATION"
           ],
-          "scope": "Actual WebSocket challenge/handshake then health/agents/memory remember+recall, job registration and scoped hold take/status/release; no desktop mutation executes."
+          "scope": "Actual WebSocket challenge/handshake then health/agents/memory remember+recall, job registration and scoped hold take/status/release; no desktop mutation executes. Also verifies real wire tool discovery schemas and enabled/disabled local registry fixture visibility."
         }
       ]
     },

@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
 import { createRequire } from 'node:module';
+import { canonicalCapabilityEngine } from '../packages/capability-engine/index.mjs';
 
 // Dynamically load ws client
 async function getWsClient() {
@@ -101,6 +102,31 @@ test('Isolated native gateway real WebSocket RPC and persisted effects', { timeo
     });
     assert.equal(healthRes.ok, true);
     assert.equal(healthRes.payload.status, 'ok');
+
+    const catalogRes = await sendRpc({ type: 'req', id: 'req-tool-catalog', method: 'tools.effective', params: {} });
+    assert.equal(catalogRes.ok, true);
+    assert.equal(catalogRes.payload.source, 'canonical-assistant-registry');
+    assert.equal(catalogRes.payload.executionVerified, false, 'Discovery is not execution proof');
+    const tools = catalogRes.payload.tools;
+    assert.ok(tools.some(tool => tool.name === 'desktop_control'));
+    assert.ok(tools.some(tool => tool.name === 'research_search'));
+    assert.ok(!tools.some(tool => tool.name === 'play' || tool.name === 'type_text'), 'Action names must not be advertised as nonexistent standalone functions');
+    const computer = tools.find(tool => tool.name === 'zero_computer_action');
+    assert.ok(computer.parameters.properties.action.enum.includes('spotify_control'));
+    assert.ok(computer.parameters.properties.command.enum.includes('set_speed'));
+    assert.equal(computer.parameters.properties.volume_percent.maximum, 100);
+    assert.equal(computer.parameters.properties.playback_rate.maximum, 4);
+    assert.deepEqual(tools, host._assistantToolDefinitions().map(({function:definition})=>({name:definition.name,description:definition.description,parameters:definition.parameters})), 'Actual wire catalog matches the model request definitions');
+    const fixtureName = `catalog_fixture_${Date.now()}`;
+    canonicalCapabilityEngine.registerCapability({name:fixtureName,description:'Local registry lifecycle fixture',parameters:{type:'object'},handler:async()=>({ok:true})});
+    try {
+      const enabled = await sendRpc({type:'req',id:'req-catalog-enabled',method:'tools.effective',params:{}});
+      assert.ok(enabled.payload.tools.some(tool=>tool.name===fixtureName));
+      canonicalCapabilityEngine.customCapabilities.get(fixtureName).disabled=true;
+      const disabled = await sendRpc({type:'req',id:'req-catalog-disabled',method:'tools.effective',params:{}});
+      assert.ok(!disabled.payload.tools.some(tool=>tool.name===fixtureName));
+      assert.ok(!host._assistantToolDefinitions().some(tool=>tool.function.name===fixtureName));
+    } finally { canonicalCapabilityEngine.customCapabilities.delete(fixtureName); }
 
     // 3. Agents list
     const agentsRes = await sendRpc({
