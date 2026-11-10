@@ -3,11 +3,32 @@
   "change": "Safety checks are read-only; successful completed screen observations clear freshness after dispatch, while failure, abort, hold and newer freshness generation preserve the gate. Wait/status/version/clipboard calls do not count as screen observation.",
   "ownerBehavior": "No new permission popup or change to existing owner bypass selection",
   "verification": [
-    { "command": "node --test app/zero-control-ui/test/computer-operator.test.mjs packages/capability-engine/test/capability-engine.test.mjs", "reportedTestsPassed": 11, "scope": "Supplied failure/success/late-snapshot policy contracts plus actual native geometry/cursor getters" },
-    { "command": "pnpm test in app/zero-control-ui", "passed": 103, "log": "artifacts/freshness-ui-regression.log", "scope": "UI package supplied DOM/contracts and local storage checks" },
-    { "command": "node --test test/assistant-tool-batch-contract.test.mjs test/automation-failure-outcomes.test.mjs", "passed": 8, "scope": "Isolated actual native host and supplied HTTP/executors, real file/SQLite integration" },
-    { "command": "ZERO_AGENT_DESKTOP_TESTS=1 node --test test/agent-desktop-real.test.mjs test/agent-desktop-rpc-real.test.mjs", "passed": 2, "log": "artifacts/freshness-real-desktop-regression.log", "scope": "Actual primary native desktop backend, owned WinForms field/button/file effect and authenticated RPC refusal/delivery metadata; not arbitrary active-app click tests" },
-    { "command": "node --test test/verification/classification-runner.test.mjs", "passed": 16 }
+    {
+      "command": "node --test app/zero-control-ui/test/computer-operator.test.mjs packages/capability-engine/test/capability-engine.test.mjs",
+      "reportedTestsPassed": 11,
+      "scope": "Supplied failure/success/late-snapshot policy contracts plus actual native geometry/cursor getters"
+    },
+    {
+      "command": "pnpm test in app/zero-control-ui",
+      "passed": 103,
+      "log": "artifacts/freshness-ui-regression.log",
+      "scope": "UI package supplied DOM/contracts and local storage checks"
+    },
+    {
+      "command": "node --test test/assistant-tool-batch-contract.test.mjs test/automation-failure-outcomes.test.mjs",
+      "passed": 8,
+      "scope": "Isolated actual native host and supplied HTTP/executors, real file/SQLite integration"
+    },
+    {
+      "command": "ZERO_AGENT_DESKTOP_TESTS=1 node --test test/agent-desktop-real.test.mjs test/agent-desktop-rpc-real.test.mjs",
+      "passed": 3,
+      "log": "artifacts/freshness-real-desktop-regression.log",
+      "scope": "Actual primary native desktop backend, owned WinForms field/button/file effect and authenticated RPC refusal/delivery metadata; not arbitrary active-app click tests"
+    },
+    {
+      "command": "node --test test/verification/classification-runner.test.mjs",
+      "passed": 16
+    }
   ],
   "additionalReviewedFiles": 73,
   "additionalUnreviewedFiles": 16,
