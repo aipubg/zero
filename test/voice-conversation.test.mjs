@@ -7,6 +7,33 @@ function engine(overrides = {}) {
   return Object.assign(new EventEmitter(), { transcribe: async () => ({ transcribed: true, text: 'actual transcript fixture' }),
     synthesizeSpeech: async (_id, _text) => ({ played: false, pcmByteLength: 3200 }), cancelSpeech() {}, ...overrides });
 }
+
+test('[CONTRACT] resumed speech preserves one pending utterance and explicit processing or detach prevents duplicate turns', async () => {
+  let buffered = ['remember']; let reads = 0; let turns = 0;
+  const voice = engine({ transcribe: async () => { reads++; const text = buffered.join(' '); buffered = []; return { transcribed: true, text }; } });
+  const bridge = new VoiceConversation({ engine: voice, endpointDelayMs: 40, executeTurn: async input => { turns++; return { ok: true, content: input.text }; } });
+  try {
+    bridge.attach('chat', { ownerId: 'owner' });
+    voice.emit('voice:speech_end', { sessionId: 'chat' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(reads, 0, 'A brief pause must not drain audio into recognition');
+    voice.emit('voice:speech_start', { sessionId: 'chat' });
+    buffered.push('blue bird');
+    voice.emit('voice:speech_end', { sessionId: 'chat' });
+    const completed = new Promise(resolve => bridge.once('turn-complete', resolve));
+    assert.equal((await completed).transcript, 'remember blue bird');
+    assert.equal(reads, 1); assert.equal(turns, 1);
+    buffered.push('manual turn');
+    voice.emit('voice:speech_end', { sessionId: 'chat' });
+    await bridge.process('chat');
+    await new Promise(resolve => setTimeout(resolve, 60));
+    assert.equal(turns, 2, 'Explicit process must remove the pending automatic duplicate');
+    voice.emit('voice:speech_end', { sessionId: 'chat' });
+    await bridge.detach('chat');
+    await new Promise(resolve => setTimeout(resolve, 60));
+    assert.equal(turns, 2, 'Detached sessions must not execute a late utterance');
+  } finally { await bridge.close(); }
+});
 test('[CONTRACT] speech end uses the shared executor and routes the actual reply to speech', async () => {
   const calls = [];
   const voice = engine({ synthesizeSpeech: async (id, text, options) => { calls.push({ id, text, playback: options.playback }); return { played: false, pcmByteLength: 3200 }; } });

@@ -6,6 +6,8 @@
 
 Newest combined browser run: [16 workflows PASS, provider catalog probe HTTP502 FAIL](2026-11-10/combined-real-ui-regression.json); overall FAIL retained. New [automatic human voice turn test FAIL](2026-11-10/whisper-human-automatic-turn-failure.json): user spoke the phrase and heard the response cut off; no matching complete automatic turn within60seconds. Manual-ended human conversation remains a separate PASS. [21 local worker/search regression checks PASS](2026-11-10/workers-search-regression.json); loopback/provider fixtures are not remote service proof.
 
+Subsequent voice correction: [native quiet-input playback and actual human interruption/recovery PASS](2026-11-10/voice-playback-noise-and-recovery.json). An adaptive playback onset gate and delayed utterance endpoint address observed background triggers and short-pause prefix loss. [Matching automatic human turn, complete native playback and user-confirmed audible response now evidenced](2026-11-10/voice-automatic-endpoint-outcome.json). Its overall run remains FAIL because the recall assertion rejected a valid Markdown “blue and bird” answer; the assertion was corrected and checked against the actual answer plus negative cases, but the corrected full end-to-end rerun is NOT_RUN. None of the earlier failures was reclassified.
+
 Evidence keys used below:
 
 - **UI:** [actual persisted UI/reconnect/scroll/search](2026-11-02/browser-per-workflow-classification.json); [recent nine-workflow regression and actual 3B tool recall](2026-11-10/qwen-3b-real-ui-recall.json).
@@ -60,8 +62,8 @@ Evidence keys used below:
 | Voice 2 | Real STT replaces placeholders | EVIDENCED | Pinned offline Whisper actual human headset phrase, not fabricated text. Optional explicit backend; Windows default retained. |
 | Voice 3 | Actual microphone capture/processing | EVIDENCED | Voice device0 Rockerz480 actual native PCM and expected words; raw microphone audio not saved. |
 | Voice 4 | Real synthesized output device playback | EVIDENCED | Voice actual native playback completion plus user's clear-audio confirmation. |
-| Voice 5 | Interruptions/barge-in/chat continuity | PARTIAL | Human conversation and typed recall PASS; native microphone interruption/user confirmation exists, but stronger adjacent-word barge-in test and automatic VAD human conversation test remain FAIL. |
-| Voice 6 | Keep PARTIAL until genuine interaction | PARTIAL | Genuine selected spoken interaction now evidenced, but full voice feature remains PARTIAL pending automatic turns and complete interruption gates. |
+| Voice 5 | Interruptions/barge-in/chat continuity | PARTIAL | Selected actual human interruption/word-recognition/recovery now PASS. Matching automatic spoken turn/native playback/user audibility evidenced; full run retained FAIL for a valid-answer formatting assertion, corrected complete rerun pending. Earlier failures retained. |
+| Voice 6 | Keep PARTIAL until genuine interaction | PARTIAL | Genuine selected manual/automatic spoken interaction and interruption evidenced. Full voice acceptance remains PARTIAL pending corrected full-run gate and broader accuracy/noise/continuity validation. |
 | Workers 1 | Real worker execution | PARTIAL | test/runtime-workers.integration.test.mjs actual local child process/file/stdout evidence; real remote/cloud worker unavailable. |
 | Workers 2 | Actual remote handoff/result return | BLOCKED | User confirms Windows-PC-only testing; loopback/local process execution cannot prove remote target. |
 | Workers 3 | Real supported mobile operations | BLOCKED | No supported physical companion available. Registry/pairing metadata are insufficient. |

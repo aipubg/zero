@@ -1,0 +1,204 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION"
+  ],
+  "status": "PARTIAL",
+  "beforeQuiet": {
+    "artifact": "artifacts/voice-quiet-probe/1794268656386/report.json",
+    "report": {
+      "classification": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "OBSERVED",
+      "scope": "Native playback/capture timing diagnostic with user asked to remain quiet; no speaker-identity or echo-cause claim",
+      "rawMicrophoneSaved": false,
+      "nativePlaybackStarted": true,
+      "observation": {
+        "sessionId": "quiet-probe",
+        "state": "processing",
+        "bargeInCount": 1,
+        "vadFramesProcessed": 266,
+        "voiceEvents": [
+          {
+            "type": "speech_start",
+            "source": "energy-vad",
+            "timestamp": 1794268664610,
+            "energy": 0.0289776782882454,
+            "zcr": 0.10208333333333333,
+            "frame": 235,
+            "stateBefore": "speaking",
+            "outputPending": true,
+            "playbackActive": true,
+            "bargeIn": true
+          },
+          {
+            "type": "speech_end",
+            "source": "energy-vad",
+            "timestamp": 1794268665334,
+            "energy": 0.009737442099384956,
+            "zcr": 0.014583333333333334,
+            "frame": 259,
+            "stateBefore": "listening",
+            "outputPending": false,
+            "playbackActive": false
+          }
+        ],
+        "capture": {
+          "state": "stopped",
+          "deviceId": 0,
+          "frames": 266,
+          "bytes": 255360,
+          "lastFrameAt": 1794268665540,
+          "lastFrameRms": 331.7880692801757,
+          "maxFrameRms": 1283.6655205893785,
+          "speechRecognition": "unverified"
+        },
+        "router": {
+          "sampleRate": 16000,
+          "channels": 1,
+          "bufferedInputBytes": 255360,
+          "bufferedOutputBytes": 0,
+          "outputQueueLength": 0,
+          "droppedInputBytes": 0,
+          "droppedOutputBytes": 631680
+        },
+        "microphoneActive": false,
+        "synthesisActive": false,
+        "playbackActive": false,
+        "transcriptionActive": false,
+        "lastError": null
+      },
+      "interruptedDuringProbe": true,
+      "speechOutcome": {
+        "code": "VOICE_CANCELLED"
+      }
+    }
+  },
+  "afterQuiet": {
+    "artifact": "artifacts/voice-quiet-probe/1794268772084/report.json",
+    "report": {
+      "classification": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "rawMicrophoneSaved": false,
+      "scope": "Actual native playback/capture during an eight-second requested-quiet window, explicit cancellation and real output recovery; not general noise immunity, echo cancellation or human barge-in acceptance",
+      "observation": {
+        "sessionId": "quiet-probe",
+        "state": "speaking",
+        "bargeInCount": 0,
+        "vadFramesProcessed": 266,
+        "voiceEvents": [],
+        "capture": {
+          "state": "stopped",
+          "deviceId": 0,
+          "frames": 266,
+          "bytes": 255360,
+          "lastFrameAt": 1794268781106,
+          "lastFrameRms": 331.013786847819,
+          "maxFrameRms": 351.6202615511986,
+          "speechRecognition": "unverified"
+        },
+        "router": {
+          "sampleRate": 16000,
+          "channels": 1,
+          "bufferedInputBytes": 255360,
+          "bufferedOutputBytes": 1047680,
+          "outputQueueLength": 1092,
+          "droppedInputBytes": 0,
+          "droppedOutputBytes": 631680
+        },
+        "microphoneActive": false,
+        "synthesisActive": true,
+        "playbackActive": true,
+        "transcriptionActive": false,
+        "lastError": null
+      },
+      "explicitCancellationConfirmed": true,
+      "recoveredPlayback": true
+    }
+  },
+  "afterHumanInterruption": {
+    "artifact": "artifacts/voice-human-barge-in/1794268955897/report.json",
+    "report": {
+      "classification": [
+        "REAL_OS",
+        "INTEGRATION"
+      ],
+      "status": "PASS",
+      "rawMicrophoneSaved": false,
+      "transcriptOmitted": true,
+      "backend": "whisper.cpp",
+      "echoCancellation": false,
+      "scope": "Actual microphone energy VAD interruption during native headphone playback, adjacent prompted speech recognition and subsequent playback recovery; not intent-aware or noise-resistant barge-in accuracy",
+      "playbackObservedAt": 1794268956657,
+      "actualNativePlaybackCancelled": true,
+      "capture": {
+        "state": "cancelled",
+        "deviceId": 0,
+        "frames": 739,
+        "bytes": 709440,
+        "lastFrameAt": 1794268979229,
+        "lastFrameRms": 316.0542543087605,
+        "maxFrameRms": 1894.3758305837837,
+        "speechRecognition": "unverified"
+      },
+      "expectedWordsDetected": [
+        "stop",
+        "blue",
+        "bird"
+      ],
+      "expectedInterruptionWordsRecognized": true,
+      "interruption": {
+        "observedAt": 1794268974189,
+        "event": {
+          "sessionId": "human-interrupt",
+          "droppedCount": 1092,
+          "droppedBytes": 1047840,
+          "energy": 0.05781176240795238,
+          "zcr": 0.13958333333333334,
+          "threshold": 0.041996922022044234,
+          "noiseFloor": 0.010499230505511058,
+          "timestamp": 1794268974188
+        }
+      },
+      "recoveredPlayback": true,
+      "bargeInCount": 1
+    },
+    "userConfirmation": "User confirmed recovery message clearly audible"
+  },
+  "priorHumanBargeFailure": "Original stronger-phrase failure remains in whisper-human-barge-in.json; not reclassified",
+  "automaticAfterNoiseGate": {
+    "artifact": "artifacts/voice-conversation-real/1794268826430/report.json",
+    "status": "FAIL",
+    "observedPlaybackBargeInCount": 0,
+    "observedCompleteAutomaticTurns": 2,
+    "expectedTargetPhraseRecognized": false,
+    "scope": "Playback interruption improved; rapid VAD pause/start bursts cancelled recognition and target phrase still absent. No automatic conversation acceptance."
+  },
+  "regressionChecks": {
+    "passed": 34,
+    "artifact": "artifacts/current-voice-endpoint-tests.log",
+    "scope": "UNIT/CONTRACT including endpoint coalescing, no duplicate manual/detached tasks and background/stronger-speech gate"
+  },
+  "limits": [
+    "No echo cancellation or speaker identity",
+    "Selected hardware/phrase/window, not universal noise robustness",
+    "Full master acceptance remains open"
+  ],
+  "sourceHashes": {
+    "packages/voice-engine/index.mjs": "1cf7cfa7261364d87c710a141b6e9a3d471f871b69306335190d860df70e9a2a",
+    "packages/voice-engine/vad.mjs": "d27a9716b7c1e655ba0bc0536b247c2e7080a0e4d0b2f10bd2c912a2b9422502",
+    "packages/voice-engine/conversation.mjs": "b90a898feff91c3cf68ba10b83d8e1fd4fffbe66176a6330cb79d191a0c9714e",
+    "test/voice-conversation-real.test.mjs": "e8e46d9c852c6a1186ebf5153d9518f18c2b808c75578c66c41821484e41f41d",
+    "test/voice-human-barge-in-real.test.mjs": "d055b6839d86f8b36b524c52f598a742d400050dc77693dbcfa8a0ee96f97217",
+    "test/voice-quiet-playback-real.test.mjs": "4db0fff42184416c5e43eb357ebbf1bb472ea6f3a4dbab73ed7aeced35625daf"
+  },
+  "additionalNativeRegressions": {
+    "defaultWindowsLanguageRpc": "PASS",
+    "whisperNativeStdinCancellationRecoveryUnknownLanguage": "PASS"
+  }
+}

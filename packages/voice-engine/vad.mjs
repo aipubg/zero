@@ -25,6 +25,7 @@ export class VoiceActivityDetector extends EventEmitter {
     this.isSpeaking = false;
     this._speechCount = 0;
     this._silenceCount = 0;
+    this.noiseFloor = null;
   }
 
   /**
@@ -105,12 +106,21 @@ export class VoiceActivityDetector extends EventEmitter {
    * @param {Buffer|Int16Array|Float32Array} frame
    * @returns {{ isSpeaking: boolean, energy: number, zcr: number, event: string|null }}
    */
-  processFrame(frame) {
+  processFrame(frame, { playbackActive = false } = {}) {
     const energy = this.calculateRMS(frame);
     const zcr = this.calculateZCR(frame);
     let event = null;
 
-    const speechCandidate = energy >= this.energyThreshold;
+    // Learn only sub-threshold, non-speech input. During playback require a
+    // stronger onset than background fluctuations; once speech has started,
+    // retain the normal threshold so quieter trailing words are not clipped.
+    // This energy gate is not acoustic echo cancellation or speaker identity.
+    if (!this.isSpeaking && energy < this.energyThreshold) {
+      this.noiseFloor = this.noiseFloor === null ? energy : this.noiseFloor * 0.9 + energy * 0.1;
+    }
+    const threshold = playbackActive && !this.isSpeaking
+      ? Math.max(this.energyThreshold, (this.noiseFloor ?? 0) * 4) : this.energyThreshold;
+    const speechCandidate = energy >= threshold;
 
     if (speechCandidate) {
       this._speechCount++;
@@ -119,7 +129,7 @@ export class VoiceActivityDetector extends EventEmitter {
       if (!this.isSpeaking && this._speechCount >= this.speechFramesThreshold) {
         this.isSpeaking = true;
         event = 'speech_start';
-        this.emit('speech_start', { energy, zcr, timestamp: Date.now() });
+        this.emit('speech_start', { energy, zcr, threshold, noiseFloor: this.noiseFloor, timestamp: Date.now() });
       } else if (this.isSpeaking) {
         this.emit('speech_frame', { frame, energy, zcr });
       }
@@ -130,7 +140,7 @@ export class VoiceActivityDetector extends EventEmitter {
       if (this.isSpeaking && this._silenceCount >= this.silenceFramesThreshold) {
         this.isSpeaking = false;
         event = 'speech_end';
-        this.emit('speech_end', { energy, zcr, timestamp: Date.now() });
+        this.emit('speech_end', { energy, zcr, threshold, noiseFloor: this.noiseFloor, timestamp: Date.now() });
       }
     }
 
@@ -139,6 +149,8 @@ export class VoiceActivityDetector extends EventEmitter {
       energy,
       zcr,
       event,
+      threshold,
+      noiseFloor: this.noiseFloor,
     };
   }
 
@@ -146,5 +158,6 @@ export class VoiceActivityDetector extends EventEmitter {
     this.isSpeaking = false;
     this._speechCount = 0;
     this._silenceCount = 0;
+    this.noiseFloor = null;
   }
 }

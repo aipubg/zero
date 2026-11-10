@@ -48,13 +48,22 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
     let spoken;
     if (automatic) {
       report.captureMethod = 'Actual microphone RPC and automatic VAD speech_end; no voice.turn RPC or microphone stop before completed playback';
+      report.automaticEvents = [];
+      const note = (type, value) => {
+        if (value.sessionId !== 'spoken-chat') return;
+        const normalized = (value.text || value.transcript || '').toLowerCase();
+        report.automaticEvents.push({ type, at: Date.now(), expectedWordsDetected: ['remember', 'blue', 'bird'].filter(word => new RegExp(`\\b${word}\\b`).test(normalized)), matchingPhrase: /remember\s+blue\s*bird/i.test(normalized) });
+        if (report.automaticEvents.length > 16) report.automaticEvents.shift();
+      };
       const cue = await new WindowsSpeechBackend().synthesize('The headset microphone is now listening. Say the sentence shown in the chat.');
       const completed = new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('No matching automatic human voice turn completed within 60 seconds')), 60000);
-        const onComplete = value => { if (value.sessionId === 'spoken-chat' && /remember\s+blue\s*bird/i.test(value.transcript)) resolve(value); };
+        const onTranscript = value => note('transcript', value);
+        const onComplete = value => { note('turn-complete', value); if (value.sessionId === 'spoken-chat' && /remember\s+blue\s*bird/i.test(value.transcript)) resolve(value); };
         const onError = value => { if (value.sessionId === 'spoken-chat') reject(new Error(value.error)); };
+        host.voiceConversation.on('transcript', onTranscript);
         host.voiceConversation.on('turn-complete', onComplete); host.voiceConversation.on('turn-error', onError);
-        cleanupAutomatic = () => { clearTimeout(timer); host.voiceConversation.off('turn-complete', onComplete); host.voiceConversation.off('turn-error', onError); };
+        cleanupAutomatic = () => { clearTimeout(timer); host.voiceConversation.off('transcript', onTranscript); host.voiceConversation.off('turn-complete', onComplete); host.voiceConversation.off('turn-error', onError); };
       });
       completed.catch(() => {});
       await call('voice.microphone.start', { sessionId: 'spoken-chat', deviceId: 0, language: 'en-US', playback: true });
@@ -84,6 +93,8 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
     assert.match(spoken.transcript, human ? /remember\s+blue\s*bird/i : /speak real words/i);
     assert.ok(spoken.content.trim()); assert.ok(spoken.pcmByteLength > 3200);
     assert.equal(spoken.played, human);
+    report.spokenTurn = { actualTranscript: spoken.transcript, played: spoken.played, pcmByteLength: spoken.pcmByteLength, taskId: spoken.taskId };
+    if (human) report.humanMicrophone = 'PASS';
     const voiceTask = host.tasks.getTask(spoken.taskId);
     assert.equal(voiceTask?.status, 'COMPLETED');
     const first = await call('chat.history', { sessionKey: 'spoken-chat' });
@@ -94,7 +105,11 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
     const history = await call('chat.history', { sessionKey: 'spoken-chat' });
     const replies = history.messages.filter(message => message.role === 'assistant');
     assert.ok(replies.length >= 2);
-    assert.match(replies.at(-1).content, human ? /blue\s*bird/i : /speak real words/i);
+    report.typedRecallAttempt = replies.at(-1).content;
+    // The request asks for the two remembered words in brief prose, not a
+    // specific Markdown style or the omission of the conjunction "and".
+    const recallText = replies.at(-1).content.replace(/[*_`]/g, '');
+    assert.match(recallText, human ? /\bblue(?:\s+and)?\s*bird\b/i : /speak real words/i);
     const status = await call('voice.conversation.status', { sessionId: 'spoken-chat' });
     if (automatic) assert.ok(status.completedTurns >= 1); else assert.equal(status.completedTurns, 1);
     assert.equal(status.state, 'listening');
@@ -137,6 +152,11 @@ test('[REAL_OS] actual Windows speech completes shared external assistant turn a
 
   } catch (error) { report.status = 'FAIL'; report.error = error.message; throw error; }
   finally {
+    if (human && report.humanMicrophone === 'RUNNING') report.humanMicrophone = 'UNVERIFIED';
+    if (automatic && host) {
+      report.finalConversation = host.voiceConversation.status('spoken-chat');
+      report.finalVoiceStatus = host.voiceEngine.getStatus().sessions.find(session => session.sessionId === 'spoken-chat');
+    }
     cleanupAutomatic?.();
     if (socket?.readyState === WebSocket.OPEN) { const closed = new Promise(resolve => socket.addEventListener('close', resolve, { once: true })); socket.close(); await closed; }
     await host?.close(); audio?.pcm.fill(0);

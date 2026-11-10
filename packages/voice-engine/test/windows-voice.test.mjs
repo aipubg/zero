@@ -117,21 +117,31 @@ test('VAD barge-in cancels pending synthesis without publishing late audio', asy
   assert.equal(published, false);
   assert.equal(engine.getStatus().sessions[0].state, 'listening');
   assert.equal(engine.getStatus().sessions[0].bargeInCount, 1);
+  assert.equal(engine.getStatus().sessions[0].voiceEvents.at(-1).bargeIn, true);
+  assert.equal(engine.getStatus().sessions[0].voiceEvents.at(-1).playbackActive, false, 'Pending synthesis is distinct from actual playback');
 });
 
-test('barge-in stops in-progress native playback and clears queued PCM', async t => {
+test('[UNIT] playback noise gate preserves output for background fluctuations and still cancels stronger speech', async t => {
   const started = deferred();
   const engine = engineFor(t, { play: (pcm, { signal, onStarted }) => { onStarted(); started.resolve(); return untilAborted(signal); } });
+  const quiet = Buffer.alloc(960 * 20);
+  for (let i = 0; i < quiet.length; i += 2) quiet.writeInt16LE(327, i);
+  engine.ingestChunk('session', quiet);
   const speech = engine.synthesizeSpeech('session', 'Speaking now');
   const rejected = assert.rejects(speech, { code: 'VOICE_CANCELLED' });
   await started.promise;
   assert.equal(engine.getStatus().sessions[0].playbackActive, true);
+  const fluctuation = Buffer.alloc(960 * 10);
+  for (let i = 0; i < fluctuation.length; i += 2) fluctuation.writeInt16LE(950, i);
+  engine.ingestChunk('session', fluctuation);
+  assert.equal(engine.getStatus().sessions[0].playbackActive, true, 'Measured-noise fixture must not cancel playback');
   const frames = Buffer.alloc(960 * 3);
   for (let i = 0; i < frames.length; i += 2) frames.writeInt16LE(9000, i);
   engine.ingestChunk('session', frames);
   await rejected;
   assert.equal(engine.getStatus().sessions[0].router.bufferedOutputBytes, 0);
   assert.equal(engine.getStatus().sessions[0].playbackActive, false);
+  assert.equal(engine.getStatus().sessions[0].voiceEvents.at(-1).playbackActive, true, 'Capture the playback state before VAD cancellation');
 });
 
 test('superseded synthesis cannot reset the newer turn or publish stale audio', async t => {

@@ -12,14 +12,26 @@ function cancellable(operation, signal) {
 
 /** Voice is an input/output adapter over the host's existing assistant turn. */
 export class VoiceConversation extends EventEmitter {
-  constructor({ engine, executeTurn }) {
+  constructor({ engine, executeTurn, endpointDelayMs = 600 }) {
     super();
     if (!engine || typeof executeTurn !== 'function') throw new Error('VoiceConversation requires a voice engine and the host assistant executor');
+    if (!Number.isInteger(endpointDelayMs) || endpointDelayMs < 0 || endpointDelayMs > 3000) throw new Error('Voice endpoint delay must be an integer from 0 to 3000 milliseconds');
+    this.endpointDelayMs = endpointDelayMs;
     this.engine = engine;
     this.executeTurn = executeTurn;
     this.bindings = new Map();
     this.onStart = ({ sessionId }) => this.interrupt(sessionId);
-    this.onEnd = ({ sessionId }) => { void this.process(sessionId).catch(() => {}); };
+    this.onEnd = ({ sessionId }) => {
+      const binding = this.bindings.get(sessionId);
+      if (!binding) return;
+      clearTimeout(binding.endpointTimer);
+      // Do not drain audio at every short VAD pause. Resumed speech cancels
+      // this timer before recognition starts, preserving the utterance prefix.
+      binding.endpointTimer = setTimeout(() => {
+        binding.endpointTimer = null;
+        if (this.bindings.get(sessionId) === binding) void this.process(sessionId).catch(() => {});
+      }, this.endpointDelayMs);
+    };
     this.onStopped = ({ sessionId }) => { void this.detach(sessionId); };
     engine.on('voice:speech_start', this.onStart);
     engine.on('voice:speech_end', this.onEnd);
@@ -38,6 +50,7 @@ export class VoiceConversation extends EventEmitter {
   interrupt(sessionId) {
     const binding = this.bindings.get(sessionId);
     if (!binding) return;
+    clearTimeout(binding.endpointTimer); binding.endpointTimer = null;
     binding.generation++;
     binding.controller?.abort(new DOMException('Interrupted by new user speech', 'AbortError'));
     try { this.engine.cancelSpeech(sessionId); } catch {}
@@ -47,6 +60,7 @@ export class VoiceConversation extends EventEmitter {
   process(sessionId) {
     const binding = this.bindings.get(sessionId);
     if (!binding) return Promise.reject(new Error('Voice conversation is not attached'));
+    clearTimeout(binding.endpointTimer); binding.endpointTimer = null;
     const generation = ++binding.generation;
     binding.controller?.abort(new DOMException('Superseded by a new utterance', 'AbortError'));
     const controller = new AbortController();
@@ -88,11 +102,12 @@ export class VoiceConversation extends EventEmitter {
   }
   status(sessionId) {
     const binding = this.bindings.get(sessionId);
-    return binding ? { sessionId, attached: true, state: binding.state, completedTurns: binding.turns, lastError: binding.lastError } : { sessionId, attached: false };
+    return binding ? { sessionId, attached: true, state: binding.state, completedTurns: binding.turns, pendingUtterance: Boolean(binding.endpointTimer), endpointDelayMs: this.endpointDelayMs, lastError: binding.lastError } : { sessionId, attached: false };
   }
   async detach(sessionId) {
     const binding = this.bindings.get(sessionId);
     if (!binding) return;
+    clearTimeout(binding.endpointTimer); binding.endpointTimer = null;
     this.bindings.delete(sessionId);
     binding.controller?.abort(new DOMException('Voice conversation stopped', 'AbortError'));
     try { this.engine.cancelSpeech(sessionId); } catch {}

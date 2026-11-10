@@ -44,6 +44,33 @@ started concurrently. Echo cancellation is **not** implemented and is reported a
 false; use headphones to avoid feedback. Microphone availability from enumeration
 means a device was detected; `permission: not-checked` remains explicit.
 
+Offline multilingual Whisper recognition can be selected explicitly without
+changing Windows capture, playback or TTS. See
+[provisioning and actual evidence](../../docs/engineering/WHISPER-STT-PREPARATION.md).
+The default Windows recognizer still needs its installed language pack; Whisper
+uses its separately pinned local model and reports unavailable assets honestly.
+
+During actual playback, a new speech onset must exceed both the normal energy
+threshold and four times the estimated quiet-input floor. The estimate uses only
+sub-threshold input outside speech. After speech starts, normal sensitivity is
+retained for quieter trailing words. This reduces measured background-triggered
+interruptions; it is not echo cancellation, speaker identification or a general
+noise-robustness guarantee. Low-volume speech still requires device-specific
+verification. Existing full interruption acceptance remains scoped to real tests.
+
+`VoiceConversation` waits 600ms after an energy-VAD speech-end event before
+draining audio into recognition. Resumed speech cancels that pending endpoint,
+keeping the prefix in the buffer instead of starting and cancelling recognition
+at each short pause. Explicit `process`, interruption and detach clear pending
+endpoints to avoid duplicate/late tasks. The constructor's `endpointDelayMs`
+accepts 0–3000ms; session status reports the delay and pending utterance flag.
+
+Per-session status includes at most sixteen `voiceEvents`: event timestamp,
+reconstructed frame index, energy/threshold/noise-floor values and the output
+state before cancellation. It includes no audio or transcript content. These
+diagnostics distinguish pending synthesis from actual native playback and do not
+identify who produced a sound.
+
 Errors reject with a stable `VoiceError.code` and the underlying Windows error
 message; session failures also emit `voice:error` and appear in `lastError`.
 Cancellation rejects with `VOICE_CANCELLED`. VAD barge-in aborts playback and

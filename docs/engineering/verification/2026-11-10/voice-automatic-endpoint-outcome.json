@@ -1,0 +1,68 @@
+{
+  "classification": [
+    "REAL_OS",
+    "INTEGRATION",
+    "REAL_EXTERNAL"
+  ],
+  "status": "PARTIAL",
+  "artifact": "artifacts/voice-conversation-real/1794269047501/report.json",
+  "originalOverallStatus": "FAIL",
+  "captureMethod": "Actual microphone RPC and automatic VAD speech_end; no voice.turn RPC or microphone stop before completed playback",
+  "automaticEvents": [
+    {
+      "type": "transcript",
+      "at": 1794269061064,
+      "expectedWordsDetected": [
+        "remember"
+      ],
+      "matchingPhrase": true
+    },
+    {
+      "type": "transcript",
+      "at": 1794269069768,
+      "expectedWordsDetected": [
+        "remember",
+        "blue",
+        "bird"
+      ],
+      "matchingPhrase": true
+    },
+    {
+      "type": "turn-complete",
+      "at": 1794269081139,
+      "expectedWordsDetected": [
+        "remember",
+        "blue",
+        "bird"
+      ],
+      "matchingPhrase": true
+    }
+  ],
+  "automaticTurn": {
+    "matchingTurnCompleted": true,
+    "explicitVoiceTurnCalls": 0,
+    "microphoneStoppedAfterCompletedPlayback": true
+  },
+  "finalConversation": {
+    "sessionId": "spoken-chat",
+    "attached": true,
+    "state": "listening",
+    "completedTurns": 1,
+    "pendingUtterance": false,
+    "endpointDelayMs": 600,
+    "lastError": null
+  },
+  "bargeInCount": 0,
+  "captureFrames": 1084,
+  "captureBytes": 1040640,
+  "userAudibilityConfirmation": "User confirmed entire last automatic response clearly audible in headphones",
+  "originalFailure": "The input did not match the regular expression /blue\\s*bird/i. Input:\n\n'The last message you sent asked me to remember **blue** and **bird**.'\n",
+  "recallAssertionReview": {
+    "actualPriorReply": "The last message you sent asked me to remember **blue** and **bird**.",
+    "intendedTwoWordsCorrect": true,
+    "correction": "Ignore Markdown emphasis and allow conjunction between the exact ordered remembered words; changed/missing/reversed words still rejected",
+    "verification": "Prior actual answer accepted and4negative examples rejected; CONTRACT review only",
+    "correctedEndToEndRerun": "NOT_RUN"
+  },
+  "remainingScope": "Original overall FAIL retained; matching human automatic turn/native playback and user audibility separately evidenced. No full voice/product accuracy or release certification."
+}

@@ -64,9 +64,19 @@ export class VoiceEngine extends EventEmitter {
     const router = new AudioRouter({ sampleRate: this.sampleRate });
     const vad = new VoiceActivityDetector({ sampleRate: this.sampleRate });
     const turnManager = new SpeechTurnManager();
-    const session = { sessionId, router, vad, turnManager, active: true, createdAt: Date.now(), output: null, transcription: null, microphone: null, lastError: null, vadPending: Buffer.alloc(0) };
+    const session = { sessionId, router, vad, turnManager, active: true, createdAt: Date.now(), output: null, transcription: null, microphone: null, lastError: null, vadPending: Buffer.alloc(0), vadFramesProcessed: 0, voiceEvents: [] };
+    const recordVoiceEvent = (type, meta) => {
+      const event = { type, source: 'energy-vad', timestamp: meta.timestamp, energy: meta.energy, zcr: meta.zcr, threshold: meta.threshold, noiseFloor: meta.noiseFloor,
+        frame: session.vadFramesProcessed, stateBefore: turnManager.state,
+        outputPending: Boolean(session.output), playbackActive: Boolean(session.output?.playbackStarted && !session.output.controller.signal.aborted) };
+      session.voiceEvents.push(event);
+      if (session.voiceEvents.length > 16) session.voiceEvents.shift();
+      return event;
+    };
     vad.on('speech_start', meta => {
+      const event = recordVoiceEvent('speech_start', meta);
       const result = turnManager.handleUserSpeechStart();
+      event.bargeIn = result.bargeIn;
       session.transcription?.controller.abort();
       if (result.bargeIn) {
         session.output?.controller.abort();
@@ -76,6 +86,7 @@ export class VoiceEngine extends EventEmitter {
       this.emit('voice:speech_start', { sessionId, ...meta });
     });
     vad.on('speech_end', meta => {
+      recordVoiceEvent('speech_end', meta);
       turnManager.handleUserSpeechEnd();
       this.emit('voice:speech_end', { sessionId, ...meta });
     });
@@ -105,7 +116,8 @@ export class VoiceEngine extends EventEmitter {
     const frameBytes = Math.floor(this.sampleRate * 0.03) * 2;
     let vad = { isSpeaking: session.vad.isSpeaking, energy: 0, zcr: 0, event: null };
     while (session.vadPending.length >= frameBytes) {
-      vad = session.vad.processFrame(session.vadPending.subarray(0, frameBytes));
+      session.vadFramesProcessed++;
+      vad = session.vad.processFrame(session.vadPending.subarray(0, frameBytes), { playbackActive: Boolean(session.output?.playbackStarted && !session.output.controller.signal.aborted) });
       session.vadPending = session.vadPending.subarray(frameBytes);
     }
     session.vadPending = Buffer.from(session.vadPending);
@@ -285,7 +297,7 @@ export class VoiceEngine extends EventEmitter {
   getStatus() {
     return {
       activeCount: this.sessions.size,
-      sessions: [...this.sessions.values()].map(s => ({ sessionId: s.sessionId, state: s.turnManager.state, bargeInCount: s.turnManager.bargeInCount, capture: s.lastCapture ? { ...s.lastCapture } : null, router: s.router.getStatus(), microphoneActive: Boolean(s.microphone?.started && !s.microphone.controller.signal.aborted), synthesisActive: Boolean(s.output), playbackActive: Boolean(s.output?.playbackStarted && !s.output.controller.signal.aborted), transcriptionActive: Boolean(s.transcription), lastError: s.lastError })),
+      sessions: [...this.sessions.values()].map(s => ({ sessionId: s.sessionId, state: s.turnManager.state, bargeInCount: s.turnManager.bargeInCount, vadFramesProcessed: s.vadFramesProcessed, voiceEvents: s.voiceEvents.map(event => ({ ...event })), capture: s.lastCapture ? { ...s.lastCapture } : null, router: s.router.getStatus(), microphoneActive: Boolean(s.microphone?.started && !s.microphone.controller.signal.aborted), synthesisActive: Boolean(s.output), playbackActive: Boolean(s.output?.playbackStarted && !s.output.controller.signal.aborted), transcriptionActive: Boolean(s.transcription), lastError: s.lastError })),
       sampleRate: this.sampleRate,
       encoding: 'pcm_s16le',
       channels: 1,
