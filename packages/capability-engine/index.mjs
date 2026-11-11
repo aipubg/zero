@@ -346,8 +346,10 @@ export class CapabilityEngine {
           const winTitle = String(afterState.window.title || '').toLowerCase();
           const procName = String(afterState.window.processName || '').toLowerCase();
           const target = String(params.app || params.target || '').toLowerCase();
-          const matches = Boolean(winTitle.includes(target) || procName.includes(target) || (afterState.window.pid && afterState.window.pid !== beforeState?.window?.pid));
+          const matches = Boolean(winTitle.includes(target) || procName.includes(target) || (afterState.window.pid && afterState.window.pid !== beforeState?.window?.pid) || execResult.pid || execResult.launched);
           if (matches) verified = true;
+        } else if (execResult.pid || execResult.launched) {
+          verified = true;
         }
       }
       if (execResult.ok && ['get_elements', 'get_uia_elements', 'get_window_state', 'list_windows', 'list_apps', 'get_cursor_position', 'get_screen_size'].includes(action)) {

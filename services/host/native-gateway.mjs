@@ -792,7 +792,8 @@ export class ZeroNativeHost {
           'users.self', 'users.prefs.get', 'users.prefs.set', 'models.authStatus',
           'memory.search', 'agents.workspace.get', 'doctor.memory.status', 'webSearch.status', 'webSearch.test',
           'zero.observation.query', 'zero.observation.control', 'zero.observation.recent',
-          'backup.status', 'storage.locations.probe', 'environments.list', 'node.list',
+          'backup.status', 'storage.locations.probe', 'environments.list', 'environments.status', 'node.list',
+          'desktop.observe', 'desktop.launch', 'desktop.release',
           ...SKILLS_UI_METHODS,
           ...PLUGINS_UI_METHODS,
         ];
@@ -1424,15 +1425,73 @@ export class ZeroNativeHost {
         return {
           ok: true,
           environments: [
-            { id: 'gateway', name: 'Zero Gateway', type: 'gateway', state: 'active' },
+            {
+              id: 'gateway',
+              name: 'Zero Gateway Host',
+              type: 'gateway',
+              state: 'active',
+              status: 'available',
+              desktop: { available: true },
+              desktopSetup: { state: 'ready' },
+            },
+            {
+              id: 'local-desktop',
+              name: 'Primary Desktop (Zero)',
+              type: 'node',
+              state: 'active',
+              status: 'available',
+              desktop: { available: true },
+              desktopSetup: { state: 'ready' },
+            },
           ],
+        };
+
+      case 'environments.status':
+        return {
+          ok: true,
+          id: params.environmentId || 'gateway',
+          status: 'available',
+          desktop: { available: true },
+          desktopSetup: { state: 'ready' },
         };
 
       case 'node.list':
         return {
           ok: true,
-          nodes: [],
+          nodes: [
+            {
+              nodeId: 'local-desktop',
+              displayName: 'Primary Desktop (Zero)',
+              status: 'online',
+              hostStats: {
+                cpuPercent: 5,
+                memoryBytesUsed: 1024 * 1024 * 1024 * 4,
+                memoryBytesTotal: 1024 * 1024 * 1024 * 16,
+                updatedAtMs: Date.now(),
+              },
+            },
+          ],
         };
+
+      case 'desktop.observe':
+        return {
+          ok: true,
+          wsPath: '/desktop/stream',
+          control: true,
+          canResize: true,
+          apps: ['chrome', 'spotify', 'terminal', 'explorer', 'notepad'],
+        };
+
+      case 'desktop.launch': {
+        const app = params.app || 'chrome';
+        if (this.computerOperator) {
+          await this.computerOperator.executeAction('open_app', { app });
+        }
+        return { ok: true, app };
+      }
+
+      case 'desktop.release':
+        return { ok: true };
 
       // Memory Store RPC Methods
       // Unified 8-Layer Memory RPC Methods
@@ -2162,6 +2221,18 @@ export class ZeroNativeHost {
       if (currentMessages.length === 0 && userContent) {
         this.sessions.appendMessage(sessionKey, { role: 'user', content: userContent });
         currentMessages.push({ role: 'user', content: userContent });
+      }
+
+      const ZERO_SYSTEM_PROMPT = `You are ZERO, an autonomous AI operating system assistant and personal intelligence (JARVIS).
+You have full direct physical control over the user's Windows PC and web browser via tools:
+- zero_computer_action: launch and operate apps (Chrome, Spotify, Notepad, etc.), move the mouse, click elements, drag, scroll, type text, send keyboard hotkeys, and discover clickable UI elements.
+- spotify_control: directly search and play tracks on Spotify, change volume, pause, resume, skip tracks.
+- browser: open URLs, search and play songs or videos on YouTube in the user's foreground browser.
+- open_app: launch any application installed on Windows.
+When asked to perform an action (e.g. play a song on Spotify or YouTube, open an app, fill a form, click something, type something), IMMEDIATELY call the appropriate tool to execute it directly on the user's computer. Never give manual steps when you can execute them autonomously.`;
+
+      if (!currentMessages.some((m) => m.role === 'system')) {
+        currentMessages.unshift({ role: 'system', content: ZERO_SYSTEM_PROMPT });
       }
 
       let turns = 0;

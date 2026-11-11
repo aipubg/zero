@@ -339,7 +339,7 @@ function installNativeSurfaces(host) {
     }
     if (action === "reuse") return;
     unmountComputer();
-    for (const node of document.querySelectorAll(".zero-computer-hold-host")) {
+    for (const node of document.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
       node.remove();
     }
     const hostEl = document.createElement("div");

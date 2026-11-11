@@ -439,6 +439,9 @@ function mountComputerHold(container, host, options = {}) {
     return { dispose() {} };
   }
   const doc = container.ownerDocument ?? document;
+  for (const existing of container.querySelectorAll(".zero-computer-hold")) {
+    existing.remove();
+  }
   const section = doc.createElement("section");
   section.className = "zero-computer-hold";
   section.setAttribute("data-zero-computer-hold", "");

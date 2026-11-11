@@ -1841,6 +1841,14 @@ select option {
  * the sidebar invite card and the upstream About page (which the route
  * interceptor replaces). Chat transcript links are intentionally untouched.
  */
+/* Permanently hide all Discord and community invite links across all menus, popovers, sidebars, and dialogs */
+a[href*="discord.gg"],
+a[href*="discord.com"],
+[href*="discord.gg"],
+[href*="discord.com"],
+.menu-item:has([href*="discord"]),
+wa-dropdown-item:has([href*="discord"]),
+button:has([href*="discord"]),
 :is(.sidebar-shell__invite, .community-invite-card, openclaw-about-page, .about-hero, .settings-sidebar) a:is(
   [href^="https://openclaw.ai"],
   [href^="https://www.openclaw.ai"],

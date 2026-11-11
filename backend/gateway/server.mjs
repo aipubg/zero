@@ -229,7 +229,18 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
 
     // Caller did NOT provide tools: Gateway acts as autonomous agent runtime!
     // Execute model-driven tool calls in a loop until the model outputs final response.
+    const ZERO_SYSTEM_PROMPT = `You are ZERO, an autonomous AI operating system assistant and personal intelligence (JARVIS).
+You have full direct physical control over the user's Windows PC and web browser via tools:
+- zero_computer_action: launch and operate apps (Chrome, Spotify, Notepad, etc.), move the mouse, click elements, drag, scroll, type text, send keyboard hotkeys, and discover clickable UI elements.
+- spotify_control: directly search and play tracks on Spotify, change volume, pause, resume, skip tracks.
+- browser: open URLs, search and play songs or videos on YouTube in the user's foreground browser.
+- open_app: launch any application installed on Windows.
+When asked to perform an action (e.g. play a song on Spotify or YouTube, open an app, fill a form, click something, type something), IMMEDIATELY call the appropriate tool to execute it directly on the user's computer. Never give manual steps when you can execute them autonomously.`;
+
     let currentMessages = [...(body.messages || [])];
+    if (!currentMessages.some((m) => m.role === 'system')) {
+      currentMessages.unshift({ role: 'system', content: ZERO_SYSTEM_PROMPT });
+    }
     let turns = 0;
     const maxTurns = 5;
     let finalContent = '';
@@ -730,20 +741,49 @@ async function handleChatCompletions(req, res) {
         type: 'function',
         function: {
           name: 'zero_computer_action',
-          description: 'Directly execute Windows OS computer actions: open_app (e.g. "notepad", "calc"), open_url, play (search and play music/song/video on YouTube), type_text, press_key, mouse_move, left_click, list_windows, list_apps, get_window_state, get_screen_size.',
+          description: 'Autonomous Windows OS & Browser Controller (JARVIS). Operates the live computer screen: open apps (e.g. "chrome", "notepad", "spotify"), open URLs, play songs on YouTube, control Spotify (play, pause, next, search, set_volume), click elements, move mouse, drag, scroll, type text, press shortcuts/keys, and find UI elements.',
           parameters: {
             type: 'object',
             required: ['action'],
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'type_text', 'play', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+                enum: [
+                  'open_app', 'launch_app', 'type_text', 'play', 'browser', 'open_url', 'press_key', 'hotkey',
+                  'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll',
+                  'spotify_control', 'media_control', 'get_elements', 'get_uia_elements', 'get_cursor_position',
+                  'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size',
+                  'clipboard_get', 'clipboard_set'
+                ],
               },
-              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad")' },
-              text: { type: 'string', description: 'Text to type into the focused window' },
+              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome", "spotify")' },
+              text: { type: 'string', description: 'Text to type into the focused window or input field' },
               query: { type: 'string', description: 'Search term or song name to search and play on YouTube' },
-              url: { type: 'string', description: 'URL to open in default browser' },
-              key: { type: 'string', description: 'Key or shortcut to press (e.g. "enter", "alt+f4")' },
+              command: { type: 'string', description: 'spotify_control / media_control command: "play", "pause", "next", "previous", "set_volume", "status", "search"' },
+              track: { type: 'string', description: 'Specific song/track name to search and play on Spotify' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Volume percentage (0-100)' },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Playback speed (e.g. 2 for 2x)' },
+              url: { type: 'string', description: 'URL to open in the browser' },
+              key: { type: 'string', description: 'Key or shortcut to press (e.g. "enter", "alt+f4", "ctrl+a", "escape")' },
+              x: { type: 'number', description: 'X screen coordinate for mouse actions' },
+              y: { type: 'number', description: 'Y screen coordinate for mouse actions' },
+              button: { type: 'string', enum: ['left', 'right', 'middle'], description: 'Mouse button for click' },
+              target: { type: 'string', description: 'Window title or process name to focus (e.g. "chrome", "spotify")' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'spotify_control',
+          description: 'Control Spotify on Windows: search and play songs, pause, resume, change tracks, or set volume.',
+          parameters: {
+            type: 'object',
+            properties: {
+              command: { type: 'string', enum: ['play', 'pause', 'next', 'previous', 'set_volume', 'status', 'search', 'play_track'], description: 'Spotify command' },
+              track: { type: 'string', description: 'Song or track name to search and play on Spotify' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Volume level (0-100)' },
             },
           },
         },
@@ -752,14 +792,16 @@ async function handleChatCompletions(req, res) {
         type: 'function',
         function: {
           name: 'browser',
-          description: 'Control web browser on Windows: open URLs, search and play songs/videos on YouTube.',
+          description: 'Control web browser on Windows: navigate URLs, search and play songs/videos on YouTube, fill forms, click and type.',
           parameters: {
             type: 'object',
             required: ['action'],
             properties: {
-              action: { type: 'string', enum: ['open', 'play', 'navigate', 'search'] },
+              action: { type: 'string', enum: ['open', 'play', 'navigate', 'search', 'open_url'] },
               query: { type: 'string', description: 'Song or video name to play on YouTube' },
               url: { type: 'string', description: 'Web URL' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100 },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
             },
           },
         },
@@ -768,12 +810,12 @@ async function handleChatCompletions(req, res) {
         type: 'function',
         function: {
           name: 'open_app',
-          description: 'Launch an application on Windows desktop (e.g. "notepad", "calc", "chrome").',
+          description: 'Launch an application on Windows desktop (e.g. "notepad", "calc", "chrome", "spotify").',
           parameters: {
             type: 'object',
             required: ['app'],
             properties: {
-              app: { type: 'string', description: 'Application name (e.g. "notepad")' },
+              app: { type: 'string', description: 'Application name (e.g. "notepad", "chrome", "spotify")' },
             },
           },
         },
