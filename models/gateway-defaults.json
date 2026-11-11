@@ -4,7 +4,7 @@
   },
   "agentBindings": {
     "zero": {
-      "model": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nv/nvidia/nemotron-3-ultra-550b-a55b",
       "allowOverride": true
     }
   }

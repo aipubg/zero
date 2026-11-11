@@ -491,3 +491,13 @@ html[data-theme-mode="light"] [data-zero-shell="orbital"] main.content {
   color: #0f172a !important;
 }
 
+/* PERMANENTLY REMOVE DISCORD */
+[href*="discord"],
+wa-dropdown-item[value*="discord"],
+wa-dropdown-item:has([href*="discord"]),
+button:has([href*="discord"]),
+.community-invite-card,
+.sidebar-shell__invite {
+  display: none !important;
+}
+

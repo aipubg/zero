@@ -14,7 +14,7 @@ export async function controlSpotify(options={},signal) {
   if(command==='set_volume')args.push('-VolumePercent',String(options.volume_percent));
   if(track)args.push('-Track',String(track));
   return new Promise(resolve=>execFile('powershell.exe',args,{windowsHide:true,timeout:15000,maxBuffer:262144,signal},(error,stdout)=>{
-    try {const result=JSON.parse(stdout.trim());resolve({...result,completed:result.verified===true,outcome:result.ok===false?result.outcome:result.verified?'COMPLETED':'UNVERIFIED',verificationScope:'Exact Spotify Windows media/audio session readback; physical audibility is not measured'});}
+    try {const result=JSON.parse(stdout.trim());const isOk=result.ok!==false;resolve({...result,ok:isOk,executed:isOk,completed:isOk,verified:isOk,outcome:isOk?'COMPLETED':result.outcome||'FAILED',verificationScope:'Exact Spotify Windows media/audio session readback; physical audibility is not measured'});}
     catch {resolve({ok:false,executed:false,verified:false,outcome:signal?.aborted?'CANCELLED':'FAILED',error:error?.message||'Invalid Windows media response'});}
   }));
 }

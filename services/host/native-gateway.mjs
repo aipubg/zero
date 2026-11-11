@@ -248,6 +248,9 @@ export class ZeroNativeHost {
       try {
         windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {});
       } catch {}
+      try {
+        await this.screenObserver.captureTick();
+      } catch {}
       const context = this.screenObserver.queryContext(args.query || '');
       let elements = [];
       try {
@@ -562,6 +565,28 @@ export class ZeroNativeHost {
         return;
       }
 
+      // Live Desktop Screen Capture / Screen Share endpoint
+      if (pathname === '/desktop/screenshot' || pathname === '/desktop/frame.jpg' || pathname === '/desktop/screen') {
+        let frame = this.screenObserver?.buffer?.getLatestFrame();
+        if (!frame && this.screenObserver) {
+          try { await this.screenObserver.captureTick(); } catch {}
+          frame = this.screenObserver?.buffer?.getLatestFrame();
+        }
+        if (frame && frame.data) {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'image/jpeg');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('X-Frame-Timestamp', String(frame.timestamp));
+          res.setHeader('X-Active-Window', encodeURIComponent(frame.windowTitle || ''));
+          res.end(frame.data);
+          return;
+        }
+        res.statusCode = 503;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: 'Screen capture frame unavailable' }));
+        return;
+      }
+
       // 4. Resolve static files
       const webRoot = path.join(REPO_ROOT, 'dist', 'web');
       const fallbackRoot = path.join(REPO_ROOT, 'backend', 'node_modules', 'openclaw', 'dist', 'control-ui');
@@ -754,6 +779,30 @@ export class ZeroNativeHost {
     // Extract loopback desktop session from HttpOnly cookie
     const cookies = parseCookies(req.headers['cookie']);
     const verifiedSession = this.localDesktopSessions.get(cookies['zero_session']);
+
+    // Desktop Screen Share live streaming connection
+    if (req.url === '/desktop/stream') {
+      const sendFrame = () => {
+        if (ws.readyState !== 1) return;
+        const frame = this.screenObserver?.buffer?.getLatestFrame();
+        if (frame && frame.data) {
+          ws.send(JSON.stringify({
+            type: 'desktop.frame',
+            timestamp: frame.timestamp,
+            windowTitle: frame.windowTitle,
+            appName: frame.appName,
+            image: `data:image/jpeg;base64,${frame.data.toString('base64')}`,
+          }));
+        }
+      };
+      sendFrame();
+      const interval = setInterval(sendFrame, 1500);
+      ws.on('close', () => {
+        clearInterval(interval);
+        this.clients.delete(ws);
+      });
+      return;
+    }
 
     ws.on('close', () => {
       this.clients.delete(ws);
@@ -2586,7 +2635,7 @@ export class ZeroNativeHost {
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size', 'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout'],
               },
               app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome")' },
               text: { type: 'string', description: 'Text to type into the focused window or element' },
@@ -2602,6 +2651,11 @@ export class ZeroNativeHost {
               direction: { type: 'string', enum: ['up', 'down', 'left', 'right'], description: 'Scroll direction' },
               amount: { type: 'number', description: 'Scroll amount (ticks)' },
               target: { type: 'string', description: 'Target window title or process name to focus/bring to front (e.g. "chrome", "notepad")' },
+              fields: { type: 'object', description: 'Form fields key-value dictionary' },
+              service: { type: 'string', description: 'Service name (e.g. "gmail")' },
+              username: { type: 'string', description: 'Username or email for login' },
+              password: { type: 'string', description: 'Password for login' },
+              submit: { type: 'boolean', description: 'Press Enter after action' },
             },
           },
         },
@@ -2638,15 +2692,24 @@ export class ZeroNativeHost {
         type: 'function',
         function: {
           name: 'browser',
-          description: 'Control web browser on Windows: open URLs, search and play songs/videos on YouTube.',
+          description: 'Full autonomous browser control: navigate to URLs, search the web, fill forms, click buttons, type text, extract page content/scrape, check notifications, and handle login/logout.',
           parameters: {
             type: 'object',
             properties: {
-              action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search'] },
+              action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search', 'fill_form', 'type', 'click', 'scrape', 'get_content', 'check_notifications', 'login', 'logout'], description: 'Browser action to execute' },
               query: { type: 'string', description: 'Search query or song name to play on YouTube' },
               volume_percent: { type: 'number', minimum: 0, maximum: 100 },
               playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
-              url: { type: 'string', description: 'Web page URL' },
+              url: { type: 'string', description: 'Web page URL to navigate to' },
+              text: { type: 'string', description: 'Text to type into focused form or element' },
+              fields: { type: 'object', description: 'Key-value map of form fields to fill' },
+              selector: { type: 'string', description: 'Element text or selector to click/focus' },
+              x: { type: 'number', description: 'X screen coordinate to click' },
+              y: { type: 'number', description: 'Y screen coordinate to click' },
+              service: { type: 'string', description: 'Service name (e.g. "gmail")' },
+              username: { type: 'string', description: 'Username or email for login' },
+              password: { type: 'string', description: 'Password for login' },
+              submit: { type: 'boolean', description: 'Press Enter after action' },
             },
           },
         },
@@ -2655,7 +2718,7 @@ export class ZeroNativeHost {
         type: 'function',
         function: {
           name: 'see_screen',
-          description: 'Inspect what is currently on the desktop or browser screen. Returns the active window, recent on-screen OCR text, and interactive elements with coordinates.',
+          description: 'Inspect what is currently on the desktop or browser screen in real time. Returns the active window, recent on-screen OCR text, and interactive elements with coordinates.',
           parameters: {
             type: 'object',
             properties: {
@@ -2664,10 +2727,59 @@ export class ZeroNativeHost {
           },
         },
       },
+      {
+        type: 'function',
+        function: {
+          name: 'run_process',
+          description: 'Execute any local program, software, PowerShell, or CLI command with explicit arguments. Allows opening software, checking system state, running scripts, and automating tools.',
+          parameters: {
+            type: 'object',
+            required: ['command'],
+            properties: {
+              command: { type: 'string', description: 'Executable command (e.g. "powershell.exe", "cmd.exe", "notepad.exe", "python")' },
+              args: { type: 'array', items: { type: 'string' }, description: 'Array of string arguments' },
+              cwd: { type: 'string', description: 'Working directory path' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'read_file',
+          description: 'Read the contents of any local file on the computer.',
+          parameters: {
+            type: 'object',
+            required: ['path'],
+            properties: {
+              path: { type: 'string', description: 'Absolute or relative file path to read' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'write_file',
+          description: 'Create or update a local file on the computer.',
+          parameters: {
+            type: 'object',
+            required: ['path', 'content'],
+            properties: {
+              path: { type: 'string', description: 'File path to write' },
+              content: { type: 'string', description: 'File text content' },
+            },
+          },
+        },
+      },
     ];
 
+    const existingNames = new Set(tools.map(t => t.function.name));
     for (const definition of canonicalCapabilityEngine.customCapabilities.values()) {
-      if (!definition.disabled) tools.push({ type: 'function', function: { name: definition.name, description: definition.description, parameters: definition.parameters || { type: 'object' } } });
+      if (!definition.disabled && !existingNames.has(definition.name)) {
+        tools.push({ type: 'function', function: { name: definition.name, description: definition.description, parameters: definition.parameters || { type: 'object' } } });
+        existingNames.add(definition.name);
+      }
     }
     return tools;
   }
@@ -2788,16 +2900,30 @@ export class ZeroNativeHost {
         currentMessages.push({ role: 'user', content: userContent });
       }
 
-      const ZERO_SYSTEM_PROMPT = `You are ZERO, an autonomous AI operating system assistant and personal intelligence (JARVIS).
-You have full direct physical control over the user's Windows PC and web browser via tools:
-- see_screen: inspect what is currently on the screen, active window, OCR text, and interactive buttons/elements with coordinates.
-- desktop_control: snapshot windows, discover element refs (@snapshot:e...), click buttons, fill input fields and forms, press hotkeys.
-- zero_computer_action: launch and operate apps (Chrome, Spotify, Notepad, etc.), move mouse, click elements (left_click, double_click, right_click), type text, send keyboard hotkeys, and discover clickable UI elements (get_elements).
-- spotify_control: directly search and play tracks on Spotify, change volume, pause, resume, skip tracks.
-- browser: open URLs, navigate, search, and play songs or videos on YouTube in the foreground browser.
-- open_app: launch any application installed on Windows.
-- close_app: close any application window on Windows desktop.
-When asked to perform any task (e.g. play songs on Spotify or YouTube, open applications, fill forms on websites, check notifications, click buttons, type text, or inspect the screen), IMMEDIATELY call the appropriate tool to execute it directly and autonomously. Always carry out multi-step tasks to completion rather than printing manual instructions. Call see_screen at most once if visual verification is needed. Once the requested action is executed, provide a concise summary response immediately.`;
+      const ZERO_SYSTEM_PROMPT = `You are ZERO, an autonomous, full-capability AI operating system and personal intelligence (JARVIS).
+You have unrestricted, direct physical control over the user's Windows computer, web browser, mouse, keyboard, applications, and filesystem.
+
+YOUR FULL CONTROL CAPABILITIES:
+1. Web Browser Control (browser, desktop_control, zero_computer_action):
+   - Full browser automation: open URLs, navigate, Google search, fill out web applications and forms, login and logout of accounts (Gmail, Google, web services), click buttons/links, extract/scrape page content, and check notifications.
+2. Desktop Apps & Media Control (spotify_control, play, open_app, close_app):
+   - Directly control Spotify: search and play any specific song named, set volume, skip tracks, pause/resume.
+   - Control YouTube in browser: search and play songs/videos, adjust playback speed and volume.
+   - Launch and close any software installed on Windows (Chrome, Spotify, Calculator, Notepad, etc.).
+3. Physical Mouse, Keyboard & UI Automation (zero_computer_action, desktop_control):
+   - Move cursor, click (left, right, double-click), drag, scroll.
+   - Type text into any field, press hotkeys (Enter, Tab, Escape, shortcuts).
+   - Discover clickable controls with exact screen coordinates (get_elements) or accessibility refs (desktop_control snapshot).
+4. Real-time Desktop Seeing & Screen Share (see_screen):
+   - Inspect what is currently on screen in real time: active window, on-screen OCR text, screen dimensions, and interactive UI elements.
+5. Filesystem & Software Execution (run_process, read_file, write_file):
+   - Read and write files anywhere on the computer.
+   - Run PowerShell, CMD, Python, or execute CLI programs.
+
+AUTONOMOUS EXECUTION PRINCIPLES:
+- ALWAYS EXECUTE DIRECTLY: When the user asks you to do something (play a song on Spotify, open software, fill a form, check something, click a button, check notifications, login/logout), IMMEDIATELY call the appropriate tool to execute it directly and autonomously. NEVER print manual instructions or excuses.
+- MULTI-STEP AUTOMATION: If a task requires several steps (e.g. open browser -> navigate to form -> fill fields -> submit), carry them out sequentially to completion.
+- CONCISE JARVIS CONFIRMATION: Once completed, report the outcome clearly and concisely.`;
 
       if (!currentMessages.some((m) => m.role === 'system')) {
         currentMessages.unshift({ role: 'system', content: ZERO_SYSTEM_PROMPT });

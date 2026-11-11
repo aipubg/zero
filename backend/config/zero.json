@@ -57,10 +57,12 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
-        "fallbacks": []
+        "primary": "nv/nvidia/nemotron-3-ultra-550b-a55b",
+        "fallbacks": [
+          "nv/nvidia/nemotron-3.5-lightning-30b-a3b"
+        ]
       },
-      "utilityModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "utilityModel": "nv/nvidia/nemotron-3-ultra-550b-a55b",
       "skills": [],
       "sandbox": {
         "mode": "off"

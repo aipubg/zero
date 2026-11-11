@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'models', 'gateway-providers.json');
 const DEFAULT_ALIASES = {
-  'zero-lead': 'nvidia/nemotron-3.5-lightning-30b-a3b',
+  'zero-lead': 'nvidia/nemotron-3-ultra-550b-a55b',
   'zero-vision': 'nvidia/nemotron-3.5-super-vl-120b-a12b',
   'zero-ultra': 'nvidia/nemotron-3-ultra-550b-a55b',
 };

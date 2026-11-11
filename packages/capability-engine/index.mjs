@@ -14,7 +14,7 @@ import { DESKTOP_OBSERVATIONS } from '../agent-runtime/agent-desktop.mjs';
 
 export const CAPABILITY_DEFINITIONS = Object.freeze({
   'zero_computer_action': {
-    description: 'Execute native Windows OS actions: open_app, type_text, press_key, mouse_move, left_click, scroll, wait, screenshot, list_windows, list_apps, get_window_state, get_screen_size, play, open_url.',
+    description: 'Execute native Windows OS actions: open_app, type_text, press_key, mouse_move, left_click, scroll, wait, screenshot, list_windows, list_apps, get_window_state, get_screen_size, play, open_url, fill_form, scrape, get_content, check_notifications, login, logout.',
     allowedActions: [
       'desktop',
       'open_app', 'launch_app', 'type_text', 'type', 'press_key', 'press', 'hotkey',
@@ -22,12 +22,17 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
       'mouse_drag', 'drag', 'scroll', 'wait', 'screenshot', 'list_windows', 'list_apps',
       'get_window_state', 'get_screen_size', 'get_cursor_position', 'get_cursor',
       'focus_window', 'control_window', 'bring_to_front', 'close_app', 'kill_app', 'play', 'browser', 'open_browser',
-      'open_url', 'media_control', 'spotify_control', 'clipboard_get', 'clipboard_set', 'get_elements', 'get_uia_elements'
+      'open_url', 'media_control', 'spotify_control', 'clipboard_get', 'clipboard_set', 'get_elements', 'get_uia_elements',
+      'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout'
     ],
   },
   'browser': {
-    description: 'Control web browser on Windows: open URLs, search and play songs/videos on YouTube.',
-    allowedActions: ['open', 'open_url', 'play', 'navigate', 'search'],
+    description: 'Control web browser on Windows: open URLs, navigate, search, fill forms, type text, click elements, extract text/scrape, check notifications, and play media.',
+    allowedActions: [
+      'open', 'open_url', 'play', 'navigate', 'search', 'web_search',
+      'click', 'type', 'fill_form', 'get_content', 'scrape',
+      'screenshot', 'press_key', 'check_notifications', 'login', 'logout'
+    ],
   },
   'open_app': {
     description: 'Launch an application on Windows desktop (e.g. notepad, calc, chrome).',
