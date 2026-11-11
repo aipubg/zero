@@ -24,46 +24,7 @@
   },
   "models": {
     "mode": "replace",
-    "providers": {
-      "nv": {
-        "baseUrl": "http://127.0.0.1:18789/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-            "name": "nvidia/nemotron-3.5-lightning-30b-a3b"
-          },
-          {
-            "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-            "name": "nvidia/nemotron-3.5-super-vl-120b-a12b"
-          },
-          {
-            "id": "nvidia/nemotron-3-ultra-550b-a55b",
-            "name": "nvidia/nemotron-3-ultra-550b-a55b"
-          }
-        ],
-        "apiKey": "env:ZERO_GATEWAY_KEY"
-      },
-      "nvidia": {
-        "baseUrl": "http://127.0.0.1:18789/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "nemotron-3.5-lightning-30b-a3b",
-            "name": "nvidia/nemotron-3.5-lightning-30b-a3b"
-          },
-          {
-            "id": "nemotron-3.5-super-vl-120b-a12b",
-            "name": "nvidia/nemotron-3.5-super-vl-120b-a12b"
-          },
-          {
-            "id": "nemotron-3-ultra-550b-a55b",
-            "name": "nvidia/nemotron-3-ultra-550b-a55b"
-          }
-        ],
-        "apiKey": "env:ZERO_GATEWAY_KEY"
-      }
-    }
+    "providers": {}
   },
   "agents": {
     "ownership": "explicit",
@@ -71,13 +32,6 @@
       "systemAgent": {
         "agentId": "zero"
       },
-      "model": {
-        "primary": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
-        "fallbacks": [
-          "nv/nvidia/nemotron-3.5-super-vl-120b-a12b"
-        ]
-      },
-      "utilityModel": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -106,10 +60,7 @@
           "allowAgents": [],
           "requireAgentId": true
         },
-        "model": {
-          "primary": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
-          "fallbacks": []
-        }
+        "model": {}
       }
     }
   },

@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import http from 'node:http';
+import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { ModelFabric } from '../packages/model-fabric/index.mjs';
 
@@ -9,34 +12,71 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-// Load environment credentials from .env
-const envFile = path.join(REPO_ROOT, '.env');
-if (fs.existsSync(envFile)) {
-  const envContent = fs.readFileSync(envFile, 'utf8');
-  for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx !== -1) {
-      const key = trimmed.slice(0, eqIdx).trim();
-      const val = trimmed.slice(eqIdx + 1).trim();
-      if (!process.env[key]) process.env[key] = val;
-    }
-  }
-}
-
 test('Phase 3 Multi-Model Fabric Suite', async (suite) => {
-  const fabric = new ModelFabric();
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-fabric-test-'));
+  const bindingsPath = path.join(tmpDir, 'gateway-defaults.json');
+
+  // Local mock server for streaming verification
+  const server = http.createServer((req, res) => {
+    if (req.url?.includes('/chat/completions')) {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      });
+      res.write('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n');
+      res.write('data: {"choices":[{"delta":{"content":" world"}}]}\n\n');
+      res.write('data: [DONE]\n\n');
+      res.end();
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const port = server.address().port;
+  const baseUrl = `http://127.0.0.1:${port}/v1`;
+
+  suite.after(async () => {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  const fixtureProvider = {
+    id: 'fixture-provider',
+    name: 'Fixture Provider',
+    baseUrl,
+    apiKey: 'fixture-secret-key',
+    models: [
+      { id: 'fixture-chat-model', name: 'Fixture Chat Model' },
+      { id: 'fixture-vision-model', name: 'Fixture Vision Model' },
+    ],
+  };
+
+  fs.writeFileSync(bindingsPath, JSON.stringify({
+    defaults: { primary: 'fixture-provider/fixture-chat-model' },
+    agentBindings: {
+      zero: { model: 'fixture-provider/fixture-chat-model' },
+    },
+  }));
+
+  const fabric = new ModelFabric({
+    providers: [fixtureProvider],
+    aliases: { 'zero-lead': 'fixture-provider/fixture-chat-model' },
+    agentBindingsPath: bindingsPath,
+  });
 
   // 1. Model resolution and alias catalog
   await suite.test('ModelFabric resolves canonical model IDs and aliases', () => {
     const resLead = fabric.resolveModel('zero-lead');
     assert.ok(resLead, 'zero-lead must resolve');
-    assert.equal(resLead.canonicalModelId, 'nvidia/nemotron-3.5-lightning-30b-a3b');
+    assert.equal(resLead.canonicalModelId, 'fixture-chat-model');
 
-    const resDirect = fabric.resolveModel('nvidia/nemotron-3.5-lightning-30b-a3b');
+    const resDirect = fabric.resolveModel('fixture-provider/fixture-chat-model');
     assert.ok(resDirect, 'Direct canonical ID must resolve');
-    assert.equal(resDirect.canonicalModelId, 'nvidia/nemotron-3.5-lightning-30b-a3b');
+    assert.equal(resDirect.canonicalModelId, 'fixture-chat-model');
 
     const resUnknown = fabric.resolveModel('non-existent-model-xyz');
     assert.equal(resUnknown, null, 'Unknown model must return null');
@@ -46,7 +86,7 @@ test('Phase 3 Multi-Model Fabric Suite', async (suite) => {
   await suite.test('ModelFabric resolves per-agent model assignment', () => {
     const zeroModel = fabric.resolveAgentModel('zero');
     assert.ok(zeroModel, 'Agent zero model must resolve');
-    assert.ok(zeroModel.canonicalModelId.includes('nemotron'), 'Agent zero assigned Nemotron model');
+    assert.equal(zeroModel.canonicalModelId, 'fixture-chat-model');
   });
 
   // 3. Context budget calculation
@@ -64,13 +104,13 @@ test('Phase 3 Multi-Model Fabric Suite', async (suite) => {
 
   // 4. Token usage and accounting
   await suite.test('ModelFabric tracks token usage and request statistics', () => {
-    fabric.recordUsage('nvidia/nemotron-3.5-lightning-30b-a3b', 45, 120);
+    fabric.recordUsage('fixture-provider/fixture-chat-model', 45, 120);
     const report = fabric.getUsageReport();
     assert.ok(report.totalRequests >= 1);
     assert.ok(report.totalPromptTokens >= 45);
     assert.ok(report.totalCompletionTokens >= 120);
     assert.ok(report.totalTokens >= 165);
-    assert.ok(report.byModel['nvidia/nemotron-3.5-lightning-30b-a3b'].totalTokens >= 165);
+    assert.ok(report.byModel['fixture-provider/fixture-chat-model'].totalTokens >= 165);
   });
 
   // 5. Explicit error for unknown model invocation

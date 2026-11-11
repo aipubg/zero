@@ -37,6 +37,15 @@ process.env.OPENCLAW_STATE_DIR = STATE_DIR;
 process.env.OPENCLAW_NO_AUTO_UPDATE = '1';
 process.env.DO_NOT_TRACK = '1';
 
+// Global error handlers: prevent any unhandled exception or rejection from terminating Zero Host
+process.on('uncaughtException', (err, origin) => {
+  console.error(`[Zero Host] Global Uncaught Exception (${origin}):`, err?.stack || err?.message || err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Zero Host] Global Unhandled Rejection:', reason?.stack || reason?.message || reason);
+});
+
 async function bootstrap() {
   console.log(`[Zero Host] Initializing Zero Host control plane on port ${PORT}...`);
   console.log(`[Zero Host] Root: ${REPO_ROOT}`);
@@ -46,7 +55,16 @@ async function bootstrap() {
   console.log(`[Zero Host] Runtime Mode: ${runtimeMode.toUpperCase()}`);
 
   let instance;
-  try {
+
+  async function startServer() {
+    if (instance && typeof instance.close === 'function') {
+      try {
+        await instance.close({ reason: 'restart' });
+      } catch (err) {
+        console.warn('[Zero Host] Warning during previous instance close:', err.message);
+      }
+    }
+
     if (runtimeMode === 'legacy-compat') {
       const { LegacyRuntimeAdapter } = await import('../../services/host/legacy-adapter.mjs');
       const adapter = new LegacyRuntimeAdapter({ port: PORT, repoRoot: REPO_ROOT });
@@ -54,9 +72,21 @@ async function bootstrap() {
     } else {
       const { ZeroNativeHost } = await import('../../services/host/native-gateway.mjs');
       const host = new ZeroNativeHost({ port: PORT, host: '127.0.0.1' });
+      host.onRestart = async () => {
+        console.log('[Zero Host] In-process gateway restart triggered via supervisor...');
+        try {
+          await startServer();
+        } catch (rErr) {
+          console.error('[Zero Host] Error during in-process restart:', rErr);
+        }
+      };
       instance = await host.start();
     }
     console.log(`[Zero Host] Zero Host successfully operational on http://127.0.0.1:${PORT}`);
+  }
+
+  try {
+    await startServer();
   } catch (err) {
     console.error(`[Zero Host] Fatal startup error on port ${PORT}:`, err.message);
     process.exit(1);

@@ -5,9 +5,8 @@
 // It never contains, prints, or writes the gateway key: the config references the
 // environment variable NAME (ZERO_GATEWAY_KEY), and OpenClaw resolves it at runtime.
 //
-// The template is fully resolved since the owner fixed the model route (NVIDIA NIM,
-// single model z-ai/glm-5.3-flash). There are no placeholders left, so this script
-// now validates the config and writes it; it does not need any env value to run.
+// The template contains no provider or model seeds. The owner adds providers in
+// Settings → Models; this script validates and writes the config as-is.
 //
 // Run:
 //   node backend/scripts/bootstrap.mjs            # dry run, shows what would be written

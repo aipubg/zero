@@ -31,6 +31,7 @@ models/*.gguf
 models/*.bin
 models/**/*.gguf
 models/**/*.bin
+models/*.before-*
 !models/.keep
 !models/gateway-providers.json
 !models/gateway-defaults.json

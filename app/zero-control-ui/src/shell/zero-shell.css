@@ -355,31 +355,77 @@ html[data-theme-mode="light"] [data-zero-shell="orbital"] body {
   border-color: #0d9488;
 }
 
-/* SESSION ARCHIVE & DELETE ACTION BUTTONS */
-.session-row-host {
-  --session-row-actions-reserve: 68px !important;
+/* HIDE DUPLICATE/BROKEN "Color mode: Dark" BUTTON & TOOLTIPS */
+openclaw-theme-mode-toggle,
+.theme-mode-toggle,
+button[aria-label*="Color mode" i],
+button[title*="Color mode" i],
+.topbar-theme-toggle {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+/* HIDE UPSTREAM DUPLICATE SESSION BUTTONS */
+.sidebar-recent-session__aside > button:not(.zero-session-action-btn),
+.session-row-aside > button:not(.zero-session-action-btn),
+.session-row-actions > button:not(.zero-session-action-btn) {
+  display: none !important;
+}
+
+/* SESSION ROW LAYOUT & ACTION BUTTONS */
+.session-row-host,
+.sidebar-recent-session,
+[data-session-key] {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  overflow: hidden !important;
+  --session-row-actions-reserve: 76px !important;
+}
+
+.sidebar-recent-session__title,
+.sidebar-recent-session__name,
+.session-row-title,
+.session-title,
+[data-session-key] .session-name,
+[data-session-key] a {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
 }
 
 .sidebar-recent-session__aside,
 .session-row-aside {
   pointer-events: auto !important;
+  flex-shrink: 0 !important;
 }
 
 .zero-session-actions {
   display: inline-flex !important;
   align-items: center;
   gap: 3px;
-  margin-left: auto;
+  margin-left: 6px;
+  flex-shrink: 0 !important;
   pointer-events: auto !important;
   z-index: 10;
-  opacity: 0.7;
+  opacity: 0;
   transition: opacity 0.15s ease;
 }
 
 .sidebar-recent-session:hover .zero-session-actions,
 .session-row-host:hover .zero-session-actions,
 [data-session-key]:hover .zero-session-actions,
-.zero-session-actions:hover {
+.zero-session-actions:hover,
+.zero-session-actions.has-pinned {
   opacity: 1 !important;
 }
 
@@ -387,47 +433,62 @@ html[data-theme-mode="light"] [data-zero-shell="orbital"] body {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   padding: 0;
-  font-size: 12px;
-  line-height: 1;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--zero-line);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 4px;
-  color: var(--text-secondary);
+  color: #94a3b8;
   cursor: pointer;
   pointer-events: auto !important;
-  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+  transition: all 0.15s ease;
+}
+
+.zero-session-action-btn svg {
+  display: block;
+  pointer-events: none;
 }
 
 .zero-session-action-btn:hover {
-  background: rgba(255,255,255,0.15) !important;
-  border-color: var(--zero-line);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  transform: scale(1.08);
 }
 
-.zero-session-delete:hover {
-  color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.15) !important;
-  border-color: rgba(239, 68, 68, 0.4) !important;
+.zero-session-action-btn.zero-session-pin.is-pinned {
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.5) !important;
+  background: rgba(251, 191, 36, 0.15) !important;
+  opacity: 1 !important;
 }
 
-.zero-session-archive:hover {
-  color: #3b82f6 !important;
-  background: rgba(59, 130, 246, 0.15) !important;
-  border-color: rgba(59, 130, 246, 0.4) !important;
+.zero-session-action-btn.zero-session-pin:hover {
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.6) !important;
+}
+
+.zero-session-action-btn.zero-session-archive:hover {
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+}
+
+.zero-session-action-btn.zero-session-delete:hover {
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.6) !important;
 }
 
 [data-theme-mode="light"] .zero-session-action-btn,
 [data-zero-theme="light"] .zero-session-action-btn {
   background: #f1f5f9;
   border-color: #cbd5e1;
-  color: #475569;
+  color: #64748b;
 }
+
 [data-theme-mode="light"] .zero-session-action-btn:hover,
 [data-zero-theme="light"] .zero-session-action-btn:hover {
   background: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
 [data-theme-mode="light"] main.content,

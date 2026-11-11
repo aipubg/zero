@@ -46,7 +46,7 @@ test('Zero Orbital shell navigation, live status, draft preservation and respons
   await page.locator('.zero-command-home').waitFor();
   await page.locator('.zero-shell-connection[data-connected="true"]').waitFor();
   assert.equal(await page.getByRole('navigation', { name: 'Zero navigation', exact: true }).count(), 1);
-  assert.equal(await page.locator('.zero-shell-nav-link').count(), 12);
+  assert.equal(await page.locator('.zero-shell-nav-link').count(), 6);
   assert.equal(await page.locator('.zero-shell-current-page').innerText(), 'Command');
   const composer = page.getByRole('textbox', { name: 'Chat composer', exact: true });
   await composer.waitFor();

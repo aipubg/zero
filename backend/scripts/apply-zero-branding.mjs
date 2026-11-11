@@ -539,25 +539,13 @@ export function purgeStaleDatabaseSessions() {
       try {
         db.prepare("DELETE FROM config_machine_state WHERE state_key LIKE '%webhookListeners%openclaw.json%' OR state_key LIKE '%.zero-data%'").run();
       } catch(e) {}
-      // Clean session_windows
+      // Clean session_windows rows that point at removed test/synthetic models.
+      // The model identifier is intentionally left unset; Default mode resolves
+      // a live configured model at request time.
       try {
-        db.prepare("UPDATE session_windows SET model = 'nvidia/nemotron-3.5-lightning-30b-a3b' WHERE model LIKE '%glm%' OR model LIKE '%test-model%' OR model LIKE '%zero-gateway%' OR model = 'default'").run();
+        db.prepare("UPDATE session_windows SET model = NULL WHERE model LIKE '%test-model%' OR model LIKE '%zero-gateway%' OR model = 'default'").run();
       } catch(e) {}
-      // Sync auth_profile_store
-      try {
-        const authKey = 'primary';
-        const authJson = JSON.stringify({
-          version: 1,
-          profiles: {
-            nv: {
-              provider: 'nv',
-              type: 'api_key',
-              key: 'env:NVIDIA_API_KEY',
-            },
-          },
-        });
-        db.prepare('INSERT OR REPLACE INTO auth_profile_store (store_key, store_json, updated_at) VALUES (?, ?, ?)').run(authKey, authJson, Date.now());
-      } catch(e) {}
+      // Never seed provider credentials or vendor profiles into the store.
 
       try {
         const nodes = db.prepare('SELECT rowid, session_key, entry_json FROM session_nodes').all();
@@ -582,9 +570,6 @@ export function purgeStaleDatabaseSessions() {
           for (const col of cols) {
             try {
               db.prepare(`DELETE FROM "${name}" WHERE CAST("${col}" AS TEXT) LIKE '%tool-live-exec%' OR CAST("${col}" AS TEXT) LIKE '%be02-acceptance%' OR CAST("${col}" AS TEXT) LIKE '%openclaw doctor%' OR CAST("${col}" AS TEXT) LIKE '%openclaw config%' OR CAST("${col}" AS TEXT) LIKE '%pnpm/openclaw%' OR CAST("${col}" AS TEXT) LIKE '%This model was not found%' OR CAST("${col}" AS TEXT) LIKE '%Tool browser not found%'`).run();
-            } catch(e) {}
-            try {
-              db.prepare(`UPDATE "${name}" SET "${col}" = REPLACE(CAST("${col}" AS TEXT), 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3.5-lightning-30b-a3b') WHERE CAST("${col}" AS TEXT) LIKE '%z-ai/glm-5.3-flash%'`).run();
             } catch(e) {}
           }
         } catch(e) {}

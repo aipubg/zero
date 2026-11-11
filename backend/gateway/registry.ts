@@ -3,28 +3,9 @@ import type { GatewayModel, GatewayVaultConfig, ProviderConfig } from './types.t
 const STORAGE_KEY = 'modular_ai_gateway_providers_v1';
 const ROLE_MAPPINGS_KEY = 'modular_ai_gateway_roles_v1';
 
-// Initial pre-configured starter providers for immediate zero-friction use and demonstration
-const DEFAULT_PROVIDERS: ProviderConfig[] = [
-  {
-    id: 'mock-provider',
-    name: 'Local Sandbox Simulator',
-    apiType: 'openai-compatible',
-    baseUrl: 'mock://sandbox.local/v1',
-    apiKey: '',
-    apiKeys: [],
-    enabled: true,
-    isCustom: true,
-    createdAt: Date.now() - 10000,
-    headers: [],
-    models: [
-      { id: 'mock-gpt-4o', name: 'GPT-4o (Multimodal Vision)', capabilities: { reasoning: false, image: true }, type: 'chat' },
-      { id: 'mock-deepseek-r1', name: 'DeepSeek R1 (Extended Reasoning)', capabilities: { reasoning: true, image: false }, type: 'chat' },
-      { id: 'mock-claude-3-7-sonnet', name: 'Claude 3.7 Sonnet (Hybrid)', capabilities: { reasoning: true, image: true }, type: 'chat' },
-      { id: 'mock-llama-3.3-70b', name: 'Llama 3.3 70B (Fast Chat)', capabilities: { reasoning: false, image: false }, type: 'chat' },
-      { id: 'mock-text-embedding-3', name: 'Text Embedding 3 (Embedding)', capabilities: { reasoning: false, image: false, embedding: true }, type: 'embedding' },
-    ],
-  },
-];
+// Providers and models are entirely owner-configured. No starter catalog is
+// seeded here, so an empty workspace stays empty until the owner adds one.
+const DEFAULT_PROVIDERS: ProviderConfig[] = [];
 
 type RegistryListener = (providers: ProviderConfig[]) => void;
 const listeners: Set<RegistryListener> = new Set();

@@ -24,31 +24,7 @@
   },
   "models": {
     "mode": "replace",
-    "providers": {
-      "nv": {
-        "baseUrl": "https://integrate.api.nvidia.com/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-            "name": "3-super-120b-a12b"
-          },
-          {
-            "id": "nvidia/nemotron-3-ultra-550b-a55b",
-            "name": "3-ultra-550b-a55b"
-          },
-          {
-            "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-            "name": "3.5-lightning-30b-a3b"
-          },
-          {
-            "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-            "name": "3.5-super-vl-120b-a12b"
-          }
-        ],
-        "apiKey": "env:NVIDIA_API_KEY"
-      }
-    }
+    "providers": {}
   },
   "agents": {
     "ownership": "explicit",
@@ -56,11 +32,6 @@
       "systemAgent": {
         "agentId": "zero"
       },
-      "model": {
-        "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
-        "fallbacks": []
-      },
-      "utilityModel": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -89,10 +60,7 @@
           "allowAgents": [],
           "requireAgentId": true
         },
-        "model": {
-          "primary": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
-          "fallbacks": []
-        }
+        "model": {}
       }
     }
   },

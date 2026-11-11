@@ -74,8 +74,8 @@ test('Isolated actual WebSocket RPC contracts and scope enforcement', { timeout:
     CONFIG_PATH = path.join(root, 'config.json');
     PREFS_PATH = path.join(root, 'prefs.json');
     const providersPath = path.join(root, 'providers.json');
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify({ models: { providers: { nv: { apiKey: 'nvapi-contract-private' } } } }));
-    fs.writeFileSync(providersPath, JSON.stringify([{ id: 'nv', baseUrl: 'https://example.invalid/v1', apiKey: 'nvapi-contract-private', models: ['fixture'] }]));
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify({ models: { providers: { 'mock-provider': { apiKey: 'mock-contract-private' } } } }));
+    fs.writeFileSync(providersPath, JSON.stringify([{ id: 'mock-provider', baseUrl: 'https://example.invalid/v1', apiKey: 'mock-contract-private', models: ['fixture'] }]));
     const reservation = net.createServer();
     await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve));
     PORT = reservation.address().port;
@@ -184,11 +184,11 @@ test('Isolated actual WebSocket RPC contracts and scope enforcement', { timeout:
     const res = await client.call('models.authStatus');
     assert.equal(res.ok, true);
     assert.ok(Array.isArray(res.payload.providers));
-    const nv = res.payload.providers.find((p) => p.provider === 'nv' || p.provider === 'nvidia');
-    assert.ok(nv, 'NVIDIA provider reported');
-    assert.equal(nv.configured, true);
-    assert.equal(nv.authenticated, null);
-    assert.equal(nv.tested, false);
+    const prov = res.payload.providers.find((p) => p.provider === 'mock-provider');
+    assert.ok(prov, 'Configured provider reported');
+    assert.equal(prov.configured, true);
+    assert.equal(prov.authenticated, null);
+    assert.equal(prov.tested, false);
   });
 
   await suite.test('sessions.subscribe and unsubscribe manage subscriptions', async () => {

@@ -1,14 +1,14 @@
 {
   "defaults": {
-    "primary": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "utility": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "fallback": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "thinking": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "fastMode": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b"
+    "primary": "google/models/gemini-flash-lite-latest",
+    "utility": "google/models/gemini-flash-lite-latest",
+    "fallback": "google/models/gemini-flash-lite-latest",
+    "thinking": "default",
+    "fastMode": "google/models/gemini-flash-lite-latest"
   },
   "agentBindings": {
     "zero": {
-      "model": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "google/models/gemini-flash-lite-latest",
       "allowOverride": true
     }
   }

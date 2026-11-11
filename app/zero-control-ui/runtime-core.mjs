@@ -436,10 +436,10 @@ export function createZeroUiRuntimeHandlers({
   const gatewayStatusHandler = methodHandler(METHODS.gatewayStatus, async () => {
     let running = false;
     let version = "1.0.0";
-    let activeModel = "nv/nvidia/nemotron-3-super-120b-a12b";
+    let activeModel = "";
     try {
       const live = readLiveConfig();
-      activeModel = live.data?.agents?.defaults?.model?.primary || "nv/nvidia/nemotron-3-super-120b-a12b";
+      activeModel = live.data?.agents?.defaults?.model?.primary || "";
       const res = await fetch("http://127.0.0.1:18789/health", { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
@@ -504,7 +504,8 @@ export function createZeroUiRuntimeHandlers({
         }
       }
     }
-    if (!safeFallback) safeFallback = "nv/nvidia/nemotron-3-super-120b-a12b";
+    // No hardcoded provider/model fallback: an empty catalog stays empty until
+    // the owner adds providers in Models settings.
 
     const live = readLiveConfig();
     const config = live.data;
@@ -641,7 +642,7 @@ export function createZeroUiRuntimeHandlers({
       await fetch("http://127.0.0.1:18789/api/gateway/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providers: currentProviders }),
+        body: JSON.stringify({ providers: currentProviders, replaceProviders: true }),
         signal: AbortSignal.timeout(5000),
       });
     } catch (e) {
@@ -687,7 +688,7 @@ export function createZeroUiRuntimeHandlers({
         await fetch("http://127.0.0.1:18789/api/gateway/config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ providers: filtered }),
+          body: JSON.stringify({ providers: filtered, replaceProviders: true }),
           signal: AbortSignal.timeout(5000),
         });
       }
@@ -702,9 +703,9 @@ export function createZeroUiRuntimeHandlers({
       }
       const currentPrimary = json.agents?.defaults?.model?.primary || "";
       if (currentPrimary.startsWith(`${id}/`)) {
-        json.agents.defaults.model.primary = "nv/nvidia/nemotron-3-super-120b-a12b";
-        if (json.agents.entries?.zero?.model) {
-          json.agents.entries.zero.model.primary = "nv/nvidia/nemotron-3-super-120b-a12b";
+        delete json.agents.defaults.model.primary;
+        if (json.agents.entries?.zero?.model?.primary?.startsWith(`${id}/`)) {
+          delete json.agents.entries.zero.model.primary;
         }
       }
     });

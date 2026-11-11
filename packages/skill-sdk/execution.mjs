@@ -53,7 +53,7 @@ export async function executeLoadedSkill(loader, skillName, params = {}, supplie
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2147483647) throw new Error('timeoutMs must be a positive duration');
   if (context.signal != null && !(context.signal instanceof AbortSignal)) throw new Error('signal must be an AbortSignal');
   const agentId = context.agentId || params.agentId || 'zero';
-  const selectedModel = context.model || params.model || modelFabric?.resolveAgentModel?.(agentId)?.canonicalModelId || 'zero-lead';
+  const selectedModel = context.model || params.model || modelFabric?.getAgentModelId?.(agentId) || null;
   const goal = params.prompt || params.goal || `Execute skill ${skill.name} with parameters: ${JSON.stringify(params)}`;
   const task = stateMachine.createTask({ sessionId: context.sessionId || params.sessionId || params.sessionKey || 'default', agentId, goal });
   stateMachine.enqueueTask(task.id);

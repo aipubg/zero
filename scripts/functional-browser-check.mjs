@@ -32,6 +32,22 @@ fs.cpSync(path.join(root, 'skills'), path.join(temporary, 'skills'), { recursive
 fs.copyFileSync(path.join(root, 'zero-system/config/zero.json'), path.join(temporary, 'config.json'));
 fs.copyFileSync(path.join(root, 'models/gateway-providers.json'), path.join(temporary, 'providers.json'));
 fs.copyFileSync(path.join(root, 'models/gateway-defaults.json'), path.join(temporary, 'bindings.json'));
+function configuredModelChoices() {
+  const rows = JSON.parse(fs.readFileSync(path.join(temporary, 'providers.json'), 'utf8'));
+  const choices = [];
+  for (const provider of Array.isArray(rows) ? rows : []) {
+    if (!provider?.id || provider.enabled === false) continue;
+    for (const model of Array.isArray(provider.models) ? provider.models : []) {
+      const id = typeof model === 'string' ? model : model?.id;
+      if (typeof id === 'string' && id.trim()) choices.push({ qualified: `${provider.id}/${id}`, providerId: provider.id, wireModel: id.replace(/^models\//, '') });
+    }
+  }
+  return choices;
+}
+function wireModelOf(qualified) {
+  const value = String(qualified || '');
+  return (value.includes('/') ? value.slice(value.indexOf('/') + 1) : value).replace(/^models\//, '');
+}
 const listener = net.createServer();
 listener.listen(0, '127.0.0.1');
 await once(listener, 'listening');
@@ -72,7 +88,8 @@ const errors = [];
 async function startModelProxy() {
   if (!process.argv.includes('--models') && !process.argv.includes('--agent-execution')) return;
   const file = path.join(temporary, 'providers.json'); const providers = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const provider = providers.find(row => row.id === 'nv'); assert.ok(provider);
+  const provider = providers.find(row => row.enabled !== false && Array.isArray(row.models) && row.models.length > 0);
+  assert.ok(provider, 'At least one configured provider with models is required');
   const upstream = provider.baseUrl.replace(/\/+$/, '');
   modelProxy = http.createServer(async (request, response) => {
     const controller = new AbortController(); response.on('close', () => controller.abort());
@@ -199,7 +216,12 @@ try {
   });
   if (process.argv.includes('--models')) await check('Models UI assignment persists across process restart and actual inference uses the selection', async () => {
     const owner = fs.readFileSync(path.join(root, 'models/gateway-defaults.json'), 'utf8');
-    const selected = 'nv/nvidia/nemotron-3.5-super-vl-120b-a12b';
+    const choices = configuredModelChoices();
+    assert.ok(choices.length > 0, 'Models UI workflow requires at least one configured model');
+    const choice = choices[0];
+    const selected = choice.qualified;
+    const providerId = choice.providerId;
+    const wireModel = choice.wireModel;
     await page.goto(`${base}/settings/model-providers`);
     const dropdown = page.locator('#zero-agent-assign-select');
     await dropdown.locator('button').click();
@@ -217,18 +239,18 @@ try {
     const completedReply = chatResponses.find(response => response.payload?.runId === chatRequests.at(-1)?.idempotencyKey);
     assert.ok(completedReply?.ok, 'The real UI chat must complete using the newly assigned default');
     const result = completedReply.payload;
-    assert.match(result.content, /4/); assert.equal(result.requestedModel, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
-    assert.ok(outboundModelRequests.length > 0 && outboundModelRequests.every(request => request.model === 'nvidia/nemotron-3.5-super-vl-120b-a12b'), 'Independent forwarding proxy must observe the actual selected model in every real upstream request');
+    assert.match(result.content, /4/); assert.equal(result.requestedModel, selected);
+    assert.ok(outboundModelRequests.length > 0 && outboundModelRequests.every(request => request.model === wireModel), 'Independent forwarding proxy must observe the actual selected model in every real upstream request');
     assert.ok(typeof result.providerModel === 'string' && result.providerModel.length > 0, 'Record the actual provider-reported model without rewriting it');
     const beforeBlocked = outboundModelRequests.length;
     await page.goto(`${base}/settings/model-providers`);
-    await rpc('zero.providers.save', { id: 'nv', enabled: false });
+    await rpc('zero.providers.save', { id: providerId, enabled: false });
     await page.reload();
     await page.getByText('Assigned model for agent zero is unavailable; update its saved assignment', { exact: true }).waitFor();
     await assert.rejects(rpc('chat.send', { sessionKey: 'unavailable-assignment', message: 'This must fail before any upstream request.' }), /Assigned model.*unavailable/);
     assert.equal(outboundModelRequests.length, beforeBlocked, 'Unavailable assignment must not silently route to another default model');
     assert.equal(JSON.parse(fs.readFileSync(path.join(temporary, 'bindings.json'), 'utf8')).agentBindings.zero.model, selected);
-    await rpc('zero.providers.save', { id: 'nv', enabled: true });
+    await rpc('zero.providers.save', { id: providerId, enabled: true });
     const bindingsFile = path.join(temporary, 'bindings.json');
     const invalid = JSON.parse(fs.readFileSync(bindingsFile, 'utf8'));
     invalid.agentBindings.zero.model = 'unavailable-provider/unknown';
@@ -254,9 +276,9 @@ try {
     const id = `ui-persisted-${port}`; const name = 'UI Persistence Provider';
     await page.goto(`${base}/settings/model-providers`);
     await page.getByRole('button', { name: '+ Add Provider', exact: true }).click();
-    await page.getByPlaceholder('e.g. nvidia, openrouter, custom-openai', { exact: true }).fill(id);
-    await page.getByPlaceholder('e.g. NVIDIA NIM, OpenRouter, Private Gateway', { exact: true }).fill(name);
-    await page.getByPlaceholder('https://integrate.api.nvidia.com/v1 or http://127.0.0.1:18789/v1', { exact: true }).fill('https://example.invalid/v1');
+    await page.getByPlaceholder('e.g. my-provider, local-gguf, custom-openai', { exact: true }).fill(id);
+    await page.getByPlaceholder('e.g. My Provider, Private Gateway', { exact: true }).fill(name);
+    await page.getByPlaceholder('https://api.example.com/v1', { exact: true }).fill('https://example.invalid/v1');
     await page.getByPlaceholder('sk-xxxxxxxxxxxxxxxxxxxxxxxx', { exact: true }).first().fill('fixture-local-private-value');
     await page.getByRole('button', { name: 'Save Provider', exact: true }).click();
     await page.getByText(`Provider "${name}" saved successfully!`, { exact: true }).waitFor();
@@ -265,7 +287,7 @@ try {
     await stop(); await start(); await page.reload();
     const card = page.locator(`[data-provider-id="${id}"]`);
     await card.getByRole('button', { name: 'Edit', exact: true }).click();
-    await page.getByPlaceholder('e.g. NVIDIA NIM, OpenRouter, Private Gateway', { exact: true }).fill('UI Persistence Edited');
+    await page.getByPlaceholder('e.g. My Provider, Private Gateway', { exact: true }).fill('UI Persistence Edited');
     await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
     await page.getByText('Provider "UI Persistence Edited" saved successfully!', { exact: true }).waitFor();
     assert.equal(read().find(row => row.id === id).apiKey, 'fixture-local-private-value');
@@ -280,7 +302,9 @@ try {
   });
   if (process.argv.includes('--provider-probe')) await check('Provider Test Connection retrieves the actual external model catalog', async () => {
     await page.goto(`${base}/settings/model-providers`);
-    await page.locator('[data-provider-id="nv"]').getByRole('button', { name: 'Test Connection', exact: true }).click();
+    const probeProviderId = configuredModelChoices()[0]?.providerId;
+    assert.ok(probeProviderId, 'Provider probe requires at least one configured provider');
+    await page.locator(`[data-provider-id="${probeProviderId}"]`).getByRole('button', { name: 'Test Connection', exact: true }).click();
     const deadline = Date.now() + 15000;
     while (!providerProbeResult && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
     assert.ok(providerProbeResult?.ok, JSON.stringify(providerProbeResult?.error));
@@ -496,7 +520,10 @@ try {
   if (process.argv.includes('--agent-models')) await check('Specialist UI model assignment persists without changing coordinator defaults', async () => {
     const bindingsFile = path.join(temporary, 'bindings.json');
     const before = JSON.parse(fs.readFileSync(bindingsFile, 'utf8'));
-    const selected = 'nv/nvidia/nemotron-3.5-super-vl-120b-a12b';
+    const choices = configuredModelChoices();
+    assert.ok(choices.length > 0, 'Specialist model workflow requires at least one configured model');
+    const selected = choices[0].qualified;
+    const selectedWire = choices[0].wireModel;
     await page.goto(`${base}/settings/model-providers`);
     await page.getByLabel('Agent model assignment', { exact: true }).selectOption('coder');
     const dropdown = page.locator('#zero-agent-assign-select');
@@ -518,7 +545,8 @@ try {
       const marker = `SPECIALIST_ACTUAL_READ_${crypto.randomUUID()}`;
       fs.writeFileSync(target, marker);
       const parallel = process.argv.includes('--parallel-agents');
-      const secondModel = 'nv/nvidia/nemotron-3.5-lightning-30b-a3b';
+      const secondModel = choices[1]?.qualified || choices[0].qualified;
+      const secondWire = choices[1]?.wireModel || choices[0].wireModel;
       const secondTarget = path.join(temporary, 'researcher-source.txt');
       const secondMarker = `RESEARCHER_ACTUAL_READ_${crypto.randomUUID()}`;
       if (parallel) {
@@ -539,7 +567,7 @@ try {
         subtasks: [{ id: 'ui_assigned_coder', agentId: 'coder', goal: `Call read_file with path ${JSON.stringify(target)}. Report its exact content. You must actually call the tool.`, tools: ['read_file'], dependsOn: [] }, ...(parallel ? [{ id: 'ui_assigned_researcher', agentId: 'researcher', goal: `Call read_file with path ${JSON.stringify(secondTarget)}. Report its exact content. You must actually call the tool.`, tools: ['read_file'], dependsOn: [] }] : [])] }, 130000);
       assert.equal(outcome.status, 'COMPLETED');
       const result = outcome.consolidatedResult.results.ui_assigned_coder;
-      assert.equal(result.modelId, selected.replace(/^nv\//, ''));
+      assert.equal(result.modelId, selectedWire);
       assert.ok(result.toolResults.some(tool => tool.toolName === 'read_file' && JSON.stringify(tool.result).includes(marker)), 'Actual tool result must contain the independently created unknown file marker');
       assert.ok(result.output.includes(marker));
       const requests = outboundModelRequests.slice(beforeRequests);
@@ -547,7 +575,7 @@ try {
       let parallelEvidence = null;
       if (parallel) {
         const second = outcome.consolidatedResult.results.ui_assigned_researcher;
-        assert.equal(second.modelId, secondModel.replace(/^nv\//, ''));
+        assert.equal(second.modelId, secondWire);
         assert.ok(second.toolResults.some(tool => tool.toolName === 'read_file' && JSON.stringify(tool.result).includes(secondMarker)));
         assert.ok(second.output.includes(secondMarker));
         const a = requests.find(request => request.model === result.modelId);
@@ -589,10 +617,10 @@ try {
     const requestStart = outboundModelRequests.length;
     const outcome = await rpc('tasks.resume', { id: master }, 130000);
     assert.equal(outcome.status, 'COMPLETED'); assert.equal(outcome.masterTaskId, master);
-    assert.equal(outcome.consolidatedResult.results.researcher.modelId, originalModel.replace(/^nv\//, ''));
+    assert.equal(outcome.consolidatedResult.results.researcher.modelId, wireModelOf(originalModel));
     for (const item of files) assert.ok(outcome.consolidatedResult.results[item.agent].output.includes(item.marker));
     const resumedRequests = outboundModelRequests.slice(requestStart);
-    assert.ok(resumedRequests.every(request => request.model !== settings.agentBindings.coder.model.replace(/^nv\//, '')), 'Completed coder must not be executed again');
+    assert.ok(resumedRequests.every(request => request.model !== wireModelOf(settings.agentBindings.coder.model)), 'Completed coder must not be executed again');
     const db = new DatabaseSync(dbPath, { readOnly: true });
     try { const after = db.prepare('select id,status from zero_tasks where parent_task_id=?').all(master); assert.deepEqual(after.map(item => item.id).sort(), originalChildren.map(item => item.id).sort()); assert.ok(after.every(item => item.status === 'COMPLETED')); } finally { db.close(); }
     return { masterTaskId: master, killedPid: oldPid, restartedPid: child.pid, actualExternalResponseHeld: true, completedCoderNotReplayed: true, sameChildIds: true, pinnedResearcherModel: originalModel, changedBindingIgnoredForResume: true, resumedUpstreamModels: resumedRequests.map(request => request.model) };
@@ -615,7 +643,7 @@ try {
     await page.goto(`${base}/settings/model-providers`);
     await importThroughUI({ providers: [{ id, name: 'Imported Provider', baseUrl: 'https://example.invalid/v1', models: ['catalog-model'], apiKey: 'private-import-marker' }], agentBindings: { zero: { privateToken: 'private-binding-marker' } } });
     await page.getByText('Imported 1 provider(s) successfully!', { exact: true }).waitFor();
-    assert.ok(JSON.parse(fs.readFileSync(providersFile, 'utf8')).some(row => row.id === 'nv'));
+    assert.ok(JSON.parse(fs.readFileSync(providersFile, 'utf8')).some(row => row.id !== id));
     await stop(); await start(); await page.reload();
     await page.locator(`[data-provider-id="${id}"]`).waitFor();
     const downloading = page.waitForEvent('download');

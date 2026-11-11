@@ -14,26 +14,32 @@ import { assertModelImportComplete } from './config-transaction.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'models', 'gateway-providers.json');
-const DEFAULT_ALIASES = {
-  'zero-lead': 'nvidia/nemotron-3.5-lightning-30b-a3b',
-  'zero-vision': 'nvidia/nemotron-3.5-super-vl-120b-a12b',
-  'zero-ultra': 'nvidia/nemotron-3.5-lightning-30b-a3b',
-};
+const AUTO_MODEL_ALIASES = new Set(['', 'auto', 'auto-best', 'autobest', 'default', '__auto__', 'default-model']);
+
+const NON_CHAT_MODEL_PATTERN = /(?:^|[/_.-])(embedding|embed|tts|transcribe|audio|image|lyria|aqa|robotics|computer-use|deep-research|nano-banana|antigravity|realtime|live|native-audio)(?:$|[/_.-])/i;
+
+/** True when a model value means "let Zero pick the best configured model". */
+export function isAutoModel(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== 'string') return false;
+  return AUTO_MODEL_ALIASES.has(value.trim().toLowerCase());
+}
 
 export class ModelFabric {
   /**
    * @param {Object} [options]
    * @param {Array} [options.providers] - In-memory provider configurations
    * @param {string} [options.configPath] - Path to providers config JSON
-   * @param {Object} [options.aliases] - Model alias map (e.g. { 'zero-lead': 'nvidia/nemotron-3.5-lightning-30b-a3b' })
+   * @param {Object} [options.aliases] - Optional user-provided model alias map
    */
   constructor(options = {}) {
     this.configPath = Object.hasOwn(options, 'configPath') ? options.configPath
       : Array.isArray(options.providers) ? null : (fs.existsSync(DEFAULT_CONFIG_PATH) ? DEFAULT_CONFIG_PATH : null);
-    this.aliases = new Map(Object.entries({ ...DEFAULT_ALIASES, ...(options.aliases || {}) }));
+    this.aliases = new Map(Object.entries(options.aliases || {}));
     this.providers = new Map();
     this.localChat = options.localChat || null;
     this.healthStats = new Map();
+    this.modelHealth = new Map();
     this.upstreamRequestCount = 0;
     this.agentBindingsPath = Object.hasOwn(options, 'agentBindingsPath') ? options.agentBindingsPath
       : Array.isArray(options.providers) ? null : path.resolve(__dirname, '..', '..', 'models', 'gateway-defaults.json');
@@ -69,19 +75,31 @@ export class ModelFabric {
         }
       }
     }
+    // Health for providers that no longer exist must not linger in memory.
+    for (const id of [...this.healthStats.keys()]) if (!this.providers.has(id)) this.healthStats.delete(id);
+    for (const id of [...this.modelHealth.keys()]) {
+      const providerId = id.slice(0, id.indexOf('/'));
+      if (!this.providers.has(providerId) && !this.modelHealth.get(id)?.local) this.modelHealth.delete(id);
+    }
   }
 
   reloadFromDisk() {
-    if (!this.configPath || !fs.existsSync(this.configPath)) return;
+    // gateway-providers.json is the single runtime provider source. zero.json is
+    // a mirror only; it must never re-introduce providers the user deleted.
+    if (!this.configPath || !fs.existsSync(this.configPath)) {
+      this.loadProviders([]);
+      return;
+    }
+    let loadedList = [];
     try {
       const raw = fs.readFileSync(this.configPath, 'utf-8');
       const data = JSON.parse(raw);
-      if (Array.isArray(data)) {
-        this.loadProviders(data);
-      }
+      if (Array.isArray(data)) loadedList = data;
     } catch (err) {
       console.warn('[ModelFabric] Error reading providers config from disk:', err.message);
     }
+    // Always replace memory, including an empty array. Deletion must survive.
+    this.loadProviders(loadedList);
   }
 
   listModels() {
@@ -91,15 +109,16 @@ export class ModelFabric {
       if (Array.isArray(provider.models)) {
         for (const m of provider.models) {
           const id = typeof m === 'string' ? m : (m.id || m.name);
+          if (typeof id !== 'string' || !id.trim()) continue;
           const name = typeof m === 'object' && m.name ? m.name : id;
           models.push({
             id,
             name,
-            provider: provider.id || provider.name || 'nvidia',
+            provider: provider.id || provider.name || 'configured',
             reasoning: typeof m === 'object' ? Boolean(m.reasoning) : false,
-            input: typeof m === 'object' && m.image ? ['text', 'image'] : ['text'],
-            contextWindow: 131072,
-            maxTokens: 4096,
+            input: (typeof m === 'object' && m.image) ? ['text', 'image'] : ['text'],
+            contextWindow: typeof m === 'object' && Number.isInteger(m.contextWindow) ? m.contextWindow : 131072,
+            maxTokens: typeof m === 'object' && Number.isInteger(m.maxTokens) ? m.maxTokens : 4096,
           });
         }
       }
@@ -128,59 +147,102 @@ export class ModelFabric {
     const clean = modelId.trim();
     const aliasResolved = this.aliases.get(clean.toLowerCase()) || clean;
 
-    // Check each provider
+    // 1. Direct provider-qualified lookup. Providers and models are entirely
+    // user-configured; there is no provider-specific model routing.
+    for (const [pId, provider] of this.providers) {
+      if (provider.enabled === false) continue;
+      if (aliasResolved.startsWith(pId + '/')) {
+        const id = aliasResolved.slice(pId.length + 1);
+        const entry = provider.models?.find(m => {
+          const candidate = typeof m === 'string' ? m : m.id;
+          return candidate === id || candidate === `models/${id}` || candidate === id.replace(/^models\//, '');
+        });
+        const canonical = entry ? (typeof entry === 'string' ? entry : entry.id) : id;
+        return { provider, canonicalModelId: canonical, capabilities: this._capabilities(entry, canonical) };
+      }
+    }
+
+    // 2. Direct model ID lookup across all configured providers.
     for (const provider of this.providers.values()) {
       if (provider.enabled === false) continue;
       if (Array.isArray(provider.models)) {
         for (const m of provider.models) {
           const mId = typeof m === 'string' ? m : m.id;
-          if (mId === aliasResolved) {
-            return {
-              provider,
-              canonicalModelId: mId,
-              capabilities: typeof m === 'object' ? {
-                reasoning: !!m.reasoning,
-                image: !!m.image,
-                tools: m.tools !== false,
-              } : { reasoning: false, image: false, tools: true },
-            };
+          if (typeof mId !== 'string') continue;
+          const cleanMId = mId.replace(/^models\//, '');
+          const cleanResolved = aliasResolved.replace(/^models\//, '');
+          if (mId === aliasResolved || cleanMId === cleanResolved) {
+            return { provider, canonicalModelId: mId, capabilities: this._capabilities(m, mId) };
           }
         }
-      }
-    }
-
-    // Direct provider prefix lookup (e.g. nv/nvidia/...)
-    for (const [pId, provider] of this.providers.entries()) {
-      if (provider.enabled === false) continue;
-      if (aliasResolved.startsWith(`${pId}/`)) {
-        const stripped = aliasResolved.slice(pId.length + 1);
-        return {
-          provider,
-          canonicalModelId: stripped,
-          capabilities: { reasoning: false, image: false, tools: true },
-        };
       }
     }
 
     return null;
   }
 
-  resolveApiKey(provider) {
-    let key = provider.apiKey || (Array.isArray(provider.apiKeys) ? provider.apiKeys[0] : '');
-    if (!key || key.startsWith('env:')) {
-      const envVar = key && key.startsWith('env:') ? key.slice(4) : `${provider.id.toUpperCase()}_API_KEY`;
-      key = process.env[envVar] || '';
-      if (!key && (provider.id === 'nv' || provider.id === 'nvidia')) {
-        key = process.env.NVIDIA_API_KEY || '';
-      }
-    }
-    if (key && key.startsWith('env:')) {
-      key = '';
-    }
-    return key ? key.trim() : '';
+  _capabilities(entry, modelId) {
+    if (!entry || typeof entry !== 'object') return { reasoning: false, image: false, tools: true };
+    return {
+      reasoning: Boolean(entry.reasoning),
+      image: Boolean(entry.image),
+      tools: entry.tools !== false,
+      ...(typeof entry.contextWindow === 'number' ? { contextWindow: entry.contextWindow } : {}),
+      ...(typeof entry.maxTokens === 'number' ? { maxTokens: entry.maxTokens } : {}),
+    };
   }
 
-  recordSuccess(providerId, latencyMs) {
+  resolveApiKey(provider) {
+    if (!provider) return '';
+    const candidates = [
+      provider.apiKey,
+      ...(Array.isArray(provider.apiKeys) ? provider.apiKeys : []),
+    ].filter(value => typeof value === 'string' && value.trim());
+    for (const candidate of candidates) {
+      if (candidate.startsWith('env:')) {
+        const value = process.env[candidate.slice(4)] || '';
+        if (value.trim()) return value.trim();
+        continue;
+      }
+      if (candidate.startsWith('env:')) continue;
+      return candidate.trim();
+    }
+    return '';
+  }
+
+  _modelKey(providerId, modelId) {
+    return `${providerId}/${String(modelId || '').replace(/^models\//, '')}`;
+  }
+
+  _recordModelHealth(providerId, modelId, outcome, latencyMs, errorMsg) {
+    if (!providerId || modelId === undefined || modelId === null) return;
+    const key = this._modelKey(providerId, modelId);
+    const stats = this.modelHealth.get(key) || {
+      status: 'healthy',
+      totalRequests: 0,
+      failures: 0,
+      consecutiveFailures: 0,
+      lastLatencyMs: 0,
+      lastError: null,
+      lastCheckedAt: Date.now(),
+    };
+    stats.totalRequests++;
+    stats.lastCheckedAt = Date.now();
+    if (outcome === 'success') {
+      stats.status = 'healthy';
+      stats.consecutiveFailures = 0;
+      stats.lastLatencyMs = latencyMs;
+      stats.lastError = null;
+    } else {
+      stats.failures++;
+      stats.consecutiveFailures++;
+      stats.lastError = errorMsg;
+      if (stats.consecutiveFailures >= 2) stats.status = 'degraded';
+    }
+    this.modelHealth.set(key, stats);
+  }
+
+  recordSuccess(providerId, latencyMs, modelId) {
     const stats = this.healthStats.get(providerId);
     if (stats) {
       stats.status = 'healthy';
@@ -189,9 +251,10 @@ export class ModelFabric {
       stats.lastLatencyMs = latencyMs;
       stats.lastCheckedAt = Date.now();
     }
+    this._recordModelHealth(providerId, modelId, 'success', latencyMs);
   }
 
-  recordFailure(providerId, errorMsg) {
+  recordFailure(providerId, errorMsg, modelId) {
     const stats = this.healthStats.get(providerId);
     if (stats) {
       stats.totalRequests++;
@@ -203,14 +266,112 @@ export class ModelFabric {
         stats.status = 'degraded';
       }
     }
+    this._recordModelHealth(providerId, modelId, 'failure', 0, errorMsg);
   }
 
   getHealthReport() {
     const report = {};
     for (const [id, stats] of this.healthStats.entries()) {
-      report[id] = { ...stats };
+      report[id] = { ...stats, models: {} };
+    }
+    for (const [key, stats] of this.modelHealth.entries()) {
+      const providerId = key.slice(0, key.indexOf('/'));
+      (report[providerId] ||= { status: 'healthy', models: {} }).models[key.slice(key.indexOf('/') + 1)] = { ...stats };
     }
     return report;
+  }
+
+  /** All configured model candidates (cloud + local), independent of any vendor. */
+  listModelCandidates() {
+    const candidates = [];
+    for (const provider of this.providers.values()) {
+      if (provider.enabled === false) continue;
+      if (!Array.isArray(provider.models)) continue;
+      for (const model of provider.models) {
+        const id = typeof model === 'string' ? model : model?.id;
+        if (typeof id !== 'string' || !id.trim()) continue;
+        const canonicalModelId = id;
+        const modelId = `${provider.id}/${canonicalModelId}`;
+        candidates.push({
+          modelId,
+          providerId: provider.id,
+          canonicalModelId,
+          provider,
+          entry: model,
+          local: false,
+        });
+      }
+    }
+    const localModels = this.localChat?.listModels?.() || [];
+    for (const model of localModels) {
+      if (!model?.id) continue;
+      candidates.push({
+        modelId: model.id,
+        providerId: 'local-gguf',
+        canonicalModelId: model.id,
+        provider: { id: 'local-gguf', local: true, models: localModels },
+        entry: model,
+        local: true,
+      });
+    }
+    return candidates;
+  }
+
+  _isChatCandidate(candidate) {
+    if (candidate.local) return true;
+    if (!candidate.entry || typeof candidate.entry === 'string') return true;
+    const type = String(candidate.entry.type || 'chat').toLowerCase();
+    if (type !== 'chat') return false;
+    if (candidate.entry.capabilities?.embedding) return false;
+    return !NON_CHAT_MODEL_PATTERN.test(candidate.canonicalModelId);
+  }
+
+  _candidateScore(candidate) {
+    const modelStats = this.modelHealth.get(this._modelKey(candidate.providerId, candidate.canonicalModelId));
+    const providerStats = this.healthStats.get(candidate.providerId);
+    const stats = modelStats?.totalRequests ? modelStats : (providerStats || {});
+    const total = stats.totalRequests || 0;
+    const failures = stats.failures || 0;
+    const streak = stats.consecutiveFailures || 0;
+    const status = stats.status || 'healthy';
+    const successRate = total > 0 ? Math.max(0, (total - failures) / total) : 0.5;
+    const latency = stats.lastLatencyMs || 0;
+    let score = (1 - successRate) * 4000;
+    score += streak * 2500;
+    if (status === 'degraded') score += 10000;
+    score += latency > 0 ? latency / 10 : 400;
+    if (total > 0 && status === 'healthy' && streak === 0) score -= 300;
+    // Prefer the owner's configured default while it is healthy. This is the
+    // user's own selection, never a hardcoded vendor/model.
+    try {
+      const bindings = this._readBindings();
+      const preferred = bindings?.defaults?.primary;
+      if (preferred && this._modelKey(candidate.providerId, candidate.canonicalModelId) === this._modelKey(candidate.providerId, preferred.startsWith(`${candidate.providerId}/`) ? preferred.slice(candidate.providerId.length + 1) : preferred)) {
+        score -= 1800;
+      }
+    } catch {}
+    return score;
+  }
+
+  _readBindings() {
+    if (!this.agentBindingsPath || !fs.existsSync(this.agentBindingsPath)) return null;
+    const data = JSON.parse(fs.readFileSync(this.agentBindingsPath, 'utf8'));
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : null;
+  }
+
+  /** Ordered failover pool for Default model (Auto-Best) mode. */
+  autoCandidates(exclude = []) {
+    const excluded = new Set(exclude);
+    return this.listModelCandidates()
+      .filter(candidate => !excluded.has(candidate.modelId))
+      .filter(candidate => this._isChatCandidate(candidate))
+      .map(candidate => ({ ...candidate, score: this._candidateScore(candidate) }))
+      .sort((a, b) => a.score - b.score || a.modelId.localeCompare(b.modelId));
+  }
+
+  /** The best currently configured working model, or null. */
+  autoBestModel(exclude = []) {
+    return this.autoCandidates(exclude)[0] || null;
   }
 
   recordUsage(modelId, promptTokens = 0, completionTokens = 0) {
@@ -269,6 +430,11 @@ export class ModelFabric {
     };
   }
 
+  getAgentModelId(agentId = 'zero') {
+    const resolved = this.resolveAgentModel(agentId);
+    return resolved ? (resolved.provider.local ? resolved.canonicalModelId : resolved.provider.id + '/' + resolved.canonicalModelId) : null;
+  }
+
   resolveAgentModel(agentId = 'zero') {
     assertModelImportComplete(this.configPath);
     if (this.agentBindingsPath && fs.existsSync(this.agentBindingsPath)) {
@@ -290,51 +456,114 @@ export class ModelFabric {
         return resolved;
       }
     }
-    return this.resolveModel('zero-lead');
+    // No saved assignment: Default mode is resolved dynamically by autoBestModel().
+    return null;
+  }
+
+  _noConfiguredModelError() {
+    const err = new Error('No configured model is available. Add a provider and at least one model in Settings → Models.');
+    err.code = 'no_configured_model';
+    err.status = 503;
+    return err;
   }
 
   /**
-   * Execute chat completion with backoff retries and optional fallback cascade.
+   * Execute a chat completion. A missing/`auto` model means Default mode: rank
+   * the owner's configured models and fail over transparently until one works.
    */
   async executeChat(payload, options = {}) {
     assertModelImportComplete(this.configPath);
-    const modelId = payload.model || 'zero-lead';
-    if (modelId.startsWith('local-gguf/')) {
-      if (!this.localChat) throw new Error('Local chat runtime unavailable');
-      const result = await this.localChat.execute(payload, options);
-      if (result.data?.usage) this.recordUsage(modelId, result.data.usage.prompt_tokens, result.data.usage.completion_tokens);
-      return result;
+    const requested = payload.model;
+    if (isAutoModel(requested)) {
+      const candidates = this.autoCandidates(options.exclude);
+      if (!candidates.length) throw this._noConfiguredModelError();
+      let lastError = null;
+      for (const candidate of candidates) {
+        try {
+          return await this._executeResolvedChat(
+            { ...payload, model: candidate.modelId },
+            options,
+            this.resolveModel(candidate.modelId),
+          );
+        } catch (error) {
+          lastError = error;
+          if (options.signal?.aborted) throw error;
+        }
+      }
+      throw lastError || this._noConfiguredModelError();
     }
-    const resolution = this.resolveModel(modelId);
 
+    const modelId = typeof requested === 'string' ? requested.trim() : '';
+    const resolution = this.resolveModel(modelId);
     if (!resolution) {
-      const err = new Error(`Model '${modelId}' not found in Zero Model Fabric registry.`);
+      const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
+      err.code = 'model_not_found';
+      err.status = 404;
+      throw err;
+    }
+    return this._executeResolvedChat({ ...payload, model: modelId }, options, resolution);
+  }
+
+  async _executeResolvedChat(payload, options = {}, resolution = null) {
+    assertModelImportComplete(this.configPath);
+    const modelId = String(payload.model || '').trim();
+    if (!resolution) resolution = this.resolveModel(modelId);
+    if (!resolution) {
+      const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
       err.code = 'model_not_found';
       err.status = 404;
       throw err;
     }
 
+    if (modelId.startsWith('local-gguf/')) {
+      if (!this.localChat) throw new Error('Local chat runtime unavailable');
+      const started = Date.now();
+      try {
+        const result = await this.localChat.execute(payload, options);
+        if (result.data?.usage) this.recordUsage(modelId, result.data.usage.prompt_tokens, result.data.usage.completion_tokens);
+        this.recordSuccess('local-gguf', Date.now() - started, modelId);
+        return result;
+      } catch (error) {
+        this.recordFailure('local-gguf', error.message, modelId);
+        throw error;
+      }
+    }
+
     const { provider, canonicalModelId } = resolution;
     const apiKey = this.resolveApiKey(provider);
-
     if (!apiKey) {
-      const err = new Error(`Missing API key for provider '${provider.id}'. Set environment variable or configure in .env.`);
+      const err = new Error(`Missing API key for provider '${provider.id}'. Add the credential in Settings → Models.`);
       err.code = 'missing_api_key';
       err.status = 401;
       throw err;
     }
 
+    // Some provider catalogs list `models/<id>` while the wire API expects the
+    // bare id. This is a catalog normalization, not provider-specific routing.
+    const canonical = String(canonicalModelId).replace(/^models\//, '');
     const baseUrl = (provider.baseUrl || '').trim().replace(/\/+$/, '');
-    const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+    if (!baseUrl) {
+      const err = new Error(`Provider '${provider.id}' has no base URL configured.`);
+      err.code = 'missing_base_url';
+      err.status = 400;
+      throw err;
+    }
+    let endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+    if (provider.id === 'google' && apiKey && !endpoint.includes('key=')) {
+      endpoint += (endpoint.includes('?') ? '&' : '?') + `key=${encodeURIComponent(apiKey)}`;
+    }
 
     const maxRetries = options.maxRetries !== undefined ? options.maxRetries : 2;
     const timeoutMs = options.timeoutMs || 60000;
     const signal = options.signal;
-
-    const requestPayload = {
-      ...payload,
-      model: canonicalModelId,
-    };
+    const requestPayload = { ...payload, model: canonical };
+    if (Array.isArray(requestPayload.tools) && requestPayload.tools.length === 0) delete requestPayload.tools;
+    if (!Array.isArray(requestPayload.tools) || requestPayload.tools.length === 0) delete requestPayload.tool_choice;
+    if (provider.id === 'google') {
+      delete requestPayload.extra_body;
+      delete requestPayload.chat_template;
+      if (!requestPayload.tools) delete requestPayload.tool_choice;
+    }
 
     const headers = {
       'Content-Type': 'application/json',
@@ -364,22 +593,21 @@ export class ModelFabric {
 
         if (!res.ok) {
           const errBody = await res.json().catch(() => ({}));
-          const errMsg = errBody.error?.message || errBody.message || res.statusText || 'Upstream request failed';
-          const isTransient = res.status === 429 || res.status >= 500 || /temporarily unavailable/i.test(errMsg);
-          if (isTransient && attempt < maxRetries) {
-            const delay = 800 * Math.pow(2, attempt);
-            await new Promise((resolve) => setTimeout(resolve, delay));
-            continue;
-          }
+          const errMsg = errBody.error?.message ||
+                         (Array.isArray(errBody) && errBody[0]?.error?.message) ||
+                         errBody.message ||
+                         (typeof errBody === 'object' && Object.keys(errBody).length ? JSON.stringify(errBody) : null) ||
+                         res.statusText ||
+                         'Upstream request failed';
           const err = new Error(errMsg);
           err.status = res.status;
           err.upstreamError = errBody;
-          this.recordFailure(provider.id, errMsg);
+          err.retryable = res.status === 429 || res.status >= 500 || /temporarily unavailable/i.test(errMsg);
           throw err;
         }
 
         const elapsed = Date.now() - startTime;
-        this.recordSuccess(provider.id, elapsed);
+        this.recordSuccess(provider.id, elapsed, canonicalModelId);
 
         if (payload.stream) {
           return { stream: res.body, status: res.status, headers: res.headers };
@@ -390,19 +618,60 @@ export class ModelFabric {
       } catch (err) {
         lastError = err;
         if (signal?.aborted) throw err;
+        // Never retry a definitive upstream rejection (bad model, auth, 404).
+        if (err.retryable === false || (err.status && err.status !== 429 && err.status < 500)) break;
         if (attempt >= maxRetries) break;
-        await new Promise((resolve) => setTimeout(resolve, 400));
+        await new Promise((resolve) => setTimeout(resolve, 400 * Math.pow(2, attempt)));
       } finally {
         clearTimeout(connectionTimer);
       }
     }
 
-    this.recordFailure(provider.id, lastError?.message || 'Exceeded retry attempts');
+    this.recordFailure(provider.id, lastError?.message || 'Exceeded retry attempts', canonicalModelId);
     throw lastError;
   }
 
   async *streamChat(payload, options = {}) {
-    const res = await this.executeChat({ ...payload, stream: true }, options);
+    const requested = payload.model;
+    if (isAutoModel(requested)) {
+      const candidates = this.autoCandidates(options.exclude);
+      if (!candidates.length) throw this._noConfiguredModelError();
+      let lastError = null;
+      for (const candidate of candidates) {
+        let emitted = false;
+        try {
+          for await (const chunk of this._streamResolvedChat(
+            { ...payload, model: candidate.modelId },
+            options,
+            this.resolveModel(candidate.modelId),
+          )) {
+            emitted = true;
+            yield chunk;
+          }
+          return;
+        } catch (error) {
+          lastError = error;
+          if (options.signal?.aborted) throw error;
+          // Fail over only before any visible content was produced.
+          if (emitted) throw error;
+        }
+      }
+      throw lastError || this._noConfiguredModelError();
+    }
+
+    const modelId = typeof requested === 'string' ? requested.trim() : '';
+    const resolution = this.resolveModel(modelId);
+    if (!resolution) {
+      const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
+      err.code = 'model_not_found';
+      err.status = 404;
+      throw err;
+    }
+    yield* this._streamResolvedChat({ ...payload, model: modelId }, options, resolution);
+  }
+
+  async *_streamResolvedChat(payload, options = {}, resolution = null) {
+    const res = await this._executeResolvedChat({ ...payload, stream: true }, options, resolution);
     if (!res.stream) {
       if (res.data?.choices?.[0]?.message?.content) {
         yield { delta: res.data.choices[0].message.content, finish_reason: res.data.choices[0].finish_reason || null, done: true };

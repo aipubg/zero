@@ -92,3 +92,23 @@ test('[INTEGRATION] model assignment persists across reopen, preserves unrelated
   fs.writeFileSync(agentBindingsPath, '{broken');
   assert.throws(() => fabric.resolveAgentModel('zero'), /cannot be read/);
 });
+
+
+test('[INTEGRATION] settings reload external provider writes and preserve additions on a later RPC edit', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-provider-settings-'));
+  t.after(() => { assert.equal(path.dirname(fs.realpathSync(root)), fs.realpathSync(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); });
+  const configPath = path.join(root, 'providers.json'); const agentBindingsPath = path.join(root, 'bindings.json');
+  const first = { id: 'first', baseUrl: 'https://example.invalid/v1', models: ['shared'] };
+  fs.writeFileSync(configPath, JSON.stringify([first]));
+  const fabric = new ModelFabric({ configPath, agentBindingsPath });
+  fs.writeFileSync(configPath, JSON.stringify([first, { id: 'google', baseUrl: 'https://example.invalid/v1', apiKey: 'private-marker', models: ['shared'] }]));
+  assert.equal(modelSettings(fabric).providers.length, 2);
+  assignZeroModel(fabric, { modelId: 'google/shared' });
+  assert.equal(fabric.getAgentModelId(), 'google/shared');
+  assert.equal(fabric.resolveModel('google/shared').provider.id, 'google');
+  saveConfiguredProvider(fabric, { id: 'first', name: 'Edited' });
+  const reopened = new ModelFabric({ configPath, agentBindingsPath });
+  assert.equal(reopened.getAgentModelId(), 'google/shared');
+  assert.equal(reopened.providers.get('google').apiKey, 'private-marker');
+  assert.equal(reopened.listModels().length, 2);
+});

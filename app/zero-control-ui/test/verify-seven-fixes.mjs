@@ -163,8 +163,7 @@ async function runLiveVerification() {
     const html = document.body.innerHTML;
     const hasPort18790 = html.includes("18790");
     const hasPort18789 = html.includes("18789");
-    const hasNvProvider = html.includes("nv") || html.includes("NVIDIA") || html.includes("nvidia");
-    return { hasPort18790, hasPort18789, hasNvProvider };
+    return { hasPort18790, hasPort18789 };
   });
   console.log("   Models Page Analysis:", modelsPageCheck);
   assert.equal(modelsPageCheck.hasPort18790, false, "Models page must NOT contain obsolete port 18790!");

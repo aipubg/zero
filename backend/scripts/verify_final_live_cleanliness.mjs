@@ -102,7 +102,7 @@ async function verifyAll() {
   if (modelsHtml.includes('test-model-1') || modelsHtml.includes('Test Provider')) {
     throw new Error('FAIL: Model providers page still shows test-model-1 or Test Provider!');
   }
-  console.log('✔ PASSED: Model providers page shows clean real Nvidia models and providers!');
+  console.log('✔ PASSED: Model providers page shows configured models and providers!');
 
   await page.screenshot({ path: 'C:/Users/Professor Zero/.gemini/antigravity/brain/853155d1-8b17-4e54-9566-15cd1228664e/verified-final-clean-models-page.png' });
 

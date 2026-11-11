@@ -12,13 +12,17 @@ export function mountVoiceControl(button, host) {
   const label = document.createElement('span');
   button.replaceChildren(meter, label);
   button.setAttribute('aria-live', 'polite');
+  const isConnected = () => typeof host?.isConnected === 'function'
+    ? host.isConnected()
+    : host?.connection?.connected !== false;
+
   const render = (text, active = false, capture = null, sessionState = null) => {
     const fresh = active && Number.isFinite(capture?.lastFrameAt) && Date.now() - capture.lastFrameAt < 3000;
     let voiceState = 'idle';
 
     if (failure) {
       voiceState = 'error';
-    } else if (!host?.isConnected?.()) {
+    } else if (!isConnected()) {
       voiceState = 'disconnected';
     } else if (sessionState?.playbackActive || sessionState?.state === 'speaking') {
       voiceState = 'speaking';

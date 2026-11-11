@@ -1,4 +1,5 @@
 import { element } from "../shared/dom.js";
+import { markModelCatalogDirty } from "../state/model-catalog.js";
 
 /**
  * Enterprise Zero Model Gateway & Providers Management Surface
@@ -18,6 +19,9 @@ async function callGateway(host, method, params = {}) {
       const res = await host.request(method, params);
       const result = res?.result ?? res;
       if (!result || result.ok === false) throw new Error(typeof result?.error === 'string' ? result.error : result?.error?.message || 'Gateway request failed');
+      if (['zero.providers.save', 'zero.providers.delete', 'zero.providers.setActive', 'zero.gateway.config.save'].includes(method)) {
+        markModelCatalogDirty();
+      }
       return result;
     } catch (error) {
       throw error; // Canonical RPC failures must never target another host or appear successful.
@@ -639,7 +643,8 @@ export function mountModelsPage(container, context = {}) {
       if (p.enabled === false) continue;
       if (Array.isArray(p.models)) {
         for (const pm of p.models) {
-          const mid = typeof pm === "string" ? pm : pm.id;
+          const mid = typeof pm === "string" ? pm : pm?.id;
+          if (!mid) continue;
           const mname = typeof pm === "string" ? pm : (pm.name || pm.id);
           const fullKey = mid.startsWith(`${p.id}/`) ? mid : `${p.id}/${mid}`;
           allModelOptions.push({
@@ -651,20 +656,10 @@ export function mountModelsPage(container, context = {}) {
       }
     }
 
-    const validModelIdSet = new Set();
-    for (const m of allModelOptions) {
-      validModelIdSet.add(m.id);
-      if (m.rawId) validModelIdSet.add(m.rawId);
-    }
-
-    const isModelValid = (mId) => {
-      if (!mId || typeof mId !== "string") return false;
-      return validModelIdSet.has(mId);
-    };
-
-    const effectivePrimary = isModelValid(systemDefaults.primary) ? systemDefaults.primary : '';
+    const selectKey = value => allModelOptions.find(m => m.id === value)?.id || allModelOptions.find(m => m.rawId === value)?.id || '';
+    const effectivePrimary = selectKey(systemDefaults.primary);
     const savedZeroModel = agentBindings?.zero?.model;
-    const effectiveZeroModel = isModelValid(savedZeroModel) ? savedZeroModel : savedZeroModel ? '' : effectivePrimary;
+    const effectiveZeroModel = savedZeroModel ? selectKey(savedZeroModel) : effectivePrimary;
 
     function fillSelect(selEl, emptyLabel, currentVal) {
       const options = [{ value: "", label: emptyLabel }];
@@ -687,8 +682,8 @@ export function mountModelsPage(container, context = {}) {
     }
 
     fillSelect(primarySel.select, "(Select Primary Model)", effectivePrimary);
-    fillSelect(utilitySel.select, "(Select Utility Model)", systemDefaults.utility);
-    fillSelect(fallbackSel.select, "(Select Fallback Model)", systemDefaults.fallback);
+    fillSelect(utilitySel.select, "(Select Utility Model)", selectKey(systemDefaults.utility));
+    fillSelect(fallbackSel.select, "(Select Fallback Model)", selectKey(systemDefaults.fallback));
     fillSelect(thinkingSel.select, "(Select Thinking Model / Default)", systemDefaults.thinking);
     fillSelect(fastSel.select, "(Select Fast Mode Model / Disabled)", systemDefaults.fastMode);
 
@@ -700,79 +695,10 @@ export function mountModelsPage(container, context = {}) {
   }
 
   function renderProviderLogo(p) {
+    // Providers are entirely user-defined, so the UI never infers a vendor from
+    // an id/name. Every provider gets the same neutral monogram treatment.
     const icon = element("div", "zero-provider-icon");
-    const id = String(p?.id || "").toLowerCase();
-    const name = String(p?.name || "").toLowerCase();
-    const api = String(p?.api || "").toLowerCase();
-
-    if (id.includes("nv") || name.includes("nvidia") || id.includes("nvidia")) {
-      icon.classList.add("zero-provider-icon--nv");
-      icon.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="display:block;">
-          <rect width="24" height="24" rx="6" fill="#76b900" />
-          <path d="M5.5 15.5C5.5 12.2 8.2 9.5 11.5 9.5C13.2 9.5 14.8 10.2 15.9 11.4L13.8 13.2C13.2 12.5 12.4 12.1 11.5 12.1C9.6 12.1 8.1 13.6 8.1 15.5H5.5Z" fill="#ffffff"/>
-          <path d="M4 17C4 12.9 7.4 9.5 11.5 9.5C13.8 9.5 15.9 10.5 17.3 12.1L19 10.5C17.1 8.4 14.5 7 11.5 7C6 7 1.5 11.5 1.5 17H4Z" fill="#ffffff" opacity="0.75"/>
-          <text x="12" y="18" font-family="-apple-system, sans-serif" font-weight="900" font-size="8" fill="#ffffff" text-anchor="middle">NV</text>
-        </svg>
-      `;
-      return icon;
-    }
-
-    if (id.includes("openai") || name.includes("openai") || api.includes("openai")) {
-      icon.classList.add("zero-provider-icon--openai");
-      icon.innerHTML = `
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M22.28 9.47a5.55 5.55 0 0 0-.47-4.48 5.66 5.66 0 0 0-5.74-2.73 5.55 5.55 0 0 0-4.07-1.8 5.66 5.66 0 0 0-5.38 3.9 5.55 5.55 0 0 0-3.6 2.6 5.66 5.66 0 0 0 .72 6.13 5.55 5.55 0 0 0 .47 4.48 5.66 5.66 0 0 0 5.74 2.73 5.55 5.55 0 0 0 4.07 1.8 5.66 5.66 0 0 0 5.38-3.9 5.55 5.55 0 0 0 3.6-2.6 5.66 5.66 0 0 0-.72-6.13ZM12 20.08a3.68 3.68 0 0 1-2.43-.9l1.24-1.24a1.93 1.93 0 0 0 2.38 0l1.24 1.24a3.68 3.68 0 0 1-2.43.9Z"/>
-        </svg>
-      `;
-      return icon;
-    }
-
-    if (id.includes("anthropic") || name.includes("claude") || name.includes("anthropic")) {
-      icon.classList.add("zero-provider-icon--anthropic");
-      icon.innerHTML = `
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M13.8 4.2L18.6 19.8H15.1L14 16.1H10L8.9 19.8H5.4L10.2 4.2H13.8ZM12 8.8L10.8 13.2H13.2L12 8.8Z"/>
-        </svg>
-      `;
-      return icon;
-    }
-
-    if (id.includes("gemini") || name.includes("gemini") || id.includes("google")) {
-      icon.classList.add("zero-provider-icon--gemini");
-      icon.innerHTML = `
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>
-        </svg>
-      `;
-      return icon;
-    }
-
-    if (id.includes("ollama") || name.includes("ollama") || api.includes("ollama")) {
-      icon.classList.add("zero-provider-icon--ollama");
-      icon.innerHTML = `
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
-          <circle cx="9" cy="11" r="1.5"/>
-          <circle cx="15" cy="11" r="1.5"/>
-          <path d="M10 15C10.5 16 11.2 16.5 12 16.5C12.8 16.5 13.5 16 14 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      `;
-      return icon;
-    }
-
-    if (api === "local-gguf" || id.includes("gguf") || id.includes("local")) {
-      icon.classList.add("zero-provider-icon--gguf");
-      icon.innerHTML = `
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-          <rect x="5" y="5" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-          <rect x="8" y="8" width="8" height="8" rx="1"/>
-          <path d="M2 9H5M2 15H5M19 9H22M19 15H22M9 2V5M15 2V5M9 19V22M15 19V22" stroke="currentColor" stroke-width="1.8"/>
-        </svg>
-      `;
-      return icon;
-    }
-
+    if (String(p?.api || "").toLowerCase() === "local-gguf") icon.classList.add("zero-provider-icon--gguf");
     const monogram = (p?.name || p?.id || "AI").slice(0, 2).toUpperCase();
     icon.innerHTML = `<span style="font-size:12px;font-weight:800;letter-spacing:0.04em;">${monogram}</span>`;
     return icon;
@@ -1015,12 +941,14 @@ export function mountModelsPage(container, context = {}) {
         chipsContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;background:rgba(0,0,0,0.18);border-top:1px solid rgba(255,255,255,0.06);";
 
         for (const pm of pModels) {
-          const mid = typeof pm === "string" ? pm : pm.id;
+          const mid = typeof pm === "string" ? pm : pm?.id;
+          if (!mid) continue;
           const mname = typeof pm === "string" ? pm : (pm.name || pm.id);
           const isReasoning = typeof pm === "object" && Boolean(pm.reasoning);
           const isImage = typeof pm === "object" && Boolean(pm.image);
 
-          const isCurrentActive = systemDefaults.primary === mid || agentBindings?.zero?.model === mid;
+          const modelKey = mid.startsWith(p.id + '/') ? mid : p.id + '/' + mid;
+          const isCurrentActive = [systemDefaults.primary, agentBindings?.zero?.model].some(value => value === modelKey || value === mid);
           const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
           chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "rgba(255,255,255,0.04)"};border:1px solid ${isCurrentActive ? "var(--accent)" : "rgba(255,255,255,0.08)"};color:${isCurrentActive ? "var(--accent)" : "inherit"};cursor:pointer;`;
 
@@ -1048,7 +976,7 @@ export function mountModelsPage(container, context = {}) {
           chip.onclick = async (e) => {
             if (e.target.closest(".zero-chip-delete")) return;
             try {
-              await callGateway(host, "zero.providers.setActive", { modelId: mid });
+              await callGateway(host, "zero.providers.setActive", { modelId: modelKey });
               showNotice(`Active model set to "${getCleanDisplayName(mname, mid)}"`);
               await loadAllData();
             } catch (err) {
@@ -1234,7 +1162,7 @@ export function mountModelsPage(container, context = {}) {
     const idField = element("div", "zero-modal__field");
     idField.append(element("label", "zero-modal__label", "Provider ID (slug)"));
     const idInput = element("input", "zero-modal__input");
-    idInput.placeholder = "e.g. nvidia, openrouter, custom-openai";
+    idInput.placeholder = "e.g. my-provider, local-gguf, custom-openai";
     idInput.value = existingProvider?.id || "";
     if (isEdit) {
       idInput.disabled = true;
@@ -1246,7 +1174,7 @@ export function mountModelsPage(container, context = {}) {
     const nameField = element("div", "zero-modal__field");
     nameField.append(element("label", "zero-modal__label", "Display Name"));
     const nameInput = element("input", "zero-modal__input");
-    nameInput.placeholder = "e.g. NVIDIA NIM, OpenRouter, Private Gateway";
+    nameInput.placeholder = "e.g. My Provider, Private Gateway";
     nameInput.value = existingProvider?.name || "";
     nameField.append(nameInput);
 
@@ -1266,7 +1194,7 @@ export function mountModelsPage(container, context = {}) {
     const urlField = element("div", "zero-modal__field");
     urlField.append(element("label", "zero-modal__label", "Base URL"));
     const urlInput = element("input", "zero-modal__input");
-    urlInput.placeholder = "https://integrate.api.nvidia.com/v1 or http://127.0.0.1:18789/v1";
+    urlInput.placeholder = "https://api.example.com/v1";
     urlInput.value = existingProvider?.baseUrl || "";
     urlField.append(urlInput);
 

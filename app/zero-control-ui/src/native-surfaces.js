@@ -6,6 +6,8 @@ import { renderGenerativeWidgets } from "./spaces/generative-widgets.js";
 import { mountPluginInstall } from "./pages/plugin-install.js";
 import { mountSkillInstall } from "./pages/skill-install.js";
 import { mountVoiceControl } from "./voice-control.js";
+import { createSessionActions } from "./shell/session-actions.js";
+import { consumeModelCatalogDirty } from "./state/model-catalog.js";
 import {
   SPECIALIST_AGENT_IDS,
   isAboutRoute,
@@ -590,64 +592,30 @@ function installNativeSurfaces(host) {
         ".sidebar-recent-session, .session-row-host, [data-session-key], [data-catalog-session-key]"
       ) : [];
       for (const item of items) {
-        if (item.querySelector(".zero-session-actions")) continue;
+        // Strip any residual emoji characters from title/name text
+        for (const child of item.querySelectorAll(".sidebar-recent-session__title, .sidebar-recent-session__name, .session-row-title, .session-title, .session-name, a")) {
+          if (child.childNodes) {
+            for (const n of child.childNodes) {
+              if (n.nodeType === Node.TEXT_NODE && /[\u{1F300}-\u{1F9FF}]/u.test(n.textContent)) {
+                n.textContent = n.textContent.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+              }
+            }
+          }
+        }
+
         const key = item.getAttribute("data-session-key") ||
                     item.getAttribute("data-catalog-session-key") ||
                     item.querySelector("a[href*='/chat/']")?.href?.split("/chat/")[1]?.split("?")[0] ||
                     item.querySelector("a[href*='session=']")?.href?.split("session=")[1]?.split("&")[0];
         if (!key || key === "zero") continue;
 
-        const actions = document.createElement("span");
-        actions.className = "zero-session-actions";
+        let actions = item.querySelector(".zero-session-actions");
+        if (actions) {
+          if (actions.querySelector("svg")) continue;
+          actions.remove();
+        }
 
-        const archiveBtn = document.createElement("button");
-        archiveBtn.className = "zero-session-action-btn zero-session-archive";
-        archiveBtn.type = "button";
-        archiveBtn.title = "Archive conversation";
-        archiveBtn.setAttribute("aria-label", "Archive conversation");
-        archiveBtn.textContent = "📦";
-        archiveBtn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          try {
-            if (typeof host.request === "function") {
-              const patchMethod = ["sessions", "patch"].join(".");
-              await host.request(patchMethod, { key, archived: true });
-            }
-            item.remove();
-          } catch (err) {
-            console.warn("Failed to archive session:", err);
-          }
-        });
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "zero-session-action-btn zero-session-delete";
-        deleteBtn.type = "button";
-        deleteBtn.title = "Delete conversation";
-        deleteBtn.setAttribute("aria-label", "Delete conversation");
-        deleteBtn.textContent = "🗑️";
-        deleteBtn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (typeof window.confirm === "function" && !window.confirm("Are you sure you want to delete this conversation?")) {
-            return;
-          }
-          try {
-            if (typeof host.request === "function") {
-              const deleteMethod = ["sessions", "delete"].join(".");
-              await host.request(deleteMethod, { key });
-            }
-            item.remove();
-            if (window.location.pathname.includes(key) || window.location.search.includes(key)) {
-              window.location.replace("/chat/zero");
-            }
-          } catch (err) {
-            console.warn("Failed to delete session:", err);
-          }
-        });
-
-        actions.appendChild(archiveBtn);
-        actions.appendChild(deleteBtn);
+        actions = createSessionActions(item, key, host);
 
         const actionsSlot = item.querySelector(".session-row-actions") || item.querySelector(".sidebar-recent-session__aside, .session-row-aside");
         if (actionsSlot) {
@@ -678,6 +646,13 @@ function installNativeSurfaces(host) {
     if (!root) return;
     try {
       renderGenerativeWidgets(root, { host });
+      // Permanently remove duplicate "Color mode" button and tooltips
+      const colorModeToggles = root.querySelectorAll ? root.querySelectorAll(
+        "openclaw-theme-mode-toggle, .theme-mode-toggle, [aria-label*='Color mode' i], [title*='Color mode' i]"
+      ) : [];
+      for (const t of colorModeToggles) {
+        t.remove();
+      }
       const canvases = root.querySelectorAll ? root.querySelectorAll("canvas") : [];
       for (const c of canvases) {
         c.style.setProperty("display", "none", "important");
@@ -1049,62 +1024,28 @@ function installNativeSurfaces(host) {
         }
       }
 
-      // 2. Remove obsolete model options
-      const modelOptions = document.querySelectorAll(".chat-controls__model-option, [data-chat-model-option]");
-      for (const opt of modelOptions) {
-        const val = opt.getAttribute("data-chat-model-option") || "";
-        const label = opt.getAttribute("aria-label") || opt.textContent || "";
-        if (
-          val.includes("zero-gateway") ||
-          val.includes("test-model") ||
-          val.includes("glm-5.3") ||
-          val === "default" ||
-          label.includes("zero-gateway") ||
-          label.includes("test-model") ||
-          label.includes("glm-5.3") ||
-          label.trim() === "default"
-        ) {
-          opt.remove();
+      // Model options come from the canonical catalog; never hide user models
+      // by their display name or replace the selected model label.
+      const defaultOption = document.querySelector('[data-chat-model-option][data-chat-model-default="true"]');
+      if (defaultOption) {
+        if (defaultOption.getAttribute("aria-label") !== "Default model (Auto-Best)") defaultOption.setAttribute("aria-label", "Default model (Auto-Best)");
+        if (defaultOption.getAttribute("data-chat-model-name") !== "default model (auto-best)") defaultOption.setAttribute("data-chat-model-name", "default model (auto-best)");
+        const title = defaultOption.querySelector(".chat-controls__model-option-title");
+        if (title && title.textContent !== "Default model (Auto-Best)") title.textContent = "Default model (Auto-Best)";
+        else if (!title) {
+          const copy = defaultOption.querySelector(".chat-controls__model-option-copy");
+          if (copy && copy.textContent !== "Default model (Auto-Best)") copy.textContent = "Default model (Auto-Best)";
         }
       }
 
-      // 3. Clean up any remaining container buttons with test-model or zero-gateway
-      for (const btn of document.querySelectorAll(".chat-controls__model-menu button, wa-popup button, details[data-chat-model-select] button")) {
-        const txt = (btn.textContent || "").trim();
-        if (txt.includes("test-model") || txt.includes("zero-gateway/default") || txt.includes("glm-5.3")) {
-          btn.remove();
-        }
-      }
-
-      // 4. Clean up the trigger button text if stuck on dummy or deleted model
-      const triggerBtn = document.querySelector(
-        ".chat-controls__session button, .chat-controls__model button, [data-chat-model-trigger], summary[data-chat-model-select], .chat-controls__model-trigger"
-      );
-      if (triggerBtn) {
-        const currentText = (triggerBtn.textContent || "").trim();
-        if (
-          currentText.includes("zero-gateway") ||
-          currentText.includes("test-model") ||
-          currentText.includes("glm-5.3") ||
-          currentText === "default"
-        ) {
-          const firstRealOption = document.querySelector(
-            ".chat-controls__model-option:not([data-chat-model-option*='zero-gateway']):not([data-chat-model-option*='test-model']):not([data-chat-model-option*='glm-5.3'])"
-          );
-          const realName = firstRealOption
-            ? (firstRealOption.getAttribute("aria-label") || firstRealOption.textContent.trim())
-            : "3.5-lightning-30b-a3b";
-          for (const node of triggerBtn.childNodes) {
-            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-              node.textContent = realName;
-              break;
-            }
-          }
-          const labelSpan = triggerBtn.querySelector(".chat-controls__inline-select-label");
-          if (labelSpan && (labelSpan.textContent.includes("zero-gateway") || labelSpan.textContent.includes("test-model") || labelSpan.textContent.trim() === "default")) {
-            labelSpan.textContent = realName;
-          }
-        }
+      // Reflect Default mode in the closed trigger as well. Only do this when
+      // the Default entry is the selected entry.
+      const selected = document.querySelector('.chat-controls__model-option[aria-selected="true"]');
+      const trigger = document.querySelector(".chat-controls__model-trigger");
+      const triggerLabel = trigger?.querySelector(".chat-controls__inline-select-label");
+      if (selected?.getAttribute("data-chat-model-default") === "true" && triggerLabel) {
+        if (triggerLabel.textContent !== "Default model (Auto-Best)") triggerLabel.textContent = "Default model (Auto-Best)";
+        if (trigger.getAttribute("aria-label") !== "Chat model: Default model (Auto-Best)") trigger.setAttribute("aria-label", "Chat model: Default model (Auto-Best)");
       }
     } catch {}
   };
@@ -1126,6 +1067,11 @@ function installNativeSurfaces(host) {
       if (routePath(currentLocation()) === '/settings/skills') mountSkillInstall(document.querySelector('openclaw-skills-page'), host);
       const currentPath = routePath(currentLocation());
       const kind = currentSurface(host);
+      if (!kind && consumeModelCatalogDirty()) {
+        // The native catalog is connection-cached; refresh when leaving settings.
+        window.location.reload();
+        return;
+      }
       if (!kind) {
         lastMountedPath = null;
         unmount();
@@ -1251,6 +1197,31 @@ function installNativeSurfaces(host) {
     // Never intercept clicks inside Zero's own native surfaces (buttons, modals, tabs, etc.)
     if (target.closest(".zero-native-surface")) {
       return;
+    }
+
+    // Intercept model selection clicks to persist selected model per-session
+    const modelOpt = target.closest(
+      "[data-chat-model-option], .chat-controls__model-option, wa-dropdown-item[data-model-id], button[data-model-id], [data-model-key]"
+    );
+    if (modelOpt) {
+      const isDefaultOption = modelOpt.getAttribute("data-chat-model-default") === "true";
+      const pickedModel = modelOpt.getAttribute("data-chat-model-option") ||
+                          modelOpt.getAttribute("data-model-id") ||
+                          modelOpt.getAttribute("data-model-key") ||
+                          modelOpt.getAttribute("data-value") ||
+                          modelOpt.textContent?.trim();
+      try {
+        const curSessionKey = window.location.pathname.split("/chat/")[1]?.split("?")[0] || "agent:zero:main";
+        if (typeof host?.request === "function") {
+          if (isDefaultOption) {
+            // Default model (Auto-Best) must clear the session pin, not pin the
+            // currently displayed default model.
+            host.request("sessions.patch", { key: curSessionKey, model: null, metadata: { model: null } }).catch(() => {});
+          } else if (pickedModel) {
+            host.request("sessions.patch", { key: curSessionKey, model: pickedModel, metadata: { model: pickedModel } }).catch(() => {});
+          }
+        }
+      } catch {}
     }
 
     // Sanitize chat model menu on click or model trigger interaction

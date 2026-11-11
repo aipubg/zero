@@ -1,22 +1,25 @@
 import { gatewayRequest } from "../gateway/client.js";
 
+// The outer sidebar is a workspace navigator only. Configuration lives in the
+// Settings view reached from the Owner menu, not duplicated here.
 const DESTINATIONS = [
   { label: "New Chat", path: "/new", icon: "plus", group: "Workspace", detail: "Start a fresh conversation" },
   { label: "Command", path: "/chat/zero", icon: "command", group: "Workspace", detail: "Your conversation with Zero" },
   { label: "Computer", path: "/systems", icon: "monitor", group: "Workspace", detail: "Desktop and connected systems" },
   { label: "Automations", path: "/automations", icon: "bolt", group: "Workspace", detail: "Scheduled work and background tasks" },
   { label: "Dashboards", path: "/dashboards", icon: "grid", group: "Workspace", detail: "Your working surfaces" },
-  { label: "Memory", path: "/settings/memory", icon: "memory", group: "Intelligence", detail: "Remembered context and knowledge" },
-  { label: "Search", path: "/settings/search", icon: "search", group: "Intelligence", detail: "Research and search providers" },
-  { label: "Models", path: "/settings/model-providers", icon: "orbit", group: "Intelligence", detail: "Cloud providers and local models" },
-  { label: "Agents", path: "/agents", icon: "agents", group: "Intelligence", detail: "Specialists working with Zero" },
-  { label: "Skills", path: "/settings/skills", icon: "spark", group: "Intelligence", detail: "Reusable capabilities" },
-  { label: "Plugins", path: "/settings/plugins", icon: "plug", group: "Intelligence", detail: "Tools and integrations" },
-  { label: "Settings", path: "/settings", icon: "settings", group: "System", detail: "Appearance, voice, privacy, devices and more" },
-  { label: "About Zero", path: "/settings/about", icon: "zero", group: "System", detail: "Observation and runtime information" },
+  { label: "Memory", path: "/settings/memory", icon: "memory", group: "Workspace", detail: "Remembered context and knowledge" },
 ];
 
+// Searchable destinations for the command palette. These are intentionally not
+// rendered in the outer sidebar.
 const SETTINGS_DESTINATIONS = [
+  { label: "Settings", path: "/settings", icon: "settings", detail: "Appearance, voice, privacy, devices and more" },
+  { label: "Models", path: "/settings/model-providers", icon: "orbit", detail: "Providers and models" },
+  { label: "Agents", path: "/agents", icon: "agents", detail: "Specialists working with Zero" },
+  { label: "Skills", path: "/settings/skills", icon: "spark", detail: "Reusable capabilities" },
+  { label: "Plugins", path: "/settings/plugins", icon: "plug", detail: "Tools and integrations" },
+  { label: "About Zero", path: "/settings/about", icon: "zero", detail: "Observation and runtime information" },
   { label: "Voice", path: "/settings/talk", icon: "spark", detail: "Speech, microphone and conversation" },
   { label: "Devices", path: "/settings/devices", icon: "monitor", detail: "Connected devices and companions" },
   { label: "Cloud workers", path: "/settings/cloud-workers", icon: "agents", detail: "Background and remote workers" },
@@ -59,8 +62,7 @@ function destinationFor(pathname) {
   const exact = [...DESTINATIONS, ...SETTINGS_DESTINATIONS].find(item => item.path === pathname);
   if (exact) return exact;
   if (pathname.startsWith("/chat/") || pathname === "/new") return DESTINATIONS[0];
-  if (pathname.startsWith("/settings/model-")) return DESTINATIONS.find(item => item.label === "Models");
-  return [...DESTINATIONS].sort((a, b) => b.path.length - a.path.length).find(item => pathname.startsWith(item.path + "/"));
+  return [...DESTINATIONS, ...SETTINGS_DESTINATIONS].sort((a, b) => b.path.length - a.path.length).find(item => pathname.startsWith(item.path + "/"));
 }
 
 /** Own visual shell over the existing Gateway routes and conversation store. */
@@ -112,7 +114,14 @@ export function installZeroShell(host) {
             store.setItem(key, JSON.stringify(s));
           }
         }
-        window.dispatchEvent(new Event("storage"));
+        // Storage events must carry a real key. The upstream control-ui listens
+        // for `storage` and dereferences event.key; a generic Event breaks that
+        // listener and aborts plugin activation.
+        window.dispatchEvent(new StorageEvent("storage", {
+          key: "zero.theme.mode",
+          newValue: isLight ? "light" : "dark",
+          storageArea: store,
+        }));
       }
     } catch {}
     const btn = document.querySelector(".zero-shell-theme-toggle");
@@ -143,7 +152,7 @@ export function installZeroShell(host) {
     if (sidebar.querySelector(".zero-shell-navigation")) return;
     const nav = own(element("nav", "zero-shell-navigation"));
     nav.setAttribute("aria-label", "Zero navigation");
-    for (const group of ["Workspace", "Intelligence", "System"]) {
+    for (const group of ["Workspace"]) {
       nav.append(element("div", "zero-shell-nav-label", group));
       for (const item of DESTINATIONS.filter(entry => entry.group === group)) {
         const link = element("a", "zero-shell-nav-link");

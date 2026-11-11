@@ -98,24 +98,18 @@ function resolveUpstreamProvider(modelId) {
     for (const p of providers) {
       if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
 
-      // 1. Match by prefix: e.g. "nv/nvidia/nemotron-..." or "nv/nemotron-..."
+      // 1. Match by the owner's provider id prefix.
       if (norm.startsWith(`${p.id}/`)) {
         const cleanModelId = norm.slice(p.id.length + 1);
         return { provider: p, cleanModelId };
       }
 
-      // 2. Deterministic match in p.models:
+      // 2. Deterministic match in the provider's own configured model list.
       if (Array.isArray(p.models)) {
         const found = p.models.find((m) => {
           const rawId = typeof m === 'string' ? m : (m.id || m.name);
           if (!rawId) return false;
-          return (
-            rawId === norm ||
-            rawId === `nvidia/${norm}` ||
-            `nvidia/${rawId}` === norm ||
-            (rawId.startsWith('nvidia/') && norm === rawId.replace(/^nvidia\//, '')) ||
-            (norm.startsWith('nvidia/') && rawId === norm.replace(/^nvidia\//, ''))
-          );
+          return rawId === norm || rawId.replace(/^models\//, '') === norm.replace(/^models\//, '');
         });
         if (found) {
           const rawId = typeof found === 'string' ? found : found.id;
@@ -137,9 +131,8 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
   let apiKey = provider.apiKey || (Array.isArray(provider.apiKeys) ? provider.apiKeys[0] : '');
 
   // Resolve secure environment variable credentials if not in JSON or using env: prefix
-  if (!apiKey || apiKey.startsWith('env:')) {
-    const envKey = apiKey.startsWith('env:') ? apiKey.slice(4) : (provider.id.toUpperCase() + '_API_KEY');
-    apiKey = process.env[envKey] || process.env.NVIDIA_API_KEY || process.env.ZERO_GATEWAY_KEY || process.env.OPENAI_API_KEY || apiKey;
+  if (typeof apiKey === 'string' && apiKey.startsWith('env:')) {
+    apiKey = process.env[apiKey.slice(4)] || '';
   }
   const baseUrl = (provider.baseUrl || '').trim().replace(/\/+$/, '');
   const targetUrl = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
@@ -692,7 +685,7 @@ async function handleChatCompletions(req, res) {
       }
     }
 
-    let defaultPrimaryModel = 'nv/nvidia/nemotron-3.5-lightning-30b-a3b';
+    let defaultPrimaryModel = '';
     try {
       if (fs.existsSync(DEFAULTS_CONFIG_FILE)) {
         const d = JSON.parse(fs.readFileSync(DEFAULTS_CONFIG_FILE, 'utf-8'));
@@ -700,6 +693,12 @@ async function handleChatCompletions(req, res) {
       }
     } catch {}
     const modelId = body.model || body.modelId || defaultPrimaryModel;
+    if (!modelId) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'No model configured. Add a provider and model in Settings → Models.' }));
+      return;
+    }
     const messages = body.messages || [];
     const stream = body.stream === true;
 

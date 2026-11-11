@@ -141,9 +141,6 @@ export function createGatewayConfigMiddleware() {
         if (!safeFallbackModel && validModelIds.size > 0) {
           safeFallbackModel = validModelIds.values().next().value || '';
         }
-        if (!safeFallbackModel) {
-          safeFallbackModel = 'nv/nvidia/nemotron-3-super-120b-a12b';
-        }
 
         // Check if gateway-defaults.json primary model is valid
         if (fs.existsSync(defaultsFile)) {
@@ -221,8 +218,9 @@ export function createGatewayConfigMiddleware() {
               for (const p of activeProvidersList) {
                 if (!p || !p.id || p.id === 'zero-gateway' || p.id === 'test-provider' || p.id === 'test_provider') continue;
                 allowedProviderKeys.add(p.id);
+                if (typeof p.baseUrl !== 'string' || !p.baseUrl.trim()) continue;
                 const provConfig = {
-                  baseUrl: 'http://127.0.0.1:18789/v1',
+                  baseUrl: p.baseUrl.trim(),
                   api: p.api || 'openai-completions',
                   models: (Array.isArray(p.models) ? p.models : [])
                     .filter((m: any) => {
@@ -236,16 +234,6 @@ export function createGatewayConfigMiddleware() {
                   ...(p.apiKey ? { apiKey: p.apiKey } : {}),
                 };
                 cfg.models.providers[p.id] = provConfig;
-                if (p.id === 'nv') {
-                  allowedProviderKeys.add('nvidia');
-                  cfg.models.providers['nvidia'] = {
-                    ...provConfig,
-                    models: provConfig.models.map((m: any) => ({
-                      ...m,
-                      id: m.id.replace(/^nvidia\//, ''),
-                    })),
-                  };
-                }
               }
 
               // 2. Remove obsolete / old provider records not in active providers

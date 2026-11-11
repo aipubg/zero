@@ -23,7 +23,6 @@ export const CANONICAL_AGENT_PROFILES = Object.freeze({
     role: 'Principal Orchestrator & Autonomous Assistant',
     description: 'Central intelligence responsible for planning, decomposing goals, delegating to specialists, and synthesizing final results.',
     capabilities: ['plan', 'delegate', 'synthesize', 'user_dialogue', 'evaluate'],
-    defaultModel: 'nvidia/llama-3.1-nemotron-70b-instruct',
   },
   researcher: {
     id: 'researcher',
@@ -31,7 +30,6 @@ export const CANONICAL_AGENT_PROFILES = Object.freeze({
     role: 'Deep Web, File & Document Analysis',
     description: 'Specialist for web search, scraping, documentation exploration, and empirical evidence gathering.',
     capabilities: ['web_search', 'read_file', 'browse', 'extract_data'],
-    defaultModel: 'deepseek-ai/deepseek-r1',
   },
   coder: {
     id: 'coder',
@@ -39,7 +37,6 @@ export const CANONICAL_AGENT_PROFILES = Object.freeze({
     role: 'Codebase Authoring, Refactoring & Tool Scripting',
     description: 'Specialist for software architecture, code generation, script execution, and bug fixing.',
     capabilities: ['write_file', 'edit_file', 'run_command', 'git_operations'],
-    defaultModel: 'qwen/qwen-2.5-coder-32b-instruct',
   },
   reviewer: {
     id: 'reviewer',
@@ -47,7 +44,6 @@ export const CANONICAL_AGENT_PROFILES = Object.freeze({
     role: 'Verification, Static Analysis & Gatekeeping',
     description: 'Specialist for reviewing code changes, validating test outcomes, checking security boundaries, and confirming deliverables.',
     capabilities: ['review_diff', 'run_tests', 'audit_security', 'validate_contracts'],
-    defaultModel: 'meta/llama-3.3-70b-instruct',
   },
   operator: {
     id: 'operator',
@@ -55,7 +51,6 @@ export const CANONICAL_AGENT_PROFILES = Object.freeze({
     role: 'Native Windows OS, UIA & Multimedia Automation',
     description: 'Specialist for controlling native desktop windows, mouse clicks, keystrokes, UIA tree inspection, and browser automation.',
     capabilities: ['zero_computer_action', 'browser', 'open_app', 'focus_window', 'type_text', 'left_click'],
-    defaultModel: 'nvidia/llama-3.1-nemotron-70b-instruct',
     requiresDesktopLease: true,
   },
 });

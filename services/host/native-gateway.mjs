@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, probeConfiguredProvider, importModelSettings } from './model-settings.mjs';
+import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, deleteConfiguredModel, probeConfiguredProvider, importModelSettings, replaceConfiguredProviders } from './model-settings.mjs';
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { prepareToolBatch } from './tool-batch.mjs';
 import { MEDIA_COMMANDS } from '../../packages/media-control/index.mjs';
@@ -25,6 +25,15 @@ import { createAutomationDispatcher } from './automation-dispatcher.mjs';
 import { LocalGgufEngineService } from '../../backend/gateway/server/local-gguf-service.ts';
 import { LocalChatTransport } from '../../packages/model-fabric/local-chat-transport.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// Global error handlers: prevent any unhandled exception or rejection from terminating the server process
+process.on('uncaughtException', (err, origin) => {
+  console.error(`[Zero Gateway] Global Uncaught Exception (${origin}):`, err?.stack || err?.message || err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Zero Gateway] Global Unhandled Rejection:', reason?.stack || reason?.message || reason);
+});
 
 import {
   PROTOCOL_VERSION,
@@ -187,7 +196,6 @@ export class ZeroNativeHost {
       localChat: new LocalChatTransport(this.localGguf),
       configPath: options.providersPath || process.env.ZERO_PROVIDERS_PATH || path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
       agentBindingsPath: options.agentBindingsPath || process.env.ZERO_AGENT_BINDINGS_PATH || path.join(REPO_ROOT, 'models', 'gateway-defaults.json'),
-      aliases: { 'zero-lead': 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
     });
     this.sessions = new SessionManager({ dbPath: sessionDb });
     this.executeAssistantOnce = createAssistantReceipts(this.sessions.db);
@@ -472,6 +480,28 @@ export class ZeroNativeHost {
         return;
       }
 
+      // HTTP and RPC share the durable settings service, not the legacy array writer.
+      if ((req.url || '').split('?')[0] === '/api/gateway/config') {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        if (req.method === 'GET') {
+          res.end(JSON.stringify(modelSettings(this.modelFabric)));
+        } else if (req.method === 'POST') {
+          const chunks = []; let bytes = 0;
+          for await (const chunk of req) {
+            bytes += chunk.length;
+            if (bytes > 2 * 1024 * 1024) throw new Error('Model settings payload too large');
+            chunks.push(chunk);
+          }
+          const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          if (input.replaceProviders === true && Array.isArray(input.providers)) {
+            res.end(JSON.stringify(replaceConfiguredProviders(this.modelFabric, input.providers)));
+          } else {
+            res.end(JSON.stringify(importModelSettings(this.modelFabric, { ...input, providers: input.providers || [] })));
+          }
+        } else { res.statusCode = 405; res.end(JSON.stringify({ ok: false, error: 'Method not allowed' })); }
+        return;
+      }
       // 1. Dispatch Zero Gateway API routes
       const handled = await handleZeroGatewayRequest(req, res);
       if (handled) return;
@@ -1171,7 +1201,7 @@ export class ZeroNativeHost {
               name: 'Zero',
               identity: { name: 'Zero' },
               description: 'Zero Autonomous Personal AI Commander',
-              model: { primary: this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || null },
+              model: { primary: this.modelFabric.getAgentModelId('zero') },
             },
           ],
         };
@@ -1372,7 +1402,7 @@ export class ZeroNativeHost {
         const patched = this.sessions.patchSession(key, {
           ...params,
           ...(params.archived !== undefined ? { archived: params.archived } : {}),
-          metadata: { ...params.metadata, ...(params.model ? { model: params.model } : {}), ...(params.archived !== undefined ? { archived: params.archived } : {}) }
+          metadata: { ...params.metadata, ...(Object.hasOwn(params, 'model') ? { model: params.model } : {}), ...(params.archived !== undefined ? { archived: params.archived } : {}) }
         });
         if (!patched) throw new Error(`Session '${key}' not found`);
         const sessionPayload = {
@@ -1462,6 +1492,28 @@ export class ZeroNativeHost {
         return { ok: true, session: sessionPayload };
       }
 
+      case 'sessions.pin': {
+        const key = params.key || params.id || params.sessionKey;
+        if (!key) throw new Error('Session key is required');
+        const session = this.sessions.getSession(key);
+        const currentPinned = Boolean(session?.pinned ?? session?.metadata?.pinned);
+        const pinned = params.pinned !== undefined ? Boolean(params.pinned) : !currentPinned;
+        const patched = this.sessions.patchSession(key, { pinned, metadata: { ...(session?.metadata || {}), pinned } });
+        const sessionPayload = {
+          key: patched?.id || key,
+          id: patched?.id || key,
+          sessionId: patched?.id || key,
+          title: patched?.title || 'Session',
+          createdAt: patched?.createdAt || Date.now(),
+          updatedAt: patched?.updatedAt || Date.now(),
+          metadata: patched?.metadata || {},
+          pinned,
+          agentId: patched?.metadata?.agentId || 'zero',
+        };
+        this._broadcastSessionChanged({ reason: 'pin', session: sessionPayload, sessionKey: key });
+        return { ok: true, session: sessionPayload, pinned };
+      }
+
       case 'sessions.delete': {
         const key = params.key || params.id || params.sessionKey;
         if (!key) throw new Error('Session key is required');
@@ -1479,8 +1531,19 @@ export class ZeroNativeHost {
         return { ok: true, deleted: keys.length, keys };
       }
 
-      case 'chat.metadata':
-        return { commands: [], ...(params.includeModels === false ? {} : { models: this.modelFabric.listModels() }) };
+      case 'chat.metadata': {
+        this.modelFabric.reloadFromDisk();
+        const models = this.modelFabric.listModels();
+        const selection = modelSettings(this.modelFabric);
+        return {
+          commands: [],
+          models,
+          providers: this.modelFabric.getProviders(),
+          defaultModel: selection.effectiveModel,
+        };
+      }
+
+
 
       case 'chat.startup':
       case 'chat.history':
@@ -1516,7 +1579,30 @@ export class ZeroNativeHost {
         };
         const userContent = extractText(params.message) || extractText(params.text) || extractText(params.content) || extractText(params.prompt) || '';
 
-        return await this._runAssistantRequest({ sessionKey, userContent, model: params.model, ws, isReferenceWire, clientSession, source: 'chat', runId: params.idempotencyKey });
+        const hasModelParam = Object.hasOwn(params, 'model') || Object.hasOwn(params, 'modelId');
+        const rawRequestedModel = params.model ?? params.modelId;
+        const autoRequested = hasModelParam && (
+          rawRequestedModel === null ||
+          rawRequestedModel === undefined ||
+          (typeof rawRequestedModel === 'string' && ['', 'auto', 'auto-best', 'default', '__auto__'].includes(rawRequestedModel.trim().toLowerCase()))
+        );
+        // A default/auto selection clears the per-session pin so ModelFabric can
+        // rank the owner's configured models. A specific selection is exact.
+        const requestedModel = autoRequested ? null : rawRequestedModel;
+        if (hasModelParam && this.sessions) {
+          try {
+            const current = this.sessions.getSession(sessionKey);
+            if (current) {
+              const currentMeta = current.metadata || {};
+              if (currentMeta.model !== requestedModel) {
+                this.sessions.patchSession(sessionKey, { metadata: { ...currentMeta, model: requestedModel } });
+              }
+            }
+          } catch (e) {}
+        }
+        const sessionModel = this.sessions?.getSession(sessionKey)?.metadata?.model;
+        const effectiveModel = autoRequested ? null : (requestedModel || sessionModel || null);
+        return await this._runAssistantRequest({ sessionKey, userContent, model: effectiveModel, ws, isReferenceWire, clientSession, source: 'chat', runId: params.idempotencyKey });
       }
 
       case 'chat.abort': {
@@ -1531,6 +1617,7 @@ export class ZeroNativeHost {
 
       case 'models.list':
       case 'gateway.models.list': {
+        this.modelFabric.reloadFromDisk();
         const models = this.modelFabric.listModels();
         const selection = modelSettings(this.modelFabric);
         const defaultModel = selection.effectiveModel;
@@ -1622,7 +1709,9 @@ export class ZeroNativeHost {
       case 'zero.providers.save':
         return saveConfiguredProvider(this.modelFabric, params);
       case 'zero.providers.delete':
-        return deleteConfiguredProvider(this.modelFabric, params.id);
+        return params.modelId
+          ? deleteConfiguredModel(this.modelFabric, params.id, params.modelId)
+          : deleteConfiguredProvider(this.modelFabric, params.id);
 
       case 'zero.providers.test':
         return await probeConfiguredProvider(this.modelFabric, params);
@@ -2310,7 +2399,7 @@ export class ZeroNativeHost {
 
       case 'config.get': {
         const configPath = this.configPath;
-        let cfg = { gateway: { port: this.port, bind: this.host }, models: { default: 'zero-lead' } };
+        let cfg = { gateway: { port: this.port, bind: this.host }, models: {} };
         try {
           if (fs.existsSync(configPath)) {
             cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -2318,6 +2407,19 @@ export class ZeroNativeHost {
         } catch {}
         const hash = crypto.createHash('sha256').update(JSON.stringify(cfg)).digest('hex').slice(0, 16);
         const config = this._redactSecrets(cfg);
+        // Native chat reads its default and provider metadata from config.get,
+        // not just models.list. Project the durable model settings here too.
+        const selection = modelSettings(this.modelFabric);
+        const primary = this.modelFabric.getAgentModelId('zero');
+        config.agents ||= {};
+        config.agents.defaults ||= {};
+        if (primary) config.agents.defaults.model = { ...config.agents.defaults.model, primary };
+        if (Array.isArray(config.agents.list)) config.agents.list = config.agents.list.map(agent => agent.id === 'zero' ? { ...agent, model: { ...(typeof agent.model === 'object' ? agent.model : {}), ...(primary ? { primary } : {}) } } : agent);
+        config.models ||= {};
+        config.models.providers = Object.fromEntries(selection.providers.map(provider => [provider.id, {
+          baseUrl: provider.baseUrl, api: provider.api,
+          models: provider.models.map(model => typeof model === 'string' ? { id: model, name: model } : model),
+        }]));
         return { config, parsed: config, raw: JSON.stringify(config, null, 2), hash, valid: true, exists: true, path: configPath };
       }
 
@@ -2834,10 +2936,11 @@ export class ZeroNativeHost {
     const request = (async () => {
       const { sessionKey, userContent, signal, source = 'chat' } = options;
       if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
-      options.model ||= this.sessions.getSession(sessionKey)?.metadata?.model || this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || 'zero-lead';
+      const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
+      options.model ||= (typeof parkedModel === 'string' && parkedModel.trim() ? parkedModel : null);
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
       const task = options.resumeTaskId ? this.tasks.getTask(options.resumeTaskId) : this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
-      this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=?,model_id=COALESCE(model_id,?) WHERE session_id=? AND run_id=?').run(task.id, options.model, sessionKey, options.runId);
+      this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=?,model_id=COALESCE(model_id,?) WHERE session_id=? AND run_id=?').run(task.id, options.model ?? null, sessionKey, options.runId);
       if (options.retryFailed) { this.tasks.retryFailedTask(task.id); this.tasks.startTask(task.id); }
       else if (options.resumeTaskId) this.tasks.resumeTask(task.id);
       else { this.tasks.enqueueTask(task.id); this.tasks.startTask(task.id); }
@@ -3022,8 +3125,14 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           throw abortController.signal.reason;
         }
 
+        const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
+        const explicitModel = (typeof model === 'string' && model.trim())
+          ? model.trim()
+          : (typeof parkedModel === 'string' && parkedModel.trim() ? parkedModel.trim() : null);
+        // No explicit model = Default model (Auto-Best): ModelFabric ranks the
+        // owner's configured models and fails over automatically.
         const modelPayload = {
-          model: model || this.sessions.getSession(sessionKey)?.metadata?.model || this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || 'zero-lead',
+          ...(explicitModel ? { model: explicitModel } : {}),
           messages: currentMessages,
           tools: DESKTOP_TOOLS,
         };
@@ -3102,7 +3211,27 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             }
             throw abortController.signal.reason;
           }
-          throw streamErr;
+          console.error('[Zero Host] Model stream error:', streamErr);
+          const modelErrMsg = `⚠️ **Model Error (${modelPayload.model || 'Default model (Auto-Best)'})**: ${streamErr.message || String(streamErr)}`;
+          accumulatedContent = accumulatedContent ? `${accumulatedContent}\n\n${modelErrMsg}` : modelErrMsg;
+          finalContent = accumulatedContent;
+          publishChat({ state: 'delta', message: { role: 'assistant', content: [{ type: 'text', text: finalContent }] } });
+          if (ws && ws.readyState === 1) {
+            const errPayload = {
+              sessionKey,
+              turnId,
+              messageId,
+              delta: `\n\n${modelErrMsg}`,
+              timestamp: Date.now(),
+            };
+            if (isReferenceWire) {
+              ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: errPayload }));
+            } else {
+              ws.send(JSON.stringify(createNotification('zero.stream.delta', errPayload)));
+            }
+          }
+          completedModelTurn = true;
+          break;
         }
 
         // If no API tool calls were requested, check if the model hallucinates action execution in text:
@@ -3609,8 +3738,12 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             mediaResult = execRes.data || execRes;
           }
 
-          const activeModelId = String(model || this.sessions.getSession(sessionKey)?.metadata?.model || this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || '').toLowerCase();
-          const isVisionModel = activeModelId.includes('vl') || activeModelId.includes('vision') || activeModelId.includes('super-vl') || activeModelId.includes('4o') || activeModelId.includes('gemini');
+          const activeModelValue = model || this.sessions.getSession(sessionKey)?.metadata?.model || null;
+          const activeResolution = activeModelValue
+            ? this.modelFabric.resolveModel(activeModelValue)
+            : this.modelFabric.resolveModel(this.modelFabric.autoBestModel()?.modelId || '');
+          const activeModelId = String(activeResolution?.canonicalModelId || activeModelValue || '').toLowerCase();
+          const isVisionModel = Boolean(activeResolution?.capabilities?.image) || activeModelId.includes('vl') || activeModelId.includes('vision') || activeModelId.includes('4o');
 
           const sanitizedRes = this._sanitizeToolResultForLlm(execRes, { isVisionModel });
           let toolContent;
@@ -3745,7 +3878,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         if (executedActions.length > 0) {
           finalContent = `Autonomous task executed: ${executedActions.length} action(s) processed. Outcome: ${overallOutcome}.`;
         } else {
-          throw new Error('Model provider returned no text response; no completion was recorded.');
+          finalContent = '⚠️ **Zero Warning**: The model completed the turn without generating a response.';
         }
       }
 

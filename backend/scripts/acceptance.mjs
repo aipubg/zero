@@ -207,7 +207,7 @@ async function runHttp() {
     : Array.isArray(models.json?.models)
       ? models.json.models.map((m) => m?.id).filter(Boolean)
       : [];
-  const agents = ids.filter((id) => typeof id === "string" && (id.startsWith("openclaw/") || id === "zero" || id.startsWith("nvidia/")));
+  const agents = ids.filter((id) => typeof id === "string" && (id.startsWith("openclaw/") || id === "zero" || id.includes("/")));
   const missing = ids.length === 0 ? ["zero"] : [];
   record(
     "A3 agents.present",

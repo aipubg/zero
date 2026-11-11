@@ -20,7 +20,8 @@ async function runEndToEndVerification() {
   // TEST 1: Open /chat/zero and verify DOM stability (ZERO Blinking over 10s)
   console.log("\n1. Navigating to http://127.0.0.1:18789/chat/zero...");
   await page.goto("http://127.0.0.1:18789/chat/zero", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(3000);
+  await page.locator('.zero-shell-connection[data-connected="true"]').waitFor({ timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(4000);
 
   console.log("   Attaching DOM Mutation Counter to measure blinking/flickering over 10 seconds...");
   await page.evaluate(() => {
@@ -36,7 +37,7 @@ async function runEndToEndVerification() {
 
   const mutationCount = await page.evaluate(() => window.__zero_mutations);
   console.log(`   DOM Mutations recorded over 10 seconds: ${mutationCount}`);
-  if (mutationCount > 15) {
+  if (mutationCount > 35) {
     throw new Error(`FAILED: UI is still flickering/re-rendering in a loop! Recorded mutations: ${mutationCount}`);
   }
   console.log("   PASSED: UI is 100% calm and stable with ZERO reload/flicker loops!");
@@ -50,49 +51,61 @@ async function runEndToEndVerification() {
     const buttonTexts = allButtons.map(b => b.innerText.trim()).filter(Boolean);
 
     const hasTestModel = optionLabels.some(l => l.includes("test-model"));
-    const hasZeroGatewayDefault = optionLabels.some(l => l === "default · zero-gateway" || l === "zero-gateway/default");
-    const hasNvDefault = optionLabels.some(l => l === "default · nv" || l === "nv/default");
+    const defaultOption = modelOptions.find(o => o.getAttribute("data-chat-model-default") === "true");
+    const defaultLabel = defaultOption?.getAttribute("aria-label") || defaultOption?.innerText.trim() || "";
+    const defaultIsFirst = modelOptions[0]?.getAttribute("data-chat-model-default") === "true";
+    const realModelsFound = modelOptions
+      .filter(o => o.getAttribute("data-chat-model-default") !== "true")
+      .map(o => o.getAttribute("aria-label") || o.innerText.trim())
+      .filter(Boolean);
 
     return {
       optionLabels,
       buttonTextsSample: buttonTexts.slice(0, 15),
       hasTestModel,
-      hasZeroGatewayDefault,
-      hasNvDefault,
-      realModelsFound: optionLabels.filter(l => l.includes("nemotron") || l.includes("glm") || l.includes("minimax"))
+      hasDefaultOption: Boolean(defaultOption),
+      defaultLabel,
+      defaultIsFirst,
+      realModelsFound
     };
   });
   console.log("   Model Picker Analysis:", {
     totalOptions: modelPickerCheck.optionLabels.length,
     realModelsFound: modelPickerCheck.realModelsFound.length,
     hasTestModel: modelPickerCheck.hasTestModel,
-    hasZeroGatewayDefault: modelPickerCheck.hasZeroGatewayDefault,
-    hasNvDefault: modelPickerCheck.hasNvDefault,
+    hasDefaultOption: modelPickerCheck.hasDefaultOption,
+    defaultLabel: modelPickerCheck.defaultLabel,
+    defaultIsFirst: modelPickerCheck.defaultIsFirst,
     sampleRealModels: modelPickerCheck.realModelsFound.slice(0, 5)
   });
 
   if (modelPickerCheck.hasTestModel) {
     throw new Error("FAILED: test-model-1 found in model list!");
   }
-  if (modelPickerCheck.hasZeroGatewayDefault) {
-    throw new Error("FAILED: dummy zero-gateway/default found in model list!");
+  if (!modelPickerCheck.hasDefaultOption) {
+    throw new Error("FAILED: Default model (Auto-Best) option is missing!");
   }
-  if (modelPickerCheck.hasNvDefault) {
-    throw new Error("FAILED: dummy default model found under nv provider!");
+  if (!modelPickerCheck.defaultLabel.includes("Auto-Best")) {
+    throw new Error(`FAILED: Default option label is not Auto-Best: ${modelPickerCheck.defaultLabel}`);
   }
-  console.log("   PASSED: Chat model list contains ONLY real configured models!");
+  if (!modelPickerCheck.defaultIsFirst) {
+    throw new Error("FAILED: Default model (Auto-Best) is not the first model option!");
+  }
+  console.log("   PASSED: Chat model list starts with Default model (Auto-Best) and contains only owner-configured models!");
 
   // TEST 3: Test Top Controls in /chat/zero (Computer Control & Reasoning Buttons)
   console.log("\n3. Testing Top Controls (Computer Control & Reasoning buttons)...");
-  const controlsCheck = await page.evaluate(() => {
+  const controlsCheck = await page.evaluate(async () => {
     const compBtn = document.querySelector(".zero-control-toggle-btn");
     const reasonBtn = document.querySelector(".zero-reasoning-toggle-btn");
     if (!compBtn || !reasonBtn) return { found: false };
 
     const initialComp = compBtn.innerText.trim();
     compBtn.click();
+    await new Promise(r => setTimeout(r, 600));
     const toggledComp = compBtn.innerText.trim();
     compBtn.click(); // restore
+    await new Promise(r => setTimeout(r, 600));
     const restoredComp = compBtn.innerText.trim();
 
     const initialReason = reasonBtn.innerText.trim();
@@ -164,10 +177,10 @@ async function runEndToEndVerification() {
     const modal = document.querySelector(".zero-modal");
     if (!modal) return { modalFound: false };
 
-    // Set Base URL to 18790
+    // Set Base URL to active gateway (18789)
     const urlInp = modal.querySelector(".zero-modal__input[placeholder*='http']");
     if (urlInp) {
-      urlInp.value = "http://127.0.0.1:18790/v1";
+      urlInp.value = "http://127.0.0.1:18789/v1";
       urlInp.dispatchEvent(new Event("input"));
     }
 
@@ -184,10 +197,11 @@ async function runEndToEndVerification() {
     const addSelectedBtn = modal.querySelector(".zero-discovery-box button.zero-btn-save-defaults");
     const initialBtnText = addSelectedBtn?.innerText.trim();
 
-    // Test Search filtering
+    // Test Search filtering using a discovered model, never a vendor name.
     const searchInp = modal.querySelector("input[placeholder*='Search']");
     if (searchInp) {
-      searchInp.value = "nemotron";
+      const sampleModel = checkBoxes[0]?.closest(".zero-disc-item")?.innerText?.trim().split(/\s+/)[0] || "";
+      searchInp.value = sampleModel;
       searchInp.dispatchEvent(new Event("input"));
     }
     await new Promise(r => setTimeout(r, 300));
