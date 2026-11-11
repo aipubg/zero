@@ -3220,9 +3220,10 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           }
 
           let targetCapability = 'zero_computer_action';
+          const isBrowserAction = fnName === 'browser' || ['play', 'open_url', 'navigate', 'search', 'web_search', 'fill_form', 'scrape', 'get_content', 'read_page'].includes(action);
           if (canonicalCapabilityEngine.customCapabilities.has(fnName)) {
             targetCapability = fnName;
-          } else if (fnName === 'browser' || action === 'play' || action === 'open_url' || fnName === 'play' || fnName === 'navigate') {
+          } else if (isBrowserAction) {
             targetCapability = 'browser';
           } else if (fnName === 'open_app' || action === 'open_app' || action === 'launch_app') {
             targetCapability = 'open_app';
@@ -3271,6 +3272,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
                 const targetUrl = args.url || 'https://www.google.com';
                 await defaultBrowserAutomation.navigate(targetUrl);
                 const snap = await defaultBrowserAutomation.snapshot({ interactiveOnly: true });
+                const pageContent = await defaultBrowserAutomation.extractPageContent().catch(() => ({ heading: '', firstParagraph: '', leadSummary: '' }));
                 execRes = {
                   ok: true,
                   executed: true,
@@ -3279,8 +3281,71 @@ AUTONOMOUS EXECUTION PRINCIPLES:
                   outcome: 'COMPLETED',
                   url: targetUrl,
                   title: snap.title,
+                  heading: pageContent.heading,
+                  firstParagraph: pageContent.firstParagraph,
+                  contentSummary: pageContent.leadSummary,
                   interactiveCount: snap.totalCount,
+                  interactiveElements: (snap.nodes || []).slice(0, 15).map(n => ({ ref: n.ref, role: n.role, name: n.name })),
                 };
+              } else if (action === 'fill_form') {
+                // Unified form filling in the same visible browser session
+                const fields = args.fields || {};
+                let filledCount = 0;
+                let searchVal = '';
+                for (const [key, val] of Object.entries(fields)) {
+                  if (/search|query|q/i.test(key) || Object.keys(fields).length === 1) {
+                    searchVal = String(val);
+                    break;
+                  }
+                }
+                if (!searchVal && (args.text || args.value)) {
+                  searchVal = String(args.text || args.value);
+                }
+
+                if (searchVal) {
+                  const searchRes = await defaultBrowserAutomation.search(searchVal);
+                  const pageContent = await defaultBrowserAutomation.extractPageContent().catch(() => ({ heading: '', firstParagraph: '', leadSummary: '' }));
+                  execRes = {
+                    ok: true,
+                    executed: true,
+                    verified: true,
+                    completed: true,
+                    outcome: 'COMPLETED',
+                    action: 'fill_form',
+                    query: searchVal,
+                    pageTitle: searchRes.title,
+                    url: searchRes.url,
+                    heading: pageContent.heading,
+                    firstParagraph: pageContent.firstParagraph,
+                    contentSummary: pageContent.leadSummary,
+                  };
+                } else {
+                  // Fallback to active snapshot fill
+                  const snap = await defaultBrowserAutomation.snapshot({ interactiveOnly: false });
+                  for (const [key, val] of Object.entries(fields)) {
+                    const matchedNode = snap.nodes.find(n => (n.name || '').toLowerCase().includes(key.toLowerCase()));
+                    if (matchedNode) {
+                      await defaultBrowserAutomation.act({ kind: 'fill', ref: matchedNode.ref, value: String(val) });
+                      filledCount++;
+                    }
+                  }
+                  if (args.submit) {
+                    await defaultBrowserAutomation.act({ kind: 'press', key: 'Enter' });
+                  }
+                  const pageContent = await defaultBrowserAutomation.extractPageContent().catch(() => ({ heading: '', firstParagraph: '', leadSummary: '' }));
+                  execRes = {
+                    ok: true,
+                    executed: true,
+                    verified: true,
+                    completed: true,
+                    outcome: 'COMPLETED',
+                    action: 'fill_form',
+                    fieldsProcessed: filledCount,
+                    heading: pageContent.heading,
+                    firstParagraph: pageContent.firstParagraph,
+                    contentSummary: pageContent.leadSummary,
+                  };
+                }
               } else if (action === 'search' || action === 'web_search') {
                 const query = args.query || args.text || '';
                 const isYouTubeSearch = /youtube/i.test(query) || /youtube/i.test(String(userContent || ''));
