@@ -399,6 +399,14 @@ switch ($Action.ToLower()) {
       if ($targetApp.ToLower() -in @("calculator", "calculator.exe", "calc.exe")) {
         $targetApp = "calc"
       }
+      if ($targetApp.ToLower() -in @("paint", "paint.exe", "ms paint", "mspaint.exe")) {
+        $targetApp = "mspaint"
+      }
+      if ($targetApp.ToLower() -in @("chrome", "google chrome", "chrome.exe") -and -not (Get-Command chrome -ErrorAction SilentlyContinue)) {
+        if (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe") {
+          $targetApp = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+        }
+      }
       try {
         $p = Start-Process -FilePath $targetApp -PassThru -ErrorAction Stop
         $result["launched"] = $targetApp

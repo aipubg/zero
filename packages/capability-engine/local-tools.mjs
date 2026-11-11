@@ -32,12 +32,19 @@ export function registerLocalTools(engine, { cwd = process.cwd() } = {}) {
     } });
   engine.registerCapability({ name: 'run_process', description: 'Execute an actual local program with explicit argument strings. No implicit shell. Use Python, Node, PowerShell or installed command-line tools as needed.',
     parameters: { type: 'object', properties: { command: { type: 'string' }, args: { type: 'array', items: { type: 'string' } }, cwd: { type: 'string' }, timeoutMs: { type: 'number' } }, required: ['command'] },
-    handler: async ({ command, args = [], cwd: directory, timeoutMs = 30000 }, signal) => {
+    handler: async ({ command, args = [], cwd: directory, timeoutMs = 15000 }, signal) => {
       if (typeof command !== 'string' || !command || !Array.isArray(args) || args.some(arg => typeof arg !== 'string')) throw new Error('Expected a command and an array of string arguments');
       if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) throw new Error('Process timeout must be between 1 and 300000 ms');
       const workingDirectory = directory ? location(directory) : cwd;
+      // Guard against interactive cmd shells that wait forever on stdin: replace /k with /c
+      let safeArgs = args.map(arg => (/^[\/-]k$/i.test(arg) ? '/c' : arg));
+      if (/^(cmd|cmd\.exe)$/i.test(path.basename(command))) {
+        if (!safeArgs.some(a => /^[\/-][cC]$/.test(a))) {
+          safeArgs = ['/c', ...safeArgs];
+        }
+      }
       try {
-        const result = await execute(command, args, { cwd: workingDirectory, windowsHide: true, timeout: timeoutMs, ...(signal ? { signal } : {}), maxBuffer: 1024 * 1024 });
+        const result = await execute(command, safeArgs, { cwd: workingDirectory, windowsHide: true, timeout: timeoutMs, ...(signal ? { signal } : {}), maxBuffer: 1024 * 1024 });
         return { ok: true, executed: true, stdout: result.stdout, stderr: result.stderr, exitCode: 0, verified: true,
           evidence: { execution: 'child-process-exit', exitCode: 0, cwd: workingDirectory } };
       } catch (error) {

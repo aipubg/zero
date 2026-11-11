@@ -821,6 +821,15 @@ function Dispatch-Action($req) {
                         Get-Process -Name 'CalculatorApp', 'Calculator' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
                     } elseif ($target -match 'notepad') {
                         Get-Process -Name 'notepad' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                    } elseif ($target -match 'paint|mspaint') {
+                        Get-Process -Name 'mspaint', 'paint' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                    } elseif ($target -match 'spotify') {
+                        Get-Process -Name 'spotify' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                    } elseif ($target -match 'cmd|command prompt') {
+                        Get-Process -Name 'cmd' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                    } else {
+                        $cleanTarget = [System.IO.Path]::GetFileNameWithoutExtension([string]$target)
+                        Get-Process -Name $cleanTarget -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
                     }
                 } else {
                     [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
@@ -828,6 +837,17 @@ function Dispatch-Action($req) {
                 $result["focused"] = $true
                 $result["hwnd"] = [int64]$foundHwnd
             } else {
+                if ($cmd -eq "close" -and $target) {
+                    $cleanTarget = [System.IO.Path]::GetFileNameWithoutExtension([string]$target)
+                    $killed = Get-Process -Name $cleanTarget -ErrorAction SilentlyContinue
+                    if ($killed) {
+                        $killed | Stop-Process -Force -ErrorAction SilentlyContinue
+                        $result["focused"] = $true
+                        $result["closed"] = $true
+                        $result["message"] = "Process $cleanTarget closed"
+                        break
+                    }
+                }
                 $result["focused"] = $false
                 $result["message"] = "Window not found for target: $target"
             }
@@ -847,6 +867,12 @@ function Dispatch-Action($req) {
                 } else {
                     if ($alias -in @('calculator', 'calculator.exe', 'calc.exe')) {
                         $app = 'calc'
+                    } elseif ($alias -in @('paint', 'paint.exe', 'ms paint', 'mspaint.exe')) {
+                        $app = 'mspaint'
+                    } elseif ($alias -in @('chrome', 'google chrome', 'chrome.exe') -and -not (Get-Command chrome -ErrorAction SilentlyContinue)) {
+                        if (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe") {
+                            $app = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+                        }
                     }
                     try {
                         $p = Start-Process -FilePath $app -PassThru -ErrorAction Stop
