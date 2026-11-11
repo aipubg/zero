@@ -230,9 +230,11 @@ function rebrandText(root) {
 function canReuseComputerHold(desktop, mounted) {
   const hostEl = mounted?.hostEl;
   if (!desktop || !hostEl || hostEl.parentNode !== desktop) return false;
-  return (hostEl.children ?? []).some(
-    (child) => child.className === "zero-computer-hold",
-  );
+  if (typeof hostEl.querySelector === "function") {
+    return Boolean(hostEl.querySelector(".zero-computer-hold"));
+  }
+  const children = hostEl.children ? Array.from(hostEl.children) : [];
+  return children.some((child) => child.className === "zero-computer-hold");
 }
 
 /**
@@ -298,24 +300,21 @@ function installNativeSurfaces(host) {
 
   const unmountComputer = (handBack = false) => {
     if (handBack) handBackComputer(mountedComputer);
-    if (!mountedComputer) {
-      // A host re-render can leave the wrapper behind without our handle.
-      for (const node of document.querySelectorAll(".zero-computer-hold-host")) {
-        node.remove();
-      }
-      return;
-    }
     try {
-      mountedComputer.handle?.dispose?.();
+      mountedComputer?.handle?.dispose?.();
     } catch {
       // A disposed control must never break navigation.
     }
     try {
-      mountedComputer.hostEl?.remove?.();
+      mountedComputer?.hostEl?.remove?.();
     } catch {
       // ignore
     }
     mountedComputer = null;
+    // Always clean up any and all hold host wrappers to prevent duplicate cards
+    for (const node of document.querySelectorAll(".zero-computer-hold-host")) {
+      node.remove();
+    }
   };
 
   /**
@@ -340,6 +339,9 @@ function installNativeSurfaces(host) {
     }
     if (action === "reuse") return;
     unmountComputer();
+    for (const node of document.querySelectorAll(".zero-computer-hold-host")) {
+      node.remove();
+    }
     const hostEl = document.createElement("div");
     hostEl.className = "zero-computer-hold-host";
     hostEl.setAttribute("data-zero-computer-hold-host", "");

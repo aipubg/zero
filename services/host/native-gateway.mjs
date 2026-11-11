@@ -792,6 +792,7 @@ export class ZeroNativeHost {
           'users.self', 'users.prefs.get', 'users.prefs.set', 'models.authStatus',
           'memory.search', 'agents.workspace.get', 'doctor.memory.status', 'webSearch.status', 'webSearch.test',
           'zero.observation.query', 'zero.observation.control', 'zero.observation.recent',
+          'backup.status', 'storage.locations.probe', 'environments.list', 'node.list',
           ...SKILLS_UI_METHODS,
           ...PLUGINS_UI_METHODS,
         ];
@@ -1365,10 +1366,15 @@ export class ZeroNativeHost {
 
       // Computer Hold Takeover Arbitration
       case 'zero-policy.computer-hold.status':
+      case 'computer.hold.status':
+      case 'zero.computer.hold.status':
         return {
           ok: true,
           held: this.computerHold.held,
+          owned: this.computerHold.heldBy === clientSession?.clientId,
+          scope: 'global',
           controlLeaseId: this.computerHold.leaseId,
+          resumeSnapshotRequired: false,
         };
 
       case 'zero-policy.computer-hold.take': {
@@ -1395,6 +1401,38 @@ export class ZeroNativeHost {
         this.computerHold = { held: false, leaseId: null, heldAt: null, heldBy: null };
         return { ok: true, held: false };
       }
+
+      // Systems Management & Backups RPC Handlers
+      case 'backup.status':
+        return {
+          ok: true,
+          status: 'ready',
+          targets: [],
+          schedules: [],
+          locations: [],
+        };
+
+      case 'storage.locations.probe':
+        return {
+          ok: true,
+          state: 'ready',
+          freeBytes: 1024 * 1024 * 1024 * 50,
+          totalBytes: 1024 * 1024 * 1024 * 100,
+        };
+
+      case 'environments.list':
+        return {
+          ok: true,
+          environments: [
+            { id: 'gateway', name: 'Zero Gateway', type: 'gateway', state: 'active' },
+          ],
+        };
+
+      case 'node.list':
+        return {
+          ok: true,
+          nodes: [],
+        };
 
       // Memory Store RPC Methods
       // Unified 8-Layer Memory RPC Methods

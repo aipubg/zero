@@ -1040,51 +1040,81 @@ function Dispatch-Action($req) {
 
         { $_ -in "get_elements", "get_uia_elements" } {
             $elements = New-Object System.Collections.Generic.List[psobject]
-            $hwnd = [WinApiCore]::GetForegroundWindow()
+            $hwnd = [IntPtr]::Zero
+            if ($req.target) {
+                $targetStr = [string]$req.target
+                $allWins = [WinApiCore]::GetDesktopWindows()
+                foreach ($w in $allWins) {
+                    if ($w.Title -like "*$targetStr*" -or $w.ProcessName -like "*$targetStr*") {
+                        $hwnd = $w.Hwnd
+                        break
+                    }
+                }
+            }
+            if ($hwnd -eq [IntPtr]::Zero) {
+                $hwnd = [WinApiCore]::GetForegroundWindow()
+            }
+            if ($hwnd -eq [IntPtr]::Zero) {
+                $allWins = [WinApiCore]::GetDesktopWindows()
+                foreach ($w in $allWins) {
+                    if ($w.ProcessName -eq "chrome" -or $w.Title -match "Chrome|YouTube") {
+                        $hwnd = $w.Hwnd
+                        break
+                    }
+                }
+            }
             if ($hwnd -ne [IntPtr]::Zero) {
                 try {
-                    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
-                    $targetTypes = @(
-                        [System.Windows.Automation.ControlType]::Button,
-                        [System.Windows.Automation.ControlType]::Edit,
-                        [System.Windows.Automation.ControlType]::Hyperlink,
-                        [System.Windows.Automation.ControlType]::MenuItem,
-                        [System.Windows.Automation.ControlType]::CheckBox,
-                        [System.Windows.Automation.ControlType]::ComboBox,
-                        [System.Windows.Automation.ControlType]::TabItem,
-                        [System.Windows.Automation.ControlType]::ListItem
-                    )
-
-                    $conditions = New-Object System.Collections.Generic.List[System.Windows.Automation.Condition]
-                    foreach ($t in $targetTypes) {
-                        $conditions.Add((New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, $t)))
+                    $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+                    if ($hdesk -ne [IntPtr]::Zero) {
+                        [WinApiCore]::SetThreadDesktop($hdesk) | Out-Null
                     }
-                    $orCond = New-Object System.Windows.Automation.OrCondition($conditions.ToArray())
-                    $found = $root.FindAll([System.Windows.Automation.TreeScope]::Subtree, $orCond)
+                    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                    if ($root) {
+                        $targetTypes = @(
+                            [System.Windows.Automation.ControlType]::Button,
+                            [System.Windows.Automation.ControlType]::Edit,
+                            [System.Windows.Automation.ControlType]::Hyperlink,
+                            [System.Windows.Automation.ControlType]::MenuItem,
+                            [System.Windows.Automation.ControlType]::CheckBox,
+                            [System.Windows.Automation.ControlType]::ComboBox,
+                            [System.Windows.Automation.ControlType]::TabItem,
+                            [System.Windows.Automation.ControlType]::ListItem,
+                            [System.Windows.Automation.ControlType]::Image,
+                            [System.Windows.Automation.ControlType]::Custom
+                        )
 
-                    $limit = [Math]::Min($found.Count, 40)
-                    for ($i = 0; $i -lt $limit; $i++) {
-                        $el = $found[$i]
-                        try {
-                            $name = [string]$el.Current.Name
-                            $type = [string]$el.Current.ControlType.ProgrammaticName.Replace("ControlType.", "")
-                            $rect = $el.Current.BoundingRectangle
-                            if ($rect.Width -gt 5 -and $rect.Height -gt 5) {
-                                $cX = [int]($rect.X + ($rect.Width / 2))
-                                $cY = [int]($rect.Y + ($rect.Height / 2))
-                                $elements.Add([pscustomobject]@{
-                                    name = $name.Trim()
-                                    type = $type
-                                    x = [int]$rect.X
-                                    y = [int]$rect.Y
-                                    width = [int]$rect.Width
-                                    height = [int]$rect.Height
-                                    centerX = $cX
-                                    centerY = $cY
-                                    automationId = [string]$el.Current.AutomationId
-                                })
-                            }
-                        } catch {}
+                        $conditions = New-Object System.Collections.Generic.List[System.Windows.Automation.Condition]
+                        foreach ($t in $targetTypes) {
+                            $conditions.Add((New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, $t)))
+                        }
+                        $orCond = New-Object System.Windows.Automation.OrCondition($conditions.ToArray())
+                        $found = $root.FindAll([System.Windows.Automation.TreeScope]::Subtree, $orCond)
+
+                        $limit = [Math]::Min($found.Count, 80)
+                        for ($i = 0; $i -lt $limit; $i++) {
+                            $el = $found[$i]
+                            try {
+                                $name = [string]$el.Current.Name
+                                $type = [string]$el.Current.ControlType.ProgrammaticName.Replace("ControlType.", "")
+                                $rect = $el.Current.BoundingRectangle
+                                if ($rect.Width -gt 5 -and $rect.Height -gt 5) {
+                                    $cX = [int]($rect.X + ($rect.Width / 2))
+                                    $cY = [int]($rect.Y + ($rect.Height / 2))
+                                    $elements.Add([pscustomobject]@{
+                                        name = $name.Trim()
+                                        type = $type
+                                        x = [int]$rect.X
+                                        y = [int]$rect.Y
+                                        width = [int]$rect.Width
+                                        height = [int]$rect.Height
+                                        centerX = $cX
+                                        centerY = $cY
+                                        automationId = [string]$el.Current.AutomationId
+                                    })
+                                }
+                            } catch {}
+                        }
                     }
                 } catch {}
             }

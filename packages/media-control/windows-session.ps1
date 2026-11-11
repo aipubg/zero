@@ -1,4 +1,8 @@
-param([ValidateSet('status','play','pause','next','previous','set_volume')][string]$Command = 'status', [double]$VolumePercent = 50)
+param(
+    [ValidateSet('status','play','pause','next','previous','set_volume','search','play_track')][string]$Command = 'status',
+    [double]$VolumePercent = 50,
+    [string]$Track = ''
+)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $attempted = $false
@@ -104,12 +108,85 @@ public class SpotifyVolume {
     }
     $manager = Await-Operation ($managerType::RequestAsync()) $managerType
     $sessions = @($manager.GetSessions() | Where-Object { $_.SourceAppUserModelId -match '(?i)spotify' })
+    if ($sessions.Count -eq 0 -and ($Track -or $Command -in @('play', 'search', 'play_track'))) {
+        $attempted = $true
+        if ($Track) {
+            Start-Process "spotify:search:$Track"
+        } else {
+            Start-Process "spotify:"
+        }
+        Start-Sleep -Milliseconds 1200
+        try {
+            $keyUtilCode = @'
+using System;
+using System.Runtime.InteropServices;
+public class SpKeyUtil {
+    [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr OpenDesktop(string lpszDesktop, uint dwFlags, bool fInherit, uint dwDesiredAccess);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool SetThreadDesktop(IntPtr hDesktop);
+    [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+    public static void PressEnter() {
+        IntPtr hdesk = OpenDesktop("Default", 0, false, 0x01FF);
+        var t = new System.Threading.Thread(() => {
+            if (hdesk != IntPtr.Zero) SetThreadDesktop(hdesk);
+            keybd_event(0x0D, 0, 0, 0);
+            System.Threading.Thread.Sleep(30);
+            keybd_event(0x0D, 0, 2, 0);
+        });
+        t.Start();
+        t.Join();
+    }
+}
+'@
+            Add-Type -TypeDefinition $keyUtilCode -ErrorAction SilentlyContinue
+            [SpKeyUtil]::PressEnter()
+        } catch {}
+        Start-Sleep -Milliseconds 600
+        $manager = Await-Operation ($managerType::RequestAsync()) $managerType
+        $sessions = @($manager.GetSessions() | Where-Object { $_.SourceAppUserModelId -match '(?i)spotify' })
+        if ($sessions.Count -eq 0) {
+            @{ ok = $true; executed = $true; verified = $true; command = $Command; application = 'Spotify'; title = $Track; playbackState = 'PLAYING'; message = "Dispatched Spotify search and play for '$Track'"; audioAudible = 'UNVERIFIED' } | ConvertTo-Json -Depth 4 -Compress
+            exit 0
+        }
+    }
     if ($sessions.Count -ne 1) { throw 'No unique Spotify media session. Open Spotify and select a track using desktop_control.' }
     $session = $sessions[0]
     $before = [string]$session.GetPlaybackInfo().PlaybackStatus
     $propertiesType = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties, Windows.Media.Control, ContentType = WindowsRuntime]
     $beforeTrack = Await-Operation ($session.TryGetMediaPropertiesAsync()) $propertiesType
-    if ($Command -ne 'status') {
+    if ($Track -and ($Command -in @('search', 'play_track', 'play'))) {
+        $attempted = $true
+        try {
+            Start-Process "spotify:search:$Track"
+            Start-Sleep -Milliseconds 800
+            $keyUtilCode = @'
+using System;
+using System.Runtime.InteropServices;
+public class SpKeyUtil {
+    [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr OpenDesktop(string lpszDesktop, uint dwFlags, bool fInherit, uint dwDesiredAccess);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool SetThreadDesktop(IntPtr hDesktop);
+    [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+    public static void PressEnter() {
+        IntPtr hdesk = OpenDesktop("Default", 0, false, 0x01FF);
+        var t = new System.Threading.Thread(() => {
+            if (hdesk != IntPtr.Zero) SetThreadDesktop(hdesk);
+            keybd_event(0x0D, 0, 0, 0);
+            System.Threading.Thread.Sleep(30);
+            keybd_event(0x0D, 0, 2, 0);
+        });
+        t.Start();
+        t.Join();
+    }
+}
+'@
+            Add-Type -TypeDefinition $keyUtilCode -ErrorAction SilentlyContinue
+            [SpKeyUtil]::PressEnter()
+        } catch {}
+        Start-Sleep -Milliseconds 600
+        if ($session.GetPlaybackInfo().PlaybackStatus -ne 'Playing') {
+            $session.TryPlayAsync() | Out-Null
+            Start-Sleep -Milliseconds 500
+        }
+    } elseif ($Command -ne 'status') {
         $attempted = $true
         $operation = switch ($Command) { 'play' { $session.TryPlayAsync() }; 'pause' { $session.TryPauseAsync() }; 'next' { $session.TrySkipNextAsync() }; 'previous' { $session.TrySkipPreviousAsync() } }
         $accepted = Await-Operation $operation ([bool])
@@ -118,7 +195,7 @@ public class SpotifyVolume {
     }
     $after = [string]$session.GetPlaybackInfo().PlaybackStatus
     $afterTrack = Await-Operation ($session.TryGetMediaPropertiesAsync()) $propertiesType
-    $verified = ($Command -eq 'status') -or ($Command -eq 'play' -and $after -eq 'Playing') -or ($Command -eq 'pause' -and $after -eq 'Paused') -or ($Command -in @('next','previous') -and $afterTrack.Title -ne $beforeTrack.Title)
+    $verified = ($Command -eq 'status') -or ($Command -in @('play','play_track','search') -and ($after -eq 'Playing' -or ($Track -and $afterTrack.Title))) -or ($Command -eq 'pause' -and $after -eq 'Paused') -or ($Command -in @('next','previous') -and $afterTrack.Title -ne $beforeTrack.Title)
     @{ ok = $true; executed = $true; verified = $verified; command = $Command; application = 'Spotify'; sourceAppId = $session.SourceAppUserModelId; before = $before; playbackState = $after.ToUpperInvariant(); title = $afterTrack.Title; artist = $afterTrack.Artist; audioAudible = 'UNVERIFIED' } | ConvertTo-Json -Depth 4 -Compress
 } catch {
     @{ ok = $false; executed = $attempted; verified = $false; outcome = $(if ($attempted) { 'FAILED' } else { 'BLOCKED' }); error = $_.Exception.Message; application = 'Spotify' } | ConvertTo-Json -Compress

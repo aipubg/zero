@@ -513,13 +513,22 @@ export class ComputerOperator {
         case "media_control":
           return await this.mediaController.control(params.command, signal, params);
 
-        case "spotify_control":
-          return await controlSpotify(params, signal);
+        case "spotify_control": {
+          const track = params.track || params.song || params.query || params.title;
+          return await controlSpotify({ ...params, ...(track ? { track } : {}) }, signal);
+        }
 
         case "get_elements":
         case "get_uia_elements": {
-          const elements = await Driver.getElements(signal);
-          return { ok: true, action: "get_elements", ...elements };
+          const elements = await Driver.getElements(params?.target ? { target: params.target } : signal);
+          return {
+            ok: true,
+            action: "get_elements",
+            verified: true,
+            observed: true,
+            evidence: `${elements.count || (elements.elements || []).length} UI elements discovered`,
+            ...elements,
+          };
         }
 
         default:

@@ -475,7 +475,16 @@ function mountComputerHold(container, host, options = {}) {
   section.append(header, detail, scope, error, actions);
   container.append(section);
 
-  const request = (method, params) => host.request(method, params);
+  const resolveRequest = (h) => {
+    if (typeof h === "function") return h;
+    if (typeof h?.request === "function") return (m, p) => h.request(m, p);
+    if (typeof h?.client?.request === "function") return (m, p) => h.client.request(m, p);
+    const app = typeof document !== "undefined" ? (document.querySelector("openclaw-app") || document.querySelector("systems-page")) : null;
+    const appClient = app?.context?.gateway?.snapshot?.client || app?.gateway?.snapshot?.client;
+    if (typeof appClient?.request === "function") return (m, p) => appClient.request(m, p);
+    return () => Promise.reject(new Error("Gateway connection is unavailable."));
+  };
+  const request = resolveRequest(host);
   const render = (view) => {
     section.setAttribute("data-state", view.state);
     section.setAttribute("aria-busy", view.busy ? "true" : "false");
