@@ -104,18 +104,22 @@ export class SessionManager {
   listSessions(limitOrOptions = 50, offset = 0) {
     let lim = 50;
     let off = 0;
+    let includeArchived = false;
     if (typeof limitOrOptions === 'object' && limitOrOptions !== null) {
       lim = Number(limitOrOptions.limit ?? 50);
       off = Number(limitOrOptions.offset ?? 0);
+      includeArchived = Boolean(limitOrOptions.includeArchived);
     } else {
       lim = Number(limitOrOptions ?? 50);
       off = Number(offset ?? 0);
     }
+    const whereClause = includeArchived ? '' : 'WHERE (s.archived = 0 OR s.archived IS NULL)';
     const stmt = this.db.prepare(`
       SELECT s.*,
         (SELECT COUNT(*) FROM zero_messages m WHERE m.session_id = s.id) AS messages_count,
         (SELECT m.content FROM zero_messages m WHERE m.session_id = s.id ORDER BY m.seq DESC LIMIT 1) AS last_message
       FROM zero_sessions s
+      ${whereClause}
       ORDER BY s.updated_at DESC
       LIMIT ? OFFSET ?
     `);
@@ -135,6 +139,8 @@ export class SessionManager {
         lastMessage: r.last_message || '',
         metadata: meta,
         archived: isArchived,
+        canArchive: true,
+        canDelete: true,
       };
     });
   }
@@ -214,9 +220,21 @@ export class SessionManager {
     `);
     insertStmt.run(msgId, sessionId, message.role || 'user', content, toolCalls, now, nextSeq, message.tool_call_id || null, message.runId || null, message.status || null);
 
-    // Update session updated_at
-    const updateStmt = this.db.prepare(`UPDATE zero_sessions SET updated_at = ? WHERE id = ?`);
-    updateStmt.run(now, sessionId);
+    // Update session updated_at and update title if default title
+    if ((!session.title || session.title === 'Auto-Created Session' || session.title === 'New Conversation' || session.title === 'Session') && (message.role === 'user' || !message.role) && typeof content === 'string' && content.trim()) {
+      const cleanTitle = content.replace(/\s+/g, ' ').trim().slice(0, 48);
+      if (cleanTitle) {
+        const titleStmt = this.db.prepare(`UPDATE zero_sessions SET updated_at = ?, title = ? WHERE id = ?`);
+        titleStmt.run(now, cleanTitle, sessionId);
+        session.title = cleanTitle;
+      } else {
+        const updateStmt = this.db.prepare(`UPDATE zero_sessions SET updated_at = ? WHERE id = ?`);
+        updateStmt.run(now, sessionId);
+      }
+    } else {
+      const updateStmt = this.db.prepare(`UPDATE zero_sessions SET updated_at = ? WHERE id = ?`);
+      updateStmt.run(now, sessionId);
+    }
 
     const storedMessage = {
       id: msgId,

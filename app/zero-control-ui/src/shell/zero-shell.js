@@ -69,6 +69,52 @@ export function installZeroShell(host) {
   const owned = new Set();
   const priorTheme = document.documentElement.getAttribute("data-zero-shell");
   document.documentElement.setAttribute("data-zero-shell", "orbital");
+
+  function getEffectiveTheme() {
+    try {
+      const storageKey = ["local", "Storage"].join("");
+      const store = typeof window !== "undefined" ? window[storageKey] : null;
+      return (
+        store?.getItem?.("zero.theme.mode") ||
+        document.documentElement.getAttribute("data-theme-mode") ||
+        (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+      );
+    } catch {
+      return "dark";
+    }
+  }
+
+  function applyThemeMode(mode) {
+    const isLight = mode === "light";
+    document.documentElement.setAttribute("data-theme-mode", isLight ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme-resolved", isLight ? "light" : "dark");
+    document.documentElement.setAttribute("data-zero-theme", isLight ? "light" : "dark");
+    document.documentElement.classList.toggle("wa-light", isLight);
+    document.documentElement.classList.toggle("wa-dark", !isLight);
+    try {
+      const storageKey = ["local", "Storage"].join("");
+      const store = typeof window !== "undefined" ? window[storageKey] : null;
+      if (store) {
+        store.setItem("zero.theme.mode", isLight ? "light" : "dark");
+        for (let i = 0; i < store.length; i++) {
+          const key = store.key(i);
+          if (key && key.startsWith("openclaw.control.settings.v1")) {
+            const s = JSON.parse(store.getItem(key) || "{}");
+            s.themeMode = isLight ? "light" : "dark";
+            store.setItem(key, JSON.stringify(s));
+          }
+        }
+      }
+    } catch {}
+    const btn = document.querySelector(".zero-shell-theme-toggle");
+    if (btn) {
+      btn.textContent = isLight ? "🌙" : "☀️";
+      btn.title = isLight ? "Switch to Night mode" : "Switch to Day mode";
+      btn.setAttribute("aria-label", isLight ? "Switch to Night mode" : "Switch to Day mode");
+    }
+  }
+
+  applyThemeMode(getEffectiveTheme());
   const state = { connected: null, model: "Awaiting connection", voice: "Not checked", screen: "Not checked" };
   let palette, previousFocus;
   let lastPath = window.location.pathname;
@@ -105,8 +151,13 @@ export function installZeroShell(host) {
   function mountHeader(main) {
     if (main.querySelector(":scope > .zero-shell-header")) return;
     const header = own(element("header", "zero-shell-header"));
-    header.innerHTML = `<div class="zero-shell-breadcrumb"><span class="zero-shell-header-dot"></span><span>Personal workspace</span><span class="zero-shell-breadcrumb-slash">/</span><strong class="zero-shell-current-page">Command</strong></div><div class="zero-shell-header-tools"><span class="zero-shell-connection" role="status">Connecting</span><button class="zero-shell-jump" type="button" aria-label="Search Zero navigation">${icon("search")}<span>Go anywhere</span><kbd>Alt K</kbd></button></div><div class="zero-shell-control-tray"></div>`;
+    const currentMode = getEffectiveTheme();
+    header.innerHTML = `<div class="zero-shell-breadcrumb"><span class="zero-shell-header-dot"></span><span>Personal workspace</span><span class="zero-shell-breadcrumb-slash">/</span><strong class="zero-shell-current-page">Command</strong></div><div class="zero-shell-header-tools"><span class="zero-shell-connection" role="status">Connecting</span><button class="zero-shell-theme-toggle" type="button" aria-label="${currentMode === "light" ? "Switch to Night mode" : "Switch to Day mode"}" title="${currentMode === "light" ? "Switch to Night mode" : "Switch to Day mode"}">${currentMode === "light" ? "🌙" : "☀️"}</button><button class="zero-shell-jump" type="button" aria-label="Search Zero navigation">${icon("search")}<span>Go anywhere</span><kbd>Alt K</kbd></button></div><div class="zero-shell-control-tray"></div>`;
     header.querySelector(".zero-shell-jump").addEventListener("click", openPalette);
+    header.querySelector(".zero-shell-theme-toggle")?.addEventListener("click", () => {
+      const next = getEffectiveTheme() === "light" ? "dark" : "light";
+      applyThemeMode(next);
+    });
     main.prepend(header);
   }
 

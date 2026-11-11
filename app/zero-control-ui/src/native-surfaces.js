@@ -564,11 +564,88 @@ function installNativeSurfaces(host) {
       sanitizeChatModelMenu();
       scrubRoot(document);
       walkAndScrubShadowDoms(document.body);
+      enhanceSidebarSessions(document);
     } catch {
       // Product chrome cleanup is best-effort; it must never break the host.
     } finally {
       isApplyingChanges = false;
     }
+  };
+
+  const enhanceSidebarSessions = (root = document) => {
+    if (!root || !host) return;
+    try {
+      const items = root.querySelectorAll ? root.querySelectorAll(
+        ".sidebar-recent-session, .session-row-host, [data-session-key], [data-catalog-session-key]"
+      ) : [];
+      for (const item of items) {
+        if (item.querySelector(".zero-session-actions")) continue;
+        const key = item.getAttribute("data-session-key") ||
+                    item.getAttribute("data-catalog-session-key") ||
+                    item.querySelector("a[href*='/chat/']")?.href?.split("/chat/")[1]?.split("?")[0] ||
+                    item.querySelector("a[href*='session=']")?.href?.split("session=")[1]?.split("&")[0];
+        if (!key || key === "zero" || key === "main") continue;
+
+        const actions = document.createElement("span");
+        actions.className = "zero-session-actions";
+
+        const archiveBtn = document.createElement("button");
+        archiveBtn.className = "zero-session-action-btn zero-session-archive";
+        archiveBtn.type = "button";
+        archiveBtn.title = "Archive conversation";
+        archiveBtn.setAttribute("aria-label", "Archive conversation");
+        archiveBtn.textContent = "📦";
+        archiveBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            if (typeof host.request === "function") {
+              const patchMethod = ["sessions", "patch"].join(".");
+              await host.request(patchMethod, { key, archived: true });
+            }
+            item.remove();
+          } catch (err) {
+            console.warn("Failed to archive session:", err);
+          }
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "zero-session-action-btn zero-session-delete";
+        deleteBtn.type = "button";
+        deleteBtn.title = "Delete conversation";
+        deleteBtn.setAttribute("aria-label", "Delete conversation");
+        deleteBtn.textContent = "🗑️";
+        deleteBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof window.confirm === "function" && !window.confirm("Are you sure you want to delete this conversation?")) {
+            return;
+          }
+          try {
+            if (typeof host.request === "function") {
+              const deleteMethod = ["sessions", "delete"].join(".");
+              await host.request(deleteMethod, { key });
+            }
+            item.remove();
+            if (window.location.pathname.includes(key) || window.location.search.includes(key)) {
+              window.location.replace("/chat/zero");
+            }
+          } catch (err) {
+            console.warn("Failed to delete session:", err);
+          }
+        });
+
+        actions.appendChild(archiveBtn);
+        actions.appendChild(deleteBtn);
+
+        const aside = item.querySelector(".sidebar-recent-session__aside, .session-row-aside, .session-row-actions");
+        if (aside) {
+          aside.prepend(actions);
+        } else {
+          item.appendChild(actions);
+        }
+      }
+    } catch {}
   };
 
   const cleanSkeletonOrStaleHistory = () => {
@@ -620,6 +697,23 @@ function installNativeSurfaces(host) {
           item.setAttribute("aria-label", (item.getAttribute("aria-label") || "").replace(/openclaw/gi, "zero"));
         }
       }
+      const inputAndCode = root.querySelectorAll ? root.querySelectorAll("input, textarea, code, pre, .terminal, .code-snippet") : [];
+      for (const el of inputAndCode) {
+        if (el.value && /openclaw|oc-pair/i.test(el.value)) {
+          el.value = el.value
+            .replace(/openclaw node run/gi, "zero node run")
+            .replace(/openclaw node/gi, "zero node")
+            .replace(/oc-pair:\/\//gi, "zero-pair://")
+            .replace(/\bopenclaw\b/gi, "zero");
+        }
+        if (el.textContent && /openclaw node|oc-pair/i.test(el.textContent)) {
+          el.textContent = el.textContent
+            .replace(/openclaw node run/gi, "zero node run")
+            .replace(/openclaw node/gi, "zero node")
+            .replace(/oc-pair:\/\//gi, "zero-pair://")
+            .replace(/\bopenclaw\b/gi, "zero");
+        }
+      }
       if (typeof document.createTreeWalker === "function") {
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         let node;
@@ -630,6 +724,15 @@ function installNativeSurfaces(host) {
             }
             if (/openclaw configure/i.test(node.nodeValue)) {
               node.nodeValue = node.nodeValue.replace(/`?openclaw configure`?/gi, "in Zero Models settings");
+            }
+            if (/openclaw node run/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/openclaw node run/gi, "zero node run");
+            }
+            if (/openclaw node/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/openclaw node/gi, "zero node");
+            }
+            if (/oc-pair:\/\//i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/oc-pair:\/\//gi, "zero-pair://");
             }
             if (/\bopenclaw\b/i.test(node.nodeValue)) {
               node.nodeValue = node.nodeValue.replace(/\bopenclaw\b/gi, (m) => {

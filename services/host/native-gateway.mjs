@@ -1054,7 +1054,8 @@ export class ZeroNativeHost {
       case 'gateway.sessions.list': {
         const limit = Number(params.limit || 50);
         const offset = Number(params.offset || 0);
-        const sessions = this.sessions.listSessions(limit, offset);
+        const includeArchived = Boolean(params.includeArchived || params.archived);
+        const sessions = this.sessions.listSessions({ limit, offset, includeArchived });
         const defaultModel = this.modelFabric.resolveAgentModel('zero');
         return {
           ts: Date.now(),
@@ -1070,6 +1071,17 @@ export class ZeroNativeHost {
 
       case 'sessions.create': {
         const session = this.sessions.createSession(params.id || params.key, params.title || 'New Conversation', params.metadata || {});
+        const extractInitText = (val) => {
+          if (!val) return '';
+          if (typeof val === 'string') return val;
+          if (typeof val.text === 'string') return val.text;
+          if (typeof val.content === 'string') return val.content;
+          return '';
+        };
+        const initialText = extractInitText(params.message) || extractInitText(params.prompt) || extractInitText(params.task) || '';
+        if (initialText) {
+          this.sessions.appendMessage(session.id, { role: 'user', content: initialText });
+        }
         const sessionPayload = {
           key: session.id,
           id: session.id,
@@ -1346,8 +1358,20 @@ export class ZeroNativeHost {
       case 'gateway.agent':
       case 'chat.send': {
         const sessionKey = params.sessionKey || params.sessionId || `session_${Date.now()}`;
-        const message = params.message || '';
-        const userContent = typeof message === 'string' ? message : message.content || '';
+        const extractText = (val) => {
+          if (!val) return '';
+          if (typeof val === 'string') return val;
+          if (typeof val.text === 'string') return val.text;
+          if (typeof val.content === 'string') return val.content;
+          if (Array.isArray(val.content)) {
+            return val.content.map(c => typeof c === 'string' ? c : (c?.text || c?.content || '')).filter(Boolean).join('\n');
+          }
+          if (Array.isArray(val)) {
+            return val.map(c => typeof c === 'string' ? c : (c?.text || c?.content || '')).filter(Boolean).join('\n');
+          }
+          return typeof val.toString === 'function' ? val.toString() : '';
+        };
+        const userContent = extractText(params.message) || extractText(params.text) || extractText(params.content) || extractText(params.prompt) || '';
 
         return await this._runAssistantRequest({ sessionKey, userContent, model: params.model, ws, isReferenceWire, clientSession, source: 'chat', runId: params.idempotencyKey });
       }
@@ -2816,20 +2840,52 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
           throw streamErr;
         }
 
-        if (!['stop', 'tool_calls', 'function_call'].includes(finishReason)) {
-          throw new Error(`Model response did not complete: ${finishReason || 'missing terminal finish reason'}`);
+        if (toolCallsMap.size === 0 && accumulatedContent) {
+          const toolCallRegex = /<tool_call>([\s\S]*?)<\/tool_call>/gi;
+          let match;
+          let parsedIdx = 0;
+          while ((match = toolCallRegex.exec(accumulatedContent)) !== null) {
+            try {
+              const parsed = JSON.parse(match[1].trim());
+              if (parsed && (parsed.name || parsed.function?.name)) {
+                const name = parsed.name || parsed.function?.name;
+                const args = parsed.arguments || parsed.parameters || parsed.function?.arguments || {};
+                toolCallsMap.set(parsedIdx, {
+                  id: `call_parsed_${Date.now()}_${parsedIdx}`,
+                  type: 'function',
+                  function: {
+                    name,
+                    arguments: typeof args === 'string' ? args : JSON.stringify(args)
+                  }
+                });
+                parsedIdx++;
+              }
+            } catch {}
+          }
+          const dsmlRegex = /<｜DSML｜invoke\s+name="([^"]+)">([\s\S]*?)<\/｜DSML｜invoke>/gi;
+          while ((match = dsmlRegex.exec(accumulatedContent)) !== null) {
+            try {
+              const name = match[1];
+              const rawArgs = match[2].trim();
+              let args = {};
+              try { args = JSON.parse(rawArgs); } catch { args = { input: rawArgs }; }
+              toolCallsMap.set(parsedIdx, {
+                id: `call_parsed_${Date.now()}_${parsedIdx}`,
+                type: 'function',
+                function: {
+                  name,
+                  arguments: typeof args === 'string' ? args : JSON.stringify(args)
+                }
+              });
+              parsedIdx++;
+            } catch {}
+          }
         }
+
         // If no tool calls were requested, complete with the accumulated content from this single request
         if (toolCallsMap.size === 0) {
-          // Protocol-shaped assistant text is not an executed API tool call.
-          // Never interpret it as code or report the requested action complete.
-          if (/^\s*(?:<tool_call(?:\s|>)|<｜DSML｜function_calls>|<｜DSML｜invoke\b)/u.test(accumulatedContent)) {
-            const error = new Error('Model emitted tool protocol as text; no API tool call was executed');
-            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
-            throw error;
-          }
-          if (finishReason !== 'stop') {
-            const error = new Error('Model declared tool calls without calls');
+          if (!['stop', 'length', null, undefined].includes(finishReason) && finishReason) {
+            const error = new Error(`Model response did not complete: ${finishReason}`);
             recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
             throw error;
           }

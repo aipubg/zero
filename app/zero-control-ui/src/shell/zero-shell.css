@@ -219,3 +219,187 @@
 @media (prefers-reduced-motion: reduce) {
   [data-zero-shell="orbital"] *, [data-zero-shell="orbital"] *::before, [data-zero-shell="orbital"] *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+/* ZERO DAY / NIGHT (LIGHT MODE) THEME */
+:root[data-theme-mode="light"],
+html[data-theme-mode="light"],
+[data-zero-shell="orbital"][data-theme-mode="light"],
+[data-zero-theme="light"],
+html.wa-light {
+  color-scheme: light;
+  --accent: #0d9488;
+  --accent-hover: #0f766e;
+  --accent-subtle: rgba(13,148,136,.09);
+  --bg: #f8fafc;
+  --bg-deep: #f1f5f9;
+  --bg-content: #ffffff;
+  --bg-surface: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #f1f5f9;
+  --panel: #ffffff;
+  --text: #0f172a;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --zero-signal: #0d9488;
+  --zero-ink: #0f172a;
+  --zero-muted: #64748b;
+  --zero-line: rgba(0,0,0,.08);
+}
+
+[data-theme-mode="light"] body,
+[data-zero-theme="light"] body,
+html[data-theme-mode="light"] [data-zero-shell="orbital"] body {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme-mode="light"] .shell,
+[data-zero-theme="light"] .shell {
+  background: #f8fafc !important;
+}
+
+[data-theme-mode="light"] .sidebar,
+[data-zero-theme="light"] .sidebar {
+  background: #f1f5f9 !important;
+  border-right-color: var(--border) !important;
+}
+
+[data-theme-mode="light"] .sidebar-shell,
+[data-zero-theme="light"] .sidebar-shell {
+  background: #f1f5f9 !important;
+}
+
+[data-theme-mode="light"] main.content,
+[data-zero-theme="light"] main.content {
+  background: #ffffff !important;
+}
+
+[data-theme-mode="light"] .zero-shell-header,
+[data-zero-theme="light"] .zero-shell-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+[data-theme-mode="light"] .zero-shell-brand {
+  color: #0f172a !important;
+}
+
+[data-theme-mode="light"] .zero-shell-nav-link {
+  color: #475569 !important;
+}
+
+[data-theme-mode="light"] .zero-shell-nav-link:hover {
+  color: #0f766e !important;
+  background: rgba(13,148,136,.06) !important;
+}
+
+[data-theme-mode="light"] .zero-home-hero,
+[data-zero-theme="light"] .zero-home-hero {
+  border-color: var(--border) !important;
+  background: #f8fafc !important;
+}
+
+[data-theme-mode="light"] .zero-home-action,
+[data-zero-theme="light"] .zero-home-action {
+  background: #f8fafc !important;
+  border-color: var(--border) !important;
+  color: #0f172a !important;
+}
+
+[data-theme-mode="light"] .agent-chat__input,
+[data-zero-theme="light"] .agent-chat__input {
+  background: #ffffff !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme-mode="light"] .sidebar-shell__footer,
+[data-zero-theme="light"] .sidebar-shell__footer {
+  background: #e2e8f0 !important;
+  border-top-color: var(--border) !important;
+}
+
+.zero-shell-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--zero-line);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.zero-shell-theme-toggle:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: var(--zero-signal);
+  transform: scale(1.05);
+}
+
+[data-theme-mode="light"] .zero-shell-theme-toggle {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+[data-theme-mode="light"] .zero-shell-theme-toggle:hover {
+  background: #e2e8f0;
+  border-color: #0d9488;
+}
+
+/* SESSION ARCHIVE & DELETE ACTION BUTTONS */
+.zero-session-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-recent-session:hover .zero-session-actions,
+.session-row-host:hover .zero-session-actions,
+[data-session-key]:hover .zero-session-actions {
+  opacity: 1;
+}
+
+.zero-session-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.zero-session-action-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--zero-line);
+}
+
+.zero-session-delete:hover {
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.zero-session-archive:hover {
+  color: #3b82f6 !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+

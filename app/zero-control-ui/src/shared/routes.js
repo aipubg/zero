@@ -117,7 +117,12 @@ function isHiddenHostRoute(url) {
 
 /** Bare `/chat` is an alias for the one canonical Zero conversation. */
 function isBareChatRoute(url) {
-  return routePath(url) === "/chat";
+  if (routePath(url) !== "/chat") return false;
+  const params = queryParams(url);
+  if (params.has("session") || params.has("sessionKey") || params.has("id") || params.has("key") || params.has("thread")) {
+    return false;
+  }
+  return true;
 }
 
 /** The canonical chat route and its session-history subpaths. */
