@@ -1,10 +1,14 @@
 {
   "defaults": {
-    "thinking": "default"
+    "primary": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+    "utility": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+    "fallback": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+    "thinking": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+    "fastMode": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b"
   },
   "agentBindings": {
     "zero": {
-      "model": "nv/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
       "allowOverride": true
     }
   }

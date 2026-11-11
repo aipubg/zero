@@ -330,6 +330,7 @@ export class BrowserAutomationEngine {
     const postSnap = await this.snapshot({ interactiveOnly: true });
     const items = await this.page.evaluate(() => {
       const list = [];
+      // Google search results
       const elements = document.querySelectorAll('div.g, div[data-hveid], a[jsname]');
       for (const el of elements) {
         const heading = el.querySelector('h3');
@@ -342,6 +343,22 @@ export class BrowserAutomationEngine {
           }
         }
       }
+      // YouTube search results
+      const ytElements = document.querySelectorAll('ytd-video-renderer, ytd-rich-item-renderer, ytd-compact-video-renderer, #video-title');
+      for (const el of ytElements) {
+        const titleEl = el.id === 'video-title' ? el : el.querySelector('#video-title, #video-title-link, a#video-title');
+        const channelEl = el.querySelector('#channel-name, #text.ytd-channel-name, .ytd-channel-name');
+        const viewsEl = el.querySelector('#metadata-line span, span.ytd-video-meta-block');
+        if (titleEl && titleEl.innerText.trim()) {
+          const title = titleEl.innerText.trim();
+          const href = titleEl.href || (titleEl.closest('a') ? titleEl.closest('a').href : '');
+          const channel = channelEl ? channelEl.innerText.trim() : '';
+          const views = viewsEl ? viewsEl.innerText.trim() : '';
+          if (!list.some(x => x.title === title)) {
+            list.push({ title, channel, views, href });
+          }
+        }
+      }
       return list;
     }).catch(() => []);
 
@@ -350,7 +367,50 @@ export class BrowserAutomationEngine {
       query,
       title: await this.page.title(),
       url: this.page.url(),
-      results: items.slice(0, 5),
+      results: items.slice(0, 8),
+    };
+  }
+
+  /**
+   * Search YouTube directly with deep extraction of video titles, channels, views
+   */
+  async searchYouTube(query, { timeout = 20000 } = {}) {
+    await this.ensureConnected();
+    const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    await this.navigate(ytUrl);
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    await new Promise(r => setTimeout(r, 2500));
+
+    const videos = await this.page.evaluate(() => {
+      const results = [];
+      const titleEls = document.querySelectorAll('#video-title, a#video-title, #video-title-link');
+      for (const t of titleEls) {
+        const title = (t.innerText || t.getAttribute('title') || '').trim();
+        const href = t.href || (t.closest('a') ? t.closest('a').href : '');
+        const parent = t.closest('ytd-video-renderer') || t.closest('ytd-rich-item-renderer');
+        let channel = '';
+        let meta = '';
+        if (parent) {
+          const chEl = parent.querySelector('#channel-name, .ytd-channel-name, #byline');
+          if (chEl) channel = chEl.innerText.trim();
+          const metaEls = parent.querySelectorAll('#metadata-line span');
+          if (metaEls && metaEls.length > 0) {
+            meta = Array.from(metaEls).map(m => m.innerText.trim()).filter(Boolean).join(' • ');
+          }
+        }
+        if (title && title.length > 3 && !results.some(v => v.title === title)) {
+          results.push({ title, channel, meta, href });
+        }
+      }
+      return results;
+    }).catch(() => []);
+
+    return {
+      ok: true,
+      platform: 'YouTube',
+      query,
+      count: videos.length,
+      videos: videos.slice(0, 10),
     };
   }
 
