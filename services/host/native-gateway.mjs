@@ -2991,6 +2991,20 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         recordTool('core_unified_diagnostic', { command: trimmedUser }, { ok: true, status: coreDiag.status, modules: coreDiag.modules });
       }
 
+      // Immediately emit early progress card so Chat UI shows active perception/execution right away (<200ms)
+      if (!completedModelTurn && ws && ws.readyState === 1) {
+        const earlyProgressPayload = {
+          sessionKey,
+          turnId,
+          messageId,
+          delta: 'Zero executing autonomous action in foreground...\n\n',
+          timestamp: Date.now(),
+        };
+        if (isReferenceWire) {
+          ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: earlyProgressPayload }));
+        }
+      }
+
       while (turns < maxTurns && !completedModelTurn) {
         turns++;
         if (abortController.signal.aborted) {
@@ -3286,6 +3300,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
                   };
                 } else {
                   const searchRes = await defaultBrowserAutomation.search(query);
+                  // Extract lead content if this is an article or search navigated to a result page
+                  const pageContent = await defaultBrowserAutomation.extractPageContent().catch(() => ({ heading: '', firstParagraph: '', leadSummary: '' }));
                   execRes = {
                     ok: true,
                     executed: true,
@@ -3294,8 +3310,27 @@ AUTONOMOUS EXECUTION PRINCIPLES:
                     outcome: 'COMPLETED',
                     query,
                     results: searchRes.results,
+                    pageTitle: searchRes.title,
+                    url: searchRes.url,
+                    heading: pageContent.heading,
+                    firstParagraph: pageContent.firstParagraph,
+                    contentSummary: pageContent.leadSummary,
                   };
                 }
+              } else if (action === 'get_content' || action === 'scrape' || action === 'read_page') {
+                const pageContent = await defaultBrowserAutomation.extractPageContent();
+                execRes = {
+                  ok: true,
+                  executed: true,
+                  verified: true,
+                  completed: true,
+                  outcome: 'COMPLETED',
+                  url: pageContent.url,
+                  title: pageContent.title,
+                  heading: pageContent.heading,
+                  firstParagraph: pageContent.firstParagraph,
+                  content: pageContent.leadSummary,
+                };
               } else if (action === 'play') {
                 const query = args.query || args.text || '';
                 const ytRes = await defaultBrowserAutomation.searchYouTube(query);

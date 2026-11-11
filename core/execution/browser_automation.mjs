@@ -427,6 +427,41 @@ export class BrowserAutomationEngine {
   }
 
   /**
+   * Extract readable page content: main heading, paragraphs, and lead article text
+   */
+  async extractPageContent() {
+    await this.ensureConnected();
+    const content = await this.page.evaluate(() => {
+      // Find main heading
+      const h1 = document.querySelector('h1#firstHeading, h1.article-title, h1');
+      const heading = h1 ? h1.innerText.trim() : '';
+
+      // Collect leading paragraphs (Wikipedia, blogs, news, articles)
+      const pElements = Array.from(document.querySelectorAll('div.mw-parser-output > p, article p, main p, div#content p, div.entry-content p, p'));
+      const meaningfulParagraphs = pElements
+        .map(p => p.innerText.replace(/\[\d+\]/g, '').trim()) // clean wiki references like [1], [2]
+        .filter(text => text.length > 40);
+
+      const firstParagraph = meaningfulParagraphs[0] || '';
+      const secondParagraph = meaningfulParagraphs[1] || '';
+      const leadSummary = [firstParagraph, secondParagraph].filter(Boolean).join('\n\n');
+
+      return {
+        heading,
+        firstParagraph,
+        leadSummary: leadSummary || document.body.innerText.slice(0, 1500),
+      };
+    }).catch(() => ({ heading: '', firstParagraph: '', leadSummary: '' }));
+
+    return {
+      ok: true,
+      url: this.page.url(),
+      title: await this.page.title(),
+      ...content,
+    };
+  }
+
+  /**
    * Close in-process browser session
    */
   async close() {

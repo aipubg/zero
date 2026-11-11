@@ -78,14 +78,60 @@ public static class WinApiCore {
         keybd_event(vk, 0, 2, 0);
     }
 
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+    public static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+    public static readonly IntPtr HWND_TOP = new IntPtr(0);
+    public const uint SWP_NOMOVE = 0x0002;
+    public const uint SWP_NOSIZE = 0x0001;
+    public const uint SWP_SHOWWINDOW = 0x0040;
+
+    [DllImport("user32.dll")]
+    public static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
     public static bool ForceForeground(IntPtr hWnd) {
         if (hWnd == IntPtr.Zero) return false;
         try {
             ShowWindow(hWnd, SW_RESTORE);
             SwitchToThisWindow(hWnd, true);
-            keybd_event(0x12, 0, 0, 0);
-            keybd_event(0x12, 0, 2, 0);
-            return SetForegroundWindow(hWnd);
+            
+            uint foreThread = 0;
+            IntPtr foreWnd = GetForegroundWindow();
+            if (foreWnd != IntPtr.Zero) {
+                GetWindowThreadProcessId(foreWnd, out foreThread);
+            }
+            uint appThread = 0;
+            GetWindowThreadProcessId(hWnd, out appThread);
+            uint currentThread = GetCurrentThreadId();
+
+            if (foreThread != 0 && foreThread != currentThread) {
+                AttachThreadInput(currentThread, foreThread, true);
+            }
+            if (appThread != 0 && appThread != currentThread) {
+                AttachThreadInput(currentThread, appThread, true);
+            }
+
+            keybd_event(0x12, 0, 0, 0); // Alt key down
+            keybd_event(0x12, 0, 2, 0); // Alt key up
+
+            // Force topmost briefly then restore normal z-order so it doesn't permanently block other apps
+            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            bool setFg = SetForegroundWindow(hWnd);
+            BringWindowToTop(hWnd);
+            SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+
+            if (foreThread != 0 && foreThread != currentThread) {
+                AttachThreadInput(currentThread, foreThread, false);
+            }
+            if (appThread != 0 && appThread != currentThread) {
+                AttachThreadInput(currentThread, appThread, false);
+            }
+            return setFg;
         } catch {
             return false;
         }
