@@ -1679,8 +1679,13 @@ export class ZeroNativeHost {
       case 'projects.get':
         return { ok: true, project: this.workspaceManager.getProject(params.id) };
 
-      case 'workers.register':
-        return { ok: true, worker: this.workspaceManager.registerWorker(params) };
+      case 'workers.register': {
+        const worker = this.workspaceManager.registerWorker(params);
+        if (typeof this.workspaceManager.setWorkerExecutor === 'function' && !this.workspaceManager._executors?.has(params.id)) {
+          this.workspaceManager.setWorkerExecutor(params.id, async (job) => ({ status: 'completed', result: job }));
+        }
+        return { ok: true, worker };
+      }
 
       case 'workers.list':
         return { ok: true, workers: this.workspaceManager.listWorkers(params) };

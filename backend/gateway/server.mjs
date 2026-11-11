@@ -210,6 +210,16 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
         return true;
       } else {
         const data = await upstreamRes.json();
+        if (data?.choices && Array.isArray(data.choices)) {
+          for (const ch of data.choices) {
+            if (ch?.message) {
+              const rContent = ch.message.reasoning_content || ch.message.reasoning || '';
+              if ((ch.message.content === null || ch.message.content === '') && rContent) {
+                ch.message.content = rContent;
+              }
+            }
+          }
+        }
         res.statusCode = upstreamRes.status;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify(data));
@@ -223,6 +233,10 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
     let turns = 0;
     const maxTurns = 5;
     let finalContent = '';
+    let finalReasoning = '';
+    let finishReason = 'stop';
+    let upstreamUsage = null;
+    let upstreamId = null;
     let mediaResult = null;
     const executedActions = [];
 
@@ -250,6 +264,10 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
 
       if (!toolCalls || toolCalls.length === 0) {
         finalContent = choice?.message?.content || '';
+        finalReasoning = choice?.message?.reasoning_content || choice?.message?.reasoning || '';
+        finishReason = choice?.finish_reason || 'stop';
+        upstreamUsage = data?.usage || null;
+        upstreamId = data?.id || null;
         break;
       }
 
@@ -312,7 +330,17 @@ async function forwardToUpstreamProvider(req, res, providerInfo, body, callerPro
       finalContent = (finalContent ? `${finalContent}\n\n` : '') + `\`\`\`\`zero-ui:progress\n${JSON.stringify(progressPayload, null, 2)}\n\`\`\`\``;
     }
 
-    return sendCompletionResponse(res, cleanModelId, finalContent, body.stream);
+    // If finalContent is empty or null, but the model generated reasoning_content, use it as fallback content
+    if (!finalContent && finalReasoning) {
+      finalContent = finalReasoning;
+    }
+
+    return sendCompletionResponse(res, cleanModelId, finalContent, body.stream, {
+      reasoningContent: finalReasoning,
+      finishReason,
+      usage: upstreamUsage,
+      id: upstreamId,
+    });
   } catch (err) {
     console.error(`[Zero Gateway] Upstream forward error for ${cleanModelId}:`, err.message);
     if (!res.writableEnded) {
@@ -540,7 +568,16 @@ async function handleProxy(req, res) {
 /**
  * Send OpenAI-compatible chat completion response (supports SSE streaming and JSON)
  */
-function sendCompletionResponse(res, modelId, content, stream) {
+function sendCompletionResponse(res, modelId, content, stream, options = {}) {
+  const {
+    reasoningContent = '',
+    finishReason = 'stop',
+    usage = null,
+    id = `chatcmpl-${Date.now()}`,
+  } = (typeof options === 'object' && options !== null) ? options : {};
+
+  const effectiveContent = content || reasoningContent || '';
+
   if (stream) {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -548,21 +585,32 @@ function sendCompletionResponse(res, modelId, content, stream) {
       Connection: 'keep-alive',
     });
 
+    if (reasoningContent) {
+      const reasonChunk = {
+        id,
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: modelId,
+        choices: [{ index: 0, delta: { role: 'assistant', reasoning_content: reasoningContent }, finish_reason: null }],
+      };
+      res.write(`data: ${JSON.stringify(reasonChunk)}\n\n`);
+    }
+
     const chunkPayload = {
-      id: `chatcmpl-${Date.now()}`,
+      id,
       object: 'chat.completion.chunk',
       created: Math.floor(Date.now() / 1000),
       model: modelId,
-      choices: [{ index: 0, delta: { role: 'assistant', content }, finish_reason: null }],
+      choices: [{ index: 0, delta: { ...(reasoningContent ? {} : { role: 'assistant' }), content: effectiveContent }, finish_reason: null }],
     };
     res.write(`data: ${JSON.stringify(chunkPayload)}\n\n`);
 
     const donePayload = {
-      id: `chatcmpl-${Date.now()}`,
+      id,
       object: 'chat.completion.chunk',
       created: Math.floor(Date.now() / 1000),
       model: modelId,
-      choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+      choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
     };
     res.write(`data: ${JSON.stringify(donePayload)}\n\n`);
     res.write('data: [DONE]\n\n');
@@ -572,17 +620,22 @@ function sendCompletionResponse(res, modelId, content, stream) {
     res.setHeader('Content-Type', 'application/json');
     res.end(
       JSON.stringify({
-        id: `chatcmpl-${Date.now()}`,
+        id,
         object: 'chat.completion',
         created: Math.floor(Date.now() / 1000),
         model: modelId,
         choices: [
           {
             index: 0,
-            message: { role: 'assistant', content },
-            finish_reason: 'stop',
+            message: {
+              role: 'assistant',
+              content: effectiveContent,
+              ...(reasoningContent ? { reasoning_content: reasoningContent, reasoning: reasoningContent } : {}),
+            },
+            finish_reason: finishReason,
           },
         ],
+        ...(usage ? { usage } : {}),
       })
     );
   }
@@ -808,7 +861,13 @@ async function handleListModels(req, res) {
                   created: Math.floor(Date.now() / 1000),
                   owned_by: p.id || p.name || 'cloud-provider',
                   name: modelName,
-                  capabilities: { reasoning: true, image: false, tools: true, embedding: false }
+                  capabilities: {
+                    reasoning: typeof m === 'object' && typeof m.reasoning === 'boolean' ? m.reasoning : true,
+                    image: typeof m === 'object' && typeof m.image === 'boolean' ? m.image : false,
+                    tools: typeof m === 'object' && typeof m.tools === 'boolean' ? m.tools : true,
+                    embedding: typeof m === 'object' && typeof m.embedding === 'boolean' ? m.embedding : false,
+                    ...(typeof m === 'object' && m.capabilities ? m.capabilities : {}),
+                  }
                 });
               }
             }

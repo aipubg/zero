@@ -397,14 +397,15 @@ export function createZeroUiRuntimeHandlers({
     },
   );
 
+  const repoRoot = process.env.ZERO_ROOT || (import.meta.dirname ? path.resolve(import.meta.dirname, "../..") : process.cwd());
   const CONFIG_PATHS = [
-    process.env.OPENCLAW_CONFIG_PATH || "E:\\zero\\zero-system\\config\\zero.json",
-    "E:\\zero\\zero-system\\config\\zero.json",
-    "E:\\zero\\zero-system\\config\\zero.template.json",
-    "E:\\zero\\backend\\config\\zero.json",
-    "E:\\zero\\backend\\config\\zero.template.json",
-    "E:\\zero\\backend\\config\\openclaw.json",
-    "E:\\zero\\backend\\config\\openclaw.template.json",
+    process.env.OPENCLAW_CONFIG_PATH || path.join(repoRoot, "zero-system", "config", "zero.json"),
+    path.join(repoRoot, "zero-system", "config", "zero.json"),
+    path.join(repoRoot, "zero-system", "config", "zero.template.json"),
+    path.join(repoRoot, "backend", "config", "zero.json"),
+    path.join(repoRoot, "backend", "config", "zero.template.json"),
+    path.join(repoRoot, "backend", "config", "openclaw.json"),
+    path.join(repoRoot, "backend", "config", "openclaw.template.json"),
     "",
   ];
 
@@ -1012,8 +1013,8 @@ export function createZeroUiRuntimeHandlers({
         });
         const data = await res.json().catch(() => ({}));
 
-        // Also clean from E:\zero\models if file directly exists
-        const modelsDir = "E:\\zero\\models";
+        // Also clean from models directory if file directly exists
+        const modelsDir = process.env.ZERO_MODELS_DIR || path.join(repoRoot, "models");
         try {
           const directFile = path.join(modelsDir, modelId.replace(/^gguf\//, "") + (modelId.endsWith(".gguf") ? "" : ".gguf"));
           if (existsSync(directFile)) {
@@ -1028,7 +1029,7 @@ export function createZeroUiRuntimeHandlers({
     }
 
     // Default Action: Scan directory and query local GGUF engine
-    const modelsDir = "E:\\zero\\models";
+    const modelsDir = process.env.ZERO_MODELS_DIR || path.join(repoRoot, "models");
     const items = [];
     try {
       if (existsSync(modelsDir)) {

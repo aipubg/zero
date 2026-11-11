@@ -423,27 +423,17 @@ export class ComputerOperator {
             let videoTitle = query || "YouTube Video";
 
             if (!targetUrl && query) {
-              try {
-                const searchRes = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
-                  headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-                  signal: AbortSignal.timeout(4000),
-                });
-                const html = await searchRes.text();
-                const vm = html.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
-                if (vm) {
-                  videoId = vm[1];
-                  targetUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                  const tm = html.match(/"title":\{"runs":\[\{"text":"([^"]+)"/);
-                  if (tm) videoTitle = tm[1];
-                }
-              } catch {}
-              if (!targetUrl) {
-                targetUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-              }
+              targetUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
             } else if (!targetUrl) {
               targetUrl = "https://www.youtube.com";
             }
             if (!/^https?:\/\//i.test(targetUrl)) targetUrl = `https://${targetUrl}`;
+
+            try {
+              const parsed = new URL(targetUrl);
+              const v = parsed.searchParams.get("v");
+              if (v) videoId = v;
+            } catch {}
 
             const target = new URL(targetUrl);
             const details = await Driver.openUrl(target.href, signal);

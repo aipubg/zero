@@ -312,7 +312,13 @@ export class WorkspaceManager extends EventEmitter {
     if (!targetWorker) throw new Error(`Target worker '${toWorkerId}' is not registered`);
     if (!this.getWorker(fromWorkerId)) throw new Error(`Source worker '${fromWorkerId}' is not registered`);
     if (this.db.prepare("SELECT id FROM zero_task_handoffs WHERE task_id = ? AND status IN ('queued', 'running')").get(taskId)) throw new Error('Task already has an active worker execution');
-    if (this.stateMachine && !this.stateMachine.getTask(taskId)) throw new Error(`Task '${taskId}' not found`);
+    if (this.stateMachine && !this.stateMachine.getTask(taskId)) {
+      try {
+        this.stateMachine.createTask({ id: taskId, agentId: fromWorkerId, goal: `Handoff task ${taskId}` });
+      } catch {
+        throw new Error(`Task '${taskId}' not found`);
+      }
+    }
     execution ||= stateSnapshot.execution || null;
     workspaceId ||= stateSnapshot.workspaceId || null;
     if (workspaceId && !this.getWorkspace(workspaceId)) throw new Error('Workspace not found');

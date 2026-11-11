@@ -7,7 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -135,7 +135,7 @@ export function patchOpenclawRuntime() {
 							return true;
 						});
 						try {
-							const gPath = "E:/zero/models/gateway-providers.json";
+							const gPath = path.resolve(REPO_ROOT, "models", "gateway-providers.json");
 							if (fs.existsSync(gPath)) {
 								const pList = JSON.parse(fs.readFileSync(gPath, "utf-8"));
 								if (Array.isArray(pList)) {
@@ -276,10 +276,11 @@ export function patchOpenclawRuntime() {
         let code = fs.readFileSync(sPath, 'utf8');
         const target = 'async function handleRequest(req, res, expectation) {';
         if (code.includes(target) && !code.includes('__zero_gateway_single_port__')) {
+          const serverMjsUrl = pathToFileURL(path.resolve(REPO_ROOT, 'backend', 'gateway', 'server.mjs')).href;
           const rep = `async function handleRequest(req, res, expectation) {
 		/* __zero_gateway_single_port__ */
 		try {
-			const gMod = globalThis.__zeroGatewayMod || await import('file:///E:/zero/backend/gateway/server.mjs');
+			const gMod = globalThis.__zeroGatewayMod || await import(${JSON.stringify(serverMjsUrl)});
 			globalThis.__zeroGatewayMod = gMod;
 			if (gMod?.handleZeroGatewayRequest) {
 				const handled = await gMod.handleZeroGatewayRequest(req, res);

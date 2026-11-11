@@ -26,7 +26,7 @@
     "mode": "replace",
     "providers": {
       "nv": {
-        "baseUrl": "http://127.0.0.1:18789/v1",
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
         "api": "openai-completions",
         "models": [
           {
@@ -45,7 +45,7 @@
         "apiKey": "env:NVIDIA_API_KEY"
       },
       "nvidia": {
-        "baseUrl": "http://127.0.0.1:18789/v1",
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
         "api": "openai-completions",
         "models": [
           {
@@ -204,5 +204,12 @@
       "utilityModelSeparation": true
     },
     "lastTouchedVersion": "2026.10.6"
+  },
+  "ui": {
+    "prefs": {
+      "themeMode": "dark",
+      "theme": null,
+      "accent": "theme"
+    }
   }
 }
