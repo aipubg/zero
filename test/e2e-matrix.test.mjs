@@ -540,6 +540,15 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
       const abortRes = await abortPromise;
       assert.equal(abortRes.ok, true, 'chat.abort succeeded');
       assert.equal(abortRes.payload.aborted, true, 'Active turn aborted');
+
+      // Clean up test session
+      ws.send(JSON.stringify({
+        type: 'req',
+        id: 't15-del',
+        method: 'sessions.delete',
+        params: { key: testSessionKey },
+      }));
+      await new Promise((r) => setTimeout(r, 20));
     } finally {
       ws.close();
     }

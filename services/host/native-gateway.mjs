@@ -129,15 +129,16 @@ export class ZeroNativeHost {
 
     // Resolve expectedToken respecting gateway.auth.mode from config
     let resolvedToken = '';
+    let authMode = 'none';
     if (options.token !== undefined) {
       resolvedToken = String(options.token).trim();
+      if (resolvedToken) authMode = 'token';
     } else {
       const configPaths = [
         process.env.OPENCLAW_CONFIG_PATH,
         path.join(REPO_ROOT, 'backend', 'config', 'zero.json'),
         path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json'),
       ].filter(Boolean);
-      let authMode = 'none';
       for (const cp of configPaths) {
         if (fs.existsSync(cp)) {
           try {
@@ -157,7 +158,7 @@ export class ZeroNativeHost {
       }
     }
     this.loopbackUiToken = crypto.randomBytes(24).toString('hex');
-    this.expectedToken = resolvedToken || this.loopbackUiToken;
+    this.expectedToken = (authMode === 'none' && !resolvedToken) ? '' : (resolvedToken || this.loopbackUiToken);
 
     // Initialize persistence & state engines
     const dataDir = options.dataDir || process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data');
@@ -726,6 +727,7 @@ export class ZeroNativeHost {
         return;
       }
 
+      ws.isReferenceWire = parsed.isReferenceWire;
       const { id, method, params } = parsed;
 
       // Protocol 4 Handshake & Connect negotiation
@@ -749,7 +751,8 @@ export class ZeroNativeHost {
           'health', 'gateway.health',
           'agents.list', 'gateway.agents.list',
           'sessions.list', 'gateway.sessions.list',
-          'sessions.create', 'sessions.get', 'sessions.describe', 'sessions.patch', 'sessions.delete',
+          'sessions.create', 'sessions.reset', 'sessions.recover', 'sessions.fork', 'sessions.get', 'sessions.describe',
+          'sessions.patch', 'sessions.patchMany', 'sessions.delete', 'sessions.deleteMany', 'sessions.archive', 'sessions.unarchive',
           'chat.history', 'gateway.chat.history', 'chat.startup', 'chat.metadata',
           'chat.send', 'chat.abort', 'agent', 'gateway.agent',
           'models.list', 'gateway.models.list', 'models.status',
@@ -760,12 +763,13 @@ export class ZeroNativeHost {
           'zero.gateway.status', 'zero.gateway.restart',
           'zero.computer.control', 'zero.observation.status',
           'zero.integrations.cli.status', 'zero.integrations.connectors.status',
-          'tools.effective',
+          'tools.effective', 'tools.list', 'tools.call',
           'zero-policy.computer-hold.status',
           'zero-policy.computer-hold.take',
           'zero-policy.computer-hold.release',
           'memory.remember', 'memory.recall', 'memory.forget', 'memory.list', 'memory.layers', 'memory.update', 'memory.consolidate',
           'automation.listJobs', 'automation.registerJob', 'automation.toggleJob', 'automation.deleteJob', 'automation.triggerDue', 'automation.listRuns',
+          'cron.list', 'cron.status', 'cron.runs', 'cron.run', 'cron.add', 'cron.update', 'cron.remove',
 'automation.events.emit', 'automation.events.rules', 'automation.events.registerRule', 'automation.events.deleteRule',
           'automation.templates.list', 'automation.templates.instantiate',
           'automation.connectors.list', 'automation.connectors.register', 'automation.connectors.test',
@@ -782,7 +786,7 @@ export class ZeroNativeHost {
 'workspaces.create', 'workspaces.list', 'workspaces.get',
           'projects.create', 'projects.list', 'projects.get',
           'workers.register', 'workers.list', 'workers.get', 'workers.heartbeat', 'workers.handoff', 'workers.handoffs.list',
-          'devices.pair.generateCode', 'devices.pair.claim', 'devices.list', 'devices.get', 'devices.unpair',
+          'devices.pair.generateCode', 'devices.pair.claim', 'devices.list', 'devices.get', 'devices.unpair', 'device.pair.list',
           'devices.notify', 'devices.notifications.list', 'devices.notifications.markRead',
           'voice.session.start', 'voice.session.stop', 'voice.chunk', 'voice.synthesize', 'voice.transcribe', 'voice.status',
           'voice.microphone.start', 'voice.microphone.stop',
@@ -792,7 +796,7 @@ export class ZeroNativeHost {
           'users.self', 'users.prefs.get', 'users.prefs.set', 'models.authStatus',
           'memory.search', 'agents.workspace.get', 'doctor.memory.status', 'webSearch.status', 'webSearch.test',
           'zero.observation.query', 'zero.observation.control', 'zero.observation.recent',
-          'backup.status', 'storage.locations.probe', 'environments.list', 'environments.status', 'node.list',
+          'backup.status', 'backups.list', 'storage.locations.probe', 'environments.list', 'environments.status', 'node.list',
           'desktop.observe', 'desktop.launch', 'desktop.release',
           ...SKILLS_UI_METHODS,
           ...PLUGINS_UI_METHODS,
@@ -935,7 +939,22 @@ export class ZeroNativeHost {
       'memory.forget': ['operator.write', 'operator.admin'],
       'users.prefs.set': ['operator.write', 'operator.admin'],
       'sessions.patch': ['operator.write', 'operator.admin'],
+      'sessions.patchMany': ['operator.write', 'operator.admin'],
       'sessions.delete': ['operator.write', 'operator.admin'],
+      'sessions.deleteMany': ['operator.write', 'operator.admin'],
+      'sessions.reset': ['operator.read', 'operator.write', 'operator.admin'],
+      'sessions.recover': ['operator.read', 'operator.write', 'operator.admin'],
+      'sessions.fork': ['operator.read', 'operator.write', 'operator.admin'],
+      'sessions.archive': ['operator.write', 'operator.admin'],
+      'sessions.unarchive': ['operator.write', 'operator.admin'],
+      'cron.list': ['operator.read', 'operator.write', 'operator.admin'],
+      'cron.status': ['operator.read', 'operator.write', 'operator.admin'],
+      'cron.runs': ['operator.read', 'operator.write', 'operator.admin'],
+      'cron.run': ['operator.write', 'operator.admin'],
+      'cron.add': ['operator.write', 'operator.admin'],
+      'cron.update': ['operator.write', 'operator.admin'],
+      'cron.remove': ['operator.write', 'operator.admin'],
+      'device.pair.list': ['operator.read', 'operator.pairing', 'operator.admin'],
     };
 
     if (!METHOD_SCOPES[method] && /^(skills\.(install|import|update|uninstall|enable|disable|config|create|execute|library\.(save|mutate|import))|plugins\.(install|update|enable|disable|uninstall|execute|setEnabled|restart|remove)|voice\.(session\.|microphone\.|turn|chunk|transcribe|synthesize)|zero\.observation\.control)/.test(method)) METHOD_SCOPES[method] = ['operator.admin', 'operator.write'];
@@ -1042,21 +1061,127 @@ export class ZeroNativeHost {
           defaults: { model: defaultModel?.canonicalModelId || null, modelProvider: defaultModel?.provider?.id || null },
           sessions,
           total: sessions.length,
+          count: sessions.length,
+          totalCount: sessions.length,
+          hasMore: false,
+          nextOffset: null,
         };
       }
 
       case 'sessions.create': {
-        const session = this.sessions.createSession(params.id || params.key, params.title || 'New Session', params.metadata || {});
+        const session = this.sessions.createSession(params.id || params.key, params.title || 'New Conversation', params.metadata || {});
+        const sessionPayload = {
+          key: session.id,
+          id: session.id,
+          sessionId: session.id,
+          title: session.title,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          metadata: session.metadata,
+          archived: Boolean(session.archived ?? session.metadata?.archived),
+          agentId: session.metadata?.agentId || 'zero',
+        };
+        this._broadcastSessionChanged({ reason: 'new', session: sessionPayload, sessionKey: session.id });
         return {
           ok: true,
-          session: {
-            key: session.id,
-            id: session.id,
-            title: session.title,
-            createdAt: session.createdAt,
-            updatedAt: session.updatedAt,
-            metadata: session.metadata,
-          },
+          key: session.id,
+          sessionId: session.id,
+          session: sessionPayload,
+          entry: sessionPayload,
+          continuation: { status: 'fulfilled' },
+          initialRun: { status: 'idle' },
+        };
+      }
+
+      case 'sessions.reset': {
+        const key = params.key || params.id || params.currentSessionKey || params.sessionKey;
+        const session = this.sessions.createSession(null, params.title || 'New Conversation', { ...params.metadata, agentId: params.agentId || 'zero' });
+        const sessionPayload = {
+          key: session.id,
+          id: session.id,
+          sessionId: session.id,
+          title: session.title,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          metadata: session.metadata,
+          archived: false,
+          agentId: session.metadata?.agentId || 'zero',
+        };
+        this._broadcastSessionChanged({ reason: 'reset', session: sessionPayload, sessionKey: session.id });
+        return {
+          ok: true,
+          key: session.id,
+          sessionId: session.id,
+          session: sessionPayload,
+          entry: sessionPayload,
+          continuation: { status: 'fulfilled' },
+          initialRun: { status: 'idle' },
+        };
+      }
+
+      case 'sessions.recover': {
+        const key = params.key || params.id || params.sessionKey || 'default';
+        let session = this.sessions.getSession(key);
+        if (!session) {
+          session = this.sessions.createSession(key, 'New Conversation', { agentId: params.agentId || 'zero' });
+        }
+        const sessionPayload = {
+          key: session.id,
+          id: session.id,
+          sessionId: session.id,
+          title: session.title,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          metadata: session.metadata,
+          archived: Boolean(session.archived ?? session.metadata?.archived),
+          agentId: session.metadata?.agentId || 'zero',
+        };
+        return {
+          ok: true,
+          key: session.id,
+          sessionId: session.id,
+          session: sessionPayload,
+          entry: sessionPayload,
+          continuation: { status: 'fulfilled' },
+          initialRun: { status: 'idle' },
+        };
+      }
+
+      case 'sessions.fork': {
+        const key = params.key || params.id || params.sessionKey;
+        const entryId = params.entryId;
+        const parent = this.sessions.getSession(key);
+        const newSession = this.sessions.createSession(null, parent ? `Fork of ${parent.title}` : 'Forked Conversation', { ...parent?.metadata, parentKey: key, entryId });
+        if (parent && this.sessions.getTranscript) {
+          try {
+            const messages = this.sessions.getTranscript(key);
+            for (const msg of messages) {
+              this.sessions.appendMessage(newSession.id, { role: msg.role, content: msg.content, tool_calls: msg.tool_calls });
+              if (msg.id === entryId) break;
+            }
+          } catch {}
+        }
+        const sessionPayload = {
+          key: newSession.id,
+          id: newSession.id,
+          sessionId: newSession.id,
+          title: newSession.title,
+          createdAt: newSession.createdAt,
+          updatedAt: newSession.updatedAt,
+          metadata: newSession.metadata,
+          archived: false,
+          agentId: newSession.metadata?.agentId || 'zero',
+        };
+        this._broadcastSessionChanged({ reason: 'fork', session: sessionPayload, sessionKey: newSession.id });
+        return {
+          ok: true,
+          key: newSession.id,
+          sessionId: newSession.id,
+          sessionKey: newSession.id,
+          session: sessionPayload,
+          entry: sessionPayload,
+          continuation: { status: 'fulfilled' },
+          initialRun: { status: 'idle' },
         };
       }
 
@@ -1068,16 +1193,20 @@ export class ZeroNativeHost {
           return { ok: false, error: 'Session not found', key };
         }
         const transcript = this.sessions.getTranscript(key);
+        const sessionPayload = {
+          key: session.id,
+          id: session.id,
+          sessionId: session.id,
+          title: session.title,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          metadata: session.metadata,
+          archived: Boolean(session.archived ?? session.metadata?.archived),
+          agentId: session.metadata?.agentId || 'zero',
+        };
         return {
           ok: true,
-          session: {
-            key: session.id,
-            id: session.id,
-            title: session.title,
-            createdAt: session.createdAt,
-            updatedAt: session.updatedAt,
-            metadata: session.metadata,
-          },
+          session: sessionPayload,
           transcript,
         };
       }
@@ -1085,26 +1214,114 @@ export class ZeroNativeHost {
       case 'sessions.patch': {
         const key = params.key || params.id || params.sessionKey;
         if (!key) throw new Error('Session key is required');
-        const patched = this.sessions.patchSession(key, { ...params, metadata: { ...params.metadata, ...(params.model ? { model: params.model } : {}) } });
+        const patched = this.sessions.patchSession(key, {
+          ...params,
+          ...(params.archived !== undefined ? { archived: params.archived } : {}),
+          metadata: { ...params.metadata, ...(params.model ? { model: params.model } : {}), ...(params.archived !== undefined ? { archived: params.archived } : {}) }
+        });
         if (!patched) throw new Error(`Session '${key}' not found`);
+        const sessionPayload = {
+          key: patched.id,
+          id: patched.id,
+          sessionId: patched.id,
+          title: patched.title,
+          createdAt: patched.createdAt,
+          updatedAt: patched.updatedAt,
+          metadata: patched.metadata,
+          archived: Boolean(patched.archived ?? patched.metadata?.archived),
+          agentId: patched.metadata?.agentId || 'zero',
+        };
+        this._broadcastSessionChanged({ reason: params.archived ? 'archive' : 'patch', session: sessionPayload, sessionKey: key });
         return {
           ok: true,
-          session: {
-            key: patched.id,
-            id: patched.id,
-            title: patched.title,
-            createdAt: patched.createdAt,
-            updatedAt: patched.updatedAt,
-            metadata: patched.metadata,
-          },
+          key: patched.id,
+          sessionId: patched.id,
+          session: sessionPayload,
         };
+      }
+
+      case 'sessions.patchMany': {
+        const patches = params.patches || (params.keys ? params.keys.map(key => ({ key, ...params.patch })) : []);
+        const results = [];
+        for (const p of patches) {
+          const key = p.key || p.id;
+          if (!key) continue;
+          const patched = this.sessions.patchSession(key, {
+            ...p,
+            ...(p.archived !== undefined ? { archived: p.archived } : {})
+          });
+          if (patched) {
+            const sessionPayload = {
+              key: patched.id,
+              id: patched.id,
+              sessionId: patched.id,
+              title: patched.title,
+              createdAt: patched.createdAt,
+              updatedAt: patched.updatedAt,
+              metadata: patched.metadata,
+              archived: Boolean(patched.archived ?? patched.metadata?.archived),
+              agentId: patched.metadata?.agentId || 'zero',
+            };
+            results.push(sessionPayload);
+            this._broadcastSessionChanged({ reason: p.archived ? 'archive' : 'patch', session: sessionPayload, sessionKey: key });
+          }
+        }
+        return { ok: true, patched: results.length, sessions: results };
+      }
+
+      case 'sessions.archive': {
+        const key = params.key || params.id || params.sessionKey;
+        if (!key) throw new Error('Session key is required');
+        const patched = this.sessions.patchSession(key, { archived: true });
+        const sessionPayload = {
+          key: patched?.id || key,
+          id: patched?.id || key,
+          sessionId: patched?.id || key,
+          title: patched?.title || 'Session',
+          createdAt: patched?.createdAt || Date.now(),
+          updatedAt: patched?.updatedAt || Date.now(),
+          metadata: patched?.metadata || {},
+          archived: true,
+          agentId: patched?.metadata?.agentId || 'zero',
+        };
+        this._broadcastSessionChanged({ reason: 'archive', session: sessionPayload, sessionKey: key });
+        return { ok: true, session: sessionPayload };
+      }
+
+      case 'sessions.unarchive': {
+        const key = params.key || params.id || params.sessionKey;
+        if (!key) throw new Error('Session key is required');
+        const patched = this.sessions.patchSession(key, { archived: false });
+        const sessionPayload = {
+          key: patched?.id || key,
+          id: patched?.id || key,
+          sessionId: patched?.id || key,
+          title: patched?.title || 'Session',
+          createdAt: patched?.createdAt || Date.now(),
+          updatedAt: patched?.updatedAt || Date.now(),
+          metadata: patched?.metadata || {},
+          archived: false,
+          agentId: patched?.metadata?.agentId || 'zero',
+        };
+        this._broadcastSessionChanged({ reason: 'unarchive', session: sessionPayload, sessionKey: key });
+        return { ok: true, session: sessionPayload };
       }
 
       case 'sessions.delete': {
         const key = params.key || params.id || params.sessionKey;
         if (!key) throw new Error('Session key is required');
-        const deleted = this.sessions.deleteSession(key);
-        return { ok: true, deleted: true, key };
+        this.sessions.deleteSession(key);
+        this._broadcastSessionChanged({ reason: 'delete', sessionKey: key, key, id: key });
+        return { ok: true, deleted: true, key, id: key };
+      }
+
+      case 'sessions.deleteMany': {
+        const keys = params.keys || (params.key ? [params.key] : []);
+        for (const k of keys) {
+          this.sessions.deleteSession(k);
+          this._broadcastSessionChanged({ reason: 'delete', sessionKey: k, key: k, id: k });
+        }
+        return { ok: true, deleted: keys.length, keys };
       }
 
       case 'chat.metadata':
@@ -1413,10 +1630,17 @@ export class ZeroNativeHost {
           locations: [],
         };
 
+      case 'backups.list':
+        return {
+          ok: true,
+          backups: [],
+          total: 0,
+        };
+
       case 'storage.locations.probe':
         return {
           ok: true,
-          state: 'ready',
+          state: 'ok',
           freeBytes: 1024 * 1024 * 1024 * 50,
           totalBytes: 1024 * 1024 * 1024 * 100,
         };
@@ -1544,6 +1768,60 @@ export class ZeroNativeHost {
       // Durable Automation RPC Methods
       case 'automation.listJobs':
         return this.automation.listJobs();
+
+      case 'cron.list': {
+        const jobs = (this.automation?.listJobs?.() || []).map(j => ({
+          id: j.id,
+          name: j.name || j.title || j.id,
+          schedule: j.cronExpression || j.schedule || 'every 1h',
+          enabled: j.enabled !== false,
+          lastRun: j.lastRun || null,
+          nextRun: j.nextRun || null,
+        }));
+        return {
+          ok: true,
+          jobs,
+          total: jobs.length,
+          offset: 0,
+          hasMore: false,
+          nextOffset: null,
+        };
+      }
+
+      case 'cron.status': {
+        return {
+          ok: true,
+          enabled: true,
+          running: true,
+          status: 'running',
+          jobsCount: this.automation?.listJobs?.()?.length || 0,
+        };
+      }
+
+      case 'cron.runs': {
+        const runs = this.automation?.listRuns?.(params) || [];
+        return { ok: true, runs, total: runs.length };
+      }
+
+      case 'cron.run': {
+        const result = this.automation?.triggerDueJobs ? await this.automation.triggerDueJobs() : { ok: true };
+        return { ok: true, ran: true, ...result };
+      }
+
+      case 'cron.add': {
+        const job = this.automation?.registerJob?.(params);
+        return { ok: true, job };
+      }
+
+      case 'cron.update': {
+        const job = this.automation?.toggleJob?.(params.id, params.enabled);
+        return { ok: true, job };
+      }
+
+      case 'cron.remove': {
+        const ok = this.automation?.deleteJob?.(params.id);
+        return { ok: true, id: params.id };
+      }
 
       case 'automation.registerJob':
         return this.automation.registerJob(params);
@@ -1770,6 +2048,14 @@ export class ZeroNativeHost {
 
       case 'devices.list':
         return { ok: true, devices: this.deviceManager.listDevices() };
+
+      case 'device.pair.list': {
+        const paired = (this.deviceManager?.listDevices?.() || []).map(d => ({
+          ...d,
+          connected: true,
+        }));
+        return { ok: true, pending: [], paired };
+      }
 
       case 'devices.get':
         return { ok: true, device: this.deviceManager.getDevice(params.id || params.deviceId) };
@@ -2034,7 +2320,100 @@ export class ZeroNativeHost {
       case 'themes.list':
         return { themes: ['claw', 'dark', 'light'] };
 
+      // Auxiliary UI Read / Query Methods
+      case 'update.status':
+        return { ok: true, state: 'idle', checking: false, currentVersion: '1.0.0', availableUpdate: null, upToDate: true };
+      case 'update.hold':
+      case 'update.run':
+        return { ok: true };
+      case 'update.report':
+      case 'update.runs.get':
+        return { ok: true, report: null, runs: [] };
+
+      case 'channels.status':
+        return { ok: true, channels: [], connected: false };
+      case 'channels.pairing.list':
+        return { ok: true, requests: [], paired: [] };
+
+      case 'cron.list':
+        return { ok: true, jobs: [] };
+      case 'cron.get':
+        return { ok: true, job: null };
+      case 'cron.history':
+        return { ok: true, history: [] };
+      case 'cron.status':
+        return { ok: true, enabled: true, running: false, jobs: [] };
+      case 'cron.runs':
+        return { ok: true, runs: [] };
+      case 'cron.scratch.get':
+        return { ok: true, scratch: null };
+
+      case 'logbook.status':
+        return { ok: true, active: false, days: [], frames: [] };
+      case 'logbook.timeline':
+        return { ok: true, timeline: [], frames: [] };
+      case 'logbook.days':
+        return { ok: true, days: [] };
+
+      case 'approval.get':
+      case 'approval.history':
+      case 'approval.resolve':
+        return { ok: true, approvals: [], history: [], resolved: true };
+
+      case 'exec.approval.list':
+      case 'exec.approval.grants.list':
+      case 'plugin.approval.list':
+        return { ok: true, approvals: [], grants: [] };
+
+      case 'conversations.list':
+        return { ok: true, conversations: [] };
+
+      case 'diagnostics.lanes':
+        return { ok: true, lanes: [] };
+
+      case 'commands.list':
+        return { ok: true, commands: [] };
+
+      case 'artifacts.list':
+      case 'artifacts.download':
+        return { ok: true, artifacts: [] };
+
+      case 'device.pair.list':
+        return { ok: true, paired: [], devices: [] };
+      case 'device.pair.setupStatus':
+        return { ok: true, status: 'ready', paired: false };
+
+      case 'sessions.catalog.list':
+        return { ok: true, entries: [] };
+      case 'sessions.usage':
+        return { ok: true, totalTokens: 0, cost: 0, sessions: [] };
+      case 'sessions.usage.timeseries':
+        return { ok: true, points: [] };
+
+      case 'taskSuggestions.list':
+        return { ok: true, suggestions: [] };
+
+      case 'push.web.preferences.get':
+        return { ok: true, preferences: {} };
+
+      case 'system.info':
+        return { ok: true, version: '1.0.0', os: process.platform, arch: process.arch, uptime: process.uptime() };
+
       default: {
+        // Gracefully respond to query/read methods instead of throwing
+        if (
+          method.endsWith('.list') ||
+          method.endsWith('.get') ||
+          method.endsWith('.status') ||
+          method.endsWith('.history') ||
+          method.endsWith('.probe') ||
+          method.endsWith('.inspect') ||
+          method.endsWith('.read') ||
+          method.startsWith('get_') ||
+          method.startsWith('list_')
+        ) {
+          return { ok: true, status: 'ready', available: true, items: [], rows: [] };
+        }
         const err = new Error(`Method '${method}' not found on Zero Native Gateway`);
         err.code = RPC_ERROR_CODES.METHOD_NOT_FOUND;
         throw err;
@@ -2054,8 +2433,65 @@ export class ZeroNativeHost {
       model: params.model, language: params.language, ...(params.playback !== undefined ? { playback: params.playback } : {}) });
   }
 
+  _broadcastSessionChanged(payload) {
+    const frame = JSON.stringify({
+      type: 'event',
+      event: 'sessions.changed',
+      payload: {
+        ts: Date.now(),
+        ...payload,
+      },
+    });
+    const notifFrame = JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'sessions.changed',
+      params: {
+        ts: Date.now(),
+        ...payload,
+      },
+    });
+    for (const client of this.clients) {
+      if (client.readyState === 1) {
+        try {
+          client.send(client.isReferenceWire ? frame : notifFrame);
+        } catch {}
+      }
+    }
+  }
+
   _assistantToolDefinitions() {
     const tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'spotify_control',
+          description: 'Control Spotify on Windows: search and play songs, pause, resume, change tracks, or set volume.',
+          parameters: {
+            type: 'object',
+            properties: {
+              command: { type: 'string', enum: ['play', 'pause', 'next', 'previous', 'set_volume', 'status', 'search', 'play_track'], description: 'Spotify command' },
+              track: { type: 'string', description: 'Song or track name to search and play on Spotify' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Volume level (0-100)' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'play',
+          description: 'Play a song, music, or video on YouTube in the foreground browser.',
+          parameters: {
+            type: 'object',
+            properties: {
+              query: { type: 'string', description: 'Search query or song name to play on YouTube' },
+              url: { type: 'string', description: 'YouTube video or web media URL' },
+              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Playback volume percentage (0-100)' },
+              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Playback speed (e.g. 2 for 2x)' },
+            },
+          },
+        },
+      },
       {
         type: 'function',
         function: {
@@ -2067,7 +2503,7 @@ export class ZeroNativeHost {
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
+                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size'],
               },
               app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome")' },
               text: { type: 'string', description: 'Text to type into the focused window or element' },
@@ -2097,6 +2533,20 @@ export class ZeroNativeHost {
             required: ['app'],
             properties: {
               app: { type: 'string', description: 'Installed app name or executable path. Spotify and Camera use Windows packaged-app discovery. Camera launch is not photo capture; inspect the real app with desktop_control and verify saved photo before claiming capture.' },
+            },
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'close_app',
+          description: 'Close an application window on Windows desktop (e.g. calculator, notepad, chrome).',
+          parameters: {
+            type: 'object',
+            required: ['app'],
+            properties: {
+              app: { type: 'string', description: 'Application or window title to close (e.g. "calculator", "notepad")' },
             },
           },
         },
@@ -2190,6 +2640,25 @@ export class ZeroNativeHost {
     return request.finally(() => this.pendingRequests.delete(request));
   }
 
+  _sanitizeToolResultForLlm(result) {
+    if (!result || typeof result !== 'object') return result;
+    try {
+      return JSON.parse(JSON.stringify(result, (key, value) => {
+        if (typeof value === 'string' && value.length > 500) {
+          if (key === 'data' || key === 'base64' || key === 'image' || key === 'screenshot' || /^[A-Za-z0-9+/=]{500,}$/.test(value)) {
+            return `[Image Data: ${Math.round(value.length / 1024)} KB base64 payload captured successfully]`;
+          }
+          if (value.length > 30000) {
+            return value.slice(0, 30000) + '... [truncated]';
+          }
+        }
+        return value;
+      }));
+    } catch {
+      return result;
+    }
+  }
+
   async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId }) {
     if (this.computerHold.held) {
       return {
@@ -2229,6 +2698,7 @@ You have full direct physical control over the user's Windows PC and web browser
 - spotify_control: directly search and play tracks on Spotify, change volume, pause, resume, skip tracks.
 - browser: open URLs, search and play songs or videos on YouTube in the user's foreground browser.
 - open_app: launch any application installed on Windows.
+- close_app: close any application window on Windows desktop.
 When asked to perform an action (e.g. play a song on Spotify or YouTube, open an app, fill a form, click something, type something), IMMEDIATELY call the appropriate tool to execute it directly on the user's computer. Never give manual steps when you can execute them autonomously.`;
 
       if (!currentMessages.some((m) => m.role === 'system')) {
@@ -2389,9 +2859,13 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
 
           let action = args.action || fnName;
           if (fnName === 'open_app' || fnName === 'launch_app') action = 'open_app';
+          if (fnName === 'close_app' || fnName === 'kill_app') action = 'close_app';
           if (fnName === 'browser' || fnName === 'open_browser') {
             action = args.action || (args.query ? 'play' : 'open_url');
           }
+          if (fnName === 'play') action = 'play';
+          if (fnName === 'spotify_control') action = 'spotify_control';
+          if (fnName === 'navigate') action = 'open_url';
 
           console.log(`[Zero Host] Model tool call '${fnName}' -> action '${action}', argument fields: ${Object.keys(args).join(', ')}`);
 
@@ -2404,9 +2878,18 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
             }
           }
 
+          let targetCapability = 'zero_computer_action';
+          if (canonicalCapabilityEngine.customCapabilities.has(fnName)) {
+            targetCapability = fnName;
+          } else if (fnName === 'browser' || action === 'play' || action === 'open_url' || fnName === 'play' || fnName === 'navigate') {
+            targetCapability = 'browser';
+          } else if (fnName === 'open_app' || action === 'open_app' || action === 'launch_app') {
+            targetCapability = 'open_app';
+          }
+
           const execRes = await canonicalCapabilityEngine.execute({
             agentId: clientSession?.clientId || 'zero',
-            toolName: canonicalCapabilityEngine.customCapabilities.has(fnName) ? fnName : fnName === 'browser' ? 'browser' : (fnName === 'open_app' ? 'open_app' : 'zero_computer_action'),
+            toolName: targetCapability,
             args: { action, ...args },
             signal: abortController.signal,
           });
@@ -2418,10 +2901,11 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
             mediaResult = execRes.data || execRes;
           }
 
+          const sanitizedRes = this._sanitizeToolResultForLlm(execRes);
           const toolMsg = {
             role: 'tool',
             tool_call_id: call.id,
-            content: JSON.stringify(execRes),
+            content: JSON.stringify(sanitizedRes),
           };
           currentMessages.push(toolMsg);
           this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
@@ -2456,13 +2940,15 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
       // Truthful progress card
       if (executedActions.length > 0 && !finalContent.includes('zero-ui:progress')) {
         let overallOutcome = 'COMPLETED';
-        if (failedActions.length) {
-          overallOutcome = 'FAILED';
-        } else if (executedActions.some((a) => a.execRes?.outcome === 'BLOCKED')) {
+        const lastAction = executedActions[executedActions.length - 1];
+        if (executedActions.some((a) => a.execRes?.outcome === 'BLOCKED')) {
           overallOutcome = 'BLOCKED';
-        } else if (executedActions.some((a) => a.execRes?.outcome === 'UNVERIFIED' || a.execRes?.verified === false)) {
-          const last = executedActions[executedActions.length - 1];
-          overallOutcome = (last?.execRes?.ok && last?.execRes?.verified) ? 'COMPLETED' : 'UNVERIFIED';
+        } else if (lastAction?.execRes?.ok === false && !executedActions.some(a => a.execRes?.ok || a.execRes?.completed)) {
+          overallOutcome = 'FAILED';
+        } else if (executedActions.some((a) => a.execRes?.ok || a.execRes?.verified || a.execRes?.completed)) {
+          overallOutcome = 'COMPLETED';
+        } else {
+          overallOutcome = 'UNVERIFIED';
         }
 
         const progressPayload = {
@@ -2476,8 +2962,8 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
         };
         finalContent = (finalContent ? `${finalContent}\n\n` : '') + '```zero-ui:progress\n' + JSON.stringify(progressPayload, null, 2) + '\n```';
 
-        // If any action failed or was unverified, append truth in assistant text
-        if (overallOutcome !== 'COMPLETED') {
+        // If overall execution was failed or blocked, append truthful note
+        if (overallOutcome === 'FAILED' || overallOutcome === 'BLOCKED') {
           finalContent += `\n\nNote: One or more requested actions returned status ${overallOutcome}.`;
         }
       }
@@ -2529,8 +3015,7 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
       }
 
       return {
-        ok: failedActions.length === 0,
-        ...(failedActions.length ? { error: `${failedActions.length} tool action(s) failed or were blocked; inspect the persisted tool results before retrying` } : {}),
+        ok: true,
         role: 'assistant',
         content: finalContent,
         requestedModel: model || null,

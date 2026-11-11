@@ -439,8 +439,11 @@ function mountComputerHold(container, host, options = {}) {
     return { dispose() {} };
   }
   const doc = container.ownerDocument ?? document;
-  for (const existing of container.querySelectorAll(".zero-computer-hold")) {
+  for (const existing of doc.querySelectorAll(".zero-computer-hold")) {
     existing.remove();
+  }
+  for (const existingHost of doc.querySelectorAll(".zero-computer-hold-host")) {
+    if (existingHost !== container) existingHost.remove();
   }
   const section = doc.createElement("section");
   section.className = "zero-computer-hold";
@@ -479,13 +482,15 @@ function mountComputerHold(container, host, options = {}) {
   container.append(section);
 
   const resolveRequest = (h) => {
-    if (typeof h === "function") return h;
-    if (typeof h?.request === "function") return (m, p) => h.request(m, p);
-    if (typeof h?.client?.request === "function") return (m, p) => h.client.request(m, p);
-    const app = typeof document !== "undefined" ? (document.querySelector("openclaw-app") || document.querySelector("systems-page")) : null;
-    const appClient = app?.context?.gateway?.snapshot?.client || app?.gateway?.snapshot?.client;
-    if (typeof appClient?.request === "function") return (m, p) => appClient.request(m, p);
-    return () => Promise.reject(new Error("Gateway connection is unavailable."));
+    return async (method, params = {}) => {
+      if (typeof h === "function") return h(method, params);
+      if (typeof h?.request === "function") return h.request(method, params);
+      if (typeof h?.client?.request === "function") return h.client.request(method, params);
+      const app = typeof document !== "undefined" ? (document.querySelector("openclaw-app") || document.querySelector("systems-page") || document.querySelector("body")) : null;
+      const appClient = app?.context?.gateway?.snapshot?.client || app?.gateway?.snapshot?.client || (typeof window !== "undefined" ? window.__zero_client : null);
+      if (typeof appClient?.request === "function") return appClient.request(method, params);
+      return Promise.reject(new Error("Gateway connection is unavailable."));
+    };
   };
   const request = resolveRequest(host);
   const render = (view) => {

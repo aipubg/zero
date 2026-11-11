@@ -59,6 +59,9 @@ export class SessionManager {
         FOREIGN KEY (session_id) REFERENCES zero_sessions(id) ON DELETE CASCADE
       );
     `);
+    const sessionColumns = new Set(this.db.prepare('PRAGMA table_info(zero_sessions)').all().map(column => column.name));
+    if (!sessionColumns.has('archived')) this.db.exec('ALTER TABLE zero_sessions ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
+
     const columns = new Set(this.db.prepare('PRAGMA table_info(zero_messages)').all().map(column => column.name));
     if (!columns.has('tool_call_id')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN tool_call_id TEXT');
     if (!columns.has('run_id')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN run_id TEXT');
@@ -69,11 +72,12 @@ export class SessionManager {
   createSession(id, title = 'New Conversation', metadata = {}) {
     const now = Date.now();
     const sessionId = id || `session_${now}_${Math.random().toString(36).slice(2, 8)}`;
+    const isArchived = Boolean(metadata.archived) ? 1 : 0;
     const stmt = this.db.prepare(`
-      INSERT INTO zero_sessions (id, title, created_at, updated_at, metadata)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO zero_sessions (id, title, created_at, updated_at, metadata, archived)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    stmt.run(sessionId, title, now, now, JSON.stringify(metadata));
+    stmt.run(sessionId, title, now, now, JSON.stringify(metadata), isArchived);
     return this.getSession(sessionId);
   }
 
@@ -82,17 +86,31 @@ export class SessionManager {
     const row = stmt.get(id);
     if (!row) return null;
     const metadata = row.metadata ? JSON.parse(row.metadata) : {};
+    const isArchived = Boolean(row.archived || metadata.archived);
     return {
       id: row.id,
+      key: row.id,
+      sessionId: row.id,
+      agentId: metadata.agentId || 'zero',
       title: row.title,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       metadata,
       involvement: metadata.involvement,
+      archived: isArchived,
     };
   }
 
-  listSessions(limit = 50, offset = 0) {
+  listSessions(limitOrOptions = 50, offset = 0) {
+    let lim = 50;
+    let off = 0;
+    if (typeof limitOrOptions === 'object' && limitOrOptions !== null) {
+      lim = Number(limitOrOptions.limit ?? 50);
+      off = Number(limitOrOptions.offset ?? 0);
+    } else {
+      lim = Number(limitOrOptions ?? 50);
+      off = Number(offset ?? 0);
+    }
     const stmt = this.db.prepare(`
       SELECT s.*,
         (SELECT COUNT(*) FROM zero_messages m WHERE m.session_id = s.id) AS messages_count,
@@ -101,12 +119,14 @@ export class SessionManager {
       ORDER BY s.updated_at DESC
       LIMIT ? OFFSET ?
     `);
-    const rows = stmt.all(limit, offset);
+    const rows = stmt.all(lim, off);
     return rows.map((r) => {
       const meta = r.metadata ? JSON.parse(r.metadata) : {};
+      const isArchived = Boolean(r.archived || meta.archived);
       return {
         key: r.id,
         id: r.id,
+        sessionId: r.id,
         agentId: meta.agentId || 'zero',
         title: r.title,
         createdAt: r.created_at,
@@ -114,6 +134,7 @@ export class SessionManager {
         messagesCount: Number(r.messages_count || 0),
         lastMessage: r.last_message || '',
         metadata: meta,
+        archived: isArchived,
       };
     });
   }
@@ -126,18 +147,48 @@ export class SessionManager {
     if (updates.involvement !== undefined) {
       metadata.involvement = updates.involvement;
     }
+    let isArchived = existing.archived ? 1 : 0;
+    if (updates.archived !== undefined) {
+      isArchived = Boolean(updates.archived) ? 1 : 0;
+      metadata.archived = Boolean(updates.archived);
+    }
     const now = Date.now();
     const stmt = this.db.prepare(`
-      UPDATE zero_sessions SET title = ?, metadata = ?, updated_at = ? WHERE id = ?
+      UPDATE zero_sessions SET title = ?, metadata = ?, archived = ?, updated_at = ? WHERE id = ?
     `);
-    stmt.run(title, JSON.stringify(metadata), now, id);
+    stmt.run(title, JSON.stringify(metadata), isArchived, now, id);
     return this.getSession(id);
   }
 
   deleteSession(id) {
+    try {
+      this.db.prepare(`DELETE FROM zero_messages WHERE session_id = ?`).run(id);
+    } catch {}
+    try {
+      this.db.prepare(`DELETE FROM zero_events WHERE session_id = ?`).run(id);
+    } catch {}
     const stmt = this.db.prepare(`DELETE FROM zero_sessions WHERE id = ?`);
     stmt.run(id);
     return true;
+  }
+
+  deleteMany(ids = []) {
+    let count = 0;
+    for (const id of ids) {
+      if (this.deleteSession(id)) count++;
+    }
+    return count;
+  }
+
+  patchMany(patches = []) {
+    const results = [];
+    for (const p of patches) {
+      const id = p.key || p.id;
+      if (!id) continue;
+      const patched = this.patchSession(id, p);
+      if (patched) results.push(patched);
+    }
+    return results;
   }
 
   appendMessage(sessionId, message) {
@@ -237,7 +288,25 @@ export class SessionManager {
           context.push({ ...projected, tool_calls: completed });
           for (const call of completed) {
             const output = outputs.get(call.id);
-            context.push({ role: 'tool', content: output.content, tool_call_id: call.id });
+            let content = output.content;
+            if (typeof content === 'string' && content.length > 5000) {
+              try {
+                const parsed = JSON.parse(content);
+                const sanitized = JSON.parse(JSON.stringify(parsed, (k, v) => {
+                  if (typeof v === 'string' && v.length > 500) {
+                    if (k === 'data' || k === 'base64' || k === 'image' || k === 'screenshot' || /^[A-Za-z0-9+/=]{500,}$/.test(v)) {
+                      return `[Image Data: ${Math.round(v.length / 1024)} KB base64 payload]`;
+                    }
+                    if (v.length > 30000) return v.slice(0, 30000) + '... [truncated]';
+                  }
+                  return v;
+                }));
+                content = JSON.stringify(sanitized);
+              } catch {
+                content = content.slice(0, 5000) + '... [truncated]';
+              }
+            }
+            context.push({ role: 'tool', content, tool_call_id: call.id });
           }
         } else if (message.content) context.push(projected);
         index = end - 1;

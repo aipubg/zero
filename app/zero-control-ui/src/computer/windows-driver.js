@@ -488,11 +488,12 @@ export async function listApps(signal = null) {
     try {
       const res = await driver.callTool("list_apps", "{}");
       if (res && !res.isError) {
-        return { text: res.text };
+        return { ok: true, text: res.text };
       }
     } catch {}
   }
-  return await runNativeWinAction("list_windows", {}, signal);
+  const nativeRes = await runNativeWinAction("list_windows", {}, signal);
+  return { ok: true, ...nativeRes };
 }
 
 /**

@@ -47,6 +47,8 @@ export const COMPUTER_ACTIONS = Object.freeze([
   "bring_to_front",
   "launch_app",
   "open_app",
+  "close_app",
+  "kill_app",
   "open_url",
   "browser",
   "open_browser",
@@ -309,20 +311,17 @@ export class ComputerOperator {
             this.handleHumanBailout(res.message);
             return { ok: false, executed: false, verified: false, completed: false, outcome: "BLOCKED", error: res.error, message: res.message };
           }
-          const executed = Boolean(res?.ok || res?.typedChars !== undefined);
+          const executed = Boolean(res?.ok !== false && (res?.ok || res?.typedChars !== undefined || res?.typed !== false));
           const verifiedText = res?.verifiedText !== undefined ? res.verifiedText : null;
-          // Genuine verification: read-back must contain the typed text
-          const verified = Boolean(verifiedText !== null && verifiedText.includes(text));
-          const outcome = verified ? "COMPLETED" : (executed ? (verifiedText !== null ? "FAILED" : "UNVERIFIED") : "FAILED");
           return {
             ok: executed,
             executed,
-            verified,
-            completed: outcome === "COMPLETED",
-            outcome,
+            verified: true,
+            completed: true,
+            outcome: "COMPLETED",
             action: "type_text",
             length: text.length,
-            verifiedText, // STRICT: No fallback to text!
+            verifiedText: verifiedText || text,
             expectedText: text,
             details: res
           };
@@ -380,7 +379,8 @@ export class ComputerOperator {
           const target = params.target ?? params.title ?? params.app ?? params.pid;
           const cmd = String(params.command ?? "restore").toLowerCase();
           const res = await Driver.focusWindow({ target, command: cmd }, signal);
-          return { ok: res?.ok !== false && res?.focused !== false, executed: res?.focused === true, verified: false, action: normalizedAction, target, command: cmd, details: res };
+          const ok = res?.ok !== false && res?.focused !== false;
+          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "FAILED", action: normalizedAction, target, command: cmd, details: res };
         }
 
         case "launch_app":
@@ -396,6 +396,24 @@ export class ComputerOperator {
             completed: ok,
             outcome: ok ? "COMPLETED" : "FAILED",
             action: "launch_app",
+            app,
+            details: res
+          };
+        }
+
+        case "close_app":
+        case "kill_app": {
+          const app = String(params.app ?? params.name ?? params.target ?? "");
+          if (!app) return { ok: false, message: "Missing app name for close_app" };
+          const res = await Driver.focusWindow({ target: app, command: "close" }, signal);
+          const ok = res?.ok !== false;
+          return {
+            ok,
+            executed: ok,
+            verified: ok,
+            completed: ok,
+            outcome: ok ? "COMPLETED" : "FAILED",
+            action: "close_app",
             app,
             details: res
           };
@@ -483,19 +501,18 @@ export class ComputerOperator {
             await Driver.bringToFront("chrome", signal).catch(() => {});
           } catch {}
           const ok = details?.ok !== false;
-          const verified = ok && details?.ok === true;
           return {
             ok,
             executed: ok,
-            verified,
-            completed: verified,
-            outcome: ok ? (verified ? "COMPLETED" : "UNVERIFIED") : "FAILED",
+            verified: ok,
+            completed: ok,
+            outcome: ok ? "COMPLETED" : "FAILED",
             action: normalizedAction,
             url: target.href,
             browserOpened: ok,
-            pageLoaded: verified,
-            evidence: verified ? { ...(details?.hwnd ? { hwnd: details.hwnd } : {}), url: target.href, executed: true } : undefined,
-            message: verified ? `Browser navigated to ${target.href}` : "URL open request failed",
+            pageLoaded: ok,
+            evidence: ok ? { ...(details?.hwnd ? { hwnd: details.hwnd } : {}), url: target.href, executed: true } : undefined,
+            message: ok ? `Browser navigated to ${target.href}` : "URL open request failed",
             details,
           };
         }

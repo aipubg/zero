@@ -2197,5 +2197,95 @@ openclaw-mascot {
 @keyframes zero-mic-breathe { from { transform: scaleY(.5); } to { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .zero-voice-control .zero-voice-meter i { animation: none !important; } }
 
+/* ==========================================================================
+   Zero Day / Night (Light & Dark) Theme Adaptive System
+   Ensures seamless theme switching between light and dark modes
+   ========================================================================== */
+html[data-theme-mode="light"],
+html.wa-light,
+:root[data-theme-mode="light"],
+:root[data-theme$="-light"] {
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --card-bg: #ffffff;
+  --surface: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --border: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+  --text-strong: #0f172a;
+  --fg: #0f172a;
+  --text: #0f172a;
+}
+
+html[data-theme-mode="light"] .zero-providers-view,
+html[data-theme-mode="light"] .zero-models-view,
+html.wa-light .zero-providers-view,
+html.wa-light .zero-models-view {
+  color: var(--text-primary, #0f172a);
+}
+
+html[data-theme-mode="light"] .zero-providers-view__title,
+html.wa-light .zero-providers-view__title {
+  color: #0f172a !important;
+}
+
+html[data-theme-mode="light"] .zero-providers-view__desc,
+html.wa-light .zero-providers-view__desc {
+  color: #475569 !important;
+}
+
+html[data-theme-mode="light"] .zero-modal,
+html.wa-light .zero-modal {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12) !important;
+}
+
+html[data-theme-mode="light"] .zero-modal__select,
+html[data-theme-mode="light"] select.zero-modal__select,
+html.wa-light .zero-modal__select,
+html.wa-light select.zero-modal__select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  color-scheme: light !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%23475569' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+}
+
+html[data-theme-mode="light"] .zero-modal__select option,
+html.wa-light .zero-modal__select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html[data-theme-mode="light"] .zero-computer-hold,
+html.wa-light .zero-computer-hold {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme-mode="light"] .zero-about__fact,
+html[data-theme-mode="light"] .zero-about__section,
+html.wa-light .zero-about__fact,
+html.wa-light .zero-about__section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme-mode="light"] .zero-admin-config,
+html.wa-light .zero-admin-config {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
 
 

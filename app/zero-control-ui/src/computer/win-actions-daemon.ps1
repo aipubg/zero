@@ -59,6 +59,9 @@ public static class WinApiCore {
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
     [DllImport("user32.dll")]
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
@@ -800,7 +803,25 @@ function Dispatch-Action($req) {
                     [WinApiCore]::ShowWindow($foundHwnd, [WinApiCore]::SW_MAXIMIZE) | Out-Null
                     [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
                 } elseif ($cmd -eq "close") {
-                    [WinApiCore]::CloseWindow($foundHwnd) | Out-Null
+                    [WinApiCore]::PostMessage($foundHwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+                    $pidOut = 0
+                    [WinApiCore]::GetWindowThreadProcessId($foundHwnd, [ref]$pidOut) | Out-Null
+                    if ($pidOut -gt 0) {
+                        try {
+                            $p = Get-Process -Id $pidOut -ErrorAction SilentlyContinue
+                            if ($p) {
+                                if ($p.ProcessName -eq 'ApplicationFrameHost') {
+                                    Get-Process -Name 'CalculatorApp', 'Calculator' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                                }
+                                $p.CloseMainWindow() | Out-Null
+                            }
+                        } catch {}
+                    }
+                    if ($target -match 'calc|calculator') {
+                        Get-Process -Name 'CalculatorApp', 'Calculator' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                    } elseif ($target -match 'notepad') {
+                        Get-Process -Name 'notepad' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                    }
                 } else {
                     [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
                 }

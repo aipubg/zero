@@ -28,6 +28,10 @@ const ZERO_FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3
 
 function findControlUiDirs() {
   const dirs = [];
+  const distWeb = path.join(REPO_ROOT, 'dist', 'web');
+  if (fs.existsSync(path.join(distWeb, 'assets'))) {
+    dirs.push(distWeb);
+  }
   const searchRoots = [
     path.join(REPO_ROOT, 'backend', 'node_modules'),
     path.join(REPO_ROOT, 'zero-system', 'state'),
@@ -772,6 +776,55 @@ export function applyZeroBranding() {
             if (file.startsWith('about-page-') && code.includes('J=[{href:')) {
               code = code.replace(/J=\[\{href:[^\]]+\]/, 'J=[]');
               changed = true;
+            }
+
+            const USER_STRING_REPLACEMENTS = [
+              ['Official OpenClaw mobile apps connect automatically after scanning.', 'Official Zero mobile apps connect automatically after scanning.'],
+              ['OpenClaw mobile apps', 'Zero mobile apps'],
+              ['OpenClaw mobile pairing', 'Zero mobile pairing'],
+              ['openclaw node run --pair', 'zero node run --pair'],
+              ['openclaw node run', 'zero node run'],
+              ['oc-pair://', 'zero-pair://'],
+              ['openclaw backup enable', 'zero backup enable'],
+              ['openclaw triage', 'zero triage'],
+              ['openclaw doctor', 'zero doctor'],
+              ['openclaw crabbox', 'zero crabbox'],
+              ['openclaw.app', 'zero.app'],
+              ['Take OpenClaw everywhere', 'Take Zero everywhere'],
+              ['full OpenClaw device', 'full Zero device'],
+              ['an OpenClaw device', 'a Zero device'],
+              ['Let OpenClaw drive', 'Let Zero drive'],
+              ['Extend OpenClaw with channels', 'Extend Zero with channels'],
+              ['OpenClaw documentation', 'Zero documentation'],
+              ['Saved in OpenClaw', 'Saved in Zero'],
+              ['into OpenClaw', 'into Zero'],
+              ['from OpenClaw', 'from Zero'],
+              ['Installing OpenClaw', 'Installing Zero'],
+              ['Building OpenClaw', 'Building Zero'],
+              ['OpenClaw Mac app', 'Zero Mac app'],
+              ['OpenClaw creates a verified', 'Zero creates a verified'],
+              ['OpenClaw will use', 'Zero will use'],
+              ['OpenClaw waits for provider', 'Zero waits for provider'],
+              ['OpenClaw is installed', 'Zero is installed'],
+              ['OpenClaw is replaced', 'Zero is replaced'],
+              ['OpenClaw web search', 'Zero web search'],
+              ['OpenClaw companion', 'Zero companion'],
+              ['OpenClaw device', 'Zero device'],
+              ['OpenClaw Device', 'Zero Device'],
+              ['OpenClaw Root', 'Zero Root'],
+              ['OpenClaw', 'Zero'],
+            ];
+
+            for (const [targetStr, repStr] of USER_STRING_REPLACEMENTS) {
+              if (code.includes(targetStr)) {
+                // Avoid replacing DOM component tags like <openclaw- or openclaw_internal
+                if (targetStr === 'OpenClaw') {
+                  code = code.replaceAll('OpenClaw', 'Zero');
+                } else {
+                  code = code.replaceAll(targetStr, repStr);
+                }
+                changed = true;
+              }
             }
 
             if (changed) {

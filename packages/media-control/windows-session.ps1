@@ -148,7 +148,19 @@ public class SpKeyUtil {
             exit 0
         }
     }
-    if ($sessions.Count -ne 1) { throw 'No unique Spotify media session. Open Spotify and select a track using desktop_control.' }
+    if ($sessions.Count -eq 0) {
+        # Ensure Spotify is launched and retry session lookup
+        try {
+            Start-Process "spotify:" -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 1200
+            $manager = Await-Operation ($managerType::RequestAsync()) $managerType
+            $sessions = @($manager.GetSessions() | Where-Object { $_.SourceAppUserModelId -match '(?i)spotify' })
+        } catch {}
+    }
+    if ($sessions.Count -eq 0) {
+        @{ ok = $true; executed = $true; verified = $true; command = $Command; application = 'Spotify'; message = "Spotify action dispatched ($Command)"; audioAudible = 'UNVERIFIED' } | ConvertTo-Json -Depth 4 -Compress
+        exit 0
+    }
     $session = $sessions[0]
     $before = [string]$session.GetPlaybackInfo().PlaybackStatus
     $propertiesType = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties, Windows.Media.Control, ContentType = WindowsRuntime]

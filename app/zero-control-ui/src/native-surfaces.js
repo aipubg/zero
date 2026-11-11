@@ -276,6 +276,11 @@ function installNativeSurfaces(host) {
     return () => {};
   }
 
+  if (typeof window !== "undefined") {
+    window.__zero_surfaces_dispose?.();
+    window.__zero_surfaces_dispose = null;
+  }
+
   let disposed = false;
   let mounted = null; // { kind, hostEl, handle }
   let mountedComputer = null; // { hostEl, handle }
@@ -428,18 +433,9 @@ function installNativeSurfaces(host) {
   const neutralizeAgentSwitcher = () => {
     for (const button of document.querySelectorAll(".sidebar-agent-card__main")) {
       if (button.getAttribute("aria-label") !== "Zero") button.setAttribute("aria-label", "Zero");
-      if (button.hasAttribute("aria-haspopup")) button.removeAttribute("aria-haspopup");
-      if (button.hasAttribute("aria-expanded")) button.removeAttribute("aria-expanded");
-      if (button.getAttribute("aria-disabled") !== "true") {
-        button.setAttribute("aria-disabled", "true");
-      }
-      if (button.getAttribute("tabindex") !== "-1") button.setAttribute("tabindex", "-1");
       if (!button.classList.contains("zero-static-agent")) {
         button.classList.add("zero-static-agent");
       }
-    }
-    for (const chevron of document.querySelectorAll(".sidebar-agent-card__chevron")) {
-      if (!chevron.hasAttribute("hidden")) chevron.setAttribute("hidden", "");
     }
   };
 
@@ -477,15 +473,7 @@ function installNativeSurfaces(host) {
   };
 
   const neutralizeSettingsAgentSelector = () => {
-    if (specialistConfigId()) return;
-    for (const trigger of document.querySelectorAll(".agent-select__trigger")) {
-      if (trigger.hasAttribute("aria-haspopup")) trigger.removeAttribute("aria-haspopup");
-      if (trigger.hasAttribute("aria-expanded")) trigger.removeAttribute("aria-expanded");
-      if (trigger.getAttribute("aria-disabled") !== "true") {
-        trigger.setAttribute("aria-disabled", "true");
-      }
-      if (trigger.getAttribute("tabindex") !== "-1") trigger.setAttribute("tabindex", "-1");
-    }
+    // Keep settings selector interactive and enabled
   };
 
   /**
@@ -1197,7 +1185,7 @@ function installNativeSurfaces(host) {
   sync();
   cleanupChrome();
 
-  return () => {
+  const disposeSurfaces = () => {
     disposed = true;
     disposeVoiceControl?.();
     observer.disconnect();
@@ -1215,7 +1203,16 @@ function installNativeSurfaces(host) {
       chromeTimer = null;
     }
     unmount();
+    if (typeof window !== "undefined" && window.__zero_surfaces_dispose === disposeSurfaces) {
+      window.__zero_surfaces_dispose = null;
+    }
   };
+
+  if (typeof window !== "undefined") {
+    window.__zero_surfaces_dispose = disposeSurfaces;
+  }
+
+  return disposeSurfaces;
 }
 
 export {

@@ -85,6 +85,14 @@ try {
   copyFileSync(join(scratch, "index.js"), join(assetsDir, "zero-control-ui.js"));
   copyFileSync(join(scratch, "index.css"), join(assetsDir, "zero-control-ui.css"));
 
+  // Also sync to fallback node_modules root if present
+  const fallbackAssetsDir = resolve(root, "..", "..", "backend", "node_modules", "openclaw", "dist", "control-ui", "assets");
+  try {
+    mkdirSync(fallbackAssetsDir, { recursive: true });
+    copyFileSync(join(scratch, "index.js"), join(fallbackAssetsDir, "zero-control-ui.js"));
+    copyFileSync(join(scratch, "index.css"), join(fallbackAssetsDir, "zero-control-ui.css"));
+  } catch {}
+
   console.log(`generation: ${generation}`);
   console.log(`entry:      ${controlUi.entry} (${js.length} bytes)`);
   console.log(`styles:     ${controlUi.styles[0]} (${css.length} bytes)`);

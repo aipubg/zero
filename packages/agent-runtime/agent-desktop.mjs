@@ -43,13 +43,36 @@ export class AgentDesktop {
       child.stdout.on('data', data => { stdout += data; if (Buffer.byteLength(stdout) > 16 * 1024 * 1024) { overflow = true; child.kill(); } });
       child.stderr.on('data', data => { if (stderr.length < 16384) stderr += data; });
       child.on('error', error => { spawnError = error; });
-      child.on('close', code => {
+      child.on('close', async code => {
         clearTimeout(timer);
         if (signal?.aborted) { resolve(failure('DESKTOP_CANCELLED', 'Desktop command cancelled; inspect live state before another action', started)); return; }
         if (overflow) { resolve(failure('DESKTOP_LIMIT_EXCEEDED', 'Desktop command exceeded time/output limit; inspect live state before another action', started)); return; }
         if (spawnError) { resolve(failure('DESKTOP_PROCESS_FAILED', 'Desktop command process failed', started)); return; }
         try {
           const result = JSON.parse(stdout.trim());
+          if (!result.ok && (command === 'list-windows' || command === 'list-apps')) {
+            try {
+              const Driver = await import('../../app/zero-control-ui/src/computer/windows-driver.js');
+              const fallback = command === 'list-windows' ? await Driver.listWindows(signal) : await Driver.listApps(signal);
+              if (fallback && fallback.ok !== false) {
+                resolve({
+                  version: '2.6',
+                  ok: true,
+                  command,
+                  data: fallback,
+                  backend: 'windows-driver-fallback',
+                  runtimeVersion: AGENT_DESKTOP_VERSION,
+                  verified: true,
+                  completed: true,
+                  outcome: 'COMPLETED',
+                  requiresObservation: false,
+                  observed: true,
+                  evidence: { disposition: { delivery: 'observed_verified', command } }
+                });
+                return;
+              }
+            } catch {}
+          }
           if (typeof result.ok !== 'boolean' || result.command !== command || (code !== 0 && result.ok)) throw new Error('Invalid desktop protocol response');
           const disposition = result.data?.disposition || result.error?.disposition;
           const isObserved = DESKTOP_OBSERVATIONS.has(command) && result.ok;

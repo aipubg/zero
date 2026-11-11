@@ -25,17 +25,26 @@ export default {
       window.__zero_surfaces_installed = true;
       window.__zero_fallback_dispose?.();
       window.__zero_fallback_dispose = null;
+      window.__zero_active_plugin_dispose?.();
+      window.__zero_active_plugin_dispose = null;
     }
     if (typeof document !== 'undefined') document.getElementById?.("zero-permanent-top-actions")?.remove();
     const disposeRoutes = installLegacyRouteInterceptor(host);
     const disposeSurfaces = installNativeSurfaces(host);
     const disposeShell = installZeroShell(host);
     const disposeSession = installDesktopSessionKeepAlive();
-    return () => {
+    const disposeAll = () => {
       disposeSession?.();
       disposeShell?.();
       disposeSurfaces?.();
       disposeRoutes?.();
+      if (typeof window !== "undefined" && window.__zero_active_plugin_dispose === disposeAll) {
+        window.__zero_active_plugin_dispose = null;
+      }
     };
+    if (typeof window !== "undefined") {
+      window.__zero_active_plugin_dispose = disposeAll;
+    }
+    return disposeAll;
   },
 };
