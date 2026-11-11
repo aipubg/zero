@@ -888,10 +888,10 @@ function installNativeSurfaces(host) {
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#818cf8;"></span>
          Workforce: Checking
       </div>
-      <div class="zero-screen-intel-indicator" style="display:inline-flex;align-items:center;gap:6px;background:#064e3b;border:1px solid #059669;color:#6ee7b7;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">
-        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34d399;"></span>
-         Screen Intel: Checking
-      </div>
+      <button class="zero-screen-intel-indicator zero-screen-share-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#064e3b;border:1px solid #059669;color:#6ee7b7;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;" title="Click to view live Screen Share stream or toggle capture">
+        <span class="zero-screen-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34d399;"></span>
+        <span class="zero-screen-text">Screen Share: Live</span>
+      </button>
       <div class="zero-action-indicator" style="display:none;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;">
         <span class="zero-action-text">Zero: Ready</span>
       </div>
@@ -954,14 +954,71 @@ function installNativeSurfaces(host) {
     permContainer.appendChild(pill);
     disposeVoiceControl?.();
     disposeVoiceControl = voiceBtn ? mountVoiceControl(voiceBtn, host) : null;
+
+    // Live Screen Share preview modal handler
+    const screenBtn = pill.querySelector(".zero-screen-share-toggle-btn");
+    let screenPreviewModal = null;
+    let screenStreamTimer = null;
+
+    const toggleScreenModal = () => {
+      if (screenPreviewModal) {
+        clearInterval(screenStreamTimer);
+        screenPreviewModal.remove();
+        screenPreviewModal = null;
+        return;
+      }
+
+      screenPreviewModal = document.createElement("div");
+      screenPreviewModal.className = "zero-screen-preview-modal";
+      screenPreviewModal.style.cssText = "position:fixed;bottom:20px;right:20px;width:420px;height:260px;background:#0d1117;border:1px solid #30363d;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.8);z-index:999999;display:flex;flex-direction:column;overflow:hidden;font-family:inherit;";
+      screenPreviewModal.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#161b22;border-bottom:1px solid #30363d;color:#c9d1d9;font-size:12px;font-weight:600;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;"></span>
+            <span>Live Screen Share Feed</span>
+          </div>
+          <button class="zero-screen-modal-close" style="background:transparent;border:none;color:#8b949e;cursor:pointer;font-size:16px;line-height:1;">✕</button>
+        </div>
+        <div style="flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+          <img class="zero-screen-live-img" style="max-width:100%;max-height:100%;object-fit:contain;" src="/desktop/screenshot?t=${Date.now()}" alt="Live Desktop Feed" />
+          <div class="zero-screen-fps-pill" style="position:absolute;bottom:6px;left:8px;background:rgba(0,0,0,0.6);color:#34d399;padding:2px 6px;border-radius:4px;font-size:10px;">Live • 1080p</div>
+        </div>
+      `;
+
+      document.body.appendChild(screenPreviewModal);
+      const closeBtn = screenPreviewModal.querySelector(".zero-screen-modal-close");
+      closeBtn?.addEventListener("click", () => toggleScreenModal());
+
+      const imgEl = screenPreviewModal.querySelector(".zero-screen-live-img");
+      screenStreamTimer = setInterval(() => {
+        if (!screenPreviewModal?.isConnected) {
+          clearInterval(screenStreamTimer);
+          return;
+        }
+        if (imgEl) {
+          imgEl.src = `/desktop/screenshot?t=${Date.now()}`;
+        }
+      }, 500);
+    };
+
+    screenBtn?.addEventListener("click", () => {
+      toggleScreenModal();
+    });
+
     const show = async (method, selector, format) => {
       try {
         const response = await host.request(method, {});
-        if (!disposed && pill.isConnected) pill.querySelector(selector).textContent = format(response?.result ?? response);
-      } catch { if (pill.isConnected) pill.querySelector(selector).textContent = "Status unavailable"; }
+        if (!disposed && pill.isConnected) {
+          const el = pill.querySelector(selector);
+          if (el) el.textContent = format(response?.result ?? response);
+        }
+      } catch { if (pill.isConnected) {
+        const el = pill.querySelector(selector);
+        if (el) el.textContent = "Status unavailable";
+      }}
     };
     void show("agents.list", ".zero-workforce-indicator", state => `Workforce: ${state.agents?.length ?? 0} configured`);
-    void show("zero.observation.status", ".zero-screen-intel-indicator", state => `Screen Intel: ${state.observer?.running ? "Capturing" : "Stopped"}`);
+    void show("zero.observation.status", ".zero-screen-text", state => `Screen Share: ${state.observer?.running ? "Live" : "Stopped"}`);
   };
 
   const sanitizeChatModelMenu = () => {

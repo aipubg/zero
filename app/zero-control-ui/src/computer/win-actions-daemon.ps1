@@ -1156,16 +1156,35 @@ function Dispatch-Action($req) {
                                 if ($rect.Width -gt 5 -and $rect.Height -gt 5) {
                                     $cX = [int]($rect.X + ($rect.Width / 2))
                                     $cY = [int]($rect.Y + ($rect.Height / 2))
+                                    $isEnabled = $true
+                                    $hasKeyboardFocus = $false
+                                    try { $isEnabled = [bool]$el.Current.IsEnabled } catch {}
+                                    try { $hasKeyboardFocus = [bool]$el.Current.HasKeyboardFocus } catch {}
+                                    $valStr = ""
+                                    try {
+                                        $valPattern = $el.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+                                        if ($valPattern) { $valStr = [string]$valPattern.Current.Value }
+                                    } catch {}
+
                                     $elements.Add([pscustomobject]@{
+                                        uia_id = "uia_$($i + 1)"
+                                        id = "uia_$($i + 1)"
                                         name = $name.Trim()
                                         type = $type
+                                        controlType = $type
+                                        automationId = [string]$el.Current.AutomationId
+                                        className = [string]$el.Current.ClassName
                                         x = [int]$rect.X
                                         y = [int]$rect.Y
                                         width = [int]$rect.Width
                                         height = [int]$rect.Height
                                         centerX = $cX
                                         centerY = $cY
-                                        automationId = [string]$el.Current.AutomationId
+                                        cx = $cX
+                                        cy = $cY
+                                        isEnabled = $isEnabled
+                                        hasKeyboardFocus = $hasKeyboardFocus
+                                        value = $valStr
                                     })
                                 }
                             } catch {}
@@ -1175,6 +1194,104 @@ function Dispatch-Action($req) {
             }
             $result["elements"] = $elements
             $result["count"] = $elements.Count
+        }
+
+        "uia_invoke" {
+            $uiaId = [string]$req.uia_id
+            $targetIndex = -1
+            if ($uiaId -match '^uia_(\d+)$') {
+                $targetIndex = [int]$matches[1] - 1
+            }
+            $hwnd = [WinApiCore]::GetForegroundWindow()
+            $invoked = $false
+            if ($hwnd -ne [IntPtr]::Zero -and $targetIndex -ge 0) {
+                try {
+                    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                    if ($root) {
+                        $targetTypes = @(
+                            [System.Windows.Automation.ControlType]::Button,
+                            [System.Windows.Automation.ControlType]::Edit,
+                            [System.Windows.Automation.ControlType]::Hyperlink,
+                            [System.Windows.Automation.ControlType]::MenuItem,
+                            [System.Windows.Automation.ControlType]::CheckBox,
+                            [System.Windows.Automation.ControlType]::ComboBox,
+                            [System.Windows.Automation.ControlType]::TabItem,
+                            [System.Windows.Automation.ControlType]::ListItem
+                        )
+                        $conditions = New-Object System.Collections.Generic.List[System.Windows.Automation.Condition]
+                        foreach ($t in $targetTypes) {
+                            $conditions.Add((New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, $t)))
+                        }
+                        $found = $root.FindAll([System.Windows.Automation.TreeScope]::Subtree, (New-Object System.Windows.Automation.OrCondition($conditions.ToArray())))
+                        if ($targetIndex -lt $found.Count) {
+                            $el = $found[$targetIndex]
+                            try {
+                                $invPattern = $el.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                                if ($invPattern) {
+                                    $invPattern.Invoke()
+                                    $invoked = $true
+                                }
+                            } catch {
+                                try {
+                                    $togglePattern = $el.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+                                    if ($togglePattern) {
+                                        $togglePattern.Toggle()
+                                        $invoked = $true
+                                    }
+                                } catch {}
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            $result["invoked"] = $invoked
+        }
+
+        "uia_set_value" {
+            $uiaId = [string]$req.uia_id
+            $valText = [string]$req.text
+            $targetIndex = -1
+            if ($uiaId -match '^uia_(\d+)$') {
+                $targetIndex = [int]$matches[1] - 1
+            }
+            $hwnd = [WinApiCore]::GetForegroundWindow()
+            $setSuccess = $false
+            if ($hwnd -ne [IntPtr]::Zero -and $targetIndex -ge 0) {
+                try {
+                    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                    if ($root) {
+                        $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)
+                        $found = $root.FindAll([System.Windows.Automation.TreeScope]::Subtree, $cond)
+                        if ($found.Count -eq 0) {
+                            $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document)
+                            $found = $root.FindAll([System.Windows.Automation.TreeScope]::Subtree, $cond)
+                        }
+                        if ($found.Count -gt 0) {
+                            $idx = [Math]::Min($targetIndex, $found.Count - 1)
+                            $el = $found[$idx]
+                            try {
+                                $valPattern = $el.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+                                if ($valPattern) {
+                                    $valPattern.SetValue($valText)
+                                    $setSuccess = $true
+                                }
+                            } catch {}
+                            if (-not $setSuccess) {
+                                try {
+                                    $el.SetFocus()
+                                    [System.Windows.Forms.SendKeys]::SendWait("^a")
+                                    [System.Windows.Forms.SendKeys]::SendWait("{BACKSPACE}")
+                                    [WinApiCore]::SetClipText($valText)
+                                    [WinApiCore]::PasteFromClip()
+                                    $setSuccess = $true
+                                } catch {}
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            $result["setSuccess"] = $setSuccess
+            $result["text"] = $valText
         }
 
         default {
