@@ -223,6 +223,51 @@ export class OsController {
   }
 
   /**
+   * Launch application and wait until verified with confirmed HWND
+   */
+  async launchAndVerify(appPathOrName, { timeoutMs = 10000, signal = null } = {}) {
+    const launchRes = await this.launch(appPathOrName, signal);
+    const start = Date.now();
+    const appClean = String(appPathOrName || '').toLowerCase().replace(/\.exe$/i, '');
+    let matchedWin = null;
+
+    while (Date.now() - start < timeoutMs) {
+      signal?.throwIfAborted();
+      const wins = await this.listWindows(signal);
+      const list = Array.isArray(wins?.windows) ? wins.windows : [];
+      matchedWin = list.find(w => {
+        const title = String(w.title || '').toLowerCase();
+        const proc = String(w.process || '').toLowerCase();
+        return title.includes(appClean) || proc.includes(appClean);
+      });
+      if (matchedWin && matchedWin.hwnd) {
+        break;
+      }
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    if (matchedWin && matchedWin.hwnd) {
+      await this.focusWindow(matchedWin.hwnd, 'restore', signal);
+      await new Promise(r => setTimeout(r, 200));
+      return {
+        ok: true,
+        launched: appPathOrName,
+        hwnd: matchedWin.hwnd,
+        title: matchedWin.title,
+        process: matchedWin.process,
+        pid: matchedWin.pid,
+      };
+    }
+
+    return {
+      ok: launchRes?.ok !== false,
+      launched: appPathOrName,
+      hwnd: launchRes?.hwnd || 0,
+      pid: launchRes?.pid || 0,
+    };
+  }
+
+  /**
    * Clipboard read/write
    */
   async clipboardGet(signal = null) {

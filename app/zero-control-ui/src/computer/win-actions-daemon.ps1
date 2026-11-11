@@ -713,10 +713,10 @@ function Dispatch-Action($req) {
                 }
             }
             if ($null -eq $activeWin -and $rawWins.Length -gt 0) {
+                # Look for foreground window flag in enumerated desktop windows
                 foreach ($w in $rawWins) {
-                    if ($w.process -in @("chrome", "msedge", "Spotify")) { $activeWin = $w; break }
+                    if ($w.isForeground) { $activeWin = $w; break }
                 }
-                if ($null -eq $activeWin) { $activeWin = $rawWins[0] }
             }
             if ($activeWin) {
                 $result["title"] = $activeWin.title
@@ -755,7 +755,9 @@ function Dispatch-Action($req) {
             $cmd = if ($null -ne $req.command) { [string]$req.command } else { "restore" }
             $foundHwnd = [IntPtr]::Zero
 
-            if ($target -match '^\d+$') {
+            if ($req.hwnd) {
+                $foundHwnd = [IntPtr][int64]$req.hwnd
+            } elseif ($target -match '^\d+$') {
                 $targetPid = [int]$target
                 $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
                 if ($p -and $p.MainWindowHandle -ne [IntPtr]::Zero) {
@@ -763,37 +765,47 @@ function Dispatch-Action($req) {
                 }
             } else {
                 $targetStr = [string]$target
-                $callback = [WinApiCore+EnumWindowsProc]{
-                    param($hwnd, $lparam)
-                    if ([WinApiCore]::IsWindowVisible($hwnd)) {
-                        $sb = New-Object System.Text.StringBuilder 256
-                        [WinApiCore]::GetWindowText($hwnd, $sb, 256) | Out-Null
-                        $title = $sb.ToString()
-                        if ($title -and $title -like "*$targetStr*") {
-                            $script:matchedHwnd = $hwnd
-                            return $false
-                        }
-                        $targetPid = 0
-                        [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
-                        if ($targetPid -gt 0) {
-                            $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
-                            if ($p -and ($p.ProcessName -like "*$targetStr*" -or $p.MainWindowTitle -like "*$targetStr*")) {
+                # First check our enumerated desktop windows
+                $allWins = [WinApiCore]::GetDesktopWindows()
+                foreach ($w in $allWins) {
+                    if ($w.Title -like "*$targetStr*" -or $w.Process -like "*$targetStr*" -or $w.Title -match [regex]::Escape($targetStr) -or $w.Process -match [regex]::Escape($targetStr)) {
+                        $foundHwnd = [IntPtr]$w.Hwnd
+                        break
+                    }
+                }
+                if ($foundHwnd -eq [IntPtr]::Zero) {
+                    $callback = [WinApiCore+EnumWindowsProc]{
+                        param($hwnd, $lparam)
+                        if ([WinApiCore]::IsWindowVisible($hwnd)) {
+                            $sb = New-Object System.Text.StringBuilder 256
+                            [WinApiCore]::GetWindowText($hwnd, $sb, 256) | Out-Null
+                            $title = $sb.ToString()
+                            if ($title -and ($title -like "*$targetStr*" -or $title -match [regex]::Escape($targetStr))) {
                                 $script:matchedHwnd = $hwnd
                                 return $false
                             }
+                            $targetPid = 0
+                            [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$targetPid) | Out-Null
+                            if ($targetPid -gt 0) {
+                                $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+                                if ($p -and ($p.ProcessName -like "*$targetStr*" -or $p.MainWindowTitle -like "*$targetStr*")) {
+                                    $script:matchedHwnd = $hwnd
+                                    return $false
+                                }
+                            }
                         }
+                        return $true
                     }
-                    return $true
+                    $script:matchedHwnd = [IntPtr]::Zero
+                    $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
+                    if ($hdesk -ne [IntPtr]::Zero) {
+                        [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
+                    }
+                    if ($script:matchedHwnd -eq [IntPtr]::Zero) {
+                        [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                    }
+                    $foundHwnd = $script:matchedHwnd
                 }
-                $script:matchedHwnd = [IntPtr]::Zero
-                $hdesk = [WinApiCore]::OpenDesktop("Default", 0, $false, 0x01FF)
-                if ($hdesk -ne [IntPtr]::Zero) {
-                    [WinApiCore]::EnumDesktopWindows($hdesk, $callback, [IntPtr]::Zero) | Out-Null
-                }
-                if ($script:matchedHwnd -eq [IntPtr]::Zero) {
-                    [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
-                }
-                $foundHwnd = $script:matchedHwnd
             }
 
             if ($foundHwnd -ne [IntPtr]::Zero) {
@@ -885,22 +897,31 @@ function Dispatch-Action($req) {
                 $script:launchedWindow = [IntPtr]::Zero
                 $until = [DateTime]::UtcNow.AddSeconds(8)
                 while ([DateTime]::UtcNow -lt $until -and $script:launchedWindow -eq [IntPtr]::Zero) {
-                    $callback = [WinApiCore+EnumWindowsProc]{
-                        param($hwnd, $lparam)
-                        if ([WinApiCore]::IsWindowVisible($hwnd)) {
-                            $text = New-Object System.Text.StringBuilder 512
-                            [WinApiCore]::GetWindowText($hwnd, $text, $text.Capacity) | Out-Null
-                            $windowProcessId = 0
-                            [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$windowProcessId) | Out-Null
-                            $windowProcess = Get-Process -Id $windowProcessId -ErrorAction SilentlyContinue
-                            if ($text.ToString() -like "*$displayTarget*" -or $windowProcess.ProcessName -ieq $displayTarget) {
-                                $script:launchedWindow = $hwnd
-                                return $false
-                            }
+                    $wins = [WinApiCore]::GetDesktopWindows()
+                    foreach ($w in $wins) {
+                        if ($w.Title -like "*$displayTarget*" -or $w.Process -like "*$displayTarget*" -or $w.Title -match [regex]::Escape($displayTarget) -or $w.Process -match [regex]::Escape($displayTarget)) {
+                            $script:launchedWindow = [IntPtr]$w.Hwnd
+                            break
                         }
-                        return $true
                     }
-                    [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                    if ($script:launchedWindow -eq [IntPtr]::Zero) {
+                        $callback = [WinApiCore+EnumWindowsProc]{
+                            param($hwnd, $lparam)
+                            if ([WinApiCore]::IsWindowVisible($hwnd)) {
+                                $text = New-Object System.Text.StringBuilder 512
+                                [WinApiCore]::GetWindowText($hwnd, $text, $text.Capacity) | Out-Null
+                                $windowProcessId = 0
+                                [WinApiCore]::GetWindowThreadProcessId($hwnd, [ref]$windowProcessId) | Out-Null
+                                $windowProcess = Get-Process -Id $windowProcessId -ErrorAction SilentlyContinue
+                                if ($text.ToString() -like "*$displayTarget*" -or $windowProcess.ProcessName -ieq $displayTarget) {
+                                    $script:launchedWindow = $hwnd
+                                    return $false
+                                }
+                            }
+                            return $true
+                        }
+                        [WinApiCore]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null
+                    }
                     if ($script:launchedWindow -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 160 }
                 }
                 $result['launched'] = [string]$app
@@ -1096,27 +1117,21 @@ function Dispatch-Action($req) {
         { $_ -in "get_elements", "get_uia_elements" } {
             $elements = New-Object System.Collections.Generic.List[psobject]
             $hwnd = [IntPtr]::Zero
-            if ($req.target) {
+            if ($req.hwnd) {
+                $hwnd = [IntPtr][int64]$req.hwnd
+            }
+            if ($hwnd -eq [IntPtr]::Zero -and $req.target) {
                 $targetStr = [string]$req.target
                 $allWins = [WinApiCore]::GetDesktopWindows()
                 foreach ($w in $allWins) {
-                    if ($w.Title -like "*$targetStr*" -or $w.ProcessName -like "*$targetStr*") {
-                        $hwnd = $w.Hwnd
+                    if ($w.Title -like "*$targetStr*" -or $w.ProcessName -like "*$targetStr*" -or $w.Title -match [regex]::Escape($targetStr) -or $w.ProcessName -match [regex]::Escape($targetStr)) {
+                        $hwnd = [IntPtr]$w.Hwnd
                         break
                     }
                 }
             }
             if ($hwnd -eq [IntPtr]::Zero) {
                 $hwnd = [WinApiCore]::GetForegroundWindow()
-            }
-            if ($hwnd -eq [IntPtr]::Zero) {
-                $allWins = [WinApiCore]::GetDesktopWindows()
-                foreach ($w in $allWins) {
-                    if ($w.ProcessName -eq "chrome" -or $w.Title -match "Chrome|YouTube") {
-                        $hwnd = $w.Hwnd
-                        break
-                    }
-                }
             }
             if ($hwnd -ne [IntPtr]::Zero) {
                 try {
@@ -1136,6 +1151,8 @@ function Dispatch-Action($req) {
                             [System.Windows.Automation.ControlType]::TabItem,
                             [System.Windows.Automation.ControlType]::ListItem,
                             [System.Windows.Automation.ControlType]::Image,
+                            [System.Windows.Automation.ControlType]::Text,
+                            [System.Windows.Automation.ControlType]::Document,
                             [System.Windows.Automation.ControlType]::Custom
                         )
 

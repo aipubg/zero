@@ -1,6 +1,6 @@
 {
   "defaults": {
-    "thinking": "disabled"
+    "thinking": "default"
   },
   "agentBindings": {
     "zero": {

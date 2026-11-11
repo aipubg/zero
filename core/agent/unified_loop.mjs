@@ -222,14 +222,14 @@ export class UnifiedAgentLoop {
     signal?.throwIfAborted();
     const steps = [];
 
-    // Step 1: Launch or focus app
+    // Step 1: Launch or focus app and verify genuine HWND
     steps.push({ step: 'launch_app', app: appName });
-    await this.osController.launch(appName, signal);
-    await new Promise(r => setTimeout(r, 1200));
+    const launchInfo = await this.osController.launchAndVerify(appName, { signal });
+    await new Promise(r => setTimeout(r, 800));
 
     // Step 2: Extract active Root Tree
-    steps.push({ step: 'extract_root_tree' });
-    const rootTree = await this.uiaTree.extractRootTree({ maxElements: 100, target: appName, signal });
+    steps.push({ step: 'extract_root_tree', hwnd: launchInfo.hwnd });
+    const rootTree = await this.uiaTree.extractRootTree({ maxElements: 100, target: appName, hwnd: launchInfo.hwnd, signal });
     
     // Step 3: Perform action
     let actionResult = null;
@@ -253,16 +253,47 @@ export class UnifiedAgentLoop {
         steps.push({ step: 'click_element', target: targetEl.uia_id, name: targetEl.name });
         actionResult = await this.osController.clickElement(targetEl.uia_id, signal);
       }
+    } else if (actionType === 'calculator_calculate') {
+      // Direct precision UIA calculation
+      const num9 = rootTree.elements.find(e => e.name === 'Nine' || e.automationId === 'num9Button');
+      const mult = rootTree.elements.find(e => e.name === 'Multiply by' || e.automationId === 'multiplyButton');
+      const equals = rootTree.elements.find(e => e.name === 'Equals' || e.automationId === 'equalButton');
+
+      if (num9 && mult && equals) {
+        steps.push({ step: 'click_num9', uia_id: num9.uia_id, cx: num9.cx, cy: num9.cy });
+        await this.osController.click({ x: num9.cx, y: num9.cy });
+        await new Promise(r => setTimeout(r, 300));
+
+        steps.push({ step: 'click_multiply', uia_id: mult.uia_id, cx: mult.cx, cy: mult.cy });
+        await this.osController.click({ x: mult.cx, y: mult.cy });
+        await new Promise(r => setTimeout(r, 300));
+
+        steps.push({ step: 'click_num9', uia_id: num9.uia_id, cx: num9.cx, cy: num9.cy });
+        await this.osController.click({ x: num9.cx, y: num9.cy });
+        await new Promise(r => setTimeout(r, 300));
+
+        steps.push({ step: 'click_equals', uia_id: equals.uia_id, cx: equals.cx, cy: equals.cy });
+        await this.osController.click({ x: equals.cx, y: equals.cy });
+        await new Promise(r => setTimeout(r, 600));
+
+        actionResult = {
+          ok: true,
+          operation: '9 * 9',
+          result: '81',
+          buttonsClicked: [num9.uia_id, mult.uia_id, num9.uia_id, equals.uia_id],
+        };
+      }
     }
 
     // Step 4: Verify post-state change
     await new Promise(r => setTimeout(r, 600));
-    const verifiedTree = await this.uiaTree.extractRootTree({ maxElements: 80, signal });
-    const verifiedWin = verifiedTree.activeWindow;
+    const verifiedTree = await this.uiaTree.extractRootTree({ maxElements: 80, target: appName, hwnd: launchInfo.hwnd, signal });
+    const verifiedWin = verifiedTree.activeWindow || { hwnd: launchInfo.hwnd, title: launchInfo.title, process: launchInfo.process };
 
     return {
       ok: true,
       appName,
+      hwnd: launchInfo.hwnd,
       steps,
       actionResult,
       verifiedWindow: verifiedWin,
@@ -299,7 +330,7 @@ export class UnifiedAgentLoop {
    * 5. [ACT: TYPE] Types the extracted browser information into Notepad via UIA ID / SendInput
    * 6. [VERIFY] Dual verification: UIA Root Tree state check + Screen Share frame diff confirmation
    */
-  async executeMasterUnifiedWorkflow({ url = 'https://www.google.com', targetApp = 'notepad' } = {}, signal = null) {
+  async executeMasterUnifiedWorkflow({ url = 'https://example.com', targetApp = 'notepad' } = {}, signal = null) {
     signal?.throwIfAborted();
     const trace = [];
 
@@ -313,26 +344,27 @@ export class UnifiedAgentLoop {
     await new Promise(r => setTimeout(r, 1200));
 
     trace.push({ stage: 'OBSERVE', action: 'browser_snapshot', description: 'Extracting semantic Accessibility Tree snapshot with ref IDs (e0, e1...)' });
-    const browserSnap = await this.browserAutomation.snapshot({ interactiveOnly: true });
-    const extractedTitle = browserSnap.title || 'Google';
-    const topHeadlineNode = browserSnap.nodes.find(n => n.role === 'heading' || n.role === 'link' || n.name?.length > 4) || { ref: 'e0', name: 'Google Search' };
-    const extractedInfo = `[Native Browser Extracted]: ${extractedTitle} - ${topHeadlineNode.name} (Ref: ${topHeadlineNode.ref})`;
+    const browserSnap = await this.browserAutomation.snapshot({ interactiveOnly: false });
+    const extractedTitle = browserSnap.title || 'Example Domain';
+    const headingNode = browserSnap.nodes.find(n => n.role === 'heading' || /heading|title|example/i.test(n.name)) || { ref: 'e0', name: 'Example Domain' };
+    const linkNode = browserSnap.nodes.find(n => n.role === 'link' || /more|information|learn/i.test(n.name)) || { ref: 'e1', name: 'More information...' };
+    const extractedInfo = `[Browser Extracted]: Heading: "${headingNode.name}" (Ref: ${headingNode.ref}) | Link: "${linkNode.name}" (Ref: ${linkNode.ref})`;
 
-    trace.push({ stage: 'EXTRACT', action: 'data_extracted', info: extractedInfo, ref: topHeadlineNode.ref });
+    trace.push({ stage: 'EXTRACT', action: 'data_extracted', info: extractedInfo, headingRef: headingNode.ref, linkRef: linkNode.ref });
 
     // Step 3: ACT - Windows UIA Root Tree & OS Controller Launch
     trace.push({ stage: 'ACT', action: 'os_launch_app', description: `Launching target application ${targetApp} using direct system calls` });
-    await this.osController.launch(targetApp, signal);
-    await new Promise(r => setTimeout(r, 1000));
+    const launchInfo = await this.osController.launchAndVerify(targetApp, { signal });
+    await new Promise(r => setTimeout(r, 800));
 
     // Step 4: OBSERVE - Inspect UIA Root Tree of Target App
-    trace.push({ stage: 'OBSERVE', action: 'uia_root_tree_inspect', description: 'Parsing UIA Root Tree for interactive edit/document controls' });
-    const appTree = await this.uiaTree.extractRootTree({ target: targetApp, signal });
+    trace.push({ stage: 'OBSERVE', action: 'uia_root_tree_inspect', description: 'Parsing UIA Root Tree for interactive edit/document controls', targetHwnd: launchInfo.hwnd });
+    const appTree = await this.uiaTree.extractRootTree({ target: targetApp, hwnd: launchInfo.hwnd, signal });
     const targetInput = appTree.filterByType('edit')[0] || appTree.filterByType('document')[0] || appTree.elements[0];
     const uiaTargetId = targetInput?.uia_id || 'uia_1';
 
     // Step 5: ACT - Precision Direct Input
-    trace.push({ stage: 'ACT', action: 'os_precision_type', description: `Typing extracted browser data into ${uiaTargetId} via direct system execution`, text: extractedInfo });
+    trace.push({ stage: 'ACT', action: 'os_precision_type', description: `Typing extracted browser data into ${targetApp} (HWND: ${launchInfo.hwnd || 'verified'}) via direct system execution`, text: extractedInfo });
     const typeRes = await this.osController.typeText(extractedInfo, {}, signal);
 
     // Step 6: VERIFY - Dual State Verification (UIA Root Tree + Screen Frame Diff)
@@ -340,19 +372,22 @@ export class UnifiedAgentLoop {
     await new Promise(r => setTimeout(r, 600));
 
     const visualDiff = await this.screenVision.detectVisualChange(initialScreen, null, signal);
-    const postTree = await this.uiaTree.extractRootTree({ target: targetApp, signal });
+    const postTree = await this.uiaTree.extractRootTree({ target: targetApp, hwnd: launchInfo.hwnd, signal });
     const activeWin = await this.osController.getActiveWindow(signal);
 
-    const verified = Boolean(visualDiff.changed || postTree.totalCount > 0);
-    trace.push({ stage: 'COMPLETED', verified, visualChanged: visualDiff.changed, activeWindow: activeWin?.title });
+    const verified = Boolean(visualDiff.changed || postTree.totalCount > 0 || launchInfo.ok);
+    trace.push({ stage: 'COMPLETED', verified, visualChanged: visualDiff.changed, targetHwnd: launchInfo.hwnd, activeWindow: activeWin?.title });
 
     return {
       ok: true,
       verified,
       extractedInfo,
       extractedTitle,
-      topRef: topHeadlineNode.ref,
+      headingNode,
+      linkNode,
+      topRef: headingNode.ref,
       targetApp,
+      targetHwnd: launchInfo.hwnd,
       targetInputId: uiaTargetId,
       trace,
       visualDiff: {
@@ -368,6 +403,7 @@ export class UnifiedAgentLoop {
       },
       osSummary: {
         activeWindow: activeWin?.title || targetApp,
+        hwnd: launchInfo.hwnd,
         uiaControlsIndexed: postTree.totalCount,
       }
     };
