@@ -56,6 +56,10 @@ import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
 import { defaultUnifiedLoop } from '../../core/agent/unified_loop.mjs';
+import { defaultScreenVision } from '../../core/perception/screen_vision.mjs';
+import { defaultUiaRootTree } from '../../core/perception/uia_root_tree.mjs';
+import { defaultOsController } from '../../core/execution/os_controller.mjs';
+import { defaultBrowserAutomation } from '../../core/execution/browser_automation.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/agent-runtime/agent-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
@@ -2863,12 +2867,19 @@ export class ZeroNativeHost {
     return request.finally(() => this.pendingRequests.delete(request));
   }
 
-  _sanitizeToolResultForLlm(result) {
+  _sanitizeToolResultForLlm(result, options = {}) {
     if (!result || typeof result !== 'object') return result;
+    const isVision = Boolean(options.isVisionModel);
     try {
       return JSON.parse(JSON.stringify(result, (key, value) => {
         if (typeof value === 'string' && value.length > 500) {
-          if (key === 'data' || key === 'base64' || key === 'image' || key === 'screenshot' || /^[A-Za-z0-9+/=]{500,}$/.test(value)) {
+          if (key === 'data' || key === 'base64' || key === 'image' || key === 'screenshot' || key === 'url' || /^[A-Za-z0-9+/=]{500,}$/.test(value)) {
+            if (isVision && (key === 'base64' || key === 'image' || key === 'url' || key === 'data')) {
+              // Preserve live image frame for vision-capable models (e.g. Nemotron-VL, GPT-4o) up to 8MB
+              if (value.length <= 8 * 1024 * 1024) {
+                return value;
+              }
+            }
             return `[Image Data: ${Math.round(value.length / 1024)} KB base64 payload captured successfully]`;
           }
           if (value.length > 30000) {
@@ -3236,33 +3247,78 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           let execRes = null;
 
           // Cross-Hand Fallback & Core Integration:
-          // 1. see_screen directly utilizes defaultUnifiedLoop.observe / screenVision + uiaTree
-          if (fnName === 'see_screen' || action === 'see_screen') {
+          // 0. Strict Guard: Disallow unrequested close_app / kill_app
+          if (fnName === 'close_app' || action === 'close_app' || action === 'kill_app') {
+            const userAskedClose = /(?:close|exit|band|kill|terminate|hatao|quit|shut\s*down)/i.test(userContent);
+            if (!userAskedClose) {
+              console.warn('[Zero Host] Blocked unrequested close_app tool call:', args);
+              execRes = {
+                ok: false,
+                executed: false,
+                verified: false,
+                completed: false,
+                outcome: 'BLOCKED',
+                action: 'close_app',
+                message: 'Refused unrequested close_app: applications must remain open and visible for the user unless explicitly requested to close.',
+              };
+            }
+          }
+
+          // 1. see_screen directly utilizes defaultScreenVision + defaultUiaRootTree
+          if (!execRes && (fnName === 'see_screen' || action === 'see_screen')) {
             try {
-              const obs = await defaultUnifiedLoop.observe({}, abortController.signal);
-              const screen = obs.screen || {};
-              const uia = obs.uia || {};
-              const win = obs.windowState || {};
+              const frame = await defaultScreenVision.captureFrame({ forceFresh: true, extractOcr: true, signal: abortController.signal });
+              if (!frame || !frame.base64 || !frame.width || !frame.height) {
+                throw new Error('Screen capture frame buffer empty or invalid geometry');
+              }
+              const [uia, win] = await Promise.all([
+                defaultUiaRootTree.extractRootTree({ maxElements: 120, signal: abortController.signal }).catch(() => null),
+                defaultOsController.getActiveWindow(abortController.signal).catch(() => null),
+              ]);
+
+              const activeWinTitle = win?.title || win?.window?.title || uia?.activeWindow?.title || 'Desktop';
+              const foregroundApp = win?.app || win?.window?.processName || uia?.app || 'explorer.exe';
+
               execRes = {
                 ok: true,
                 executed: true,
                 verified: true,
                 completed: true,
                 outcome: 'COMPLETED',
-                activeWindow: win.title || uia.activeWindow?.title || 'Desktop',
-                foregroundProcess: win.app || uia.app || 'explorer.exe',
-                resolution: `${screen.width || 1920}x${screen.height || 1080}`,
-                dpi: screen.dpi || 96,
-                ocrSummary: (screen.ocrText || '').slice(0, 1500),
-                interactiveElements: (uia.elements || []).slice(0, 25).map(e => ({
+                action: 'see_screen',
+                activeWindow: activeWinTitle,
+                foregroundProcess: foregroundApp,
+                resolution: `${frame.width}x${frame.height}`,
+                width: frame.width,
+                height: frame.height,
+                dpi: frame.dpi || 96,
+                scaleFactor: frame.scaleFactor || 1.0,
+                frameBytes: frame.bytes,
+                frameHash: frame.hash,
+                ocrSummary: (frame.ocrText || '').slice(0, 2000),
+                image_url: {
+                  url: `data:${frame.mimeType || 'image/png'};base64,${frame.base64}`,
+                },
+                interactiveElements: (uia?.elements || []).slice(0, 30).map(e => ({
                   id: e.uia_id,
                   type: e.controlType,
                   name: e.name,
                   center: e.center,
+                  isInteractive: e.isInteractive,
                 })),
               };
             } catch (seeErr) {
               console.warn('[Zero Host] Direct see_screen inspection error:', seeErr.message);
+              execRes = {
+                ok: false,
+                executed: true,
+                verified: false,
+                completed: false,
+                outcome: 'FAILED',
+                action: 'see_screen',
+                error: seeErr.message,
+                message: `Failed to capture live screen: ${seeErr.message}`,
+              };
             }
           }
 
@@ -3545,18 +3601,40 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             });
           }
 
-          executedActions.push({ action, args, execRes });
+          const stepId = `step_${executedActions.length + 1}`;
+          executedActions.push({ stepId, action, args, execRes });
           recordTool(fnName, args, execRes);
 
           if (action === 'play') {
             mediaResult = execRes.data || execRes;
           }
 
-          const sanitizedRes = this._sanitizeToolResultForLlm(execRes);
+          const activeModelId = String(model || this.sessions.getSession(sessionKey)?.metadata?.model || this.modelFabric.resolveAgentModel('zero')?.canonicalModelId || '').toLowerCase();
+          const isVisionModel = activeModelId.includes('vl') || activeModelId.includes('vision') || activeModelId.includes('super-vl') || activeModelId.includes('4o') || activeModelId.includes('gemini');
+
+          const sanitizedRes = this._sanitizeToolResultForLlm(execRes, { isVisionModel });
+          let toolContent;
+          if (isVisionModel && execRes?.image_url?.url) {
+            toolContent = [
+              {
+                type: 'text',
+                text: JSON.stringify(sanitizedRes),
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: execRes.image_url.url,
+                },
+              },
+            ];
+          } else {
+            toolContent = JSON.stringify(sanitizedRes);
+          }
+
           const toolMsg = {
             role: 'tool',
             tool_call_id: call.id,
-            content: JSON.stringify(sanitizedRes),
+            content: toolContent,
           };
           currentMessages.push(toolMsg);
           this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
@@ -3594,13 +3672,14 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       const failedActions = unresolvedFailures;
       const hasBlocked = executedActions.some(a => a.execRes?.outcome === 'BLOCKED');
       const mutationActions = executedActions.filter(a => !isReadOnly(a.action));
+      const successfulMutations = mutationActions.filter(a => !isActionFailed(a) && (a.execRes?.verified === true || a.execRes?.outcome === 'COMPLETED'));
       const hasUnverifiedMutations = mutationActions.some(a => a.execRes?.verified !== true && a.execRes?.outcome !== 'COMPLETED');
 
       let overallOutcome = 'COMPLETED';
       if (hasBlocked) {
         overallOutcome = 'BLOCKED';
       } else if (unresolvedFailures.length > 0) {
-        overallOutcome = 'FAILED';
+        overallOutcome = successfulMutations.length > 0 ? 'PARTIAL' : 'FAILED';
       } else if (hasUnverifiedMutations) {
         overallOutcome = 'UNVERIFIED';
       } else if (executedActions.length === 0) {
@@ -3641,19 +3720,23 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
       // Truthful progress card
       if (executedActions.length > 0 && !finalContent.includes('zero-ui:progress')) {
+        const completedCount = executedActions.filter(a => !isActionFailed(a) && (a.execRes?.verified === true || a.execRes?.outcome === 'COMPLETED')).length;
+        const totalSteps = executedActions.length;
         const progressPayload = {
           title: 'Zero Computer Execution',
-          step: executedActions.length,
-          totalSteps: executedActions.length,
+          step: overallOutcome === 'COMPLETED' ? totalSteps : completedCount,
+          totalSteps,
           status: overallOutcome.toLowerCase(),
           outcome: overallOutcome,
-          details: executedActions[executedActions.length - 1]?.execRes?.after || `Desktop Action ${overallOutcome}`,
-          logs: executedActions.map((a) => `${a.execRes?.verified ? '✔' : (a.execRes?.ok ? 'ℹ' : '⚠')} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'FAILED')})`),
+          details: unresolvedFailures.length > 0
+            ? `Failed action(s): ${unresolvedFailures.map(f => `${f.action} (${f.execRes?.error || f.execRes?.message || 'failed'})`).join(', ')}`
+            : (executedActions[executedActions.length - 1]?.execRes?.after || `Desktop Action ${overallOutcome}`),
+          logs: executedActions.map((a) => `${a.stepId || 'step'}: ${a.execRes?.verified ? '✔' : (a.execRes?.ok ? 'ℹ' : '⚠')} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'FAILED')})`),
         };
         finalContent = (finalContent ? `${finalContent}\n\n` : '') + '```zero-ui:progress\n' + JSON.stringify(progressPayload, null, 2) + '\n```';
 
-        // If overall execution was failed, unverified or blocked, append truthful note
-        if (overallOutcome === 'FAILED' || overallOutcome === 'BLOCKED' || overallOutcome === 'UNVERIFIED') {
+        // If overall execution was failed, partial, unverified or blocked, append truthful note
+        if (overallOutcome === 'FAILED' || overallOutcome === 'BLOCKED' || overallOutcome === 'PARTIAL' || overallOutcome === 'UNVERIFIED') {
           finalContent += `\n\nNote: Task execution outcome is ${overallOutcome}.${unresolvedFailures.length > 0 ? ` ${unresolvedFailures.length} unresolved action failure(s).` : (hasUnverifiedMutations ? ' One or more state changes remain unverified.' : '')}`;
         }
       }

@@ -68,7 +68,7 @@ function call(registrations, methodName, params, client) {
 function evaluate(registrations, toolName, action, ctx = {}, extraParams = {}) {
   const policy = registrations.policies[0];
   if (!policy) throw new Error("no trusted tool policy registered");
-  const params = action === undefined ? { ...extraParams } : { action, ...extraParams };
+  const params = action === undefined ? { ...extraParams } : { ...extraParams, action };
   return policy.evaluate({ toolName, params }, { runId: "run-1", sessionKey: "zero-thread-test", agentId: "operator", ...ctx });
 }
 

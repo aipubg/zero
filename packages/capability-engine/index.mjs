@@ -23,7 +23,8 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
       'get_window_state', 'get_screen_size', 'get_cursor_position', 'get_cursor',
       'focus_window', 'control_window', 'bring_to_front', 'close_app', 'kill_app', 'play', 'browser', 'open_browser',
       'open_url', 'media_control', 'spotify_control', 'clipboard_get', 'clipboard_set', 'get_elements', 'get_uia_elements',
-      'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'
+      'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form',
+      'fill', 'act', 'read_page', 'navigate', 'search', 'see_screen'
     ],
   },
   'browser': {
@@ -31,7 +32,8 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     allowedActions: [
       'open', 'open_url', 'play', 'navigate', 'search', 'web_search',
       'click', 'type', 'fill_form', 'get_content', 'scrape',
-      'screenshot', 'press_key', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'
+      'screenshot', 'press_key', 'check_notifications', 'login', 'logout', 'submit', 'submit_form',
+      'fill', 'act', 'read_page'
     ],
   },
   'open_app': {

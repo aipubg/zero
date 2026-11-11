@@ -14,6 +14,7 @@ const commands = new Set([...DESKTOP_OBSERVATIONS, 'click', 'double-click', 'rig
 export const DESKTOP_COMMANDS = Object.freeze([...commands]);
 
 const verifiedBinaries = new Map();
+const privateStateReadyMap = new Map();
 
 /** Primary semantic desktop transport. No shell, automatic retry or action fallback. */
 export class AgentDesktop {
@@ -36,10 +37,12 @@ export class AgentDesktop {
       verifiedBinaries.set(this.binary, { size: stat.size, mtimeMs: stat.mtimeMs, verifiedAt: Date.now() });
     }
     fs.mkdirSync(this.stateDir, { recursive: true });
-    if (!this.privateStateReady) {
-      this.privateStateReady = execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', fileURLToPath(new URL('./private-state.ps1', import.meta.url)), '-Directory', this.stateDir], { windowsHide: true, timeout: 10000, maxBuffer: 65536, signal }).catch(error => { this.privateStateReady = null; throw error; });
+    let statePromise = privateStateReadyMap.get(this.stateDir);
+    if (!statePromise) {
+      statePromise = execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', fileURLToPath(new URL('./private-state.ps1', import.meta.url)), '-Directory', this.stateDir], { windowsHide: true, timeout: 10000, maxBuffer: 65536, signal }).catch(error => { privateStateReadyMap.delete(this.stateDir); throw error; });
+      privateStateReadyMap.set(this.stateDir, statePromise);
     }
-    await this.privateStateReady;
+    await statePromise;
     signal?.throwIfAborted();
     const argv = [...(headed ? ['--headed'] : []), command, ...args, ...(input !== undefined ? ['--stdin'] : [])];
     return new Promise(resolve => {

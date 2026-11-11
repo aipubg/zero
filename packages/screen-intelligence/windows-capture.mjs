@@ -29,8 +29,29 @@ export function pngDimensions(data) {
   return { width, height };
 }
 
-export async function captureDriverDesktop({ signal } = {}) {
+export async function captureDriverDesktop({ signal, compressed = true, format = 'jpeg', maxWidth = 1280, quality = 75 } = {}) {
   signal?.throwIfAborted();
+
+  // Compressed capture via native Win32 daemon (ideal for LLM vision context limits: ~100KB vs 6MB)
+  if (compressed) {
+    try {
+      const native = await runNativeWinAction('screenshot', { format, maxWidth, quality }, signal);
+      if (native?.ok === true && (native.base64 || native.data)) {
+        return {
+          ok: true,
+          base64: native.base64 || native.data,
+          mimeType: native.mimeType || 'image/jpeg',
+          width: native.width || 1920,
+          height: native.height || 1080,
+          bytes: native.bytes || Math.round((native.base64 || native.data).length * 0.75),
+          livePixels: Boolean(native.livePixels),
+          captureSource: 'windows-gdi-compressed',
+          displayId: 'primary',
+        };
+      }
+    } catch {}
+  }
+
   const driver = await getCuaDriver();
   if (driver) {
     try {
@@ -67,7 +88,7 @@ export async function captureDriverDesktop({ signal } = {}) {
   }
 
   // The unwrapped native response retains livePixels=false on GDI failure.
-  const native = await runNativeWinAction('screenshot', {}, signal);
+  const native = await runNativeWinAction('screenshot', { format, maxWidth, quality }, signal);
   if (native?.ok === true && (native.base64 || native.data)) {
     return { ...native, livePixels: true, captureSource: 'windows-gdi', displayId: 'primary' };
   }

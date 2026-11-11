@@ -739,18 +739,51 @@ function Dispatch-Action($req) {
                 $graphics.FillRectangle($brush, 0, 0, $w, $h)
                 $brush.Dispose()
             }
+
+            # Vision model optimization: scale to maxWidth (default 1280) and encode as JPEG to keep payload < 150KB
+            $maxW = if ($null -ne $req.maxWidth) { [int]$req.maxWidth } else { 1280 }
+            $targetW = if ($maxW -lt $w) { $maxW } else { $w }
+            $targetH = [int]([double]$h * [double]$targetW / [double]$w)
+
+            $saveBitmap = $bitmap
+            if ($targetW -ne $w) {
+                $scaledBitmap = New-Object System.Drawing.Bitmap $targetW, $targetH
+                $sg = [System.Drawing.Graphics]::FromImage($scaledBitmap)
+                $sg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBilinear
+                $sg.DrawImage($bitmap, 0, 0, $targetW, $targetH)
+                $sg.Dispose()
+                $saveBitmap = $scaledBitmap
+            }
+
             $ms = New-Object System.IO.MemoryStream
-            $bitmap.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+            $fmt = if ($req.format) { [string]$req.format } else { "jpeg" }
+
+            if ($fmt -eq "png") {
+                $saveBitmap.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+                $mimeType = "image/png"
+            } else {
+                $jpegCodec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.FormatDescription -eq "JPEG" }
+                $encoderParams = New-Object System.Drawing.Imaging.EncoderParameters 1
+                $qualityVal = if ($null -ne $req.quality) { [int64]$req.quality } else { [int64]75 }
+                $encoderParams.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality, $qualityVal)
+                $saveBitmap.Save($ms, $jpegCodec, $encoderParams)
+                $mimeType = "image/jpeg"
+            }
+
             $bytes = $ms.ToArray()
             $graphics.Dispose()
+            if ($saveBitmap -ne $bitmap) { $saveBitmap.Dispose() }
             $bitmap.Dispose()
             $ms.Dispose()
+
             $base64 = [Convert]::ToBase64String($bytes)
             $result["width"] = $w
             $result["height"] = $h
+            $result["scaledWidth"] = $targetW
+            $result["scaledHeight"] = $targetH
             $result["base64"] = $base64
             $result["bytes"] = $bytes.Length
-            $result["mimeType"] = "image/png"
+            $result["mimeType"] = $mimeType
             $result["livePixels"] = $hasPixels
         }
 
@@ -863,6 +896,9 @@ function Dispatch-Action($req) {
                             [WinApiCore]::GetWindowText($hwnd, $sb, 256) | Out-Null
                             $title = $sb.ToString()
                             if ($title -and ($title -like "*$targetStr*" -or $title -match [regex]::Escape($targetStr))) {
+                                if ($targetStr -match '(?i)chrome|browser' -and ($title -like "*Zero*" -or $title -like "*127.0.0.1*" -or $title -like "*localhost*")) {
+                                    return $true
+                                }
                                 $script:matchedHwnd = $hwnd
                                 return $false
                             }
@@ -871,6 +907,9 @@ function Dispatch-Action($req) {
                             if ($targetPid -gt 0) {
                                 $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
                                 if ($p -and ($p.ProcessName -like "*$targetStr*" -or $p.MainWindowTitle -like "*$targetStr*")) {
+                                    if ($targetStr -match '(?i)chrome|browser' -and ($p.MainWindowTitle -like "*Zero*" -or $p.MainWindowTitle -like "*127.0.0.1*" -or $p.MainWindowTitle -like "*localhost*")) {
+                                        return $true
+                                    }
                                     $script:matchedHwnd = $hwnd
                                     return $false
                                 }

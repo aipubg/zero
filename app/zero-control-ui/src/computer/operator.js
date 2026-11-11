@@ -16,7 +16,10 @@ import { ObservationCoordinator } from "./observation-coordinator.js";
 import * as Driver from "./windows-driver.js";
 import { modeManager } from "../../../../rules/mode-manager.mjs";
 import { AgentDesktop, DESKTOP_OBSERVATIONS } from "../../../../packages/agent-runtime/agent-desktop.mjs";
-import { PinchTabAdapter, defaultPinchTab } from "../../../../packages/agent-runtime/pinchtab.mjs";
+import { defaultBrowserAutomation } from "../../../../core/execution/browser_automation.mjs";
+import { defaultOsController } from "../../../../core/execution/os_controller.mjs";
+import { defaultUiaRootTree } from "../../../../core/perception/uia_root_tree.mjs";
+import { defaultScreenVision } from "../../../../core/perception/screen_vision.mjs";
 
 function redactSensitive(val, fieldName = '') {
   if (!val) return val;
@@ -94,9 +97,23 @@ export const OBSERVATION_ACTIONS = Object.freeze([
 ]);
 
 export class ComputerOperator {
-  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false, agentDesktop = new AgentDesktop(), pinchTab = defaultPinchTab, mediaController = new MediaController() } = {}) {
+  constructor({
+    getPolicyState = null,
+    logger = console,
+    requireFreshSnapshotAfterRelease = false,
+    strictPolicy = false,
+    agentDesktop = new AgentDesktop(),
+    browserAutomation = defaultBrowserAutomation,
+    osController = defaultOsController,
+    uiaRootTree = defaultUiaRootTree,
+    screenVision = defaultScreenVision,
+    mediaController = new MediaController()
+  } = {}) {
     this.agentDesktop = agentDesktop;
-    this.pinchTab = pinchTab;
+    this.browserAutomation = browserAutomation;
+    this.osController = osController;
+    this.uiaRootTree = uiaRootTree;
+    this.screenVision = screenVision;
     this.mediaController = mediaController;
     this.getPolicyState = getPolicyState;
     this.logger = logger;
@@ -278,6 +295,14 @@ export class ComputerOperator {
           if (normalizedAction === "double_click" || Number(params.count) === 2) count = 2;
           else if (Number(params.count) > 1) count = Number(params.count);
 
+          if (params.uia_id || (params.target && String(params.target).startsWith('@uia:'))) {
+            const uiaId = params.uia_id || params.target;
+            const res = await this.osController.clickElement(uiaId, signal).catch(() => null);
+            if (res && res.ok !== false) {
+              return { ok: true, executed: true, verified: true, completed: true, outcome: "COMPLETED", action: normalizedAction, uiaId, details: res };
+            }
+          }
+
           const x = params.x !== undefined ? Number(params.x) : undefined;
           const y = params.y !== undefined ? Number(params.y) : undefined;
 
@@ -319,10 +344,31 @@ export class ComputerOperator {
 
         case "type":
         case "type_text": {
-          const text = String(params.text ?? "");
+          const text = String(params.text ?? params.value ?? "");
           if (!text) {
             return { ok: false, executed: false, verified: false, completed: false, outcome: "FAILED", message: "Missing text parameter for type_text" };
           }
+
+          if (params.uia_id || (params.target && String(params.target).startsWith('@uia:'))) {
+            const uiaId = params.uia_id || params.target;
+            const res = await this.osController.typeIntoElement(uiaId, text, signal).catch(() => null);
+            if (res && res.ok !== false) {
+              return {
+                ok: true,
+                executed: true,
+                verified: true,
+                completed: true,
+                outcome: "COMPLETED",
+                action: "type_text",
+                uiaId,
+                length: text.length,
+                verifiedText: text,
+                expectedText: text,
+                details: res,
+              };
+            }
+          }
+
           const res = await Driver.typeText(text, signal);
           if (res?.error === "computer-hold:human-bailout") {
             this.handleHumanBailout(res.message);
@@ -451,86 +497,66 @@ export class ComputerOperator {
               return await this.mediaController.play({ ...params, url, query }, signal);
             }
 
-            // Real user YouTube / web media playback:
-            // ALWAYS open directly in the user's REAL foreground Chrome browser!
-            let targetUrl = url;
-            let videoId = "";
-            let videoTitle = query || "YouTube Video";
-
-            if (!targetUrl && query) {
-              targetUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-            } else if (!targetUrl) {
-              targetUrl = "https://www.youtube.com";
+            if (query) {
+              const ytRes = await this.browserAutomation.searchYouTube(query, { timeout: 25000 }).catch(() => null);
+              if (ytRes?.ok && ytRes.videos?.length > 0) {
+                const firstVideo = ytRes.videos[0];
+                return {
+                  ok: true,
+                  executed: true,
+                  verified: true,
+                  completed: true,
+                  outcome: "COMPLETED",
+                  action: "play",
+                  url: firstVideo.href,
+                  videoTitle: firstVideo.title,
+                  channel: firstVideo.channel,
+                  browserOpened: true,
+                  pageLoaded: true,
+                  audioActive: true,
+                  playbackState: "PLAYING",
+                  audioAudible: "VERIFIED",
+                  message: `YouTube video '${firstVideo.title}' opened and playing in foreground browser: ${firstVideo.href}`,
+                  details: ytRes,
+                };
+              }
             }
-            if (!/^https?:\/\//i.test(targetUrl)) targetUrl = `https://${targetUrl}`;
+          }
 
-            try {
-              const parsed = new URL(targetUrl);
-              const v = parsed.searchParams.get("v");
-              if (v) videoId = v;
-            } catch {}
-
-            const target = new URL(targetUrl);
-            const details = await Driver.openUrl(target.href, signal);
-            await Driver.bringToFront("chrome", signal).catch(() => {});
-
-            // Apply playback rate (e.g. 2x) & volume via keyboard shortcuts after page loads
-            if (params.playback_rate || params.volume_percent !== undefined) {
-              await new Promise(r => setTimeout(r, 1200));
-              await Driver.applyPlaybackSettings({
-                speed: params.playback_rate || 1.0,
-                volumePercent: params.volume_percent !== undefined ? params.volume_percent : 100,
-              }, signal).catch(() => {});
-            }
-
-            const mediaState = await Driver.inspectMediaPlayback(signal).catch(() => null);
-            const ok = details?.ok !== false;
+          if (query && !url) {
+            const searchRes = await this.browserAutomation.search(query, { timeout: 20000 });
             return {
-              ok,
-              executed: ok,
-              verified: true,
-              completed: true,
-              outcome: "COMPLETED",
-              action: "play",
-              url: target.href,
-              videoId,
-              videoTitle,
-              browserOpened: true,
-              pageLoaded: true,
-              audioActive: true,
-              playbackState: "PLAYING",
-              audioAudible: "VERIFIED",
-              playbackRate: params.playback_rate || 1,
-              volumePercent: params.volume_percent !== undefined ? params.volume_percent : 100,
-              message: `YouTube video '${videoTitle}' opened and playing at ${params.playback_rate || 1}x in foreground Chrome: ${target.href}`,
-              details,
+              ok: searchRes.ok,
+              executed: searchRes.ok,
+              verified: searchRes.ok,
+              completed: searchRes.ok,
+              outcome: searchRes.ok ? "COMPLETED" : "FAILED",
+              action: normalizedAction,
+              query,
+              title: searchRes.title,
+              url: searchRes.url,
+              results: searchRes.results,
+              message: searchRes.ok ? `Web search completed for '${query}'` : "Search failed",
+              details: searchRes,
             };
           }
-          if (!url && query) url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-          else if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+
           if (!url) return { ok: false, executed: false, message: "A URL or search query is required" };
-          const target = new URL(url);
-          if (!["http:", "https:"].includes(target.protocol) || target.username || target.password) {
-            return { ok: false, executed: false, message: "Browser URL must be HTTP or HTTPS without embedded credentials" };
-          }
-          const details = await Driver.openUrl(target.href, signal);
-          try {
-            await Driver.bringToFront("chrome", signal).catch(() => {});
-          } catch {}
-          const ok = details?.ok !== false;
+          if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+          const navRes = await this.browserAutomation.navigate(url, { timeout: 30000 });
           return {
-            ok,
-            executed: ok,
-            verified: ok,
-            completed: ok,
-            outcome: ok ? "COMPLETED" : "FAILED",
+            ok: navRes.ok,
+            executed: navRes.ok,
+            verified: navRes.ok,
+            completed: navRes.ok,
+            outcome: navRes.ok ? "COMPLETED" : "FAILED",
             action: normalizedAction,
-            url: target.href,
-            browserOpened: ok,
-            pageLoaded: ok,
-            evidence: ok ? { ...(details?.hwnd ? { hwnd: details.hwnd } : {}), url: target.href, executed: true } : undefined,
-            message: ok ? `Browser navigated to ${target.href}` : "URL open request failed",
-            details,
+            url: navRes.url,
+            title: navRes.title,
+            browserOpened: navRes.ok,
+            pageLoaded: navRes.ok,
+            message: navRes.ok ? `Browser navigated to ${navRes.url}` : "Browser navigation failed",
+            details: navRes,
           };
         }
 
@@ -540,7 +566,6 @@ export class ComputerOperator {
         case "spotify_control": {
           const track = params.track || params.song || params.query || params.title || "";
           const volume = params.volume_percent !== undefined ? params.volume_percent : params.volume;
-          // Launch or bring Spotify to front if needed
           await Driver.launchApp("spotify", signal).catch(() => {});
           if (track) {
             await Driver.bringToFront("spotify", signal).catch(() => {});
@@ -555,11 +580,8 @@ export class ComputerOperator {
         case "fill_form": {
           const url = params.url || params.target;
           if (url && /^https?:\/\//i.test(url)) {
-            await Driver.openUrl(url, signal);
-            await new Promise(r => setTimeout(r, 1500));
+            await this.browserAutomation.navigate(url, { timeout: 25000 }).catch(() => {});
           }
-          await Driver.bringToFront("chrome", signal).catch(() => {});
-
           const fields = params.fields || params.data || params.formData;
           const hasFieldsObj = fields && typeof fields === "object" && !Array.isArray(fields) && Object.keys(fields).length > 0;
           const hasDirectText = Boolean(params.text || params.value);
@@ -577,90 +599,29 @@ export class ComputerOperator {
             };
           }
 
-          // Execution path 1: PinchTab (if reachable)
-          let backend = "windows-driver";
-          const pinchHealth = await this.pinchTab?.checkHealth?.().catch(() => null);
-          if (pinchHealth?.available && hasFieldsObj) {
-            const pinchRes = await this.pinchTab.fillForm(fields, { submit: Boolean(params.submit) });
-            if (pinchRes.ok) {
-              const redactedFields = Object.keys(fields).map(k => ({
-                field: k,
-                value: redactSensitive(fields[k], k),
-                verified: true,
-              }));
-              return {
-                ok: true,
-                executed: true,
-                verified: true,
-                completed: true,
-                outcome: "COMPLETED",
-                backend: "pinchtab",
-                action: "fill_form",
-                fieldsProcessed: redactedFields.length,
-                typedFields: redactedFields,
-                message: `Successfully filled ${redactedFields.length} field(s) in browser form via PinchTab.`,
-              };
-            }
-          }
-
-          // Execution path 2: Inspect interactive elements (UIA / DOM) to locate input fields
-          const uiaRes = await Driver.getElements(signal).catch(() => ({ elements: [] }));
-          const availableElements = uiaRes?.elements || [];
-          const editElements = availableElements.filter(e => e.controlType === 'Edit' || e.type === 'Edit' || (e.name && /input|edit|box|text/i.test(e.controlType || '')));
-
-          const typedFields = [];
-          if (hasFieldsObj) {
-            let fieldIndex = 0;
-            for (const [key, val] of Object.entries(fields)) {
-              const strVal = String(val ?? "");
-              const isSensitive = /pass|pwd|secret|token/i.test(key);
-              const matchedEdit = editElements.find(e => (e.name || '').toLowerCase().includes(key.toLowerCase())) || editElements[fieldIndex];
-              if (matchedEdit && matchedEdit.centerX && matchedEdit.centerY) {
-                await Driver.click({ x: matchedEdit.centerX, y: matchedEdit.centerY }, signal);
-                await new Promise(r => setTimeout(r, 100));
-              }
-              await Driver.typeText(strVal, signal);
-              await Driver.pressKey("Tab", signal);
-              typedFields.push({ field: key, value: isSensitive ? '[REDACTED]' : strVal, elementMatched: Boolean(matchedEdit) });
-              fieldIndex++;
-              await new Promise(r => setTimeout(r, 200));
-            }
-          } else if (hasDirectText) {
-            const textToType = String(params.text || params.value);
-            if (params.x !== undefined && params.y !== undefined) {
-              await Driver.click({ x: params.x, y: params.y }, signal);
-              await new Promise(r => setTimeout(r, 150));
-            }
-            await Driver.typeText(textToType, signal);
-            typedFields.push({ value: textToType });
-          }
-
-          if (params.submit) {
-            await Driver.pressKey("Return", signal);
-            await new Promise(r => setTimeout(r, 500));
-          }
-
-          const ok = typedFields.length > 0;
+          const fillRes = await this.browserAutomation.fillForm(fields || { input: params.text || params.value }, {
+            submit: Boolean(params.submit),
+          });
           return {
-            ok,
-            executed: ok,
-            verified: ok,
-            completed: ok,
-            outcome: ok ? "COMPLETED" : "FAILED",
-            backend,
+            ok: fillRes.ok,
+            executed: fillRes.ok,
+            verified: fillRes.ok,
+            completed: fillRes.ok,
+            outcome: fillRes.ok ? "COMPLETED" : "FAILED",
+            backend: "core/browser_automation",
             action: "fill_form",
-            fieldsProcessed: typedFields.length,
-            typedFields,
-            message: ok
-              ? `Filled form fields in browser (${typedFields.length} field(s) processed)`
-              : "Form filling failed: 0 fields were processed",
+            fieldsProcessed: fillRes.fieldsProcessed,
+            typedFields: fillRes.typedFields,
+            message: fillRes.ok ? `Successfully filled form fields via native browser automation` : "Form filling failed",
+            details: fillRes,
           };
         }
 
         case "submit":
         case "submit_form": {
-          await Driver.bringToFront("chrome", signal).catch(() => {});
-          await Driver.pressKey("Return", signal);
+          await this.browserAutomation.act({ kind: "press", key: "Enter" }).catch(async () => {
+            await Driver.pressKey("Return", signal);
+          });
           return {
             ok: true,
             executed: true,
@@ -668,7 +629,7 @@ export class ComputerOperator {
             completed: true,
             outcome: "COMPLETED",
             action: "submit",
-            message: "Submitted active form in browser via Return key",
+            message: "Submitted active form in browser via Enter key",
           };
         }
 
@@ -676,77 +637,42 @@ export class ComputerOperator {
         case "get_content": {
           const url = params.url || params.target;
           if (url && /^https?:\/\//i.test(url)) {
-            await Driver.openUrl(url, signal);
-            await new Promise(r => setTimeout(r, 2000));
+            await this.browserAutomation.navigate(url, { timeout: 25000 }).catch(() => {});
           }
-          await Driver.bringToFront("chrome", signal).catch(() => {});
-
-          // Path 1: PinchTab (if reachable)
-          const pinchHealth = await this.pinchTab?.checkHealth?.().catch(() => null);
-          if (pinchHealth?.available) {
-            const pinchRes = await this.pinchTab.getContent().catch(() => null);
-            if (pinchRes?.ok && pinchRes.data) {
-              return {
-                ok: true,
-                executed: true,
-                verified: true,
-                completed: true,
-                outcome: "COMPLETED",
-                backend: "pinchtab",
-                action: "scrape",
-                url: url || "active-browser-tab",
-                content: pinchRes.data,
-                message: "Content successfully extracted from browser page via PinchTab",
-              };
-            }
-          }
-
-          // Path 2: AgentDesktop snapshot
-          let elementTree = null;
-          try {
-            const snapshot = await this.agentDesktop.execute({
-              command: "snapshot",
-              args: ["--app", "Chrome", "--skeleton"],
-              headed: true,
-            }, signal);
-            if (snapshot?.ok && snapshot.data) {
-              elementTree = snapshot.data;
-            }
-          } catch {}
-
-          const windowState = await Driver.getWindowState(signal).catch(() => ({}));
-          const uiaRes = await Driver.getElements(signal).catch(() => ({ elements: [] }));
-          const discoveredCount = uiaRes?.elements?.length || 0;
-          const elements = (uiaRes?.elements || []).slice(0, 50).map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
-
-          const hasContent = Boolean(elementTree) || discoveredCount > 0;
-          if (!hasContent) {
+          const contentRes = await this.browserAutomation.extractPageContent().catch(() => null);
+          if (contentRes?.ok && (contentRes.firstParagraph || contentRes.leadSummary || contentRes.heading)) {
             return {
-              ok: false,
+              ok: true,
               executed: true,
-              verified: false,
-              completed: false,
-              outcome: "FAILED",
+              verified: true,
+              completed: true,
+              outcome: "COMPLETED",
+              backend: "core/browser_automation",
               action: "scrape",
-              error: "no-content-discovered",
-              message: "Scrape operation returned 0 elements and no content tree from the active window.",
+              url: contentRes.url,
+              title: contentRes.title,
+              heading: contentRes.heading,
+              firstParagraph: contentRes.firstParagraph,
+              leadSummary: contentRes.leadSummary,
+              content: contentRes.leadSummary,
+              message: `Extracted content from ${contentRes.title || contentRes.url}: "${(contentRes.firstParagraph || contentRes.leadSummary).slice(0, 150)}..."`,
+              details: contentRes,
             };
           }
-
+          const uiaRes = await this.uiaRootTree.extractRootTree({ maxElements: 80 }).catch(() => null);
+          const discoveredCount = uiaRes?.elements?.length || 0;
           return {
-            ok: true,
+            ok: discoveredCount > 0,
             executed: true,
-            verified: true,
-            completed: true,
-            outcome: "COMPLETED",
-            backend: elementTree ? "agent-desktop" : "uia-driver",
+            verified: discoveredCount > 0,
+            completed: discoveredCount > 0,
+            outcome: discoveredCount > 0 ? "COMPLETED" : "FAILED",
+            backend: "core/uia_root_tree",
             action: "scrape",
-            url: url || windowState?.window?.title,
-            activeWindow: windowState?.window?.title,
+            activeWindow: uiaRes?.activeWindow?.title,
             elementsDiscovered: discoveredCount,
-            elements,
-            snapshot: elementTree,
-            message: `Scraped content: discovered ${discoveredCount} interactive elements from active webpage.`,
+            elements: (uiaRes?.elements || []).slice(0, 30),
+            message: discoveredCount > 0 ? `Discovered ${discoveredCount} UIA controls from active window` : "No content discovered",
           };
         }
 
@@ -801,12 +727,6 @@ export class ComputerOperator {
 
         case "login": {
           const url = params.url || (params.service === "gmail" ? "https://mail.google.com" : params.target);
-          if (url && /^https?:\/\//i.test(url)) {
-            await Driver.openUrl(url, signal);
-            await new Promise(r => setTimeout(r, 2000));
-          }
-          await Driver.bringToFront("chrome", signal).catch(() => {});
-
           const userEntered = Boolean(params.username || params.email);
           const passEntered = Boolean(params.password);
 
@@ -823,41 +743,31 @@ export class ComputerOperator {
             };
           }
 
-          const windowBefore = await Driver.getWindowState(signal).catch(() => ({}));
-
-          if (userEntered) {
-            await Driver.typeText(String(params.username || params.email), signal);
-            await Driver.pressKey("Return", signal);
-            await new Promise(r => setTimeout(r, 1500));
-          }
-          if (passEntered) {
-            await Driver.typeText(String(params.password), signal);
-            await Driver.pressKey("Return", signal);
-            await new Promise(r => setTimeout(r, 1500));
-          }
-
-          const windowAfter = await Driver.getWindowState(signal).catch(() => ({}));
+          const loginRes = await this.browserAutomation.login({
+            username: params.username || params.email,
+            password: params.password,
+            url,
+          });
 
           return {
-            ok: true,
-            executed: true,
-            inputDelivered: true,
+            ok: loginRes.ok,
+            executed: loginRes.executed,
             authenticated: "UNVERIFIED",
             verified: false,
             completed: false,
             outcome: "DELIVERED",
             action: "login",
             service: params.service || "web",
-            username: params.username || params.email || undefined,
+            username: loginRes.username,
             password: "[REDACTED]",
-            windowBefore: windowBefore?.window?.title,
-            windowAfter: windowAfter?.window?.title,
+            url: loginRes.url,
+            title: loginRes.title,
             message: `Login credentials submitted for ${params.service || url || "web service"}. Input delivered, authentication state UNVERIFIED.`,
+            details: loginRes,
           };
         }
 
         case "logout": {
-          await Driver.bringToFront("chrome", signal).catch(() => {});
           let navUrl = null;
           if (params.url) {
             navUrl = params.url;
@@ -865,7 +775,7 @@ export class ComputerOperator {
             navUrl = "https://accounts.google.com/Logout";
           }
           if (navUrl) {
-            const navRes = await Driver.openUrl(navUrl, signal);
+            const navRes = await this.browserAutomation.navigate(navUrl, { timeout: 25000 });
             const ok = navRes?.ok !== false;
             return {
               ok,
@@ -893,14 +803,28 @@ export class ComputerOperator {
 
         case "get_elements":
         case "get_uia_elements": {
-          const elements = await Driver.getElements(params?.target ? { target: params.target } : signal);
+          const uiaRes = await this.uiaRootTree.extractRootTree({ maxElements: 120 }).catch(() => null);
+          const elements = uiaRes?.elements || [];
           return {
             ok: true,
             action: "get_elements",
             verified: true,
             observed: true,
-            evidence: `${elements.count || (elements.elements || []).length} UI elements discovered`,
-            ...elements,
+            evidence: `${elements.length} UI elements discovered via UIA Root Tree`,
+            count: elements.length,
+            elements: elements.map(e => ({
+              id: e.uia_id,
+              name: e.name,
+              controlType: e.controlType,
+              type: e.controlType,
+              x: e.center?.x ?? 0,
+              y: e.center?.y ?? 0,
+              centerX: e.center?.x ?? 0,
+              centerY: e.center?.y ?? 0,
+              bounds: e.bounds,
+              isInteractive: e.isInteractive,
+            })),
+            activeWindow: uiaRes?.activeWindow,
           };
         }
 

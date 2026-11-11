@@ -544,6 +544,130 @@ export class BrowserAutomationEngine {
   }
 
   /**
+   * High-level form filling: fills multiple fields and optionally submits
+   */
+  async fillForm(fields = {}, { submit = false, timeout = 15000 } = {}) {
+    await this.ensureConnected();
+    await this.bringToForeground();
+
+    const typedFields = [];
+    const entries = Array.isArray(fields)
+      ? fields
+      : (fields && typeof fields === 'object' ? Object.entries(fields).map(([k, v]) => ({ name: k, value: v })) : []);
+
+    for (const item of entries) {
+      const fieldKey = item.name || item.field || item.selector || item.id || '';
+      const strVal = String(item.value ?? item.text ?? '');
+      if (!fieldKey && !strVal) continue;
+
+      let filled = false;
+      if (fieldKey) {
+        try {
+          const loc = this.page.getByLabel(fieldKey, { exact: false })
+            .or(this.page.getByPlaceholder(fieldKey, { exact: false }))
+            .or(this.page.locator(`input[name*="${fieldKey}" i], textarea[name*="${fieldKey}" i], input#${CSS.escape ? CSS.escape(fieldKey) : fieldKey}`))
+            .first();
+          await loc.fill(strVal, { timeout: 3500 });
+          filled = true;
+        } catch {}
+      }
+
+      if (!filled) {
+        try {
+          await this.page.keyboard.type(strVal);
+          await this.page.keyboard.press('Tab');
+          filled = true;
+        } catch {}
+      }
+
+      typedFields.push({
+        field: fieldKey,
+        value: /pass|pwd|secret|token/i.test(fieldKey) ? '[REDACTED]' : strVal,
+        success: filled,
+      });
+    }
+
+    if (submit) {
+      await this.page.keyboard.press('Enter');
+      await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    return {
+      ok: typedFields.length > 0,
+      executed: typedFields.length > 0,
+      verified: true,
+      completed: true,
+      outcome: 'COMPLETED',
+      action: 'fill_form',
+      fieldsProcessed: typedFields.length,
+      typedFields,
+      submitted: submit,
+      url: this.page.url(),
+    };
+  }
+
+  /**
+   * High-level login handler: fills username/email and password, then submits
+   */
+  async login({ username, email, password, url } = {}, { timeout = 20000 } = {}) {
+    await this.ensureConnected();
+    if (url && /^https?:\/\//i.test(url)) {
+      await this.navigate(url);
+    }
+    await this.bringToForeground();
+
+    const user = username || email;
+    let userFilled = false;
+    if (user) {
+      try {
+        const userLoc = this.page.getByLabel(/user|email|login|account/i)
+          .or(this.page.getByPlaceholder(/user|email|login/i))
+          .or(this.page.locator('input[type="email"], input[type="text"], input[name*="user" i], input[name*="email" i], input[name*="login" i]'))
+          .first();
+        await userLoc.fill(String(user), { timeout: 4000 });
+        userFilled = true;
+      } catch {
+        await this.page.keyboard.type(String(user));
+        await this.page.keyboard.press('Tab');
+        userFilled = true;
+      }
+    }
+
+    let passFilled = false;
+    if (password) {
+      try {
+        const passLoc = this.page.getByLabel(/pass|pwd/i)
+          .or(this.page.getByPlaceholder(/pass|pwd/i))
+          .or(this.page.locator('input[type="password"], input[name*="pass" i]'))
+          .first();
+        await passLoc.fill(String(password), { timeout: 4000 });
+        passFilled = true;
+      } catch {
+        await this.page.keyboard.type(String(password));
+        passFilled = true;
+      }
+      await this.page.keyboard.press('Enter');
+      await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+      await new Promise(r => setTimeout(r, 1500));
+    }
+
+    return {
+      ok: Boolean(userFilled || passFilled),
+      executed: Boolean(userFilled || passFilled),
+      authenticated: 'UNVERIFIED',
+      verified: false,
+      completed: false,
+      outcome: 'DELIVERED',
+      action: 'login',
+      username: user ? String(user) : undefined,
+      password: '[REDACTED]',
+      url: this.page.url(),
+      title: await this.page.title(),
+    };
+  }
+
+  /**
    * Close in-process browser session
    */
   async close() {

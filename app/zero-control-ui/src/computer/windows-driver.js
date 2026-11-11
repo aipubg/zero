@@ -180,7 +180,7 @@ class WindowsInputDaemon {
         },
       });
 
-      const payload = JSON.stringify({ action, ...params }) + "\n";
+      const payload = JSON.stringify({ ...params, action }) + "\n";
       this.process.stdin.write(payload);
     });
   }

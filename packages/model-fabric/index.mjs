@@ -362,15 +362,15 @@ export class ModelFabric {
           signal: combinedSignal,
         });
 
-        if ((res.status === 429 || res.status === 503) && attempt < maxRetries) {
-          const delay = 500 * Math.pow(2, attempt);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-
         if (!res.ok) {
           const errBody = await res.json().catch(() => ({}));
           const errMsg = errBody.error?.message || errBody.message || res.statusText || 'Upstream request failed';
+          const isTransient = res.status === 429 || res.status >= 500 || /temporarily unavailable/i.test(errMsg);
+          if (isTransient && attempt < maxRetries) {
+            const delay = 800 * Math.pow(2, attempt);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          }
           const err = new Error(errMsg);
           err.status = res.status;
           err.upstreamError = errBody;
