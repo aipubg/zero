@@ -1123,9 +1123,21 @@ export class ZeroNativeHost {
           if (typeof val.content === 'string') return val.content;
           return '';
         };
-        const initialText = extractInitText(params.message) || extractInitText(params.prompt) || extractInitText(params.task) || '';
+        const initialText = extractInitText(params.message) || extractInitText(params.prompt) || extractInitText(params.task) || extractInitText(params.initialText) || extractInitText(params.text) || extractInitText(params.input) || '';
+        let initialRun = { status: 'idle' };
         if (initialText) {
-          this.sessions.appendMessage(session.id, { role: 'user', content: initialText });
+          const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          initialRun = { status: 'started', runId };
+          void this._runAssistantRequest({
+            sessionKey: session.id,
+            userContent: initialText,
+            model: params.model,
+            ws,
+            isReferenceWire,
+            clientSession,
+            source: 'chat',
+            runId,
+          });
         }
         const sessionPayload = {
           key: session.id,
@@ -1146,7 +1158,9 @@ export class ZeroNativeHost {
           session: sessionPayload,
           entry: sessionPayload,
           continuation: { status: 'fulfilled' },
-          initialRun: { status: 'idle' },
+          initialRun,
+          runStarted: initialRun.status === 'started',
+          runId: initialRun.runId,
         };
       }
 

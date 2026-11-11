@@ -595,7 +595,7 @@ function installNativeSurfaces(host) {
                     item.getAttribute("data-catalog-session-key") ||
                     item.querySelector("a[href*='/chat/']")?.href?.split("/chat/")[1]?.split("?")[0] ||
                     item.querySelector("a[href*='session=']")?.href?.split("session=")[1]?.split("&")[0];
-        if (!key || key === "zero" || key === "main") continue;
+        if (!key || key === "zero") continue;
 
         const actions = document.createElement("span");
         actions.className = "zero-session-actions";
@@ -649,9 +649,9 @@ function installNativeSurfaces(host) {
         actions.appendChild(archiveBtn);
         actions.appendChild(deleteBtn);
 
-        const aside = item.querySelector(".sidebar-recent-session__aside, .session-row-aside, .session-row-actions");
-        if (aside) {
-          aside.prepend(actions);
+        const actionsSlot = item.querySelector(".session-row-actions") || item.querySelector(".sidebar-recent-session__aside, .session-row-aside");
+        if (actionsSlot) {
+          actionsSlot.prepend(actions);
         } else {
           item.appendChild(actions);
         }
@@ -728,7 +728,7 @@ function installNativeSurfaces(host) {
             .replace(/oc-pair:\/\//gi, "zero-pair://")
             .replace(/\bopenclaw\b/gi, "zero");
         }
-        if (el.textContent && /openclaw node|oc-pair/i.test(el.textContent)) {
+        if (el.textContent && /openclaw|oc-pair/i.test(el.textContent)) {
           el.textContent = el.textContent
             .replace(/openclaw node run/gi, "zero node run")
             .replace(/openclaw node/gi, "zero node")

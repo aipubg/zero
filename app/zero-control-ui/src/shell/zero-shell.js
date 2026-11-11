@@ -1,6 +1,7 @@
 import { gatewayRequest } from "../gateway/client.js";
 
 const DESTINATIONS = [
+  { label: "New Chat", path: "/new", icon: "plus", group: "Workspace", detail: "Start a fresh conversation" },
   { label: "Command", path: "/chat/zero", icon: "command", group: "Workspace", detail: "Your conversation with Zero" },
   { label: "Computer", path: "/systems", icon: "monitor", group: "Workspace", detail: "Desktop and connected systems" },
   { label: "Automations", path: "/automations", icon: "bolt", group: "Workspace", detail: "Scheduled work and background tasks" },
@@ -27,6 +28,7 @@ const SETTINGS_DESTINATIONS = [
 ];
 
 const ICONS = {
+  plus: '<path d="M12 5v14m-7-7h14"/>',
   command: '<path d="m8 6-5 6 5 6m8-12 5 6-5 6m-5 2 2-16"/>',
   monitor: '<rect x="3" y="4" width="18" height="13" rx="3"/><path d="M8 21h8m-4-4v4"/>',
   bolt: '<path d="m13 2-9 12h7l-1 8 10-13h-7z"/>',
@@ -86,11 +88,16 @@ export function installZeroShell(host) {
 
   function applyThemeMode(mode) {
     const isLight = mode === "light";
+    document.documentElement.setAttribute("data-theme", isLight ? "light" : "dark");
     document.documentElement.setAttribute("data-theme-mode", isLight ? "light" : "dark");
     document.documentElement.setAttribute("data-theme-resolved", isLight ? "light" : "dark");
     document.documentElement.setAttribute("data-zero-theme", isLight ? "light" : "dark");
     document.documentElement.classList.toggle("wa-light", isLight);
     document.documentElement.classList.toggle("wa-dark", !isLight);
+    if (document.body) {
+      document.body.classList.toggle("theme-light", isLight);
+      document.body.classList.toggle("theme-dark", !isLight);
+    }
     try {
       const storageKey = ["local", "Storage"].join("");
       const store = typeof window !== "undefined" ? window[storageKey] : null;
@@ -101,9 +108,11 @@ export function installZeroShell(host) {
           if (key && key.startsWith("openclaw.control.settings.v1")) {
             const s = JSON.parse(store.getItem(key) || "{}");
             s.themeMode = isLight ? "light" : "dark";
+            s.theme = isLight ? "light" : "dark";
             store.setItem(key, JSON.stringify(s));
           }
         }
+        window.dispatchEvent(new Event("storage"));
       }
     } catch {}
     const btn = document.querySelector(".zero-shell-theme-toggle");

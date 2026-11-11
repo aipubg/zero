@@ -356,50 +356,138 @@ html[data-theme-mode="light"] [data-zero-shell="orbital"] body {
 }
 
 /* SESSION ARCHIVE & DELETE ACTION BUTTONS */
+.session-row-host {
+  --session-row-actions-reserve: 68px !important;
+}
+
+.sidebar-recent-session__aside,
+.session-row-aside {
+  pointer-events: auto !important;
+}
+
 .zero-session-actions {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   gap: 3px;
   margin-left: auto;
-  opacity: 0;
+  pointer-events: auto !important;
+  z-index: 10;
+  opacity: 0.7;
   transition: opacity 0.15s ease;
 }
 
 .sidebar-recent-session:hover .zero-session-actions,
 .session-row-host:hover .zero-session-actions,
-[data-session-key]:hover .zero-session-actions {
-  opacity: 1;
+[data-session-key]:hover .zero-session-actions,
+.zero-session-actions:hover {
+  opacity: 1 !important;
 }
 
 .zero-session-action-btn {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   padding: 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
-  background: transparent;
-  border: 1px solid transparent;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--zero-line);
   border-radius: 4px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  pointer-events: auto !important;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
 }
 
 .zero-session-action-btn:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.15) !important;
   border-color: var(--zero-line);
+  transform: scale(1.1);
 }
 
 .zero-session-delete:hover {
   color: #ef4444 !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
 }
 
 .zero-session-archive:hover {
   color: #3b82f6 !important;
-  border-color: rgba(59, 130, 246, 0.3) !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+[data-theme-mode="light"] .zero-session-action-btn,
+[data-zero-theme="light"] .zero-session-action-btn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+[data-theme-mode="light"] .zero-session-action-btn:hover,
+[data-zero-theme="light"] .zero-session-action-btn:hover {
+  background: #e2e8f0 !important;
+}
+
+[data-theme-mode="light"] main.content,
+[data-zero-theme="light"] main.content,
+html[data-theme-mode="light"] [data-zero-shell="orbital"] main.content {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme-mode="light"] .chat-pane,
+[data-zero-theme="light"] .chat-pane,
+[data-theme-mode="light"] .chat-messages,
+[data-zero-theme="light"] .chat-messages,
+[data-theme-mode="light"] .chat-transcript,
+[data-zero-theme="light"] .chat-transcript {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme-mode="light"] .chat-bubble,
+[data-zero-theme="light"] .chat-bubble,
+[data-theme-mode="light"] .message-bubble,
+[data-zero-theme="light"] .message-bubble {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme-mode="light"] .chat-composer,
+[data-zero-theme="light"] .chat-composer,
+[data-theme-mode="light"] textarea[aria-label="Chat composer"],
+[data-zero-theme="light"] textarea[aria-label="Chat composer"] {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme-mode="light"] .chat-composer:focus-within,
+[data-zero-theme="light"] .chat-composer:focus-within {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 2px rgba(13,148,136,0.2) !important;
+}
+
+[data-theme-mode="light"] .chat-send-btn,
+[data-zero-theme="light"] .chat-send-btn {
+  background: #0d9488 !important;
+  color: #ffffff !important;
+  border-color: #0d9488 !important;
+}
+
+[data-theme-mode="light"] .card,
+[data-zero-theme="light"] .card,
+[data-theme-mode="light"] .zero-provider-card,
+[data-zero-theme="light"] .zero-provider-card,
+[data-theme-mode="light"] .zero-models-card,
+[data-zero-theme="light"] .zero-models-card,
+[data-theme-mode="light"] .settings-panel,
+[data-zero-theme="light"] .settings-panel {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
