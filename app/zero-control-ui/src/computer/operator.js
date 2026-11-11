@@ -16,6 +16,16 @@ import { ObservationCoordinator } from "./observation-coordinator.js";
 import * as Driver from "./windows-driver.js";
 import { modeManager } from "../../../../rules/mode-manager.mjs";
 import { AgentDesktop, DESKTOP_OBSERVATIONS } from "../../../../packages/agent-runtime/agent-desktop.mjs";
+import { PinchTabAdapter, defaultPinchTab } from "../../../../packages/agent-runtime/pinchtab.mjs";
+
+function redactSensitive(val, fieldName = '') {
+  if (!val) return val;
+  const lower = String(fieldName || '').toLowerCase();
+  if (lower.includes('pass') || lower.includes('pwd') || lower.includes('secret') || lower.includes('token') || lower.includes('credential')) {
+    return '[REDACTED]';
+  }
+  return String(val);
+}
 
 export const COMPUTER_ACTIONS = Object.freeze([
   "desktop",
@@ -84,8 +94,9 @@ export const OBSERVATION_ACTIONS = Object.freeze([
 ]);
 
 export class ComputerOperator {
-  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false, agentDesktop = new AgentDesktop(), mediaController = new MediaController() } = {}) {
+  constructor({ getPolicyState = null, logger = console, requireFreshSnapshotAfterRelease = false, strictPolicy = false, agentDesktop = new AgentDesktop(), pinchTab = defaultPinchTab, mediaController = new MediaController() } = {}) {
     this.agentDesktop = agentDesktop;
+    this.pinchTab = pinchTab;
     this.mediaController = mediaController;
     this.getPolicyState = getPolicyState;
     this.logger = logger;
@@ -550,19 +561,74 @@ export class ComputerOperator {
           await Driver.bringToFront("chrome", signal).catch(() => {});
 
           const fields = params.fields || params.data || params.formData;
+          const hasFieldsObj = fields && typeof fields === "object" && !Array.isArray(fields) && Object.keys(fields).length > 0;
+          const hasDirectText = Boolean(params.text || params.value);
+
+          if (!hasFieldsObj && !hasDirectText) {
+            return {
+              ok: false,
+              executed: false,
+              verified: false,
+              completed: false,
+              outcome: "FAILED",
+              action: "fill_form",
+              error: "no-fields-provided",
+              message: "Cannot fill form: no form fields or input values provided in request",
+            };
+          }
+
+          // Execution path 1: PinchTab (if reachable)
+          let backend = "windows-driver";
+          const pinchHealth = await this.pinchTab?.checkHealth?.().catch(() => null);
+          if (pinchHealth?.available && hasFieldsObj) {
+            const pinchRes = await this.pinchTab.fillForm(fields, { submit: Boolean(params.submit) });
+            if (pinchRes.ok) {
+              const redactedFields = Object.keys(fields).map(k => ({
+                field: k,
+                value: redactSensitive(fields[k], k),
+                verified: true,
+              }));
+              return {
+                ok: true,
+                executed: true,
+                verified: true,
+                completed: true,
+                outcome: "COMPLETED",
+                backend: "pinchtab",
+                action: "fill_form",
+                fieldsProcessed: redactedFields.length,
+                typedFields: redactedFields,
+                message: `Successfully filled ${redactedFields.length} field(s) in browser form via PinchTab.`,
+              };
+            }
+          }
+
+          // Execution path 2: Inspect interactive elements (UIA / DOM) to locate input fields
+          const uiaRes = await Driver.getElements(signal).catch(() => ({ elements: [] }));
+          const availableElements = uiaRes?.elements || [];
+          const editElements = availableElements.filter(e => e.controlType === 'Edit' || e.type === 'Edit' || (e.name && /input|edit|box|text/i.test(e.controlType || '')));
+
           const typedFields = [];
-          if (fields && typeof fields === "object" && !Array.isArray(fields)) {
+          if (hasFieldsObj) {
+            let fieldIndex = 0;
             for (const [key, val] of Object.entries(fields)) {
               const strVal = String(val ?? "");
+              const isSensitive = /pass|pwd|secret|token/i.test(key);
+              const matchedEdit = editElements.find(e => (e.name || '').toLowerCase().includes(key.toLowerCase())) || editElements[fieldIndex];
+              if (matchedEdit && matchedEdit.centerX && matchedEdit.centerY) {
+                await Driver.click({ x: matchedEdit.centerX, y: matchedEdit.centerY }, signal);
+                await new Promise(r => setTimeout(r, 100));
+              }
               await Driver.typeText(strVal, signal);
               await Driver.pressKey("Tab", signal);
-              typedFields.push({ field: key, value: strVal });
+              typedFields.push({ field: key, value: isSensitive ? '[REDACTED]' : strVal, elementMatched: Boolean(matchedEdit) });
+              fieldIndex++;
               await new Promise(r => setTimeout(r, 200));
             }
-          } else if (params.text || params.value) {
+          } else if (hasDirectText) {
             const textToType = String(params.text || params.value);
             if (params.x !== undefined && params.y !== undefined) {
-              await Driver.leftClick(params.x, params.y, signal);
+              await Driver.click({ x: params.x, y: params.y }, signal);
               await new Promise(r => setTimeout(r, 150));
             }
             await Driver.typeText(textToType, signal);
@@ -571,17 +637,38 @@ export class ComputerOperator {
 
           if (params.submit) {
             await Driver.pressKey("Return", signal);
+            await new Promise(r => setTimeout(r, 500));
           }
 
+          const ok = typedFields.length > 0;
+          return {
+            ok,
+            executed: ok,
+            verified: ok,
+            completed: ok,
+            outcome: ok ? "COMPLETED" : "FAILED",
+            backend,
+            action: "fill_form",
+            fieldsProcessed: typedFields.length,
+            typedFields,
+            message: ok
+              ? `Filled form fields in browser (${typedFields.length} field(s) processed)`
+              : "Form filling failed: 0 fields were processed",
+          };
+        }
+
+        case "submit":
+        case "submit_form": {
+          await Driver.bringToFront("chrome", signal).catch(() => {});
+          await Driver.pressKey("Return", signal);
           return {
             ok: true,
             executed: true,
             verified: true,
             completed: true,
             outcome: "COMPLETED",
-            action: "fill_form",
-            typedFields,
-            message: `Filled form fields in browser (${typedFields.length} field(s) processed)`,
+            action: "submit",
+            message: "Submitted active form in browser via Return key",
           };
         }
 
@@ -594,6 +681,27 @@ export class ComputerOperator {
           }
           await Driver.bringToFront("chrome", signal).catch(() => {});
 
+          // Path 1: PinchTab (if reachable)
+          const pinchHealth = await this.pinchTab?.checkHealth?.().catch(() => null);
+          if (pinchHealth?.available) {
+            const pinchRes = await this.pinchTab.getContent().catch(() => null);
+            if (pinchRes?.ok && pinchRes.data) {
+              return {
+                ok: true,
+                executed: true,
+                verified: true,
+                completed: true,
+                outcome: "COMPLETED",
+                backend: "pinchtab",
+                action: "scrape",
+                url: url || "active-browser-tab",
+                content: pinchRes.data,
+                message: "Content successfully extracted from browser page via PinchTab",
+              };
+            }
+          }
+
+          // Path 2: AgentDesktop snapshot
           let elementTree = null;
           try {
             const snapshot = await this.agentDesktop.execute({
@@ -608,6 +716,22 @@ export class ComputerOperator {
 
           const windowState = await Driver.getWindowState(signal).catch(() => ({}));
           const uiaRes = await Driver.getElements(signal).catch(() => ({ elements: [] }));
+          const discoveredCount = uiaRes?.elements?.length || 0;
+          const elements = (uiaRes?.elements || []).slice(0, 50).map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
+
+          const hasContent = Boolean(elementTree) || discoveredCount > 0;
+          if (!hasContent) {
+            return {
+              ok: false,
+              executed: true,
+              verified: false,
+              completed: false,
+              outcome: "FAILED",
+              action: "scrape",
+              error: "no-content-discovered",
+              message: "Scrape operation returned 0 elements and no content tree from the active window.",
+            };
+          }
 
           return {
             ok: true,
@@ -615,17 +739,20 @@ export class ComputerOperator {
             verified: true,
             completed: true,
             outcome: "COMPLETED",
+            backend: elementTree ? "agent-desktop" : "uia-driver",
             action: "scrape",
             url: url || windowState?.window?.title,
             activeWindow: windowState?.window?.title,
-            elementsDiscovered: uiaRes?.elements?.length || 0,
-            elements: (uiaRes?.elements || []).slice(0, 50).map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY })),
-            message: `Scraped content and discovered ${uiaRes?.elements?.length || 0} interactive elements from active webpage.`,
+            elementsDiscovered: discoveredCount,
+            elements,
+            snapshot: elementTree,
+            message: `Scraped content: discovered ${discoveredCount} interactive elements from active webpage.`,
           };
         }
 
         case "check_notifications": {
           let notifications = [];
+          let backendError = null;
           try {
             const notifRes = await this.agentDesktop.execute({
               command: "list-notifications",
@@ -634,10 +761,28 @@ export class ComputerOperator {
             }, signal);
             if (notifRes?.ok && Array.isArray(notifRes.data?.notifications)) {
               notifications = notifRes.data.notifications;
+            } else if (notifRes?.ok === false) {
+              backendError = notifRes.error?.message || "Notification query failed in agent-desktop";
             }
-          } catch {}
+          } catch (err) {
+            backendError = err.message;
+          }
 
           const windowState = await Driver.getWindowState(signal).catch(() => ({}));
+
+          if (backendError) {
+            return {
+              ok: false,
+              executed: true,
+              verified: false,
+              completed: false,
+              outcome: "FAILED",
+              action: "check_notifications",
+              error: backendError,
+              message: `Failed to check notifications: ${backendError}`,
+            };
+          }
+
           return {
             ok: true,
             executed: true,
@@ -662,44 +807,87 @@ export class ComputerOperator {
           }
           await Driver.bringToFront("chrome", signal).catch(() => {});
 
-          if (params.username || params.email) {
+          const userEntered = Boolean(params.username || params.email);
+          const passEntered = Boolean(params.password);
+
+          if (!userEntered && !passEntered) {
+            return {
+              ok: false,
+              executed: false,
+              verified: false,
+              completed: false,
+              outcome: "FAILED",
+              action: "login",
+              error: "missing-credentials",
+              message: "Login failed: No username or password provided",
+            };
+          }
+
+          const windowBefore = await Driver.getWindowState(signal).catch(() => ({}));
+
+          if (userEntered) {
             await Driver.typeText(String(params.username || params.email), signal);
             await Driver.pressKey("Return", signal);
             await new Promise(r => setTimeout(r, 1500));
           }
-          if (params.password) {
+          if (passEntered) {
             await Driver.typeText(String(params.password), signal);
             await Driver.pressKey("Return", signal);
+            await new Promise(r => setTimeout(r, 1500));
           }
+
+          const windowAfter = await Driver.getWindowState(signal).catch(() => ({}));
+
           return {
             ok: true,
             executed: true,
-            verified: true,
-            completed: true,
-            outcome: "COMPLETED",
+            inputDelivered: true,
+            authenticated: "UNVERIFIED",
+            verified: false,
+            completed: false,
+            outcome: "DELIVERED",
             action: "login",
             service: params.service || "web",
-            message: `Automated login sequence dispatched for ${params.service || url || "web service"}.`,
+            username: params.username || params.email || undefined,
+            password: "[REDACTED]",
+            windowBefore: windowBefore?.window?.title,
+            windowAfter: windowAfter?.window?.title,
+            message: `Login credentials submitted for ${params.service || url || "web service"}. Input delivered, authentication state UNVERIFIED.`,
           };
         }
 
         case "logout": {
           await Driver.bringToFront("chrome", signal).catch(() => {});
+          let navUrl = null;
           if (params.url) {
-            await Driver.openUrl(params.url, signal);
+            navUrl = params.url;
           } else if (params.service === "gmail" || params.service === "google") {
-            await Driver.openUrl("https://accounts.google.com/Logout", signal);
-          } else {
-            await Driver.pressKey("Tab", signal);
+            navUrl = "https://accounts.google.com/Logout";
+          }
+          if (navUrl) {
+            const navRes = await Driver.openUrl(navUrl, signal);
+            const ok = navRes?.ok !== false;
+            return {
+              ok,
+              executed: ok,
+              verified: ok,
+              completed: ok,
+              outcome: ok ? "COMPLETED" : "FAILED",
+              action: "logout",
+              service: params.service || "web",
+              url: navUrl,
+              message: ok ? `Navigated to logout endpoint: ${navUrl}` : "Failed to open logout endpoint",
+            };
           }
           return {
-            ok: true,
-            executed: true,
-            verified: true,
-            completed: true,
-            outcome: "COMPLETED",
+            ok: false,
+            executed: false,
+            verified: false,
+            completed: false,
+            outcome: "UNVERIFIED",
             action: "logout",
-            message: `Logout requested and executed for ${params.service || "active browser session"}.`,
+            error: "unspecified-logout-target",
+            message: "Cannot verify logout without a specific service or logout URL.",
           };
         }
 

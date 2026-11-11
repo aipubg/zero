@@ -36,9 +36,10 @@ export function registerLocalTools(engine, { cwd = process.cwd() } = {}) {
       if (typeof command !== 'string' || !command || !Array.isArray(args) || args.some(arg => typeof arg !== 'string')) throw new Error('Expected a command and an array of string arguments');
       if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) throw new Error('Process timeout must be between 1 and 300000 ms');
       const workingDirectory = directory ? location(directory) : cwd;
-      // Guard against interactive cmd shells that wait forever on stdin: replace /k with /c
-      let safeArgs = args.map(arg => (/^[\/-]k$/i.test(arg) ? '/c' : arg));
+      // Guard against interactive cmd shells that wait forever on stdin: replace /k with /c only for cmd.exe
+      let safeArgs = [...args];
       if (/^(cmd|cmd\.exe)$/i.test(path.basename(command))) {
+        safeArgs = safeArgs.map(arg => (/^[\/-]k$/i.test(arg) ? '/c' : arg));
         if (!safeArgs.some(a => /^[\/-][cC]$/.test(a))) {
           safeArgs = ['/c', ...safeArgs];
         }

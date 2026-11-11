@@ -13,6 +13,8 @@ export const DESKTOP_OBSERVATIONS = new Set(['status', 'version', 'snapshot', 'f
 const commands = new Set([...DESKTOP_OBSERVATIONS, 'click', 'double-click', 'right-click', 'type', 'set-value', 'clear', 'focus', 'select', 'toggle', 'check', 'uncheck', 'expand', 'collapse', 'scroll', 'scroll-to', 'press', 'hover', 'drag', 'mouse-move', 'mouse-click', 'mouse-wheel', 'launch', 'close-app', 'focus-window', 'resize-window', 'move-window', 'minimize', 'maximize', 'restore', 'clipboard-set', 'clipboard-clear', 'dismiss-notification', 'dismiss-all-notifications', 'notification-action', 'open-system-surface']);
 export const DESKTOP_COMMANDS = Object.freeze([...commands]);
 
+const verifiedBinaries = new Map();
+
 /** Primary semantic desktop transport. No shell, automatic retry or action fallback. */
 export class AgentDesktop {
   constructor({ binary = path.join(root, 'artifacts/agent-desktop-runtime/bin/agent-desktop.exe'), stateDir = path.join(process.env.ZERO_DATA_DIR || path.join(root, '.zero-data'), 'agent-desktop') } = {}) {
@@ -25,8 +27,14 @@ export class AgentDesktop {
     if (input !== undefined && (typeof input !== 'string' || Buffer.byteLength(input) > 128 * 1024 || !['type', 'set-value', 'clipboard-set'].includes(command))) throw new Error('Desktop stdin accepts at most 128 KiB of text for text commands');
     signal?.throwIfAborted();
     if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Pinned ZERO agent-desktop runtime currently supports Windows x64');
-    if (!fs.existsSync(this.binary)) throw new Error('agent-desktop runtime missing; run node scripts/install-agent-desktop.mjs');
-    if (createHash('sha256').update(await fs.promises.readFile(this.binary)).digest('hex') !== AGENT_DESKTOP_SHA256) throw new Error('agent-desktop binary differs from pinned verified release');
+    const stat = await fs.promises.stat(this.binary).catch(() => null);
+    if (!stat) throw new Error('agent-desktop runtime missing; run node scripts/install-agent-desktop.mjs');
+    const cached = verifiedBinaries.get(this.binary);
+    if (!cached || cached.size !== stat.size || cached.mtimeMs !== stat.mtimeMs) {
+      const hash = createHash('sha256').update(await fs.promises.readFile(this.binary)).digest('hex');
+      if (hash !== AGENT_DESKTOP_SHA256) throw new Error('agent-desktop binary differs from pinned verified release');
+      verifiedBinaries.set(this.binary, { size: stat.size, mtimeMs: stat.mtimeMs, verifiedAt: Date.now() });
+    }
     fs.mkdirSync(this.stateDir, { recursive: true });
     if (!this.privateStateReady) {
       this.privateStateReady = execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', fileURLToPath(new URL('./private-state.ps1', import.meta.url)), '-Directory', this.stateDir], { windowsHide: true, timeout: 10000, maxBuffer: 65536, signal }).catch(error => { this.privateStateReady = null; throw error; });

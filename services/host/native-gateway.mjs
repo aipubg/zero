@@ -243,36 +243,63 @@ export class ZeroNativeHost {
     tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
     tool('memory_remember', 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string', enum: Object.values(MEMORY_LAYERS), default: 'semantic' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
     tool('screen_context', 'Retrieve real local screen observations; may be empty when observation is stopped.', { type: 'object', properties: { query: { type: 'string' } } }, args => this.screenObserver.queryContext(args.query));
-    tool('see_screen', 'Inspect what is currently displayed on the user desktop or browser screen. Returns active window title, on-screen text via OCR, interactive UI elements, and screen dimensions.', { type: 'object', properties: { query: { type: 'string', description: 'Optional text query to find specific elements or text on screen' } } }, async (args) => {
+    tool('see_screen', 'Inspect what is currently displayed on the user desktop or browser screen. Returns active window title, on-screen text via OCR, interactive UI elements, and screen dimensions.', { type: 'object', properties: { query: { type: 'string', description: 'Optional text query to find specific elements or text on screen' } } }, async (args, signal) => {
       let windowState = null;
+      let windowError = null;
       try {
-        windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {});
-      } catch {}
+        windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {}, signal);
+      } catch (err) {
+        windowError = err.message;
+      }
+
+      let captureRes = null;
+      let captureError = null;
+      const captureStarted = Date.now();
       try {
-        await this.screenObserver.captureTick();
-      } catch {}
+        captureRes = await this.screenObserver.captureTick();
+      } catch (err) {
+        captureError = err.message;
+      }
+
+      const screenSizeRes = await canonicalCapabilityEngine.operator.execute('get_screen_size', {}, signal).catch(() => null);
+      const screenWidth = screenSizeRes?.width || screenSizeRes?.screen?.width || null;
+      const screenHeight = screenSizeRes?.height || screenSizeRes?.screen?.height || null;
+      const screenDpi = screenSizeRes?.dpi || null;
+
       const context = this.screenObserver.queryContext(args.query || '');
       let elements = [];
       try {
-        const uiaRes = await canonicalCapabilityEngine.operator.execute('get_elements', {});
+        const uiaRes = await canonicalCapabilityEngine.operator.execute('get_elements', {}, signal);
         if (uiaRes?.ok && Array.isArray(uiaRes.elements)) {
-          elements = uiaRes.elements.slice(0, 40).map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
+          elements = uiaRes.elements
+            .filter(e => Number.isFinite(e.centerX) && Number.isFinite(e.centerY) && e.centerX >= 0 && e.centerY >= 0)
+            .slice(0, 40)
+            .map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
         }
       } catch {}
+
       const latestObs = context.latestObservation;
       const recentObs = context.recentObservations || [];
-      const windowTitle = windowState?.window?.title || latestObs?.window_context || 'Desktop Screen';
-      const appProcess = windowState?.window?.process || latestObs?.application_id || 'system';
-      const screenWidth = windowState?.screen?.width || (windowState?.window?.bounds ? (windowState.window.bounds.x + windowState.window.bounds.width) : 1920);
-      const screenHeight = windowState?.screen?.height || (windowState?.window?.bounds ? (windowState.window.bounds.y + windowState.window.bounds.height) : 1080);
+      const windowTitle = windowState?.window?.title || latestObs?.window_context || (windowError ? 'Unavailable' : 'Desktop Screen');
+      const appProcess = windowState?.window?.processName || windowState?.window?.process || latestObs?.application_id || 'system';
+
+      const isLiveCapture = Boolean(captureRes && !captureError);
+      const captureAgeMs = captureRes ? (Date.now() - captureStarted) : (latestObs?.timestamp ? (Date.now() - latestObs.timestamp) : null);
+
       return {
-        ok: true,
+        ok: Boolean(windowState?.ok !== false || latestObs || elements.length > 0),
+        provenance: {
+          captureSource: isLiveCapture ? 'live_tick' : (latestObs ? 'stored_memory' : 'window_inspection_only'),
+          capturedAt: new Date().toISOString(),
+          captureAgeMs,
+          captureError: captureError || undefined,
+        },
         activeWindow: {
           title: windowTitle,
           process: appProcess,
           bounds: windowState?.window?.bounds || null,
         },
-        screenSize: { width: screenWidth, height: screenHeight },
+        screenSize: screenWidth && screenHeight ? { width: screenWidth, height: screenHeight, dpi: screenDpi } : null,
         summary: context.answer || `Active application: ${appProcess}, Window: "${windowTitle}"`,
         recentObservations: recentObs.slice(0, 5).map(o => ({
           app: o.application_id,
@@ -1203,6 +1230,7 @@ export class ZeroNativeHost {
         return {
           ok: true,
           key: session.id,
+          sessionKey: session.id,
           sessionId: session.id,
           session: sessionPayload,
           entry: sessionPayload,
@@ -1231,6 +1259,7 @@ export class ZeroNativeHost {
         return {
           ok: true,
           key: session.id,
+          sessionKey: session.id,
           sessionId: session.id,
           session: sessionPayload,
           entry: sessionPayload,
@@ -1259,6 +1288,7 @@ export class ZeroNativeHost {
         return {
           ok: true,
           key: session.id,
+          sessionKey: session.id,
           sessionId: session.id,
           session: sessionPayload,
           entry: sessionPayload,
@@ -2611,22 +2641,6 @@ export class ZeroNativeHost {
       {
         type: 'function',
         function: {
-          name: 'play',
-          description: 'Play a song, music, or video on YouTube in the foreground browser.',
-          parameters: {
-            type: 'object',
-            properties: {
-              query: { type: 'string', description: 'Search query or song name to play on YouTube' },
-              url: { type: 'string', description: 'YouTube video or web media URL' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Playback volume percentage (0-100)' },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Playback speed (e.g. 2 for 2x)' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
           name: 'zero_computer_action',
           description: 'Unified Windows & Browser Actions. Drives apps and browser in the foreground. Use mouse_move, left_click, type_text, and press_key to visually operate the desktop and browser. Use get_elements to discover interactive controls (buttons, inputs, links) with exact screen centerX and centerY coordinates for direct mouse clicks.',
           parameters: {
@@ -2635,7 +2649,7 @@ export class ZeroNativeHost {
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size', 'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout'],
+                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size', 'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'],
               },
               app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome")' },
               text: { type: 'string', description: 'Text to type into the focused window or element' },
@@ -2696,7 +2710,7 @@ export class ZeroNativeHost {
           parameters: {
             type: 'object',
             properties: {
-              action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search', 'fill_form', 'type', 'click', 'scrape', 'get_content', 'check_notifications', 'login', 'logout'], description: 'Browser action to execute' },
+              action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search', 'fill_form', 'type', 'click', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'], description: 'Browser action to execute' },
               query: { type: 'string', description: 'Search query or song name to play on YouTube' },
               volume_percent: { type: 'number', minimum: 0, maximum: 100 },
               playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
@@ -2923,9 +2937,18 @@ YOUR FULL CONTROL CAPABILITIES:
 AUTONOMOUS EXECUTION PRINCIPLES:
 - ALWAYS EXECUTE DIRECTLY: When the user asks you to do something (play a song on Spotify, open software, fill a form, check something, click a button, check notifications, login/logout), IMMEDIATELY call the appropriate tool to execute it directly and autonomously. NEVER print manual instructions or excuses.
 - MULTI-STEP AUTOMATION: If a task requires several steps (e.g. open browser -> navigate to form -> fill fields -> submit), carry them out sequentially to completion.
+- CREDENTIAL PRIVACY & STATE HONESTY: Never echo or output plain-text passwords or secret credentials in your text responses. Always redact passwords as '[REDACTED]'. When logging into a service, report that credentials were submitted and authentication state is unverified until explicitly confirmed.
 - CONCISE JARVIS CONFIRMATION: Once completed, report the outcome clearly and concisely.`;
 
-      if (!currentMessages.some((m) => m.role === 'system')) {
+      const existingSysIdx = currentMessages.findIndex((m) => m.role === 'system');
+      if (existingSysIdx !== -1) {
+        if (!currentMessages[existingSysIdx].content.includes('ZERO AUTONOMOUS OPERATOR')) {
+          currentMessages[existingSysIdx] = {
+            role: 'system',
+            content: `${ZERO_SYSTEM_PROMPT}\n\n${currentMessages[existingSysIdx].content}`,
+          };
+        }
+      } else {
         currentMessages.unshift({ role: 'system', content: ZERO_SYSTEM_PROMPT });
       }
 
@@ -3040,52 +3063,22 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           throw streamErr;
         }
 
-        if (toolCallsMap.size === 0 && accumulatedContent) {
-          const toolCallRegex = /<tool_call>([\s\S]*?)<\/tool_call>/gi;
-          let match;
-          let parsedIdx = 0;
-          while ((match = toolCallRegex.exec(accumulatedContent)) !== null) {
-            try {
-              const parsed = JSON.parse(match[1].trim());
-              if (parsed && (parsed.name || parsed.function?.name)) {
-                const name = parsed.name || parsed.function?.name;
-                const args = parsed.arguments || parsed.parameters || parsed.function?.arguments || {};
-                toolCallsMap.set(parsedIdx, {
-                  id: `call_parsed_${Date.now()}_${parsedIdx}`,
-                  type: 'function',
-                  function: {
-                    name,
-                    arguments: typeof args === 'string' ? args : JSON.stringify(args)
-                  }
-                });
-                parsedIdx++;
-              }
-            } catch {}
-          }
-          const dsmlRegex = /<｜DSML｜invoke\s+name="([^"]+)">([\s\S]*?)<\/｜DSML｜invoke>/gi;
-          while ((match = dsmlRegex.exec(accumulatedContent)) !== null) {
-            try {
-              const name = match[1];
-              const rawArgs = match[2].trim();
-              let args = {};
-              try { args = JSON.parse(rawArgs); } catch { args = { input: rawArgs }; }
-              toolCallsMap.set(parsedIdx, {
-                id: `call_parsed_${Date.now()}_${parsedIdx}`,
-                type: 'function',
-                function: {
-                  name,
-                  arguments: typeof args === 'string' ? args : JSON.stringify(args)
-                }
-              });
-              parsedIdx++;
-            } catch {}
-          }
-        }
-
         // If no tool calls were requested, complete with the accumulated content from this single request
         if (toolCallsMap.size === 0) {
-          if (!['stop', 'length', null, undefined].includes(finishReason) && finishReason) {
-            const error = new Error(`Model response did not complete: ${finishReason}`);
+          // Protocol-shaped assistant text is not an executed API tool call.
+          // Never interpret it as code or report the requested action complete.
+          if (/^\s*(?:<tool_call(?:\s|>)|<｜DSML｜function_calls>|<｜DSML｜invoke\b)/u.test(accumulatedContent)) {
+            const error = new Error('Model emitted tool protocol as text; no API tool call was executed');
+            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
+            throw error;
+          }
+          if (finishReason === 'length') {
+            const error = new Error('Model response was truncated due to token length limit (finish_reason: length); incomplete model turn rejected');
+            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
+            throw error;
+          }
+          if (finishReason !== 'stop' && finishReason !== null && finishReason !== undefined) {
+            const error = new Error(`Model declared tool calls without calls: ${finishReason}`);
             recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
             throw error;
           }
@@ -3098,7 +3091,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         // Reconstruct tool calls and execute capabilities
         const toolCalls = Array.from(toolCallsMap.values());
         let prepared;
-        try { prepared = prepareToolBatch(toolCalls, new Set(DESKTOP_TOOLS.map(tool => tool.function.name))); }
+        try { prepared = prepareToolBatch(toolCalls, DESKTOP_TOOLS); }
         catch (error) {
           recordTool('tool_batch_validation', { calls: toolCalls }, { ok: false, executed: false, error: error.message });
           throw error;
@@ -3146,7 +3139,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           const execRes = await canonicalCapabilityEngine.execute({
             agentId: clientSession?.clientId || 'zero',
             toolName: targetCapability,
-            args: { action, ...args },
+            args: { ...args, action },
             signal: abortController.signal,
           });
 
@@ -3173,8 +3166,59 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         recordTool('assistant_turn_limit', { maxTurns }, { ok: false, executed: false, error: error.message });
         throw error;
       }
-      const failedActions = executedActions.filter((action, index) => actionFailed(action) && !executedActions.slice(index + 1).some(later =>
-        !actionFailed(later) && later.execRes?.verified === true && later.action === action.action));
+
+      const READ_ONLY_ACTIONS = new Set([
+        'screenshot', 'see_screen', 'get_screen_size', 'get_cursor', 'get_cursor_position',
+        'get_window_state', 'list_windows', 'list_apps', 'get_elements', 'get_uia_elements',
+        'clipboard_get', 'wait', 'screen_context', 'research_search', 'memory_recall', 'skills_list', 'status'
+      ]);
+
+      const isReadOnly = (actionName) => READ_ONLY_ACTIONS.has(actionName);
+      const isActionFailed = (a) => a.execRes?.ok === false || ['FAILED', 'BLOCKED', 'CANCELLED'].includes(a.execRes?.outcome);
+
+      // Track unresolved failures: an action failure is only resolved if a LATER action with the same action
+      // AND matching target / parameters succeeded and was verified.
+      const unresolvedFailures = executedActions.filter((action, index) => {
+        if (!isActionFailed(action)) return false;
+        const targetId = action.args?.target || action.args?.app || action.args?.url || action.args?.query || action.args?.command;
+        return !executedActions.slice(index + 1).some(later => {
+          if (isActionFailed(later)) return false;
+          const laterTarget = later.args?.target || later.args?.app || later.args?.url || later.args?.query || later.args?.command;
+          const matchesTarget = !targetId || laterTarget === targetId;
+          return later.action === action.action && matchesTarget && (later.execRes?.verified === true || later.execRes?.outcome === 'COMPLETED');
+        });
+      });
+
+      const failedActions = unresolvedFailures;
+      const hasBlocked = executedActions.some(a => a.execRes?.outcome === 'BLOCKED');
+      const mutationActions = executedActions.filter(a => !isReadOnly(a.action));
+      const hasUnverifiedMutations = mutationActions.some(a => a.execRes?.verified !== true && a.execRes?.outcome !== 'COMPLETED');
+
+      let overallOutcome = 'COMPLETED';
+      if (hasBlocked) {
+        overallOutcome = 'BLOCKED';
+      } else if (unresolvedFailures.length > 0) {
+        overallOutcome = 'FAILED';
+      } else if (hasUnverifiedMutations) {
+        overallOutcome = 'UNVERIFIED';
+      } else if (executedActions.length === 0) {
+        overallOutcome = 'UNVERIFIED';
+      } else {
+        overallOutcome = 'COMPLETED';
+      }
+
+      // Redact sensitive credentials (passwords, tokens) from user-facing assistant content
+      const sensitiveSecrets = new Set();
+      for (const act of executedActions) {
+        if (act.args?.password) sensitiveSecrets.add(String(act.args.password));
+        if (act.args?.fields?.password) sensitiveSecrets.add(String(act.args.fields.password));
+      }
+      for (const secret of sensitiveSecrets) {
+        if (secret && typeof secret === 'string' && secret.length > 2) {
+          finalContent = finalContent.replaceAll(secret, '[REDACTED]');
+        }
+      }
+
       const modelContent = finalContent;
       // Truthful media widget card
       if (mediaResult && !finalContent.includes('zero-ui:media')) {
@@ -3195,18 +3239,6 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
       // Truthful progress card
       if (executedActions.length > 0 && !finalContent.includes('zero-ui:progress')) {
-        let overallOutcome = 'COMPLETED';
-        const lastAction = executedActions[executedActions.length - 1];
-        if (executedActions.some((a) => a.execRes?.outcome === 'BLOCKED')) {
-          overallOutcome = 'BLOCKED';
-        } else if (lastAction?.execRes?.ok === false && !executedActions.some(a => a.execRes?.ok || a.execRes?.completed)) {
-          overallOutcome = 'FAILED';
-        } else if (executedActions.some((a) => a.execRes?.ok || a.execRes?.verified || a.execRes?.completed)) {
-          overallOutcome = 'COMPLETED';
-        } else {
-          overallOutcome = 'UNVERIFIED';
-        }
-
         const progressPayload = {
           title: 'Zero Computer Execution',
           step: executedActions.length,
@@ -3214,18 +3246,22 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           status: overallOutcome.toLowerCase(),
           outcome: overallOutcome,
           details: executedActions[executedActions.length - 1]?.execRes?.after || `Desktop Action ${overallOutcome}`,
-          logs: executedActions.map((a) => `${a.execRes?.verified ? '✔' : '⚠'} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'FAILED')})`),
+          logs: executedActions.map((a) => `${a.execRes?.verified ? '✔' : (a.execRes?.ok ? 'ℹ' : '⚠')} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'FAILED')})`),
         };
         finalContent = (finalContent ? `${finalContent}\n\n` : '') + '```zero-ui:progress\n' + JSON.stringify(progressPayload, null, 2) + '\n```';
 
-        // If overall execution was failed or blocked, append truthful note
-        if (overallOutcome === 'FAILED' || overallOutcome === 'BLOCKED') {
-          finalContent += `\n\nNote: One or more requested actions returned status ${overallOutcome}.`;
+        // If overall execution was failed, unverified or blocked, append truthful note
+        if (overallOutcome === 'FAILED' || overallOutcome === 'BLOCKED' || overallOutcome === 'UNVERIFIED') {
+          finalContent += `\n\nNote: Task execution outcome is ${overallOutcome}.${unresolvedFailures.length > 0 ? ` ${unresolvedFailures.length} unresolved action failure(s).` : (hasUnverifiedMutations ? ' One or more state changes remain unverified.' : '')}`;
         }
       }
 
-    if (typeof finalContent !== 'string' || !finalContent.trim()) {
-        throw new Error('Model provider returned no text response; no completion was recorded.');
+      if (typeof finalContent !== 'string' || !finalContent.trim()) {
+        if (executedActions.length > 0) {
+          finalContent = `Autonomous task executed: ${executedActions.length} action(s) processed. Outcome: ${overallOutcome}.`;
+        } else {
+          throw new Error('Model provider returned no text response; no completion was recorded.');
+        }
       }
 
       abortController.signal.throwIfAborted();

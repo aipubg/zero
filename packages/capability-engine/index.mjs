@@ -23,7 +23,7 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
       'get_window_state', 'get_screen_size', 'get_cursor_position', 'get_cursor',
       'focus_window', 'control_window', 'bring_to_front', 'close_app', 'kill_app', 'play', 'browser', 'open_browser',
       'open_url', 'media_control', 'spotify_control', 'clipboard_get', 'clipboard_set', 'get_elements', 'get_uia_elements',
-      'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout'
+      'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'
     ],
   },
   'browser': {
@@ -31,7 +31,7 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     allowedActions: [
       'open', 'open_url', 'play', 'navigate', 'search', 'web_search',
       'click', 'type', 'fill_form', 'get_content', 'scrape',
-      'screenshot', 'press_key', 'check_notifications', 'login', 'logout'
+      'screenshot', 'press_key', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'
     ],
   },
   'open_app': {
@@ -357,7 +357,7 @@ export class CapabilityEngine {
           verified = true;
         }
       }
-      if (execResult.ok && ['get_elements', 'get_uia_elements', 'get_window_state', 'list_windows', 'list_apps', 'get_cursor_position', 'get_screen_size', 'play', 'browser', 'open_url', 'navigate', 'spotify_control', 'type_text', 'type', 'press_key', 'press', 'hotkey', 'left_click', 'click', 'right_click', 'double_click', 'close_app', 'kill_app', 'screenshot', 'scroll', 'wait', 'mouse_move', 'move', 'run_process'].includes(action)) {
+      if (execResult.ok && ['get_elements', 'get_uia_elements', 'list_windows', 'list_apps', 'play', 'browser', 'open_url', 'navigate', 'spotify_control', 'type_text', 'type', 'press_key', 'press', 'hotkey', 'left_click', 'click', 'right_click', 'double_click', 'close_app', 'kill_app', 'screenshot', 'scroll', 'wait', 'mouse_move', 'move', 'run_process'].includes(action)) {
         if (execResult.verified !== false) verified = true;
       }
       if (execResult.ok && (execResult.outcome === 'COMPLETED' || execResult.verified === true)) {
@@ -380,6 +380,7 @@ export class CapabilityEngine {
     }
 
     const finalResult = {
+      ...(typeof execResult === 'object' && execResult !== null ? execResult : {}),
       ok: executed && execResult.ok !== false && !isCancelled,
       executed,
       verified,

@@ -12,10 +12,44 @@ export function mountVoiceControl(button, host) {
   const label = document.createElement('span');
   button.replaceChildren(meter, label);
   button.setAttribute('aria-live', 'polite');
-  const render = (text, active = false, capture = null) => {
+  const render = (text, active = false, capture = null, sessionState = null) => {
     const fresh = active && Number.isFinite(capture?.lastFrameAt) && Date.now() - capture.lastFrameAt < 3000;
-    label.textContent = active && !fresh ? 'Voice: Waiting for audio' : text;
-    button.dataset.voiceState = active ? (fresh ? 'listening' : 'waiting') : 'idle';
+    let voiceState = 'idle';
+
+    if (failure) {
+      voiceState = 'error';
+    } else if (!host?.isConnected?.()) {
+      voiceState = 'disconnected';
+    } else if (sessionState?.playbackActive || sessionState?.state === 'speaking') {
+      voiceState = 'speaking';
+    } else if (sessionState?.transcriptionActive || sessionState?.state === 'transcribing') {
+      voiceState = 'transcribing';
+    } else if (sessionState?.muted) {
+      voiceState = 'muted';
+    } else if (active) {
+      voiceState = fresh ? 'listening' : 'waiting';
+    }
+
+    button.dataset.voiceState = voiceState;
+
+    if (voiceState === 'listening') {
+      label.textContent = 'Voice: Listening';
+    } else if (voiceState === 'waiting') {
+      label.textContent = 'Voice: Waiting for audio';
+    } else if (voiceState === 'speaking') {
+      label.textContent = 'Voice: Speaking';
+    } else if (voiceState === 'transcribing') {
+      label.textContent = 'Voice: Transcribing';
+    } else if (voiceState === 'muted') {
+      label.textContent = 'Voice: Muted';
+    } else if (voiceState === 'disconnected') {
+      label.textContent = 'Voice: Disconnected';
+    } else if (voiceState === 'error') {
+      label.textContent = `Voice: Error (${failure})`;
+    } else {
+      label.textContent = text;
+    }
+
     const rms = Number(capture?.lastFrameRms);
     const level = fresh && Number.isFinite(rms) ? Math.min(1, Math.max(0, rms / 6000)) : 0;
     button.style.setProperty('--zero-mic-level', String(level));
@@ -34,9 +68,9 @@ export function mountVoiceControl(button, host) {
       if (disposed || !button.isConnected || busy) return;
       const session = status.sessions?.find(session => session.microphoneActive);
       microphoneSession = session?.sessionId;
-      render(microphoneSession ? 'Voice: Listening' : `Voice: ${failure || status.status || 'PARTIAL'}`, Boolean(microphoneSession), session?.capture);
+      render(microphoneSession ? 'Voice: Listening' : `Voice: ${failure || status.status || 'PARTIAL'}`, Boolean(microphoneSession), session?.capture, session);
     } catch (error) {
-      if (!disposed && !busy) { microphoneSession = null; render('Voice: Unavailable'); }
+      if (!disposed && !busy) { microphoneSession = null; render('Voice: Unavailable', false, null, { state: 'disconnected' }); }
     } finally {
       if (!disposed && button.isConnected) timer = window.setTimeout(refresh, microphoneSession ? 250 : 2000);
     }
