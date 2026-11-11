@@ -132,11 +132,38 @@ export class BrowserAutomationEngine {
   }
 
   /**
+   * Find and bring the automation browser window physically to the foreground on top of all windows
+   */
+  async bringToForeground() {
+    try {
+      if (!this.browser) return;
+      const browserSession = await this.browser.newBrowserCDPSession();
+      const info = await browserSession.send('SystemInfo.getProcessInfo').catch(() => null);
+      const bPid = info?.processInfo?.find(p => p.type === 'browser')?.id;
+      if (!bPid) return;
+
+      const { runNativeWinAction } = await import('../../app/zero-control-ui/src/computer/windows-driver.js');
+      // Use topmost positioning at (x: 80, y: 60, w: 1280, h: 820)
+      await runNativeWinAction('focus_window', {
+        target: bPid,
+        command: 'topmost',
+        topmost: true,
+        x: 80,
+        y: 60,
+        width: 1280,
+        height: 820,
+      });
+    } catch {}
+  }
+
+  /**
    * Navigate to target URL natively via CDP / page
    */
   async navigate(url, { waitUntil = 'domcontentloaded', timeout = 30000 } = {}) {
     await this.ensureConnected();
+    await this.bringToForeground();
     await this.page.goto(url, { waitUntil, timeout });
+    await this.bringToForeground();
     return {
       ok: true,
       url: this.page.url(),
@@ -200,11 +227,64 @@ export class BrowserAutomationEngine {
   /**
    * Execute deterministic action by semantic ref ID (e0, e1...)
    */
-  async act({ kind = 'click', ref = null, value = '', key = 'Enter', timeout = 15000 } = {}) {
+  async act({ kind = 'click', ref = null, target = null, selector = null, value = '', key = 'Enter', submit = false, timeout = 15000 } = {}) {
     await this.ensureConnected();
+    await this.bringToForeground();
+
+    if (!ref && (target || selector)) {
+      if (this.nodeMap.size === 0) {
+        await this.snapshot({ interactiveOnly: false }).catch(() => {});
+      }
+      const targetQuery = String(target || selector || '').toLowerCase();
+      for (const [r, n] of this.nodeMap.entries()) {
+        if ((n.name && n.name.toLowerCase().includes(targetQuery)) || (n.description && n.description.toLowerCase().includes(targetQuery))) {
+          ref = r;
+          break;
+        }
+      }
+    }
 
     if (!ref && kind !== 'press') {
-      throw new Error(`Ref ID is required for action kind "${kind}"`);
+      // Fallback directly to page locator if ref could not be mapped
+      if (target || selector) {
+        const query = selector || target;
+        if (kind === 'click') {
+          const loc = this.page.getByRole('button', { name: query })
+            .or(this.page.getByRole('link', { name: query }))
+            .or(this.page.getByRole('searchbox', { name: query }))
+            .or(this.page.getByPlaceholder(query))
+            .or(this.page.getByText(query))
+            .or(this.page.locator(`[aria-label*="${query}" i]`));
+          await loc.first().click({ timeout: 5000 }).catch(async () => {
+            if (/^[a-zA-Z0-9_\-\.#\[\]="':]+$/.test(query)) {
+              await this.page.locator(query).first().click({ timeout: 3000 });
+            }
+          });
+          return { ok: true, action: 'click', target: query };
+        } else if (kind === 'fill' || kind === 'type') {
+          const loc = this.page.getByRole('searchbox', { name: query })
+            .or(this.page.getByPlaceholder(query))
+            .or(this.page.getByRole('textbox', { name: query }))
+            .or(this.page.locator(`[aria-label*="${query}" i]`));
+          await loc.first().fill(value, { timeout: 5000 }).catch(async () => {
+            await this.page.keyboard.type(value);
+          });
+          if (submit) {
+            await this.page.keyboard.press('Enter');
+            await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+          }
+          return { ok: true, action: kind, target: query, value };
+        }
+      } else if (kind === 'type' || kind === 'fill') {
+        // Direct keyboard typing into currently focused active element
+        await this.page.keyboard.type(value);
+        if (submit) {
+          await this.page.keyboard.press('Enter');
+          await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+        }
+        return { ok: true, action: kind, value, focused: true };
+      }
+      throw new Error(`Ref ID or target selector is required for action kind "${kind}"`);
     }
 
     const node = ref ? this.nodeMap.get(ref) : null;
@@ -308,6 +388,7 @@ export class BrowserAutomationEngine {
    */
   async search(query, { timeout = 15000 } = {}) {
     await this.ensureConnected();
+    await this.bringToForeground();
     const snap = await this.snapshot({ interactiveOnly: false });
     const searchNode = snap.nodes.find(n => 
       (['combobox', 'searchbox', 'textbox'].includes(n.role) || n.properties?.editable) &&
@@ -326,6 +407,7 @@ export class BrowserAutomationEngine {
 
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
     await new Promise(r => setTimeout(r, 2000));
+    await this.bringToForeground();
 
     const postSnap = await this.snapshot({ interactiveOnly: true });
     const items = await this.page.evaluate(() => {

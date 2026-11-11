@@ -95,6 +95,10 @@ public static class WinApiCore {
     public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
 
     public static bool ForceForeground(IntPtr hWnd) {
+        return ForceForeground(hWnd, false);
+    }
+
+    public static bool ForceForeground(IntPtr hWnd, bool keepTopmost) {
         if (hWnd == IntPtr.Zero) return false;
         try {
             ShowWindow(hWnd, SW_RESTORE);
@@ -119,11 +123,13 @@ public static class WinApiCore {
             keybd_event(0x12, 0, 0, 0); // Alt key down
             keybd_event(0x12, 0, 2, 0); // Alt key up
 
-            // Force topmost briefly then restore normal z-order so it doesn't permanently block other apps
+            // Force topmost briefly or permanently as requested
             SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             bool setFg = SetForegroundWindow(hWnd);
             BringWindowToTop(hWnd);
-            SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            if (!keepTopmost) {
+                SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            }
 
             if (foreThread != 0 && foreThread != currentThread) {
                 AttachThreadInput(currentThread, foreThread, false);
@@ -391,10 +397,9 @@ public static class WinApiCore {
     }
 
     public static WinItem[] GetDesktopWindows() {
-        IntPtr hdesk = OpenDesktop("Default", 0, false, 0x01FF);
         var list = new List<WinItem>();
         IntPtr fg = GetForegroundWindow();
-        EnumDesktopWindows(hdesk, (hwnd, lparam) => {
+        EnumWindows((hwnd, lparam) => {
             if (IsWindowVisible(hwnd)) {
                 var sb = new StringBuilder(256);
                 GetWindowText(hwnd, sb, 256);
@@ -749,7 +754,7 @@ function Dispatch-Action($req) {
             $result["livePixels"] = $hasPixels
         }
 
-        "get_window_state" {
+        { $_ -in "get_window_state", "get_active_window" } {
             $rawWins = [WinApiCore]::GetDesktopWindows()
             $fg = [WinApiCore]::GetForegroundWindow()
             $activeWin = $null
@@ -815,18 +820,39 @@ function Dispatch-Action($req) {
                 $foundHwnd = [IntPtr][int64]$req.hwnd
             } elseif ($target -match '^\d+$') {
                 $targetPid = [int]$target
-                $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
-                if ($p -and $p.MainWindowHandle -ne [IntPtr]::Zero) {
-                    $foundHwnd = $p.MainWindowHandle
+                # First check our enumerated desktop windows for this PID (filters for visible + size > 50x50)
+                $allWins = [WinApiCore]::GetDesktopWindows()
+                foreach ($w in $allWins) {
+                    if ($w.pid -eq $targetPid) {
+                        $foundHwnd = [IntPtr]$w.hwnd
+                        break
+                    }
+                }
+                if ($foundHwnd -eq [IntPtr]::Zero) {
+                    $p = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+                    if ($p -and $p.MainWindowHandle -ne [IntPtr]::Zero) {
+                        $foundHwnd = $p.MainWindowHandle
+                    }
                 }
             } else {
                 $targetStr = [string]$target
                 # First check our enumerated desktop windows
                 $allWins = [WinApiCore]::GetDesktopWindows()
-                foreach ($w in $allWins) {
-                    if ($w.Title -like "*$targetStr*" -or $w.Process -like "*$targetStr*" -or $w.Title -match [regex]::Escape($targetStr) -or $w.Process -match [regex]::Escape($targetStr)) {
-                        $foundHwnd = [IntPtr]$w.Hwnd
-                        break
+                # If target is chrome/browser, prioritize non-chat windows (exclude 'Zero' or '127.0.0.1' or 'localhost')
+                if ($targetStr -match '(?i)chrome|browser') {
+                    foreach ($w in $allWins) {
+                        if ($w.Process -like "*chrome*" -and $w.Title -notlike "*Zero*" -and $w.Title -notlike "*127.0.0.1*" -and $w.Title -notlike "*localhost*") {
+                            $foundHwnd = [IntPtr]$w.hwnd
+                            break
+                        }
+                    }
+                }
+                if ($foundHwnd -eq [IntPtr]::Zero) {
+                    foreach ($w in $allWins) {
+                        if ($w.Title -like "*$targetStr*" -or $w.Process -like "*$targetStr*" -or $w.Title -match [regex]::Escape($targetStr) -or $w.Process -match [regex]::Escape($targetStr)) {
+                            $foundHwnd = [IntPtr]$w.hwnd
+                            break
+                        }
                     }
                 }
                 if ($foundHwnd -eq [IntPtr]::Zero) {
@@ -865,11 +891,21 @@ function Dispatch-Action($req) {
             }
 
             if ($foundHwnd -ne [IntPtr]::Zero) {
+                # Target positioning: if x, y, width, height or topmost is specified, position explicitly
+                $posX = if ($null -ne $req.x) { [int]$req.x } else { 80 }
+                $posY = if ($null -ne $req.y) { [int]$req.y } else { 60 }
+                $posW = if ($null -ne $req.width) { [int]$req.width } else { 1280 }
+                $posH = if ($null -ne $req.height) { [int]$req.height } else { 820 }
+
                 if ($cmd -eq "minimize") {
                     [WinApiCore]::ShowWindow($foundHwnd, [WinApiCore]::SW_MINIMIZE) | Out-Null
                 } elseif ($cmd -eq "maximize") {
                     [WinApiCore]::ShowWindow($foundHwnd, [WinApiCore]::SW_MAXIMIZE) | Out-Null
                     [WinApiCore]::ForceForeground($foundHwnd) | Out-Null
+                } elseif ($cmd -eq "topmost" -or $req.topmost -eq $true) {
+                    [WinApiCore]::ShowWindow($foundHwnd, [WinApiCore]::SW_RESTORE) | Out-Null
+                    [WinApiCore]::SetWindowPos($foundHwnd, [WinApiCore]::HWND_TOPMOST, $posX, $posY, $posW, $posH, [WinApiCore]::SWP_SHOWWINDOW) | Out-Null
+                    [WinApiCore]::ForceForeground($foundHwnd, $true) | Out-Null
                 } elseif ($cmd -eq "close") {
                     [WinApiCore]::PostMessage($foundHwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
                     $pidOut = 0
@@ -983,7 +1019,20 @@ function Dispatch-Action($req) {
                 $result['launched'] = [string]$app
                 $result['focused'] = $false
                 if ($script:launchedWindow -ne [IntPtr]::Zero) {
-                    [WinApiCore]::ForceForeground($script:launchedWindow) | Out-Null
+                    $isNotepad = $displayTarget -match 'notepad'
+                    $isCalc = $displayTarget -match 'calc'
+                    if ($isNotepad) {
+                        # Explicitly position Notepad on top of Chrome window at (150, 120, 900, 600)
+                        [WinApiCore]::ShowWindow($script:launchedWindow, [WinApiCore]::SW_RESTORE) | Out-Null
+                        [WinApiCore]::SetWindowPos($script:launchedWindow, [WinApiCore]::HWND_TOPMOST, 150, 120, 900, 600, [WinApiCore]::SWP_SHOWWINDOW) | Out-Null
+                        [WinApiCore]::ForceForeground($script:launchedWindow, $true) | Out-Null
+                    } elseif ($isCalc) {
+                        [WinApiCore]::ShowWindow($script:launchedWindow, [WinApiCore]::SW_RESTORE) | Out-Null
+                        [WinApiCore]::SetWindowPos($script:launchedWindow, [WinApiCore]::HWND_TOPMOST, 200, 150, 420, 640, [WinApiCore]::SWP_SHOWWINDOW) | Out-Null
+                        [WinApiCore]::ForceForeground($script:launchedWindow, $true) | Out-Null
+                    } else {
+                        [WinApiCore]::ForceForeground($script:launchedWindow) | Out-Null
+                    }
                     $result['hwnd'] = [int64]$script:launchedWindow
                     $result['focused'] = ([WinApiCore]::GetForegroundWindow() -eq $script:launchedWindow)
                 }

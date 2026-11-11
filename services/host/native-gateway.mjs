@@ -2650,7 +2650,7 @@ export class ZeroNativeHost {
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size', 'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'],
+                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'navigate', 'search', 'press_key', 'press', 'mouse_move', 'left_click', 'click', 'type', 'fill', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size', 'fill_form', 'scrape', 'get_content', 'read_page', 'act', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'],
               },
               app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome")' },
               text: { type: 'string', description: 'Text to type into the focused window or element' },
@@ -3181,7 +3181,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           }
           if (fnName === 'play') action = 'play';
           if (fnName === 'spotify_control') action = 'spotify_control';
-          if (fnName === 'navigate') action = 'open_url';
+          if (fnName === 'navigate' || action === 'navigate') action = 'open_url';
+          if (action === 'press') action = 'press_key';
+          if (action === 'click' && args.x !== undefined && args.y !== undefined) {
+            action = 'left_click';
+          }
 
           // Guard: Strictly block unrequested close_app calls unless the user explicitly requested closing/exiting
           if (action === 'close_app' || action === 'kill_app') {
@@ -3220,7 +3224,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           }
 
           let targetCapability = 'zero_computer_action';
-          const isBrowserAction = fnName === 'browser' || ['play', 'open_url', 'navigate', 'search', 'web_search', 'fill_form', 'scrape', 'get_content', 'read_page'].includes(action);
+          const isBrowserAction = fnName === 'browser' || ['play', 'open_url', 'navigate', 'search', 'web_search', 'fill_form', 'scrape', 'get_content', 'read_page'].includes(action) || (['click', 'type', 'fill', 'press', 'act'].includes(action) && (args.ref || (args.x === undefined && args.y === undefined)));
           if (canonicalCapabilityEngine.customCapabilities.has(fnName)) {
             targetCapability = fnName;
           } else if (isBrowserAction) {
@@ -3410,14 +3414,32 @@ AUTONOMOUS EXECUTION PRINCIPLES:
                   videos: ytRes.videos,
                   results: ytRes.videos.map(v => ({ title: `${v.title} (${v.channel || 'Channel'})`, href: v.href })),
                 };
-              } else if (action === 'type' || action === 'fill' || action === 'click') {
+              } else if (action === 'type' || action === 'fill' || action === 'click' || action === 'press') {
                 try {
                   const actRes = await defaultBrowserAutomation.act({
-                    kind: action,
+                    kind: action === 'press' ? 'press' : action,
                     ref: args.ref || args.target,
+                    target: args.target || args.selector,
                     value: args.text || args.value,
+                    key: args.key || 'Enter',
+                    submit: args.submit === true,
                   });
-                  execRes = { ...actRes, ok: true, executed: true, verified: true, completed: true, outcome: 'COMPLETED' };
+                  let pageContent = { heading: '', firstParagraph: '', leadSummary: '' };
+                  if (args.submit || action === 'press' || (args.key && /enter/i.test(args.key))) {
+                    await new Promise(r => setTimeout(r, 1800));
+                    pageContent = await defaultBrowserAutomation.extractPageContent().catch(() => ({ heading: '', firstParagraph: '', leadSummary: '' }));
+                  }
+                  execRes = {
+                    ...actRes,
+                    ok: true,
+                    executed: true,
+                    verified: true,
+                    completed: true,
+                    outcome: 'COMPLETED',
+                    heading: pageContent.heading,
+                    firstParagraph: pageContent.firstParagraph,
+                    contentSummary: pageContent.leadSummary,
+                  };
                 } catch (cdpErr) {
                   console.warn(`[Zero Host] In-process CDP ${action} failed: ${cdpErr.message}. Falling back to uia_root_tree + os_controller!`);
                   // Cross-hand fallback: find target in UIA root tree or screen vision, focus, click center, and send input
