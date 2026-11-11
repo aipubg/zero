@@ -242,6 +242,11 @@ export class BrowserAutomationEngine {
 
       case 'fill':
       case 'type': {
+        const editableRoles = new Set(['combobox', 'searchbox', 'textbox', 'input', 'entry']);
+        const isEditable = editableRoles.has(node?.role) || node?.properties?.editable || node?.properties?.settable;
+        if (node && !isEditable) {
+          throw new Error(`Ref "${ref}" has role "${node.role}" which is not an editable input field. Fill/type requires combobox, searchbox, or textbox.`);
+        }
         if (remoteObject?.objectId) {
           await this.cdpSession.send('Runtime.callFunctionOn', {
             objectId: remoteObject.objectId,
@@ -295,6 +300,57 @@ export class BrowserAutomationEngine {
         title: postSnapshot.title,
         url: postSnapshot.url,
       },
+    };
+  }
+
+  /**
+   * High-level search on page: finds true searchbox/combobox, fills value, presses Enter
+   */
+  async search(query, { timeout = 15000 } = {}) {
+    await this.ensureConnected();
+    const snap = await this.snapshot({ interactiveOnly: false });
+    const searchNode = snap.nodes.find(n => 
+      (['combobox', 'searchbox', 'textbox'].includes(n.role) || n.properties?.editable) &&
+      (/search/i.test(n.name) || /search/i.test(n.description) || /q/i.test(n.name) || n.properties?.focused)
+    ) || snap.nodes.find(n => ['combobox', 'searchbox', 'textbox'].includes(n.role) || n.properties?.editable);
+
+    if (searchNode) {
+      await this.act({ kind: 'fill', ref: searchNode.ref, value: query, timeout });
+      await this.act({ kind: 'press', key: 'Enter', timeout });
+    } else {
+      // Fallback: use page locator directly
+      const input = this.page.locator('input[type="text"], input[name="q"], textarea[name="q"], input[role="combobox"]').first();
+      await input.fill(query);
+      await this.page.keyboard.press('Enter');
+    }
+
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    await new Promise(r => setTimeout(r, 2000));
+
+    const postSnap = await this.snapshot({ interactiveOnly: true });
+    const items = await this.page.evaluate(() => {
+      const list = [];
+      const elements = document.querySelectorAll('div.g, div[data-hveid], a[jsname]');
+      for (const el of elements) {
+        const heading = el.querySelector('h3');
+        const link = el.querySelector('a') || (el.tagName === 'A' ? el : null);
+        if (heading && link && heading.innerText.trim()) {
+          const title = heading.innerText.trim();
+          const href = link.href;
+          if (!list.some(x => x.title === title) && href.startsWith('http')) {
+            list.push({ title, href });
+          }
+        }
+      }
+      return list;
+    }).catch(() => []);
+
+    return {
+      ok: true,
+      query,
+      title: await this.page.title(),
+      url: this.page.url(),
+      results: items.slice(0, 5),
     };
   }
 

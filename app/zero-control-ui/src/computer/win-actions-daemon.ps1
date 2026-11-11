@@ -717,6 +717,16 @@ function Dispatch-Action($req) {
                 foreach ($w in $rawWins) {
                     if ($w.isForeground) { $activeWin = $w; break }
                 }
+                # If still null, the top-most enumerated window in desktop Z-order (excluding Program Manager) is the active window
+                if ($null -eq $activeWin) {
+                    foreach ($w in $rawWins) {
+                        if ($w.process -ne "explorer" -or $w.title -ne "Program Manager") {
+                            $activeWin = $w
+                            break
+                        }
+                    }
+                    if ($null -eq $activeWin) { $activeWin = $rawWins[0] }
+                }
             }
             if ($activeWin) {
                 $result["title"] = $activeWin.title

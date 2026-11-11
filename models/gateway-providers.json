@@ -25,8 +25,9 @@
       }
     ],
     "apiKeys": [
+      "env:ZERO_GATEWAY_KEY",
       "env:NVIDIA_API_KEY"
     ],
-    "apiKey": "env:NVIDIA_API_KEY"
+    "apiKey": "env:ZERO_GATEWAY_KEY"
   }
 ]

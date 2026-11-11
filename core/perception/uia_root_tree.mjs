@@ -110,16 +110,18 @@ export class UiaRootTreeExtractor {
       }
     }
 
+    const resolvedApp = winState.process || winState.app || winState.window?.process || winState.window?.processName || winState.processName || 'system';
+
     return {
       ok: true,
       timestamp: Date.now(),
       activeWindow: {
         title: winState.title || winState.window?.title || 'Desktop',
         hwnd: winState.hwnd || hwnd || null,
-        app: winState.app || winState.processName || 'explorer',
+        app: resolvedApp,
         bounds: winState.bounds || null,
       },
-      app: winState.app || winState.processName || 'explorer',
+      app: resolvedApp,
       totalCount: parsedElements.length,
       elements: parsedElements,
       // Lookup helpers
