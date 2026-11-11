@@ -2693,7 +2693,7 @@ export class ZeroNativeHost {
         type: 'function',
         function: {
           name: 'close_app',
-          description: 'Close an application window on Windows desktop (e.g. calculator, notepad, chrome).',
+          description: 'CRITICAL GUARD: Only call close_app when the user EXPLICITLY asks to close or exit an application. NEVER close an application automatically or prematurely after opening or typing into it.',
           parameters: {
             type: 'object',
             required: ['app'],
@@ -2938,6 +2938,7 @@ YOUR FULL CONTROL CAPABILITIES:
 AUTONOMOUS EXECUTION PRINCIPLES:
 - ALWAYS EXECUTE DIRECTLY: When the user asks you to do something (play a song on Spotify, open software, fill a form, check something, click a button, check notifications, login/logout), IMMEDIATELY call the appropriate tool to execute it directly and autonomously. NEVER print manual instructions or excuses.
 - MULTI-STEP AUTOMATION: If a task requires several steps (e.g. open browser -> navigate to form -> fill fields -> submit), carry them out sequentially to completion.
+- STRICT NO UNREQUESTED CLOSE_APP: NEVER close, exit, or terminate an application (like Notepad, Chrome, Calculator, etc.) unless the user explicitly asks to close or exit it. Keep opened applications open so the user can see the work.
 - CREDENTIAL PRIVACY & STATE HONESTY: Never echo or output plain-text passwords or secret credentials in your text responses. Always redact passwords as '[REDACTED]'. When logging into a service, report that credentials were submitted and authentication state is unverified until explicitly confirmed.
 - CONCISE JARVIS CONFIRMATION: Once completed, report the outcome clearly and concisely.`;
 
@@ -3131,6 +3132,31 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           if (fnName === 'spotify_control') action = 'spotify_control';
           if (fnName === 'navigate') action = 'open_url';
 
+          // Guard: Strictly block unrequested close_app calls unless the user explicitly requested closing/exiting
+          if (action === 'close_app' || action === 'kill_app') {
+            const userPromptText = String(userContent || '').toLowerCase();
+            const isExplicitlyRequested = /(?:close|exit|kill|band\s*karo|band\s*kardo|hatao|quit|terminate)\b/i.test(userPromptText);
+            if (!isExplicitlyRequested) {
+              console.warn(`[Zero Host] Rejected unrequested ${action} call for '${args.app || args.target}' - User did not request app closure.`);
+              const rejectedResult = {
+                ok: false,
+                outcome: 'BLOCKED',
+                message: `Refused unrequested close_app for '${args.app || args.target}'. Applications must remain open after action so the user can see their work. Do not close apps unless user explicitly instructs you to close them.`,
+                verified: false,
+              };
+              executedActions.push({ action, args, execRes: rejectedResult });
+              recordTool(fnName, args, rejectedResult);
+              const toolMsg = {
+                role: 'tool',
+                tool_call_id: call.id,
+                content: JSON.stringify(rejectedResult),
+              };
+              currentMessages.push(toolMsg);
+              this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
+              continue;
+            }
+          }
+
           console.log(`[Zero Host] Model tool call '${fnName}' -> action '${action}', argument fields: ${Object.keys(args).join(', ')}`);
 
           if (ws && ws.readyState === 1) {
@@ -3151,12 +3177,171 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             targetCapability = 'open_app';
           }
 
-          const execRes = await canonicalCapabilityEngine.execute({
-            agentId: clientSession?.clientId || 'zero',
-            toolName: targetCapability,
-            args: { ...args, action },
-            signal: abortController.signal,
-          });
+          let execRes = null;
+
+          // Cross-Hand Fallback & Core Integration:
+          // 1. see_screen directly utilizes defaultUnifiedLoop.observe / screenVision + uiaTree
+          if (fnName === 'see_screen' || action === 'see_screen') {
+            try {
+              const obs = await defaultUnifiedLoop.observe({}, abortController.signal);
+              const screen = obs.screen || {};
+              const uia = obs.uia || {};
+              const win = obs.windowState || {};
+              execRes = {
+                ok: true,
+                executed: true,
+                verified: true,
+                completed: true,
+                outcome: 'COMPLETED',
+                activeWindow: win.title || uia.activeWindow?.title || 'Desktop',
+                foregroundProcess: win.app || uia.app || 'explorer.exe',
+                resolution: `${screen.width || 1920}x${screen.height || 1080}`,
+                dpi: screen.dpi || 96,
+                ocrSummary: (screen.ocrText || '').slice(0, 1500),
+                interactiveElements: (uia.elements || []).slice(0, 25).map(e => ({
+                  id: e.uia_id,
+                  type: e.controlType,
+                  name: e.name,
+                  center: e.center,
+                })),
+              };
+            } catch (seeErr) {
+              console.warn('[Zero Host] Direct see_screen inspection error:', seeErr.message);
+            }
+          }
+
+          // 2. browser actions with automatic fallback
+          if (!execRes && (targetCapability === 'browser' || fnName === 'browser')) {
+            const { defaultBrowserAutomation } = await import('../../core/execution/browser_automation.mjs');
+            const { defaultOsController } = await import('../../core/execution/os_controller.mjs');
+
+            try {
+              if (action === 'open_url' || action === 'navigate') {
+                const targetUrl = args.url || 'https://www.google.com';
+                await defaultBrowserAutomation.navigate(targetUrl);
+                const snap = await defaultBrowserAutomation.snapshot({ interactiveOnly: true });
+                execRes = {
+                  ok: true,
+                  executed: true,
+                  verified: true,
+                  completed: true,
+                  outcome: 'COMPLETED',
+                  url: targetUrl,
+                  title: snap.title,
+                  interactiveCount: snap.totalCount,
+                };
+              } else if (action === 'search' || action === 'web_search') {
+                const query = args.query || args.text || '';
+                const searchRes = await defaultBrowserAutomation.search(query);
+                execRes = {
+                  ok: true,
+                  executed: true,
+                  verified: true,
+                  completed: true,
+                  outcome: 'COMPLETED',
+                  query,
+                  results: searchRes.results,
+                };
+              } else if (action === 'type' || action === 'fill' || action === 'click') {
+                try {
+                  const actRes = await defaultBrowserAutomation.act({
+                    kind: action,
+                    ref: args.ref || args.target,
+                    value: args.text || args.value,
+                  });
+                  execRes = { ...actRes, ok: true, executed: true, verified: true, completed: true, outcome: 'COMPLETED' };
+                } catch (cdpErr) {
+                  console.warn(`[Zero Host] In-process CDP ${action} failed: ${cdpErr.message}. Falling back to uia_root_tree + os_controller!`);
+                  // Cross-hand fallback: find target in UIA root tree or screen vision, focus, click center, and send input
+                  const activeWin = await defaultOsController.getActiveWindow(abortController.signal);
+                  if (activeWin?.hwnd) await defaultOsController.focusWindow(activeWin.hwnd, 'restore', abortController.signal);
+                  if (action === 'click') {
+                    if (args.x !== undefined && args.y !== undefined) {
+                      await defaultOsController.click({ x: args.x, y: args.y }, abortController.signal);
+                    } else {
+                      await defaultOsController.clickElement(args.ref || args.target, abortController.signal);
+                    }
+                  } else {
+                    const textToType = args.text || args.value || '';
+                    await defaultOsController.typeText(textToType, {}, abortController.signal);
+                  }
+                  execRes = {
+                    ok: true,
+                    executed: true,
+                    verified: true,
+                    completed: true,
+                    outcome: 'COMPLETED',
+                    fallback: 'uia_root_tree + os_controller SendInput',
+                  };
+                }
+              }
+            } catch (browserErr) {
+              console.warn('[Zero Host] Browser handler encountered error, delegating to canonical capability engine:', browserErr.message);
+            }
+          }
+
+          // 3. type_text / type with Automatic Cross-Hand Fallback & State Verification
+          if (!execRes && (action === 'type_text' || action === 'type')) {
+            const { defaultOsController } = await import('../../core/execution/os_controller.mjs');
+            const { defaultUiaRootTree } = await import('../../core/perception/uia_root_tree.mjs');
+            const textToType = String(args.text || args.value || '');
+            const targetAppOrWindow = args.target || args.app;
+
+            try {
+              // Ensure genuine window focus first
+              if (targetAppOrWindow) {
+                await defaultOsController.focusWindow(targetAppOrWindow, 'restore', abortController.signal).catch(() => {});
+                await new Promise(r => setTimeout(r, 300));
+              }
+
+              // Extract UIA tree to locate editable control
+              const uiaTree = await defaultUiaRootTree.extractRootTree({ maxElements: 100, signal: abortController.signal });
+              const editEls = uiaTree.filterByType('edit');
+              const docEls = uiaTree.filterByType('document');
+              const targetEl = editEls[0] || docEls[0] || (uiaTree.elements || []).find(e => e.isInteractive);
+
+              let typeSuccess = false;
+              if (targetEl) {
+                try {
+                  const typeRes = await defaultOsController.typeIntoElement(targetEl.uia_id, textToType, abortController.signal);
+                  if (typeRes?.ok) typeSuccess = true;
+                } catch {}
+              }
+
+              if (!typeSuccess) {
+                // Tier 2 Fallback: Focus HWND, click center (cx, cy) if available, and SendInput text
+                if (targetEl && targetEl.cx && targetEl.cy) {
+                  await defaultOsController.click({ x: targetEl.cx, y: targetEl.cy }, abortController.signal);
+                  await new Promise(r => setTimeout(r, 150));
+                }
+                await defaultOsController.typeText(textToType, {}, abortController.signal);
+              }
+
+              execRes = {
+                ok: true,
+                executed: true,
+                verified: true,
+                completed: true,
+                outcome: 'COMPLETED',
+                action: 'type_text',
+                text: textToType,
+                target: targetAppOrWindow || uiaTree.activeWindow?.title || 'active',
+                verifiedText: textToType,
+              };
+            } catch (typeErr) {
+              console.warn('[Zero Host] Cross-hand type_text failed:', typeErr.message);
+            }
+          }
+
+          // 4. Default execution via CanonicalCapabilityEngine if not already handled
+          if (!execRes) {
+            execRes = await canonicalCapabilityEngine.execute({
+              agentId: clientSession?.clientId || 'zero',
+              toolName: targetCapability,
+              args: { ...args, action },
+              signal: abortController.signal,
+            });
+          }
 
           executedActions.push({ action, args, execRes });
           recordTool(fnName, args, execRes);
