@@ -74,15 +74,15 @@ async function verifyPhase5UnifiedMaster() {
   if (!test3Res.includes('Target Application: notepad')) throw new Error('Test 3 failed: UIA Root Tree execution failed');
   console.log('✅ TEST 3 PASSED: UIA Root Tree inspected and typed text via direct system calls.');
 
-  // TEST 4: PinchTab Semantic Browser Automation
-  console.log('\n--- TEST 4: PinchTab Semantic Ref-based Browser Automation ---');
+  // TEST 4: Native In-Process Browser Automation
+  console.log('\n--- TEST 4: Native In-Process Browser Automation (CDP & AX Refs) ---');
   const test4Res = await runChatPrompt(
     page,
     "Browser open karo, Google par jao, PinchTab snapshot se search box ka exact ref ID (e...) dhundo, usme 'Zero AI Autonomous Agent' type karke search karo aur result verify karo.",
-    "PinchTab Deterministic Browser Automation Verified"
+    "Native In-Process Browser Automation Verified"
   );
-  if (!test4Res.includes('Resolved Input Ref ID: e8')) throw new Error('Test 4 failed: PinchTab Ref automation failed');
-  console.log('✅ TEST 4 PASSED: PinchTab AX tree snapshot navigated, filled via e8 ref, and verified.');
+  if (!test4Res.includes('Resolved Input Ref ID:')) throw new Error('Test 4 failed: Browser Ref automation failed');
+  console.log('✅ TEST 4 PASSED: Native in-process browser AX tree snapshot navigated, filled via ref, and verified.');
 
   // TEST 5: Self-Correction & Closed-Loop Verification
   console.log('\n--- TEST 5: Self-Correction Gate Verification ---');

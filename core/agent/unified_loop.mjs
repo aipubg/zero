@@ -4,7 +4,7 @@
  *
  * Integrated into Project Zero core execution pipeline:
  * 1. Perception Layer: Screen Vision + UIA Root Tree (Windows-Use)
- * 2. Execution Layer: Direct OS Controller + PinchTab Engine
+ * 2. Execution Layer: Direct OS Controller + Native Browser Automation (In-Process CDP)
  * 3. Planning & Loop: Microsoft Agent Framework stateful cycle with real-time streaming to Chat Section
  *
  * Provides real-time event streaming directly over WebSocket into zero-control-ui Chat Section.
@@ -13,14 +13,14 @@
 import { defaultScreenVision } from '../perception/screen_vision.mjs';
 import { defaultUiaRootTree } from '../perception/uia_root_tree.mjs';
 import { defaultOsController } from '../execution/os_controller.mjs';
-import { defaultPinchTabEngine } from '../execution/pinchtab_engine.mjs';
+import { defaultBrowserAutomation } from '../execution/browser_automation.mjs';
 
 export class UnifiedAgentLoop {
   constructor(options = {}) {
     this.screenVision = options.screenVision || defaultScreenVision;
     this.uiaTree = options.uiaTree || defaultUiaRootTree;
     this.osController = options.osController || defaultOsController;
-    this.pinchTab = options.pinchTab || defaultPinchTabEngine;
+    this.browserAutomation = options.browserAutomation || defaultBrowserAutomation;
     this.maxSteps = options.maxSteps || 25;
   }
 
@@ -28,11 +28,11 @@ export class UnifiedAgentLoop {
    * Diagnostic check verifying health and connection state of all 5 core modules
    */
   async getCoreDiagnostic() {
-    const [screenStatus, uiaStatus, osStatus, pinchtabStatus] = await Promise.all([
+    const [screenStatus, uiaStatus, osStatus, browserStatus] = await Promise.all([
       this.screenVision.getStatus().catch(err => ({ healthy: false, module: 'core/perception/screen_vision', error: err.message })),
       this.uiaTree.getStatus().catch(err => ({ healthy: false, module: 'core/perception/uia_root_tree', error: err.message })),
       this.osController.getStatus().catch(err => ({ healthy: false, module: 'core/execution/os_controller', error: err.message })),
-      this.pinchTab.getStatus().catch(err => ({ healthy: false, module: 'core/execution/pinchtab_engine', error: err.message })),
+      this.browserAutomation.getStatus().catch(err => ({ healthy: false, module: 'core/execution/browser_automation', error: err.message })),
     ]);
 
     const loopStatus = {
@@ -47,17 +47,16 @@ export class UnifiedAgentLoop {
       screen_vision: screenStatus,
       uia_root_tree: uiaStatus,
       os_controller: osStatus,
-      pinchtab: pinchtabStatus,
-      pinchtab_engine: pinchtabStatus,
+      browser_automation: browserStatus,
       unified_loop: loopStatus,
     };
 
-    const allHealthy = screenStatus.healthy && uiaStatus.healthy && osStatus.healthy && loopStatus.healthy;
+    const allHealthy = screenStatus.healthy && uiaStatus.healthy && osStatus.healthy && browserStatus.healthy && loopStatus.healthy;
 
     return {
       ok: true,
       timestamp: new Date().toISOString(),
-      architecture: 'Project Zero Unified Core v2.0',
+      architecture: 'Project Zero Unified Core v2.0 (Native In-Process CDP)',
       status: allHealthy ? 'HEALTHY' : 'DEGRADED',
       modules,
     };
@@ -96,20 +95,20 @@ export class UnifiedAgentLoop {
 - **Cursor Position:** \`X: ${m.os_controller.cursor?.x || 0}, Y: ${m.os_controller.cursor?.y || 0}\`
 - **Input Daemon Latency:** \`< 5ms\` (Persistent Win32 SendInput daemon)
 
-#### 4. Execution: PinchTab Engine & CDP Accessibility
-- **Module:** \`${m.pinchtab.module}\`
-- **State:** \`${m.pinchtab.status.toUpperCase()}\`
-- **Endpoint:** \`${m.pinchtab.endpoint}\`
-- **CDP Ref Engine:** \`${m.pinchtab.details?.status || 'standby (ready for browser launch)'}\`
+#### 4. Execution: Native In-Process Browser Automation (CDP & AX Refs)
+- **Module:** \`${m.browser_automation.module}\`
+- **State:** \`${m.browser_automation.status.toUpperCase()}\`
+- **Engine:** \`Native In-Process CDP Session\` (Zero external dashboard, Zero tokens)
+- **Active Page:** \`${m.browser_automation.pageTitle || 'Standby'}\` (${m.browser_automation.activeUrl || 'about:blank'})
 
 #### 5. Autonomous Loop: Microsoft Agent Framework Engine
 - **Module:** \`${m.unified_loop.module}\`
 - **State:** \`${m.unified_loop.status.toUpperCase()}\`
-- **Loop Pipeline:** \`Observe (Vision + UIA) -> Plan (Model Fabric) -> Act (OS/PinchTab) -> Verify\`
+- **Loop Pipeline:** \`Observe (Vision + UIA) -> Plan (Model Fabric) -> Act (OS/Browser) -> Verify\`
 - **Chat Section Route:** \`Direct WebSocket Event Stream (zero-control-ui)\`
 
 ---
-*All 5 core modules are verified and wired directly into Project Zero core execution pipeline.*`;
+*All 5 core modules are verified and wired directly into Project Zero core execution pipeline with zero external middleware.*`;
   }
 
   /**
@@ -173,7 +172,7 @@ export class UnifiedAgentLoop {
   }
 
   /**
-   * Act step: Executes concrete actions across OS Controller or PinchTab Engine
+   * Act step: Executes concrete actions across OS Controller or Native Browser Automation
    */
   async act(action, signal = null) {
     signal?.throwIfAborted();
@@ -199,16 +198,14 @@ export class UnifiedAgentLoop {
         return await this.osController.launch(params.app || params.app_name, signal);
       case 'focus_window':
         return await this.osController.focusWindow(params.target, params.command, signal);
-      case 'pinchtab_navigate':
-        return await this.pinchTab.navigate(params.url, params);
-      case 'pinchtab_snapshot':
-        return await this.pinchTab.getSnapshot(params);
-      case 'pinchtab_action':
-      case 'pinchtab_act':
-        return await this.pinchTab.act(params);
-      case 'pinchtab_extract_text':
-      case 'pinchtab_content':
-        return await this.pinchTab.getContent(params);
+      case 'browser_navigate':
+        return await this.browserAutomation.navigate(params.url);
+      case 'browser_snapshot':
+        return await this.browserAutomation.snapshot(params);
+      case 'browser_act':
+        return await this.browserAutomation.act(params);
+      case 'browser_extract_text':
+        return await this.browserAutomation.extractText(params.ref);
       default:
         throw new Error(`Unsupported core action type: ${type}`);
     }
@@ -237,7 +234,6 @@ export class UnifiedAgentLoop {
     // Step 3: Perform action
     let actionResult = null;
     if (actionType === 'type') {
-      // Find the primary input/edit element
       const editElements = rootTree.filterByType('edit');
       const docElements = rootTree.filterByType('document');
       const targetEl = targetElement 
@@ -297,8 +293,8 @@ export class UnifiedAgentLoop {
   /**
    * Master Unified Workflow:
    * 1. [OBSERVE] Live Screen Share Frame & Desk State
-   * 2. [ACT: BROWSER] PinchTab navigates to web page & extracts semantic AX snapshot with refs (e0, e1...)
-   * 3. [EXTRACT] Retrieves page title / headline information via PinchTab
+   * 2. [ACT: BROWSER] Native browser_automation navigates & extracts semantic AX snapshot with refs (e0, e1...)
+   * 3. [EXTRACT] Retrieves page title / headline information via native CDP
    * 4. [ACT: OS] Windows UIA Root Tree launches/focuses Notepad via agent-desktop/Win32 system calls
    * 5. [ACT: TYPE] Types the extracted browser information into Notepad via UIA ID / SendInput
    * 6. [VERIFY] Dual verification: UIA Root Tree state check + Screen Share frame diff confirmation
@@ -311,16 +307,16 @@ export class UnifiedAgentLoop {
     trace.push({ stage: 'OBSERVE', action: 'screen_share_observe', description: 'Observing initial live desktop visual frame and window state' });
     const initialScreen = await this.screenVision.captureFrame({ forceFresh: true, signal });
 
-    // Step 2: ACT - PinchTab Browser Navigation & AX Snapshot
-    trace.push({ stage: 'ACT', action: 'pinchtab_navigate', description: `Navigating browser to ${url} via PinchTab CDP bridge` });
-    const navRes = await this.pinchTab.navigate(url);
+    // Step 2: ACT - Native In-Process Browser Navigation & AX Snapshot
+    trace.push({ stage: 'ACT', action: 'browser_navigate', description: `Navigating browser to ${url} via in-process CDP session` });
+    const navRes = await this.browserAutomation.navigate(url);
     await new Promise(r => setTimeout(r, 1200));
 
-    trace.push({ stage: 'OBSERVE', action: 'pinchtab_snapshot', description: 'Extracting semantic Accessibility Tree snapshot with ref IDs (e0, e1...)' });
-    const browserSnap = await this.pinchTab.getSnapshot({ filter: 'interactive' });
+    trace.push({ stage: 'OBSERVE', action: 'browser_snapshot', description: 'Extracting semantic Accessibility Tree snapshot with ref IDs (e0, e1...)' });
+    const browserSnap = await this.browserAutomation.snapshot({ interactiveOnly: true });
     const extractedTitle = browserSnap.title || 'Google';
     const topHeadlineNode = browserSnap.nodes.find(n => n.role === 'heading' || n.role === 'link' || n.name?.length > 4) || { ref: 'e0', name: 'Google Search' };
-    const extractedInfo = `[PinchTab Extracted]: ${extractedTitle} - ${topHeadlineNode.name} (Ref: ${topHeadlineNode.ref})`;
+    const extractedInfo = `[Native Browser Extracted]: ${extractedTitle} - ${topHeadlineNode.name} (Ref: ${topHeadlineNode.ref})`;
 
     trace.push({ stage: 'EXTRACT', action: 'data_extracted', info: extractedInfo, ref: topHeadlineNode.ref });
 
@@ -368,7 +364,7 @@ export class UnifiedAgentLoop {
       browserSummary: {
         url: browserSnap.url || url,
         title: extractedTitle,
-        nodesIndexed: browserSnap.count,
+        nodesIndexed: browserSnap.totalCount,
       },
       osSummary: {
         activeWindow: activeWin?.title || targetApp,
