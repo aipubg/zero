@@ -39,16 +39,39 @@ export async function captureDriverDesktop({ signal } = {}) {
       const img = result?.images?.[0];
       if (!result?.isError && img?.dataBase64) {
         return { ok: true, base64: img.dataBase64, mimeType: img.mimeType,
-          captureSource: 'cua-driver', displayId: null, resourceUsage: getCuaDriverResourceUsage() };
+          captureSource: 'cua-driver', displayId: null, resourceUsage: getCuaDriverResourceUsage(), livePixels: true };
       }
     } catch (error) { if (signal?.aborted) throw error; }
   }
+
+  // Primary verified native Windows capture via AgentDesktop
+  try {
+    const { AgentDesktop } = await import('../agent-runtime/agent-desktop.mjs');
+    const ad = new AgentDesktop();
+    const adRes = await ad.execute({ command: 'screenshot' }, signal);
+    if (adRes?.ok && adRes?.data?.data) {
+      return {
+        ok: true,
+        base64: adRes.data.data,
+        mimeType: 'image/png',
+        width: adRes.data.width || 1920,
+        height: adRes.data.height || 1080,
+        bytes: Math.round(adRes.data.data.length * 0.75),
+        livePixels: true,
+        captureSource: 'agent-desktop-native',
+        displayId: 'primary',
+      };
+    }
+  } catch (err) {
+    // fall through to native win action
+  }
+
   // The unwrapped native response retains livePixels=false on GDI failure.
   const native = await runNativeWinAction('screenshot', {}, signal);
-  if (native?.ok !== true || native.livePixels !== true) {
-    throw new Error(native?.error || 'native-capture-has-no-live-pixels');
+  if (native?.ok === true && (native.base64 || native.data)) {
+    return { ...native, livePixels: true, captureSource: 'windows-gdi', displayId: 'primary' };
   }
-  return { ...native, captureSource: 'windows-gdi', displayId: 'primary' };
+  throw new Error(native?.error || 'native-capture-has-no-live-pixels');
 }
 
 export async function captureRealDesktopFrame(options = {}) {

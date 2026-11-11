@@ -317,8 +317,14 @@ function installNativeSurfaces(host) {
     }
     mountedComputer = null;
     // Always clean up any and all hold host wrappers to prevent duplicate cards
-    for (const node of document.querySelectorAll(".zero-computer-hold-host")) {
+    for (const node of document.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
       node.remove();
+    }
+    const systemsDesktop = document.querySelector(".systems-desktop");
+    if (systemsDesktop) {
+      for (const node of systemsDesktop.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
+        node.remove();
+      }
     }
   };
 
@@ -346,6 +352,11 @@ function installNativeSurfaces(host) {
     unmountComputer();
     for (const node of document.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
       node.remove();
+    }
+    if (desktop) {
+      for (const node of desktop.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
+        node.remove();
+      }
     }
     const hostEl = document.createElement("div");
     hostEl.className = "zero-computer-hold-host";
@@ -687,6 +698,17 @@ function installNativeSurfaces(host) {
           svg.classList.add("zero-scrubbed");
           svg.setAttribute("viewBox", "0 0 100 100");
           svg.innerHTML = `<circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text>`;
+        }
+      }
+      // Permanently remove any Discord elements, links, or dropdown items
+      const discordItems = root.querySelectorAll ? root.querySelectorAll('a[href*="discord"], [aria-label*="discord" i], wa-dropdown-item[value*="discord"], .community-invite-card') : [];
+      for (const item of discordItems) {
+        item.closest("wa-dropdown-item")?.remove() || item.closest("li")?.remove() || item.remove();
+      }
+      const potentialDiscordNodes = root.querySelectorAll ? root.querySelectorAll("a, button, [role='menuitem']") : [];
+      for (const el of potentialDiscordNodes) {
+        if (/discord/i.test(el.textContent || "") || /discord/i.test(el.getAttribute("href") || "") || /discord/i.test(el.getAttribute("aria-label") || "")) {
+          el.closest("wa-dropdown-item")?.remove() || el.closest("li")?.remove() || el.remove();
         }
       }
       const openclawItems = root.querySelectorAll ? root.querySelectorAll('wa-dropdown-item[value*="openclaw"], [aria-label*="openclaw" i], .session-menu__text') : [];

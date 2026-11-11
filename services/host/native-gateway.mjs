@@ -243,6 +243,27 @@ export class ZeroNativeHost {
     tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
     tool('memory_remember', 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string', enum: Object.values(MEMORY_LAYERS), default: 'semantic' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
     tool('screen_context', 'Retrieve real local screen observations; may be empty when observation is stopped.', { type: 'object', properties: { query: { type: 'string' } } }, args => this.screenObserver.queryContext(args.query));
+    tool('see_screen', 'Inspect what is currently displayed on the user desktop or browser screen. Returns active window title, on-screen text via OCR, interactive UI elements, and screen dimensions.', { type: 'object', properties: { query: { type: 'string', description: 'Optional text query to find specific elements or text on screen' } } }, async (args) => {
+      let windowState = null;
+      try {
+        windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {});
+      } catch {}
+      const context = this.screenObserver.queryContext(args.query || '');
+      let elements = [];
+      try {
+        const uiaRes = await canonicalCapabilityEngine.operator.execute('get_elements', {});
+        if (uiaRes?.ok && Array.isArray(uiaRes.elements)) {
+          elements = uiaRes.elements.slice(0, 40).map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
+        }
+      } catch {}
+      return {
+        ok: true,
+        activeWindow: windowState?.window || null,
+        screenSize: windowState?.screen || null,
+        recentOcrObservations: context.observations || [],
+        interactiveElements: elements,
+      };
+    });
     this.skillLoader.executionContext = { stateMachine: this.tasks, modelFabric: this.modelFabric, capabilityEngine: canonicalCapabilityEngine };
     tool('skills_list', 'Discover installed skills and their descriptions.', { type: 'object' }, () => ({ skills: this.skillLoader.listSkills() }));
     tool('skill_execute', 'Execute an enabled installed skill through a durable task and the model/tool loop.', { type: 'object', properties: { name: { type: 'string' }, goal: { type: 'string' } }, required: ['name', 'goal'] }, (args, signal) => this.skillLoader.executeSkill(args.name, args, { signal }));
@@ -316,6 +337,14 @@ export class ZeroNativeHost {
     await this.modelFabric.localChat.refresh();
     await this.pluginManager.initialize();
     await this.observationLifecycle.initialize();
+    if (process.platform === 'win32') {
+      try {
+        await this.observationLifecycle.control('start');
+        console.log('[Zero Host] Screen Intelligence auto-started successfully on win32.');
+      } catch (obsErr) {
+        console.warn('[Zero Host] Screen Intelligence start warning:', obsErr.message);
+      }
+    }
     const wsModule = await loadWs();
     const WebSocketServer = wsModule.WebSocketServer;
 
@@ -2592,6 +2621,19 @@ export class ZeroNativeHost {
           },
         },
       },
+      {
+        type: 'function',
+        function: {
+          name: 'see_screen',
+          description: 'Inspect what is currently on the desktop or browser screen. Returns the active window, recent on-screen OCR text, and interactive elements with coordinates.',
+          parameters: {
+            type: 'object',
+            properties: {
+              query: { type: 'string', description: 'Optional query to find specific text or UI elements on screen' },
+            },
+          },
+        },
+      },
     ];
 
     for (const definition of canonicalCapabilityEngine.customCapabilities.values()) {
@@ -2718,12 +2760,14 @@ export class ZeroNativeHost {
 
       const ZERO_SYSTEM_PROMPT = `You are ZERO, an autonomous AI operating system assistant and personal intelligence (JARVIS).
 You have full direct physical control over the user's Windows PC and web browser via tools:
-- zero_computer_action: launch and operate apps (Chrome, Spotify, Notepad, etc.), move the mouse, click elements, drag, scroll, type text, send keyboard hotkeys, and discover clickable UI elements.
+- see_screen: inspect what is currently on the screen, active window, OCR text, and interactive buttons/elements with coordinates.
+- desktop_control: snapshot windows, discover element refs (@snapshot:e...), click buttons, fill input fields and forms, press hotkeys.
+- zero_computer_action: launch and operate apps (Chrome, Spotify, Notepad, etc.), move mouse, click elements (left_click, double_click, right_click), type text, send keyboard hotkeys, and discover clickable UI elements (get_elements).
 - spotify_control: directly search and play tracks on Spotify, change volume, pause, resume, skip tracks.
-- browser: open URLs, search and play songs or videos on YouTube in the user's foreground browser.
+- browser: open URLs, navigate, search, and play songs or videos on YouTube in the foreground browser.
 - open_app: launch any application installed on Windows.
 - close_app: close any application window on Windows desktop.
-When asked to perform an action (e.g. play a song on Spotify or YouTube, open an app, fill a form, click something, type something), IMMEDIATELY call the appropriate tool to execute it directly on the user's computer. Never give manual steps when you can execute them autonomously.`;
+When asked to perform any task (e.g. play songs on Spotify or YouTube, open applications, fill forms on websites, check notifications, click buttons, type text, or inspect the screen), IMMEDIATELY call the appropriate tool to execute it directly and autonomously. Always carry out multi-step tasks to completion rather than printing manual instructions.`;
 
       if (!currentMessages.some((m) => m.role === 'system')) {
         currentMessages.unshift({ role: 'system', content: ZERO_SYSTEM_PROMPT });

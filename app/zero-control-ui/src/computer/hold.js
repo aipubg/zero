@@ -445,6 +445,11 @@ function mountComputerHold(container, host, options = {}) {
   for (const existingHost of doc.querySelectorAll(".zero-computer-hold-host")) {
     if (existingHost !== container) existingHost.remove();
   }
+  if (typeof container.replaceChildren === "function") {
+    container.replaceChildren();
+  } else {
+    while (container.firstChild) container.removeChild(container.firstChild);
+  }
   const section = doc.createElement("section");
   section.className = "zero-computer-hold";
   section.setAttribute("data-zero-computer-hold", "");
@@ -483,12 +488,36 @@ function mountComputerHold(container, host, options = {}) {
 
   const resolveRequest = (h) => {
     return async (method, params = {}) => {
-      if (typeof h === "function") return h(method, params);
-      if (typeof h?.request === "function") return h.request(method, params);
-      if (typeof h?.client?.request === "function") return h.client.request(method, params);
+      if (typeof h === "function") {
+        try {
+          return await h(method, params);
+        } catch (e) {
+          if (!String(e?.message || "").includes("request is not a function")) throw e;
+        }
+      }
+      if (typeof h?.request === "function") {
+        try {
+          return await h.request(method, params);
+        } catch (e) {
+          if (!String(e?.message || "").includes("request is not a function")) throw e;
+        }
+      }
+      if (typeof h?.client?.request === "function") {
+        try {
+          return await h.client.request(method, params);
+        } catch (e) {
+          if (!String(e?.message || "").includes("request is not a function")) throw e;
+        }
+      }
       const app = typeof document !== "undefined" ? (document.querySelector("openclaw-app") || document.querySelector("systems-page") || document.querySelector("body")) : null;
       const appClient = app?.context?.gateway?.snapshot?.client || app?.gateway?.snapshot?.client || (typeof window !== "undefined" ? window.__zero_client : null);
-      if (typeof appClient?.request === "function") return appClient.request(method, params);
+      if (typeof appClient?.request === "function") {
+        try {
+          return await appClient.request(method, params);
+        } catch (e) {
+          if (!String(e?.message || "").includes("request is not a function")) throw e;
+        }
+      }
       return Promise.reject(new Error("Gateway connection is unavailable."));
     };
   };
