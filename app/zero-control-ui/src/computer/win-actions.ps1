@@ -395,9 +395,19 @@ switch ($Action.ToLower()) {
 
   "launch_app" {
     if ($App) {
-      $p = Start-Process -FilePath $App -PassThru -ErrorAction Stop
-      $result["launched"] = $App
-      $result["pid"] = $p.Id
+      $targetApp = $App.Trim()
+      if ($targetApp.ToLower() -in @("calculator", "calculator.exe", "calc.exe")) {
+        $targetApp = "calc"
+      }
+      try {
+        $p = Start-Process -FilePath $targetApp -PassThru -ErrorAction Stop
+        $result["launched"] = $targetApp
+        $result["pid"] = $p.Id
+      } catch {
+        Start-Process $targetApp
+        $result["launched"] = $targetApp
+        $result["pid"] = 0
+      }
     } else {
       throw "Missing app parameter"
     }

@@ -845,8 +845,16 @@ function Dispatch-Action($req) {
                     Start-Process -FilePath 'explorer.exe' -ArgumentList ('shell:AppsFolder\' + $installed[0].AppID) -WindowStyle Hidden
                     $result['appId'] = $installed[0].AppID
                 } else {
-                    $p = Start-Process -FilePath $app -PassThru -ErrorAction Stop
-                    $result['pid'] = $p.Id
+                    if ($alias -in @('calculator', 'calculator.exe', 'calc.exe')) {
+                        $app = 'calc'
+                    }
+                    try {
+                        $p = Start-Process -FilePath $app -PassThru -ErrorAction Stop
+                        $result['pid'] = $p.Id
+                    } catch {
+                        Start-Process $app
+                        $result['pid'] = 0
+                    }
                 }
                 $script:launchedWindow = [IntPtr]::Zero
                 $until = [DateTime]::UtcNow.AddSeconds(8)

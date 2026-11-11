@@ -256,11 +256,27 @@ export class ZeroNativeHost {
           elements = uiaRes.elements.slice(0, 40).map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
         }
       } catch {}
+      const latestObs = context.latestObservation;
+      const recentObs = context.recentObservations || [];
+      const windowTitle = windowState?.window?.title || latestObs?.window_context || 'Desktop Screen';
+      const appProcess = windowState?.window?.process || latestObs?.application_id || 'system';
+      const screenWidth = windowState?.screen?.width || (windowState?.window?.bounds ? (windowState.window.bounds.x + windowState.window.bounds.width) : 1920);
+      const screenHeight = windowState?.screen?.height || (windowState?.window?.bounds ? (windowState.window.bounds.y + windowState.window.bounds.height) : 1080);
       return {
         ok: true,
-        activeWindow: windowState?.window || null,
-        screenSize: windowState?.screen || null,
-        recentOcrObservations: context.observations || [],
+        activeWindow: {
+          title: windowTitle,
+          process: appProcess,
+          bounds: windowState?.window?.bounds || null,
+        },
+        screenSize: { width: screenWidth, height: screenHeight },
+        summary: context.answer || `Active application: ${appProcess}, Window: "${windowTitle}"`,
+        recentObservations: recentObs.slice(0, 5).map(o => ({
+          app: o.application_id,
+          window: o.window_context,
+          summary: o.semantic_summary,
+          time: new Date(o.timestamp).toISOString(),
+        })),
         interactiveElements: elements,
       };
     });
@@ -2767,7 +2783,7 @@ You have full direct physical control over the user's Windows PC and web browser
 - browser: open URLs, navigate, search, and play songs or videos on YouTube in the foreground browser.
 - open_app: launch any application installed on Windows.
 - close_app: close any application window on Windows desktop.
-When asked to perform any task (e.g. play songs on Spotify or YouTube, open applications, fill forms on websites, check notifications, click buttons, type text, or inspect the screen), IMMEDIATELY call the appropriate tool to execute it directly and autonomously. Always carry out multi-step tasks to completion rather than printing manual instructions.`;
+When asked to perform any task (e.g. play songs on Spotify or YouTube, open applications, fill forms on websites, check notifications, click buttons, type text, or inspect the screen), IMMEDIATELY call the appropriate tool to execute it directly and autonomously. Always carry out multi-step tasks to completion rather than printing manual instructions. Call see_screen at most once if visual verification is needed. Once the requested action is executed, provide a concise summary response immediately.`;
 
       if (!currentMessages.some((m) => m.role === 'system')) {
         currentMessages.unshift({ role: 'system', content: ZERO_SYSTEM_PROMPT });
