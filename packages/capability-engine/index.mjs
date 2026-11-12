@@ -11,6 +11,7 @@
 
 import { ComputerOperator } from '../../app/zero-control-ui/src/computer/operator.js';
 import { DESKTOP_OBSERVATIONS } from '../agent-runtime/agent-desktop.mjs';
+import { CAPABILITY_ALIASES, resolveCapabilityAlias } from './aliases.mjs';
 
 export const CAPABILITY_DEFINITIONS = Object.freeze({
   'zero_computer_action': {
@@ -127,48 +128,55 @@ export class CapabilityEngine {
    */
   validate(toolName, args = {}) {
     const cleanName = String(toolName || '').trim();
+    const alias = resolveCapabilityAlias(cleanName);
+    const capabilityName = alias?.name || cleanName;
+    let effectiveArgs = args && typeof args === 'object' && !Array.isArray(args) ? { ...args } : {};
+    if (alias?.set) effectiveArgs = { ...alias.set, ...effectiveArgs };
+    if (alias?.action && effectiveArgs.action === undefined) effectiveArgs = { ...effectiveArgs, action: alias.action };
 
     // Check custom registered plugin capabilities first
-    if (this.customCapabilities.has(cleanName)) {
+    if (this.customCapabilities.has(capabilityName)) {
       return {
         valid: true,
-        capability: cleanName,
-        action: args.action || cleanName,
-        params: args,
+        capability: capabilityName,
+        action: effectiveArgs.action || capabilityName,
+        params: effectiveArgs,
         custom: true,
+        ...(alias ? { alias: cleanName } : {}),
       };
     }
 
-    const def = CAPABILITY_DEFINITIONS[cleanName];
+    const def = CAPABILITY_DEFINITIONS[capabilityName];
 
     if (!def) {
       return {
         valid: false,
-        error: `Unsupported capability '${cleanName}'. Registered capabilities: ${[...Object.keys(CAPABILITY_DEFINITIONS), ...this.customCapabilities.keys()].join(', ')}`,
+        error: `Unsupported capability '${cleanName}'. Zero capability registry could not resolve it. Registered capabilities: ${[...Object.keys(CAPABILITY_DEFINITIONS), ...this.customCapabilities.keys()].join(', ')}. Aliases: ${Object.keys(CAPABILITY_ALIASES).join(', ')}`,
       };
     }
 
-    let action = args.action || cleanName;
-    if ((cleanName === 'open_app' || cleanName === 'launch_app') && !args.action) action = 'open_app';
-    if (cleanName === 'browser') {
-      action = args.action || (args.query ? 'play' : 'open_url');
+    let action = effectiveArgs.action || capabilityName;
+    if (capabilityName === 'open_app' && !effectiveArgs.action) action = 'open_app';
+    if (capabilityName === 'browser') {
+      action = effectiveArgs.action || (effectiveArgs.query ? 'play' : 'open_url');
     }
 
     let normAction = String(action || '').toLowerCase().trim();
     if (!def.allowedActions.includes(normAction)) {
       return {
         valid: false,
-        error: `Action '${normAction}' is not permitted for capability '${cleanName}'. Allowed: ${def.allowedActions.join(', ')}`,
+        error: `Action '${normAction}' is not permitted for capability '${capabilityName}'. Allowed: ${def.allowedActions.join(', ')}`,
       };
     }
-    if (cleanName === 'browser' && normAction === 'open') normAction = 'open_url';
-    if (cleanName === 'browser' && normAction === 'search') normAction = 'web_search';
+    if (capabilityName === 'browser' && normAction === 'open') normAction = 'open_url';
+    if (capabilityName === 'browser' && normAction === 'search') normAction = 'web_search';
 
     return {
       valid: true,
-      capability: cleanName,
+      capability: capabilityName,
       action: normAction,
-      params: args,
+      params: effectiveArgs,
+      ...(alias ? { alias: cleanName } : {}),
     };
   }
 
@@ -343,6 +351,18 @@ export class CapabilityEngine {
       clearTimeout(timer);
     }
 
+    // 5b. Human-reflex escalation. A failure of the fast DOM/UIA path is not a
+    // dead end: look at a fresh frame and finish with the physical pointer.
+    if (execResult?.ok === false && this._shouldReflex(action, params)) {
+      const reflex = await this._reflexEscalate(action, params, combinedSignal).catch(() => null);
+      if (reflex) {
+        execResult = {
+          ...reflex,
+          primaryFailure: execResult.error || execResult.message || 'primary path failed',
+        };
+      }
+    }
+
     // 6. After-State Verification
     let afterState = null;
     let verified = execResult.ok !== false && Boolean(execResult.verified);
@@ -415,6 +435,80 @@ export class CapabilityEngine {
     } finally {
       if (leaseAcquiredLocally) this.leaseManager.releaseLease(agentId);
     }
+  }
+
+  /**
+   * A reflex is only attempted for actions that have a concrete target or
+   * coordinate. Blind keyboard automation is never used.
+   */
+  _shouldReflex(action, params) {
+    const reflexActions = new Set([
+      'left_click', 'click', 'right_click', 'double_click',
+      'type_text', 'type', 'fill', 'fill_form', 'press_key', 'press',
+      'open_url', 'navigate', 'submit', 'submit_form',
+    ]);
+    if (!reflexActions.has(String(action || '').toLowerCase())) return false;
+    return ['text', 'target', 'query', 'selector', 'ref', 'label', 'x', 'y', 'url']
+      .some(key => params?.[key] !== undefined && params?.[key] !== '');
+  }
+
+  /**
+   * Step B of the human reflex chain: capture a fresh compressed frame, locate
+   * the best matching UIA element (or use supplied coordinates), focus, click
+   * and type. Step C compares frame hashes before reporting completion.
+   */
+  async _reflexEscalate(action, params, signal) {
+    const before = await this.operator.execute('screenshot', {}, signal).catch(() => null);
+    if (!before?.ok) return null;
+
+    const hints = [params.text, params.target, params.query, params.selector, params.ref, params.label]
+      .filter(value => typeof value === 'string' && value.trim())
+      .map(value => value.trim().toLowerCase());
+
+    let x = Number.isFinite(params.x) ? Number(params.x) : null;
+    let y = Number.isFinite(params.y) ? Number(params.y) : null;
+    let matched = null;
+
+    if (x === null || y === null) {
+      const tree = await this.operator.execute('get_elements', {}, signal).catch(() => null);
+      const elements = Array.isArray(tree?.elements)
+        ? tree.elements
+        : Array.isArray(tree?.data?.elements) ? tree.data.elements : [];
+      matched = elements.find(element => {
+        const name = String(element.name || element.label || element.helperText || '').toLowerCase();
+        if (!name) return false;
+        return hints.some(hint => name.includes(hint) || hint.includes(name));
+      }) || null;
+      if (matched) {
+        x = Number(matched.centerX ?? matched.cx);
+        y = Number(matched.centerY ?? matched.cy);
+      }
+    }
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+    const click = await this.operator.execute('left_click', { x, y }, signal).catch(() => null);
+    if (!click?.ok) return null;
+
+    if (['type_text', 'type', 'fill', 'fill_form'].includes(action) && typeof params.text === 'string' && params.text) {
+      await this.operator.execute('type_text', { text: params.text }, signal).catch(() => null);
+    }
+
+    const after = await this.operator.execute('screenshot', {}, null).catch(() => null);
+    const changed = Boolean(before.hash && after?.hash && before.hash !== after.hash);
+    return {
+      ok: true,
+      executed: true,
+      verified: changed,
+      completed: changed,
+      outcome: changed ? 'COMPLETED' : 'UNVERIFIED',
+      action,
+      backend: 'zero-reflex',
+      reflex: 'vision-uia-coordinate',
+      coordinates: { x, y },
+      matchedElement: matched ? { name: matched.name, type: matched.controlType } : null,
+      message: 'Primary path failed; Zero observed a fresh frame and completed the action with the physical pointer.',
+    };
   }
 
   _recordAudit(agentId, toolName, params, decision, outcome) {

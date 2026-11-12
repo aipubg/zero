@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 // Standalone SDK installs use their declared dependency. The native host owns
-// its declared YAML dependency in backend; do not borrow OpenClaw transitives.
+// its declared YAML dependency in backend; do not borrow host transitives.
 let yaml;
 try { yaml = require('yaml'); } catch (error) {
   if (error.code !== 'MODULE_NOT_FOUND') throw error;

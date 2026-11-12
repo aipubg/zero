@@ -38,7 +38,7 @@
 // is taken. Run interruption and gateway.nodes.commands.deny remain the separate emergency layers.
 
 import { readFileSync } from "node:fs";
-import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { buildJsonPluginConfigSchema, definePluginEntry } from "../src/compat/plugin-entry.mjs";
 
 const PLUGIN_ID = "zero-policy";
 // The exact id passed to registerTrustedToolPolicy. The manifest must declare THIS string.
@@ -483,7 +483,7 @@ function verifyManifestDeclaration(logger, readManifest) {
     }
     logger?.error?.(
       `[${PLUGIN_ID}] MANIFEST DOES NOT DECLARE "${POLICY_ID}" in contracts.trustedToolPolicies (found: ${JSON.stringify(declared)}). ` +
-        "The host will REJECT this policy registration and the human hold will NOT exist. Fix openclaw.plugin.json.",
+        "The host will REJECT this policy registration and the human hold will NOT exist. Fix the Zero plugin manifest.",
     );
     return { ok: false, declared };
   } catch (err) {
@@ -494,10 +494,10 @@ function verifyManifestDeclaration(logger, readManifest) {
 
 function defaultReadManifest() {
   try {
-    const parentManifestUrl = new URL("../openclaw.plugin.json", import.meta.url);
+    const parentManifestUrl = new URL("../zero.plugin.json", import.meta.url);
     return JSON.parse(readFileSync(parentManifestUrl, "utf8"));
   } catch {
-    const manifestUrl = new URL("./openclaw.plugin.json", import.meta.url);
+    const manifestUrl = new URL("./zero.plugin.json", import.meta.url);
     return JSON.parse(readFileSync(manifestUrl, "utf8"));
   }
 }
@@ -508,7 +508,7 @@ function defaultReadManifest() {
 
 // Runtime config schema. The manifest carries an identical copy (it is required there for
 // pre-runtime discovery); the selftest asserts the two stay equal so they cannot drift.
-// Built with the host's own JSON-schema helper (openclaw/plugin-sdk/plugin-entry), which is
+// Built with the host's own JSON-schema helper (local Zero plugin-entry compat), which is
 // what buildJsonPluginConfigSchema exists for.
 const CONFIG_JSON_SCHEMA = {
   type: "object",

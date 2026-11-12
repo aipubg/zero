@@ -69,7 +69,7 @@ export function saveProviders(providers: ProviderConfig[]): void {
     fetch('/api/gateway/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ providers }),
+      body: JSON.stringify({ providers, replaceProviders: true }),
     }).catch(() => {});
   }
 
@@ -85,15 +85,12 @@ export async function syncProvidersFromBackendVault(): Promise<ProviderConfig[]>
       const res = await fetch('/api/gateway/config');
       if (res.ok) {
         const data = await res.json();
-        if (data.success && Array.isArray(data.providers) && data.providers.length > 0) {
-          const localRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-          if (!localRaw || localRaw === JSON.stringify(DEFAULT_PROVIDERS) || localRaw === '[]') {
-            if (typeof localStorage !== 'undefined') {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(data.providers));
-            }
-            notifyListeners(data.providers);
-            return data.providers;
+        if (Array.isArray(data.providers)) {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.providers));
           }
+          notifyListeners(data.providers);
+          return data.providers;
         } else if (data.success && data.providers === null) {
           // Vault file does not exist yet; persist current local providers to backend disk
           const current = getSavedProviders();

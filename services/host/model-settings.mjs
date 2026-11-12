@@ -7,6 +7,61 @@ import { commitModelImport, assertModelImportComplete } from '../../packages/mod
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+function loadEnvSafely(repoRoot) {
+  const envPath = path.resolve(repoRoot, '.env');
+  if (fs.existsSync(envPath)) {
+    try {
+      const content = fs.readFileSync(envPath, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (!process.env[key] || process.env[key] !== val) {
+            process.env[key] = val;
+          }
+        }
+      }
+    } catch {}
+  }
+}
+
+function persistLocalSecret(providerId, apiKey, repoRoot) {
+  if (!apiKey || typeof apiKey !== 'string' || apiKey === '[REDACTED]' || apiKey.startsWith('env:')) return;
+  try {
+    const secretsPath = path.resolve(repoRoot, '.zero-data', 'provider-secrets.json');
+    fs.mkdirSync(path.dirname(secretsPath), { recursive: true });
+    let secrets = {};
+    if (fs.existsSync(secretsPath)) {
+      try { secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8')) || {}; } catch {}
+    }
+    secrets[providerId] = apiKey.trim();
+    atomicWriteJson(secretsPath, secrets);
+  } catch {}
+}
+
+loadEnvSafely(REPO_ROOT);
+loadProviderSecrets(REPO_ROOT);
+
+function loadProviderSecrets(repoRoot) {
+  try {
+    const secretsPath = path.resolve(repoRoot, '.zero-data', 'provider-secrets.json');
+    if (!fs.existsSync(secretsPath)) return;
+    const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8')) || {};
+    for (const [providerId, value] of Object.entries(secrets)) {
+      if (typeof value !== 'string' || !value.trim()) continue;
+      const envKey = providerId === 'google' ? 'GEMINI_API_KEY' : `${String(providerId).toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`;
+      if (!process.env[envKey]) process.env[envKey] = value.trim();
+      if (!process.env[`${providerId.toUpperCase()}_API_KEY`] && providerId !== 'google') process.env[`${providerId.toUpperCase()}_API_KEY`] = value.trim();
+    }
+  } catch {}
+}
+
 /** Model IDs that may legally be referenced by saved defaults/bindings. */
 function validModelReferences(providers) {
   const valid = new Set();
@@ -70,14 +125,14 @@ function syncGlobalConfig(fabric, providers) {
     };
   }
   config.models = config.models || {};
-  config.models.mode = config.models.mode || 'replace';
+  config.models.mode = 'replace';
   config.models.providers = providerMap;
 
   const valid = validModelReferences(providers);
   const isValid = reference => typeof reference === 'string' && valid.has(reference);
   const prune = holder => {
     if (!holder || typeof holder !== 'object') return;
-    if (Object.hasOwn(holder, 'primary') && !isValid(holder.primary)) delete holder.primary;
+    if (Object.hasOwn(holder, 'primary') && !isValid(holder.primary)) holder.primary = null;
     if (Array.isArray(holder.fallbacks)) holder.fallbacks = holder.fallbacks.filter(isValid);
     if (Object.hasOwn(holder, 'fallbacks') && !holder.fallbacks.length) delete holder.fallbacks;
   };
@@ -87,6 +142,14 @@ function syncGlobalConfig(fabric, providers) {
   }
   for (const agent of Object.values(config.agents?.entries || {})) if (agent?.model) prune(agent.model);
   if (typeof config.models.default === 'string' && !isValid(config.models.default)) delete config.models.default;
+
+  if (!providers.length) {
+    config.models.providers = {};
+    if (config.agents?.defaults?.model) config.agents.defaults.model.primary = null;
+    for (const agent of Object.values(config.agents?.entries || {})) {
+      if (agent?.model) agent.model.primary = null;
+    }
+  }
 
   atomicWriteJson(file, config);
   return true;
@@ -103,15 +166,32 @@ function pruneBindings(fabric, providers) {
   const isValid = reference => typeof reference === 'string' && valid.has(reference);
   let changed = false;
   if (data.defaults && typeof data.defaults === 'object') {
-    for (const key of ['primary', 'utility', 'fallback']) {
-      if (Object.hasOwn(data.defaults, key) && !isValid(data.defaults[key])) { delete data.defaults[key]; changed = true; }
+    for (const key of ['primary', 'utility', 'fallback', 'fastMode']) {
+      if (Object.hasOwn(data.defaults, key) && !isValid(data.defaults[key])) { 
+        data.defaults[key] = null; 
+        changed = true; 
+      }
     }
   }
   for (const binding of Object.values(data.agentBindings || {})) {
     if (binding && typeof binding === 'object' && Object.hasOwn(binding, 'model') && !isValid(binding.model)) {
-      delete binding.model;
+      binding.model = null;
       changed = true;
     }
+  }
+  if (!providers.length) {
+    if (data.defaults) {
+      data.defaults.primary = null;
+      data.defaults.utility = null;
+      data.defaults.fallback = null;
+      data.defaults.fastMode = null;
+    }
+    if (data.agentBindings) {
+      for (const b of Object.values(data.agentBindings)) {
+        if (b && typeof b === 'object') b.model = null;
+      }
+    }
+    changed = true;
   }
   if (changed) atomicWriteJson(file, data);
   return changed;
@@ -138,8 +218,6 @@ function writeProviders(fabric, providers) {
   const file = fabric.configPath; if (!file) throw new Error('No provider configuration path');
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const suffix = crypto.randomUUID(); const temporary = `${file}.${suffix}.tmp`;
-  const backup = fs.existsSync(file) ? `${file}.before-provider-change-${suffix}.json` : null;
-  if (backup) fs.copyFileSync(file, backup, fs.constants.COPYFILE_EXCL);
   try { fs.writeFileSync(temporary, JSON.stringify(providers, null, 2) + '\n', { flag: 'wx', mode: 0o600 }); fs.renameSync(temporary, file); }
   finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
   // Deletion is permanent: mirror the exact catalog into zero.json, drop saved
@@ -147,7 +225,7 @@ function writeProviders(fabric, providers) {
   syncGlobalConfig(fabric, providers);
   pruneBindings(fabric, providers);
   fabric.reloadFromDisk();
-  return { ...modelSettings(fabric), backupPath: backup };
+  return { ...modelSettings(fabric), backupPath: null };
 }
 
 function providerRows(fabric) {
@@ -176,10 +254,24 @@ function mergeProvider(rows, input) {
   }
   next.models ||= [];
   // Blank credential inputs on an edit mean retain the privately stored values.
-  if (input.apiKey !== undefined && input.apiKey !== '' && input.apiKey !== '[REDACTED]') { if (typeof input.apiKey !== 'string') throw new Error('Invalid provider credential'); next.apiKey = input.apiKey; }
+  if (input.apiKey !== undefined && input.apiKey !== '' && input.apiKey !== '[REDACTED]') {
+    if (typeof input.apiKey !== 'string') throw new Error('Invalid provider credential');
+    if (!input.apiKey.startsWith('env:')) {
+      persistLocalSecret(next.id, input.apiKey, REPO_ROOT);
+      next.apiKey = next.id === 'google' ? 'env:GEMINI_API_KEY' : `env:${next.id.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`;
+    } else {
+      next.apiKey = input.apiKey;
+    }
+  }
   if (input.apiKeys !== undefined) {
     if (!Array.isArray(input.apiKeys) || input.apiKeys.some(key => typeof key !== 'string')) throw new Error('Invalid provider credential pool');
-    if (input.apiKeys.length && input.apiKeys.every(key => key !== '[REDACTED]')) next.apiKeys = [...input.apiKeys];
+    if (input.apiKeys.length && input.apiKeys.every(key => key !== '[REDACTED]')) {
+      const first = input.apiKeys[0];
+      if (first && !first.startsWith('env:')) {
+        persistLocalSecret(next.id, first, REPO_ROOT);
+      }
+      next.apiKeys = input.apiKeys.map(k => k.startsWith('env:') ? k : (next.id === 'google' ? 'env:GEMINI_API_KEY' : `env:${next.id.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`));
+    }
   }
   if (index < 0) rows.push(next); else rows[index] = next;
   return rows;
@@ -227,18 +319,21 @@ export function importModelSettings(fabric, payload = {}) {
 
 export function deleteConfiguredProvider(fabric, id) {
   const rows = providerRows(fabric);
-  if (!rows.some(row => row.id === id)) throw new Error('Provider not found');
-  return writeProviders(fabric, rows.filter(row => row.id !== id));
+  const remaining = rows.filter(row => row.id !== id && row.id?.toLowerCase() !== id?.toLowerCase());
+  return writeProviders(fabric, remaining);
 }
 
 export function deleteConfiguredModel(fabric, providerId, modelId) {
   const rows = providerRows(fabric);
-  const provider = rows.find(row => row.id === providerId);
+  const provider = rows.find(row => row.id === providerId || row.id?.toLowerCase() === providerId?.toLowerCase());
   if (!provider) throw new Error('Provider not found');
   const models = Array.isArray(provider.models) ? provider.models : [];
-  const nextModels = models.filter(model => (typeof model === 'string' ? model : model?.id) !== modelId);
+  const nextModels = models.filter(model => {
+    const mId = typeof model === 'string' ? model : model?.id;
+    return mId !== modelId && mId !== `models/${modelId}` && `models/${mId}` !== modelId;
+  });
   if (nextModels.length === models.length) throw new Error('Model not found');
-  if (!nextModels.length) return writeProviders(fabric, rows.filter(row => row.id !== providerId));
+  if (!nextModels.length) return writeProviders(fabric, rows.filter(row => row.id !== provider.id));
   provider.models = nextModels;
   return writeProviders(fabric, rows);
 }
@@ -257,7 +352,10 @@ export async function probeConfiguredProvider(fabric, params = {}) {
   if (typeof baseUrl !== 'string') throw new Error('Provider base URL required');
   const url = new URL(baseUrl); if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Invalid provider probe URL');
   const explicitKey = params.apiKey || params.apiKeys?.[0];
-  const key = explicitKey && explicitKey !== '[REDACTED]' ? explicitKey.startsWith('env:') ? process.env[explicitKey.slice(4)] || '' : explicitKey : configured && configured.baseUrl?.replace(/\/+$/, '') === baseUrl.replace(/\/+$/, '') ? fabric.resolveApiKey(configured) : '';
+  let key = explicitKey && explicitKey !== '[REDACTED]' ? (explicitKey.startsWith('env:') ? process.env[explicitKey.slice(4)] || '' : explicitKey) : '';
+  if (!key) {
+    key = fabric.resolveApiKey(configured || { id: params.id || 'google', baseUrl });
+  }
   const started = Date.now();
   const inheritedHeaders = configured?.baseUrl?.replace(/\/+$/, '') === baseUrl.replace(/\/+$/, '') ? configured.headers || {} : {};
   const response = await fetch(`${baseUrl.replace(/\/+$/, '').replace(/\/chat\/completions$/, '')}/models`, {

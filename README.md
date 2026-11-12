@@ -154,7 +154,7 @@ architecture must have a single source of truth per responsibility.
 The current repository is a starting asset, not something to destroy
 blindly.
 
-Existing useful OpenClaw-derived behavior, model integrations, tools,
+Existing useful upstream-derived behavior, model integrations, tools,
 skills, plugin interfaces, channels, session management and desktop
 capabilities should be retained or functionally replaced.
 
@@ -1599,7 +1599,7 @@ SUPPORTED SOURCES
 - User-created skills.
 - Future ZERO marketplace.
 
-OPENCLAW-COMPATIBLE SKILLS
+ZERO-COMPATIBLE SKILLS
 
 Preserve and adapt useful existing skill formats.
 
@@ -1678,7 +1678,7 @@ PLUGIN TYPES
 
 COMPATIBILITY
 
-Develop an adapter for compatible OpenClaw-style plugins and other
+Develop an adapter for compatible third-party plugins and other
 supported extension formats.
 
 Preserve functionality and required third-party notices when code is

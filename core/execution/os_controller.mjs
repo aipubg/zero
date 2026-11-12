@@ -1,12 +1,12 @@
 /**
- * @fileoverview Direct OS Controller & Native Win32 / Agent-Desktop Controller
+ * @fileoverview Direct OS Controller & Native Win32 / Zero Computer Control Runtime
  *
  * Production-grade OS control implementation:
  * - High-speed persistent Win32 input daemon execution (<5ms per action)
- * - Seamless integration with AgentDesktop semantic CLI engine
+ * - Seamless integration with Zero semantic desktop control engine
  * - Two-tier execution:
  *   - Tier 1: Direct UIA Pattern Invocation (InvokePattern.Invoke, ValuePattern.SetValue, SetFocus)
- *   - Tier 2: Precision Native Input via Agent-Desktop & Win32 SendInput (mouse click at (cx, cy), double click, type, hotkey)
+ *   - Tier 2: Precision Native Input via Zero Computer Control & Win32 SendInput (mouse click at (cx, cy), double click, type, hotkey)
  * - Window management (launch, focus, list_windows, resize, close)
  * - Clipboard management (get, set, clear)
  * - Zero mock / fake functions.
@@ -32,7 +32,7 @@ export class OsController {
   }
 
   /**
-   * Diagnostic check verifying OS Controller and Agent-Desktop subsystem health
+   * Diagnostic check verifying OS Controller and Zero Computer Control subsystem health
    */
   async getStatus() {
     try {

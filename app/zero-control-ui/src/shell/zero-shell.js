@@ -8,7 +8,6 @@ const DESTINATIONS = [
   { label: "Computer", path: "/systems", icon: "monitor", group: "Workspace", detail: "Desktop and connected systems" },
   { label: "Automations", path: "/automations", icon: "bolt", group: "Workspace", detail: "Scheduled work and background tasks" },
   { label: "Dashboards", path: "/dashboards", icon: "grid", group: "Workspace", detail: "Your working surfaces" },
-  { label: "Memory", path: "/settings/memory", icon: "memory", group: "Workspace", detail: "Remembered context and knowledge" },
 ];
 
 // Searchable destinations for the command palette. These are intentionally not
@@ -16,6 +15,7 @@ const DESTINATIONS = [
 const SETTINGS_DESTINATIONS = [
   { label: "Settings", path: "/settings", icon: "settings", detail: "Appearance, voice, privacy, devices and more" },
   { label: "Models", path: "/settings/model-providers", icon: "orbit", detail: "Providers and models" },
+  { label: "Memory", path: "/settings/memory", icon: "memory", detail: "Remembered context and knowledge" },
   { label: "Agents", path: "/agents", icon: "agents", detail: "Specialists working with Zero" },
   { label: "Skills", path: "/settings/skills", icon: "spark", detail: "Reusable capabilities" },
   { label: "Plugins", path: "/settings/plugins", icon: "plug", detail: "Tools and integrations" },
@@ -58,6 +58,44 @@ function element(tag, className, text) {
   return node;
 }
 
+/**
+ * Legacy host chrome that duplicates the native Zero shell. These are removed
+ * from the DOM permanently so there is exactly one search, one new-chat action
+ * and one navigation surface.
+ */
+const LEGACY_CHROME_SELECTORS = [
+  'button.topbar-search',
+  'button.sidebar-brand__search',
+  'a.sidebar-brand__new-thread',
+  'a.sidebar-session-toolbar__button.sidebar-new-session',
+  'nav.sidebar-nav',
+  'openclaw-theme-mode-toggle',
+  '.theme-mode-toggle',
+  '[aria-label*="Color mode" i]',
+  '[title*="Color mode" i]',
+];
+
+function removeLegacyPalette() {
+  for (const node of document.querySelectorAll('openclaw-command-palette, .command-palette, dialog[open], [role="dialog"]')) {
+    if (node.closest('.zero-command-palette')) continue;
+    if (/Search or start a task/i.test(node.textContent || '')) {
+      try { node.close?.(); } catch {}
+      node.remove();
+    }
+  }
+}
+
+function neutralizeLegacyChrome() {
+  if (typeof window !== "undefined" && window.__zero_disable_legacy_sweep === true) return;
+  for (const selector of LEGACY_CHROME_SELECTORS) {
+    for (const node of document.querySelectorAll(selector)) {
+      if (node.closest('[data-zero-shell-owned]')) continue;
+      node.remove();
+    }
+  }
+  removeLegacyPalette();
+}
+
 function destinationFor(pathname) {
   const exact = [...DESTINATIONS, ...SETTINGS_DESTINATIONS].find(item => item.path === pathname);
   if (exact) return exact;
@@ -65,7 +103,7 @@ function destinationFor(pathname) {
   return [...DESTINATIONS, ...SETTINGS_DESTINATIONS].sort((a, b) => b.path.length - a.path.length).find(item => pathname.startsWith(item.path + "/"));
 }
 
-/** Own visual shell over the existing Gateway routes and conversation store. */
+/** First-party Zero visual shell over the existing Gateway routes and conversation store. */
 export function installZeroShell(host) {
   if (typeof document === "undefined" || !document.body || typeof MutationObserver === "undefined") return () => {};
   window.__zero_shell_dispose?.();
@@ -170,7 +208,7 @@ export function installZeroShell(host) {
     if (main.querySelector(":scope > .zero-shell-header")) return;
     const header = own(element("header", "zero-shell-header"));
     const currentMode = getEffectiveTheme();
-    header.innerHTML = `<div class="zero-shell-breadcrumb"><span class="zero-shell-header-dot"></span><span>Personal workspace</span><span class="zero-shell-breadcrumb-slash">/</span><strong class="zero-shell-current-page">Command</strong></div><div class="zero-shell-header-tools"><span class="zero-shell-connection" role="status">Connecting</span><button class="zero-shell-theme-toggle" type="button" aria-label="${currentMode === "light" ? "Switch to Night mode" : "Switch to Day mode"}" title="${currentMode === "light" ? "Switch to Night mode" : "Switch to Day mode"}">${currentMode === "light" ? "🌙" : "☀️"}</button><button class="zero-shell-jump" type="button" aria-label="Search Zero navigation">${icon("search")}<span>Go anywhere</span><kbd>Alt K</kbd></button></div><div class="zero-shell-control-tray"></div>`;
+    header.innerHTML = `<div class="zero-shell-breadcrumb"><span class="zero-shell-header-dot"></span><span>Personal workspace</span><span class="zero-shell-breadcrumb-slash">/</span><strong class="zero-shell-current-page">Command</strong></div><div class="zero-shell-header-tools"><span class="zero-shell-connection" role="status">Connecting</span><button class="zero-shell-theme-toggle" type="button" aria-label="${currentMode === "light" ? "Switch to Night mode" : "Switch to Day mode"}" title="${currentMode === "light" ? "Switch to Night mode" : "Switch to Day mode"}">${currentMode === "light" ? "🌙" : "☀️"}</button><button class="zero-shell-jump" type="button" aria-label="Search Zero navigation" aria-keyshortcuts="Control+K">${icon("search")}<span>Go anywhere</span><kbd>Ctrl K</kbd></button></div><div class="zero-shell-control-tray"></div>`;
     header.querySelector(".zero-shell-jump").addEventListener("click", openPalette);
     header.querySelector(".zero-shell-theme-toggle")?.addEventListener("click", () => {
       const next = getEffectiveTheme() === "light" ? "dark" : "light";
@@ -258,6 +296,7 @@ export function installZeroShell(host) {
     if (!palette) {
       palette = own(element("dialog", "zero-command-palette"));
       palette.setAttribute("aria-label", "Navigate Zero");
+      palette.setAttribute("aria-keyshortcuts", "Control+K");
       palette.innerHTML = `<div class="zero-palette-input">${icon("search")}<input type="search" aria-label="Filter Zero destinations" placeholder="Where would you like to go?" autocomplete="off"><button type="button" aria-label="Close navigation">Esc</button></div><div class="zero-palette-results"></div><div class="zero-palette-footer">YOUR WORKSPACE, ONE SHORTCUT AWAY<span>↑ ↓ to move · Enter to open</span></div>`;
       document.body.append(palette);
       const input = palette.querySelector("input");
@@ -296,6 +335,7 @@ export function installZeroShell(host) {
   function mount() {
     scheduled = false;
     if (disposed) return;
+    neutralizeLegacyChrome();
     if (lastPath !== window.location.pathname) {
       lastPath = window.location.pathname;
       if (palette?.open) palette.close();
@@ -320,8 +360,18 @@ export function installZeroShell(host) {
   });
   observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   const onKey = event => {
+    const key = String(event.key || "").toLowerCase();
     if (event.key === "Escape" && palette?.open) { event.preventDefault(); event.stopPropagation(); palette.close(); return; }
-    if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "k") { event.preventDefault(); event.stopPropagation(); openPalette(); }
+    // Ctrl+K / Cmd+K is the single application-wide command palette shortcut.
+    // Capture phase + immediate propagation stop the legacy palette listener.
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && key === "k") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openPalette();
+      removeLegacyPalette();
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && key === "k") { event.preventDefault(); event.stopPropagation(); openPalette(); }
   };
   const onVisible = () => { if (!document.hidden) updateStatus(); };
   // Native route interception runs at document capture, before link handlers.
@@ -332,6 +382,8 @@ export function installZeroShell(host) {
   window.addEventListener("popstate", schedule);
   window.addEventListener("click", onPaletteNavigate, true);
   mount(); updateStatus();
+  // The legacy palette may be created on its own listener after first paint.
+  const legacySweep = setInterval(() => { if (!disposed) neutralizeLegacyChrome(); }, 2000);
   const poll = setInterval(updateStatus, 30000);
   const connectionPoll = setInterval(() => {
     const connected = host?.connection?.connected;
@@ -341,7 +393,7 @@ export function installZeroShell(host) {
   }, 1000);
   const dispose = () => {
     if (disposed) return;
-    disposed = true; observer.disconnect(); clearInterval(poll); clearInterval(connectionPoll);
+    disposed = true; observer.disconnect(); clearInterval(poll); clearInterval(connectionPoll); clearInterval(legacySweep);
     window.removeEventListener("keydown", onKey, true); document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("popstate", schedule);
     window.removeEventListener("click", onPaletteNavigate, true);
     previousFocus = null;

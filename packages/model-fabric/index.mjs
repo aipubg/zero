@@ -13,8 +13,49 @@ import { assertModelImportComplete } from './config-transaction.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'models', 'gateway-providers.json');
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const DEFAULT_CONFIG_PATH = path.resolve(REPO_ROOT, 'models', 'gateway-providers.json');
 const AUTO_MODEL_ALIASES = new Set(['', 'auto', 'auto-best', 'autobest', 'default', '__auto__', 'default-model']);
+
+function loadEnvSafely(repoRoot) {
+  const envPath = path.resolve(repoRoot, '.env');
+  if (fs.existsSync(envPath)) {
+    try {
+      const content = fs.readFileSync(envPath, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (!process.env[key] || process.env[key] !== val) {
+            process.env[key] = val;
+          }
+        }
+      }
+    } catch {}
+  }
+}
+
+function getLocalSecret(providerId, repoRoot) {
+  try {
+    const secretsPath = path.resolve(repoRoot, '.zero-data', 'provider-secrets.json');
+    if (fs.existsSync(secretsPath)) {
+      const data = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+      if (data && typeof data === 'object') {
+        const secret = data[providerId] || data[providerId?.toLowerCase()];
+        if (typeof secret === 'string' && secret.trim()) return secret.trim();
+      }
+    }
+  } catch {}
+  return null;
+}
+
+loadEnvSafely(REPO_ROOT);
 
 const NON_CHAT_MODEL_PATTERN = /(?:^|[/_.-])(embedding|embed|tts|transcribe|audio|image|lyria|aqa|robotics|computer-use|deep-research|nano-banana|antigravity|realtime|live|native-audio)(?:$|[/_.-])/i;
 
@@ -144,7 +185,13 @@ export class ModelFabric {
   resolveModel(modelId) {
     if (!modelId || typeof modelId !== 'string') return null;
     if (modelId.trim().startsWith('local-gguf/')) return this.localChat?.resolve(modelId.trim()) || null;
-    const clean = modelId.trim();
+    let clean = modelId.trim();
+    // Transparently alias deprecated Gemini 2.5 models to active 3.5 / 3.1 counterparts
+    if (clean.includes('gemini-2.5-flash')) {
+      clean = clean.replace('gemini-2.5-flash', 'gemini-3.5-flash');
+    } else if (clean.includes('gemini-2.5-pro')) {
+      clean = clean.replace('gemini-2.5-pro', 'gemini-3.1-pro-preview');
+    }
     const aliasResolved = this.aliases.get(clean.toLowerCase()) || clean;
 
     // 1. Direct provider-qualified lookup. Providers and models are entirely
@@ -194,6 +241,7 @@ export class ModelFabric {
 
   resolveApiKey(provider) {
     if (!provider) return '';
+    loadEnvSafely(REPO_ROOT);
     const candidates = [
       provider.apiKey,
       ...(Array.isArray(provider.apiKeys) ? provider.apiKeys : []),
@@ -204,8 +252,30 @@ export class ModelFabric {
         if (value.trim()) return value.trim();
         continue;
       }
-      if (candidate.startsWith('env:')) continue;
+      if (candidate === '[REDACTED]') continue;
       return candidate.trim();
+    }
+    // Check untracked local secrets file
+    const localSecret = getLocalSecret(provider.id, REPO_ROOT);
+    if (localSecret) return localSecret;
+
+    // Check well-known environment variables
+    const provId = (provider.id || '').toLowerCase();
+    if (provId === 'google') {
+      const gKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      if (gKey && gKey.trim()) return gKey.trim();
+    }
+    if (provId === 'nvidia') {
+      const nKey = process.env.NVIDIA_API_KEY;
+      if (nKey && nKey.trim()) return nKey.trim();
+    }
+    if (provId === 'openai') {
+      const oKey = process.env.OPENAI_API_KEY;
+      if (oKey && oKey.trim()) return oKey.trim();
+    }
+    const genericEnvKey = `${(provider.id || '').toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`;
+    if (process.env[genericEnvKey] && process.env[genericEnvKey].trim()) {
+      return process.env[genericEnvKey].trim();
     }
     return '';
   }
@@ -445,12 +515,12 @@ export class ModelFabric {
           (data.agentBindings !== undefined && (!data.agentBindings || typeof data.agentBindings !== 'object' || Array.isArray(data.agentBindings))) ||
           (data.defaults !== undefined && (!data.defaults || typeof data.defaults !== 'object' || Array.isArray(data.defaults)))) throw new Error('Invalid saved model assignments');
       const binding = data.agentBindings?.[agentId]?.model;
-      if (binding !== undefined) {
+      if (binding !== undefined && binding !== null && binding !== '') {
         const resolved = this.resolveModel(binding);
         if (!resolved) throw new Error(`Assigned model for agent ${agentId} is unavailable; update its saved assignment`);
         return resolved;
       }
-      if (data.defaults?.primary !== undefined) {
+      if (data.defaults?.primary !== undefined && data.defaults?.primary !== null && data.defaults?.primary !== '') {
         const resolved = this.resolveModel(data.defaults.primary);
         if (!resolved) throw new Error('Configured default model is unavailable; update the saved model settings');
         return resolved;

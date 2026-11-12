@@ -1,15 +1,14 @@
 /**
  * Canonical tool batch validation and schema enforcement.
  * Validates the complete model batch before any side effect or transcript admission.
+ *
+ * All aliases come from the single Zero capability registry so the model-facing
+ * names, the allowlist and the execution engine can never drift apart.
  */
 
-export const TOOL_ALIASES = Object.freeze({
-  'launch_app': 'open_app',
-  'kill_app': 'close_app',
-  'open_browser': 'browser',
-  'navigate': 'open_url',
-  'play': 'zero_computer_action',
-});
+import { CAPABILITY_ALIASES, resolveCapabilityAlias } from '../../packages/capability-engine/aliases.mjs';
+
+export const TOOL_ALIASES = CAPABILITY_ALIASES;
 
 function validateSchema(fnName, args, schema) {
   if (!schema || typeof schema !== 'object') return;
@@ -119,8 +118,10 @@ export function prepareToolBatch(calls, allowedTools) {
       throw new Error('Missing model tool call function name');
     }
 
-    // Normalize canonical aliases
-    const canonicalName = TOOL_ALIASES[rawName] || rawName;
+    // Resolve the single canonical capability. Aliases never bypass the
+    // allowlist: the canonical capability must itself be declared.
+    const alias = resolveCapabilityAlias(rawName);
+    const canonicalName = alias?.name || rawName;
 
     // Check allowlist
     const isAllowed = allowedSet.has(rawName) || allowedSet.has(canonicalName);
@@ -141,8 +142,12 @@ export function prepareToolBatch(calls, allowedTools) {
       throw new Error(`Model tool arguments for '${rawName}' must be an object`);
     }
 
+    // Alias defaults are merged first so an explicit model value always wins.
+    if (alias?.set) args = { ...alias.set, ...args };
+    if (alias?.action && args.action === undefined) args = { ...args, action: alias.action };
+
     // Validate against tool JSON schema if schema is available
-    const schema = schemaMap.get(rawName) || schemaMap.get(canonicalName);
+    const schema = schemaMap.get(canonicalName) || schemaMap.get(rawName);
     if (schema) {
       validateSchema(canonicalName, args, schema);
     }
@@ -152,6 +157,7 @@ export function prepareToolBatch(calls, allowedTools) {
       fnName: canonicalName,
       rawName,
       args,
+      ...(alias ? { alias: true } : {}),
     };
   });
 }

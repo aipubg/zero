@@ -21,7 +21,7 @@ export function hasBinary(name) {
 }
 
 export function skillStatusRow(skill) {
-  const metadata = skill.metadata?.openclaw || skill.metadata?.clawdbot || skill.metadata?.moltbot || {};
+  const metadata = skill.metadata?.zero || skill.metadata?.openclaw || skill.metadata?.clawdbot || skill.metadata?.moltbot || {};
   const requires = metadata.requires || {};
   const requirements = { bins: strings(requires.bins), anyBins: strings(requires.anyBins), env: strings(requires.env), config: strings(requires.config), os: strings(metadata.os) };
   const configChecks = requirements.config.map(key => {
@@ -38,7 +38,7 @@ export function skillStatusRow(skill) {
   const eligible = skill.enabled && (metadata.always === true || Object.values(missing).every(values => !values.length));
   return {
     name: skill.name, skillKey: skill.name, description: skill.description, version: skill.version,
-    source: skill.managed ? 'openclaw-managed' : 'openclaw-bundled', bundled: !skill.managed,
+    source: skill.managed ? 'zero-managed' : 'zero-bundled', bundled: !skill.managed,
     filePath: skill.filePath, baseDir: path.dirname(skill.filePath), enabled: skill.enabled, disabled: !skill.enabled,
     always: metadata.always === true, blockedByAllowlist: false, blockedByAgentFilter: false,
     eligible, platformIncompatible: missing.os.length > 0, modelVisible: eligible && !skill.disableModelInvocation,

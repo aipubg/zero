@@ -30,80 +30,56 @@
         "api": "openai-completions",
         "models": [
           {
-            "id": "gemini-3-flash-preview",
-            "name": "Gemini 3 Flash Preview",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "models/gemini-3-flash-preview",
-            "name": "Gemini 3 Flash Preview",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "gemini-flash-latest",
-            "name": "Gemini Flash Latest",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "models/gemini-3.1-flash-live-preview",
-            "name": "Gemini 3.1 Live Preview",
-            "reasoning": false,
-            "image": false
-          },
-          {
             "id": "default",
-            "name": "Gemini Default",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "models/gemini-2.5-flash",
-            "name": "Gemini 2.5 Flash",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "gemini-3.1-pro-preview",
-            "name": "Gemini 3.1 Pro Preview",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "gemini-3.8-flash",
-            "name": "Gemini 3.8 Flash",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "gemini-3.5-flash",
-            "name": "Gemini 3.5 Flash",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "gemini-3.5-flash-lite",
-            "name": "Gemini 3.5 Flash Lite",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "gemini-omni-1.2-flash",
-            "name": "Gemini Omni 1.2 Flash (Video/Vision)",
-            "reasoning": false,
-            "image": false
-          },
-          {
-            "id": "gemini-pro-latest",
-            "name": "Gemini Pro Latest",
+            "name": "default",
             "reasoning": false,
             "image": false
           },
           {
             "id": "models/gemini-flash-lite-latest",
             "name": "models/gemini-flash-lite-latest",
+            "reasoning": false,
+            "image": true
+          },
+          {
+            "id": "models/gemini-3-flash-preview",
+            "name": "models/gemini-3-flash-preview",
+            "reasoning": false,
+            "image": true
+          },
+          {
+            "id": "models/gemini-3.1-flash-lite-preview",
+            "name": "models/gemini-3.1-flash-lite-preview",
+            "reasoning": false,
+            "image": true
+          },
+          {
+            "id": "models/gemini-3.1-flash-lite",
+            "name": "models/gemini-3.1-flash-lite",
+            "reasoning": false,
+            "image": true
+          },
+          {
+            "id": "models/gemini-3.5-flash",
+            "name": "models/gemini-3.5-flash",
+            "reasoning": false,
+            "image": true
+          },
+          {
+            "id": "models/gemini-3.5-flash-lite",
+            "name": "models/gemini-3.5-flash-lite",
+            "reasoning": false,
+            "image": true
+          },
+          {
+            "id": "models/gemini-3.6-flash",
+            "name": "models/gemini-3.6-flash",
+            "reasoning": false,
+            "image": true
+          },
+          {
+            "id": "models/gemini-robotics-er-2-preview",
+            "name": "models/gemini-robotics-er-2-preview",
             "reasoning": false,
             "image": true
           }
@@ -123,9 +99,8 @@
         "agentId": "zero"
       },
       "model": {
-        "primary": "google/models/gemini-2.5-flash"
+        "primary": null
       },
-      "utilityModel": "google/models/gemini-2.5-flash",
       "skills": [],
       "sandbox": {
         "mode": "off"
@@ -159,7 +134,7 @@
           "requireAgentId": true
         },
         "model": {
-          "primary": "google/models/gemini-2.5-flash"
+          "primary": null
         }
       }
     }

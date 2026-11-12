@@ -1,6 +1,6 @@
 /**
  * Zero Computer Operator Core.
- * Adapted from OpenMausBot (Apache-2.0, non-enterprise core).
+ * Native Zero Computer Control operator core.
  *
  * Integrates:
  * 1. Human Takeover Arbitration (refuses input when human holds lease).

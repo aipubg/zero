@@ -1,6 +1,6 @@
 // Zero Control UI runtime core — SDK-free handlers for the plugin's backend entry.
 //
-// Owned durable seams (OpenClaw 2026.10.6, Plugin SDK >=2026.10.6):
+// Owned durable seams (Zero Control UI plugin runtime):
 //
 // 1. Display-name metadata (`zero.ui.providerNames.*`)
 //    The closed `models.providers` schema has no supported `name` field, so a typed
@@ -399,13 +399,13 @@ export function createZeroUiRuntimeHandlers({
 
   const repoRoot = process.env.ZERO_ROOT || (import.meta.dirname ? path.resolve(import.meta.dirname, "../..") : process.cwd());
   const CONFIG_PATHS = [
-    process.env.OPENCLAW_CONFIG_PATH || path.join(repoRoot, "zero-system", "config", "zero.json"),
+    process.env.ZERO_CONFIG_PATH || process.env.OPENCLAW_CONFIG_PATH || path.join(repoRoot, "zero-system", "config", "zero.json"),
     path.join(repoRoot, "zero-system", "config", "zero.json"),
     path.join(repoRoot, "zero-system", "config", "zero.template.json"),
     path.join(repoRoot, "backend", "config", "zero.json"),
     path.join(repoRoot, "backend", "config", "zero.template.json"),
-    path.join(repoRoot, "backend", "config", "openclaw.json"),
-    path.join(repoRoot, "backend", "config", "openclaw.template.json"),
+    
+    
     "",
   ];
 
@@ -649,8 +649,8 @@ export function createZeroUiRuntimeHandlers({
       logger?.warn?.(`[zero-providers] Error syncing save to 18789: ${e?.message}`);
     }
 
-    // 2. Also write strictly sanitized live config for OpenClaw
-    const openclawProvConfig = {
+    // 2. Also write strictly sanitized legacy-compatible config when present
+    const legacyProvConfig = {
       baseUrl: baseUrl || "",
       api: api || "openai-completions",
       models: (models || []).map((m) => {
@@ -659,16 +659,17 @@ export function createZeroUiRuntimeHandlers({
       }),
     };
     if (apiKey) {
-      openclawProvConfig.apiKey = apiKey.trim();
+      legacyProvConfig.apiKey = apiKey.trim();
     }
     if (headers) {
-      openclawProvConfig.headers = headers;
+      legacyProvConfig.headers = headers;
     }
 
     writeLiveConfig((json) => {
-      json.models = json.models || { mode: "merge", providers: {} };
+      json.models = json.models || { mode: "replace", providers: {} };
+      json.models.mode = "replace";
       json.models.providers = json.models.providers || {};
-      json.models.providers[cleanId] = openclawProvConfig;
+      json.models.providers[cleanId] = legacyProvConfig;
     });
 
     return { ok: true, providerId: cleanId, provider: newProvider };
@@ -684,7 +685,16 @@ export function createZeroUiRuntimeHandlers({
       if (getRes.ok) {
         const data = await getRes.json();
         const currentProviders = Array.isArray(data.providers) ? data.providers : [];
-        const filtered = currentProviders.filter(p => p.id !== id);
+        let filtered;
+        if (params.modelId) {
+          filtered = currentProviders.map(p => {
+            if (p.id !== id) return p;
+            const updatedModels = (p.models || []).filter(m => (typeof m === 'string' ? m : m.id) !== params.modelId);
+            return { ...p, models: updatedModels };
+          }).filter(p => (p.models || []).length > 0);
+        } else {
+          filtered = currentProviders.filter(p => p.id !== id);
+        }
         await fetch("http://127.0.0.1:18789/api/gateway/config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -696,17 +706,30 @@ export function createZeroUiRuntimeHandlers({
       logger?.warn?.(`[zero-providers] Error syncing delete to 18789: ${e?.message}`);
     }
 
-    // 2. Also remove from openclaw.json
+    // 2. Also remove from legacy-compatible config when present
     writeLiveConfig((json) => {
-      if (json.models?.providers?.[id]) {
-        delete json.models.providers[id];
+      json.models = json.models || { mode: "replace", providers: {} };
+      json.models.mode = "replace";
+      if (json.models.providers?.[id]) {
+        if (params.modelId) {
+          const prov = json.models.providers[id];
+          prov.models = (prov.models || []).filter(m => (typeof m === 'string' ? m : m.id) !== params.modelId);
+          if (prov.models.length === 0) {
+            delete json.models.providers[id];
+          }
+        } else {
+          delete json.models.providers[id];
+        }
+      }
+      if (Object.keys(json.models.providers || {}).length === 0) {
+        json.models.providers = {};
+        if (json.agents?.defaults?.model) json.agents.defaults.model.primary = null;
+        if (json.agents?.entries?.zero?.model) json.agents.entries.zero.model.primary = null;
       }
       const currentPrimary = json.agents?.defaults?.model?.primary || "";
-      if (currentPrimary.startsWith(`${id}/`)) {
-        delete json.agents.defaults.model.primary;
-        if (json.agents.entries?.zero?.model?.primary?.startsWith(`${id}/`)) {
-          delete json.agents.entries.zero.model.primary;
-        }
+      if (currentPrimary.startsWith(`${id}/`) || currentPrimary === id) {
+        if (json.agents?.defaults?.model) json.agents.defaults.model.primary = null;
+        if (json.agents?.entries?.zero?.model) json.agents.entries.zero.model.primary = null;
       }
     });
     return { ok: true, deleted: id };

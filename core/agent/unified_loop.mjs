@@ -3,7 +3,7 @@
  * Built upon Microsoft Agent Framework patterns (Observe -> Plan -> Act -> Verify).
  *
  * Integrated into Project Zero core execution pipeline:
- * 1. Perception Layer: Screen Vision + UIA Root Tree (Windows-Use)
+ * 1. Perception Layer: Screen Vision + UIA Root Tree (Zero UIA)
  * 2. Execution Layer: Direct OS Controller + Native Browser Automation (In-Process CDP)
  * 3. Planning & Loop: Microsoft Agent Framework stateful cycle with real-time streaming to Chat Section
  *
@@ -81,14 +81,14 @@ export class UnifiedAgentLoop {
 - **Resolution:** \`${m.screen_vision.geometry?.width || 1920}x${m.screen_vision.geometry?.height || 1080}\` @ **${m.screen_vision.geometry?.dpi || 96} DPI** (Scale: ${m.screen_vision.geometry?.scaleFactor || 1.0}x)
 - **Live Frame Buffer:** \`${m.screen_vision.frameBuffer?.bytes ? Math.round(m.screen_vision.frameBuffer.bytes / 1024) + ' KB' : 'Active'}\` (${m.screen_vision.frameBuffer?.format || 'image/png'})
 
-#### 2. Perception: Windows UI Automation Root Tree (Windows-Use)
+#### 2. Perception: Windows UI Automation Root Tree (Zero UIA)
 - **Module:** \`${m.uia_root_tree.module}\`
 - **State:** \`${m.uia_root_tree.status.toUpperCase()}\`
 - **Active Window:** \`${m.uia_root_tree.activeWindow?.title || 'Desktop'}\`
 - **Foreground Process:** \`${m.uia_root_tree.foregroundApp || 'explorer.exe'}\`
 - **Indexed UIA Controls:** \`${m.uia_root_tree.elementCount || 0} active elements\`
 
-#### 3. Execution: Native OS Controller & Agent-Desktop
+#### 3. Execution: Native OS Controller & Zero Computer Control
 - **Module:** \`${m.os_controller.module}\`
 - **State:** \`${m.os_controller.status.toUpperCase()}\`
 - **Engine:** \`agent-desktop v${m.os_controller.agentDesktop?.version || '1.2.0'}\` (Win32 x64 Native)
@@ -326,7 +326,7 @@ export class UnifiedAgentLoop {
    * 1. [OBSERVE] Live Screen Share Frame & Desk State
    * 2. [ACT: BROWSER] Native browser_automation navigates & extracts semantic AX snapshot with refs (e0, e1...)
    * 3. [EXTRACT] Retrieves page title / headline information via native CDP
-   * 4. [ACT: OS] Windows UIA Root Tree launches/focuses Notepad via agent-desktop/Win32 system calls
+   * 4. [ACT: OS] Windows UIA Root Tree launches/focuses Notepad via Zero Computer Control/Win32 system calls
    * 5. [ACT: TYPE] Types the extracted browser information into Notepad via UIA ID / SendInput
    * 6. [VERIFY] Dual verification: UIA Root Tree state check + Screen Share frame diff confirmation
    */

@@ -72,7 +72,7 @@ async function callGateway(host, method, params = {}) {
       const saveRes = await transport(`${GATEWAY_BASE}/api/gateway/config`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providers: currentProviders }),
+        body: JSON.stringify({ providers: currentProviders, replaceProviders: true }),
         signal: AbortSignal.timeout(5000),
       });
       return await saveRes.json();
@@ -86,11 +86,13 @@ async function callGateway(host, method, params = {}) {
           currentProviders = Array.isArray(data.providers) ? data.providers : [];
         }
       } catch {}
-      const filtered = currentProviders.filter(p => p.id !== params.id);
+      const filtered = params.modelId
+        ? currentProviders.map(p => p.id === params.id ? { ...p, models: (p.models || []).filter(m => (typeof m === 'string' ? m : m.id) !== params.modelId) } : p).filter(p => (p.models || []).length > 0)
+        : currentProviders.filter(p => p.id !== params.id);
       const saveRes = await transport(`${GATEWAY_BASE}/api/gateway/config`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providers: filtered }),
+        body: JSON.stringify({ providers: filtered, replaceProviders: true }),
         signal: AbortSignal.timeout(5000),
       });
       return await saveRes.json();
@@ -852,7 +854,8 @@ export function mountModelsPage(container, context = {}) {
         chipsContainer.append(chip);
       }
 
-      ggufCard.append(chipsContainer);
+      // Outer provider cards stay clean: model pills are shown only inside the
+      // Edit/Manage modal, never on the card surface.
       modelsListContainer.append(ggufCard);
     }
 
@@ -918,6 +921,7 @@ export function mountModelsPage(container, context = {}) {
 
       const delBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Delete");
       delBtn.onclick = async () => {
+        if (!confirm(`Delete provider '${p.name || p.id}' and all its models?`)) return;
         try {
           delBtn.disabled = true;
           await callGateway(host, "zero.providers.delete", { id: p.id });
@@ -934,77 +938,7 @@ export function mountModelsPage(container, context = {}) {
       cardHeader.append(left, actions);
       card.append(cardHeader);
 
-      // Model Chips Grid
-      const pModels = Array.isArray(p.models) ? p.models : [];
-      if (pModels.length > 0) {
-        const chipsContainer = element("div", "zero-model-chips-container");
-        chipsContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;background:rgba(0,0,0,0.18);border-top:1px solid rgba(255,255,255,0.06);";
-
-        for (const pm of pModels) {
-          const mid = typeof pm === "string" ? pm : pm?.id;
-          if (!mid) continue;
-          const mname = typeof pm === "string" ? pm : (pm.name || pm.id);
-          const isReasoning = typeof pm === "object" && Boolean(pm.reasoning);
-          const isImage = typeof pm === "object" && Boolean(pm.image);
-
-          const modelKey = mid.startsWith(p.id + '/') ? mid : p.id + '/' + mid;
-          const isCurrentActive = [systemDefaults.primary, agentBindings?.zero?.model].some(value => value === modelKey || value === mid);
-          const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
-          chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "rgba(255,255,255,0.04)"};border:1px solid ${isCurrentActive ? "var(--accent)" : "rgba(255,255,255,0.08)"};color:${isCurrentActive ? "var(--accent)" : "inherit"};cursor:pointer;`;
-
-          const nameSpan = element("span", "zero-model-chip__name", getCleanDisplayName(mname, mid));
-          nameSpan.style.fontWeight = isCurrentActive ? "700" : "500";
-          chip.append(nameSpan);
-
-          if (isReasoning) {
-            const rBadge = element("span", "zero-chip-badge", "R");
-            rBadge.title = "Reasoning Supported";
-            rBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,0.3);color:var(--color-warning, #fbbf24);";
-            chip.append(rBadge);
-          }
-          if (isImage) {
-            const vBadge = element("span", "zero-chip-badge", "Vision");
-            vBadge.title = "Multimodal Vision";
-            vBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(56,189,248,0.25);color:var(--color-info, #38bdf8);";
-            chip.append(vBadge);
-          }
-
-          const setActSpan = element("span", "zero-chip-action", isCurrentActive ? "✓ Active" : "Set Active");
-          setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--accent)" : "var(--text-muted)"};`;
-          chip.append(setActSpan);
-
-          chip.onclick = async (e) => {
-            if (e.target.closest(".zero-chip-delete")) return;
-            try {
-              await callGateway(host, "zero.providers.setActive", { modelId: modelKey });
-              showNotice(`Active model set to "${getCleanDisplayName(mname, mid)}"`);
-              await loadAllData();
-            } catch (err) {
-              showNotice(err.message, true);
-            }
-          };
-
-          const delChipBtn = element("span", "zero-chip-delete", "×");
-          delChipBtn.title = "Remove this model";
-          delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:var(--text-subtle, #9ca3af);cursor:pointer;line-height:1;";
-          delChipBtn.onclick = async (e) => {
-            e.stopPropagation();
-            try {
-              const updatedModels = pModels.filter(m => (typeof m === "string" ? m : m.id) !== mid);
-              p.models = updatedModels;
-              await callGateway(host, "zero.providers.save", p);
-              showNotice(`Model "${mname}" removed.`);
-              await loadAllData();
-            } catch (err) {
-              showNotice(err.message, true);
-            }
-          };
-          chip.append(delChipBtn);
-          chipsContainer.append(chip);
-        }
-        card.append(chipsContainer);
-      }
-
+      // Model chips are kept inside the Edit modal to keep the outer card clean
       modelsListContainer.append(card);
     }
   }
@@ -1344,27 +1278,32 @@ export function mountModelsPage(container, context = {}) {
 
       // Header row
       const tHead = element("div", "zero-models-table__head");
-      tHead.style.cssText = "display:grid;grid-template-columns:1fr 1fr 70px 70px 40px;gap:8px;font-size:11px;color:var(--text-muted, #a5aab8);font-weight:600;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);";
+      tHead.style.cssText = "display:grid;grid-template-columns:1fr 1fr 65px 65px 85px 36px;gap:8px;font-size:11px;color:var(--text-muted, #a5aab8);font-weight:600;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);align-items:center;";
       tHead.append(
         element("span", null, "MODEL ID"),
         element("span", null, "DISPLAY NAME"),
         element("span", null, "REASON"),
         element("span", null, "VISION"),
+        element("span", null, "ACTIVE"),
         element("span", null, "")
       );
       modelsTable.append(tHead);
 
+      const pId = (idInput?.value || existingProvider?.id || "").trim();
+
       for (let i = 0; i < configuredModels.length; i++) {
         const m = configuredModels[i];
         const row = element("div", "zero-models-table__row");
-        row.style.cssText = "display:grid;grid-template-columns:1fr 1fr 70px 70px 40px;gap:8px;align-items:center;";
+        row.style.cssText = "display:grid;grid-template-columns:1fr 1fr 65px 65px 85px 36px;gap:8px;align-items:center;";
 
         const idInp = element("input", "zero-modal__input");
         idInp.value = m.id;
+        idInp.placeholder = "model-id";
         idInp.oninput = () => { m.id = idInp.value.trim(); };
 
         const nameInp = element("input", "zero-modal__input");
         nameInp.value = m.name || m.id;
+        nameInp.placeholder = "Display name";
         nameInp.oninput = () => { m.name = nameInp.value.trim(); };
 
         const rCheck = document.createElement("input");
@@ -1377,14 +1316,44 @@ export function mountModelsPage(container, context = {}) {
         vCheck.checked = Boolean(m.image);
         vCheck.onchange = () => { m.image = vCheck.checked; };
 
-        const delRowBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "×");
-        delRowBtn.type = "button";
-        delRowBtn.onclick = () => {
-          configuredModels.splice(i, 1);
-          renderConfiguredModelsRows();
+        const modelKey = pId ? (m.id.startsWith(pId + '/') ? m.id : `${pId}/${m.id}`) : m.id;
+        const isCurrentActive = Boolean(m.id) && [systemDefaults.primary, agentBindings?.zero?.model].some(value => value === modelKey || value === m.id);
+
+        const activeBtn = element("button", `zero-providers-btn ${isCurrentActive ? "zero-providers-btn--active" : "zero-providers-btn--subtle"}`, isCurrentActive ? "✓ Active" : "Set Active");
+        activeBtn.type = "button";
+        activeBtn.style.cssText = `font-size:11px;padding:3px 6px;text-align:center;${isCurrentActive ? "color:var(--accent);border-color:var(--accent);font-weight:700;" : ""}`;
+        activeBtn.disabled = !m.id || isCurrentActive;
+        activeBtn.onclick = async () => {
+          if (!m.id) return;
+          try {
+            activeBtn.disabled = true;
+            activeBtn.textContent = "Setting...";
+            await callGateway(host, "zero.providers.setActive", { modelId: modelKey });
+            showNotice(`Active model set to "${m.name || m.id}"`);
+            systemDefaults.primary = modelKey;
+            if (agentBindings?.zero) agentBindings.zero.model = modelKey;
+            renderConfiguredModelsRows();
+          } catch (err) {
+            showNotice(err.message, true);
+          }
         };
 
-        row.append(idInp, nameInp, rCheck, vCheck, delRowBtn);
+        const delRowBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "×");
+        delRowBtn.type = "button";
+        delRowBtn.title = "Delete model";
+        delRowBtn.style.padding = "3px 8px";
+        delRowBtn.onclick = async () => {
+          const removed = configuredModels.splice(i, 1)[0];
+          renderConfiguredModelsRows();
+          if (isEdit && pId && removed?.id) {
+            try {
+              await callGateway(host, "zero.providers.delete", { id: pId, modelId: removed.id });
+              showNotice(`Model "${removed.name || removed.id}" removed.`);
+            } catch {}
+          }
+        };
+
+        row.append(idInp, nameInp, rCheck, vCheck, activeBtn, delRowBtn);
         modelsTable.append(row);
       }
     }

@@ -30,24 +30,39 @@ export function registerLocalTools(engine, { cwd = process.cwd() } = {}) {
       return { ok: actual === content, path: resolved, verified: actual === content,
         evidence: { bytes: Buffer.byteLength(actual), sha256: createHash('sha256').update(actual).digest('hex') } };
     } });
-  engine.registerCapability({ name: 'run_process', description: 'Execute an actual local program with explicit argument strings. No implicit shell. Use Python, Node, PowerShell or installed command-line tools as needed.',
-    parameters: { type: 'object', properties: { command: { type: 'string' }, args: { type: 'array', items: { type: 'string' } }, cwd: { type: 'string' }, timeoutMs: { type: 'number' } }, required: ['command'] },
-    handler: async ({ command, args = [], cwd: directory, timeoutMs = 15000 }, signal) => {
+  engine.registerCapability({ name: 'run_process', description: 'Zero Terminal & Security Ops: execute any local program or command line, including PowerShell/bash pipelines, Python scripts, network and security tooling (nmap, curl, git, ffmpeg, gh) and bug-hunting scripts. Set shell=true for a shell command line; flags are passed through verbatim to non-cmd executables.',
+    parameters: { type: 'object', properties: { command: { type: 'string' }, args: { type: 'array', items: { type: 'string' } }, cwd: { type: 'string' }, timeoutMs: { type: 'number' }, shell: { type: 'boolean', description: 'Run command as a shell command line (PowerShell on Windows, bash elsewhere).' }, shellExecutable: { type: 'string', description: 'Optional shell executable, e.g. powershell.exe or bash.exe.' } }, required: ['command'] },
+    handler: async ({ command, args = [], cwd: directory, timeoutMs = 15000, shell = false, shellExecutable = '' }, signal) => {
       if (typeof command !== 'string' || !command || !Array.isArray(args) || args.some(arg => typeof arg !== 'string')) throw new Error('Expected a command and an array of string arguments');
       if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) throw new Error('Process timeout must be between 1 and 300000 ms');
       const workingDirectory = directory ? location(directory) : cwd;
-      // Guard against interactive cmd shells that wait forever on stdin: replace /k with /c only for cmd.exe
+      // Guard against interactive cmd shells that wait forever on stdin: replace /k with /c only for cmd.exe.
+      // No other executable ever has its flags rewritten.
       let safeArgs = [...args];
-      if (/^(cmd|cmd\.exe)$/i.test(path.basename(command))) {
+      let executable = command;
+      if (/^(cmd|cmd\.exe)$/i.test(path.basename(executable))) {
         safeArgs = safeArgs.map(arg => (/^[\/-]k$/i.test(arg) ? '/c' : arg));
         if (!safeArgs.some(a => /^[\/-][cC]$/.test(a))) {
           safeArgs = ['/c', ...safeArgs];
         }
       }
+      if (shell && !args.length) {
+        const requestedShell = String(shellExecutable || '').trim();
+        if (requestedShell) {
+          executable = requestedShell;
+          safeArgs = /powershell/i.test(requestedShell)
+            ? ['-NoProfile', '-NonInteractive', '-Command', command]
+            : ['-lc', command];
+        } else {
+          // Native shell command line. The command string is passed as one
+          // program token so quotes and flags stay intact.
+          safeArgs = [];
+        }
+      }
       try {
-        const result = await execute(command, safeArgs, { cwd: workingDirectory, windowsHide: true, timeout: timeoutMs, ...(signal ? { signal } : {}), maxBuffer: 1024 * 1024 });
+        const result = await execute(executable, safeArgs, { cwd: workingDirectory, windowsHide: true, timeout: timeoutMs, ...(signal ? { signal } : {}), maxBuffer: 4 * 1024 * 1024, ...(shell && !safeArgs.length ? { shell: true } : {}) });
         return { ok: true, executed: true, stdout: result.stdout, stderr: result.stderr, exitCode: 0, verified: true,
-          evidence: { execution: 'child-process-exit', exitCode: 0, cwd: workingDirectory } };
+          evidence: { execution: 'child-process-exit', exitCode: 0, cwd: workingDirectory, shell: Boolean(shell) } };
       } catch (error) {
         return { ok: false, executed: error.code !== 'ENOENT', stdout: error.stdout || '', stderr: error.stderr || '',
           exitCode: typeof error.code === 'number' ? error.code : null, error: error.message,

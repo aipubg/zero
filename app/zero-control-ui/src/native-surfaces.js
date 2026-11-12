@@ -42,11 +42,13 @@ import {
  * It never owns a transcript, route, Gateway request or session store.
  */
 
-const SURFACE_SELECTOR = "openclaw-model-providers-page, openclaw-model-setup-page, openclaw-about-page";
+const SURFACE_SELECTOR = "zero-model-providers-page, zero-model-setup-page, zero-about-page, openclaw-model-providers-page, openclaw-model-setup-page, openclaw-about-page";
 const COMPUTER_SELECTOR = ".systems-desktop, .zero-computer-hold-host";
 const COMMUNITY_SELECTOR = ".sidebar-shell__invite, .community-invite-card";
-const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"]';
+const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"], [data-sidebar-entry*="zero-control-ui"]';
 const CHROME_SELECTOR = [
+  'zero-plugins-page',
+  'zero-skills-page',
   'openclaw-plugins-page',
   'openclaw-skills-page',
   COMMUNITY_SELECTOR,
@@ -55,7 +57,7 @@ const CHROME_SELECTOR = [
   ".topbar-brand",
   ".assistant-panel",
   ".settings-sidebar",
-  "openclaw-agent-select",
+  "zero-agent-select", "openclaw-agent-select",
   ".agents-home__card",
   ".agents-toolbar",
   ".page-subtitle",
@@ -210,8 +212,8 @@ function rebrandText(root) {
   while (node) {
     const parent = node.parentElement;
     const value = node.nodeValue || "";
-    if (parent && !parent.closest(NO_REBRAND_SELECTOR) && /OpenClaw|Claw/.test(value)) {
-      let next = value.replace(/\bOpenClaw\b/g, "Zero");
+    if (parent && !parent.closest(NO_REBRAND_SELECTOR) && /Zero|Claw/.test(value)) {
+      let next = value.replace(/\bZero\b/g, "Zero");
       for (const [pattern, replacement] of PRODUCT_PHRASES) {
         next = next.replace(pattern, replacement);
       }
@@ -375,9 +377,9 @@ function installNativeSurfaces(host) {
     try {
       const current = document.title || "";
       if (!current) return;
-      const next = /^Zero\s*[—–-]\s*OpenClaw$/.test(current)
+      const next = /^Zero\s*[—–-]\s*Zero$/.test(current)
         ? "Zero"
-        : current.replace(/\bOpenClaw\b/g, "Zero");
+        : current.replace(/\bZero\b/g, "Zero");
       if (next !== current) document.title = next;
     } catch {
       // ignore
@@ -425,16 +427,16 @@ function installNativeSurfaces(host) {
     if (custodian) {
       rebrandText(custodian);
       for (const input of custodian.querySelectorAll("input, textarea")) {
-        if (input.placeholder && input.placeholder.includes("OpenClaw")) {
-          input.placeholder = input.placeholder.replaceAll("OpenClaw", "Zero");
+        if (input.placeholder && input.placeholder.includes("Zero")) {
+          input.placeholder = input.placeholder.replaceAll("Zero", "Zero");
         }
-        if (input.getAttribute("aria-label")?.includes("OpenClaw")) {
-          input.setAttribute("aria-label", input.getAttribute("aria-label").replaceAll("OpenClaw", "Zero"));
+        if (input.getAttribute("aria-label")?.includes("Zero")) {
+          input.setAttribute("aria-label", input.getAttribute("aria-label").replaceAll("Zero", "Zero"));
         }
       }
       for (const h1 of custodian.querySelectorAll("h1")) {
-        if (h1.textContent && h1.textContent.includes("OpenClaw")) {
-          h1.textContent = h1.textContent.replaceAll("OpenClaw", "Zero");
+        if (h1.textContent && h1.textContent.includes("Zero")) {
+          h1.textContent = h1.textContent.replaceAll("Zero", "Zero");
         }
       }
     }
@@ -784,7 +786,7 @@ function installNativeSurfaces(host) {
   const rebrandCustodianLinks = () => {
     for (const a of document.querySelectorAll('a[href*="/custodian"], a[href="custodian"], a[href*="/settings/custodian"]')) {
       const text = a.querySelector(".settings-sidebar__item-text, span");
-      if (text && /Ask OpenClaw|Ask Custodian/i.test(text.textContent)) {
+      if (text && /Ask Zero|Ask Custodian/i.test(text.textContent)) {
         text.textContent = "Ask Zero";
       }
       const icon = a.querySelector(".settings-sidebar__item-icon svg, svg");
@@ -812,7 +814,7 @@ function installNativeSurfaces(host) {
     for (const a of document.querySelectorAll("a, wa-dropdown-item")) {
       const txt = (a.textContent || "").trim();
       const href = a.getAttribute("href") || "";
-      if (/^OpenClaw Docs$/i.test(txt) || href.includes("tweakcn.com") || href.includes("openclaw.ai")) {
+      if (/^Zero Docs$/i.test(txt) || href.includes("tweakcn.com") || href.includes("openclaw.ai")) {
         a.remove();
       }
     }

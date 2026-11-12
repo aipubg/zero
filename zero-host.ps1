@@ -30,8 +30,11 @@ if (Test-Path $ConfigPath) {
   }
 }
 
-$env:OPENCLAW_STATE_DIR = Join-Path $ZeroRoot 'zero-system\state'
-$env:OPENCLAW_CONFIG_PATH = $ConfigPath
+$env:ZERO_STATE_DIR = Join-Path $ZeroRoot 'zero-system\state'
+$env:ZERO_CONFIG_PATH = $ConfigPath
+# Internal compatibility fallback only; ZERO_* stays canonical.
+if (-not $env:OPENCLAW_STATE_DIR) { $env:OPENCLAW_STATE_DIR = $env:ZERO_STATE_DIR }
+if (-not $env:OPENCLAW_CONFIG_PATH) { $env:OPENCLAW_CONFIG_PATH = $env:ZERO_CONFIG_PATH }
 $env:OPENCLAW_NO_AUTO_UPDATE = '1'
 $env:DO_NOT_TRACK = '1'
 Remove-Item Env:\ZERO_GATEWAY_KEY -ErrorAction SilentlyContinue

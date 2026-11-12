@@ -133,7 +133,7 @@ export class ZeroNativeHost {
     if (this.voiceRecognitionBackend !== undefined && !['windows', 'whisper'].includes(this.voiceRecognitionBackend)) throw new Error('Unknown voice recognition backend');
     this.port = options.port || Number(process.env.ZERO_PORT || process.env.PORT || 18789);
     this.host = options.host || '127.0.0.1';
-    this.configPath = options.configPath || process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+    this.configPath = options.configPath || process.env.ZERO_CONFIG_PATH || process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
     this.prefsPath = options.prefsPath || process.env.ZERO_PREFS_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'user-prefs.json');
     this.bootId = `zero_boot_${Date.now()}`;
     this.bootedAt = Date.now();
@@ -149,6 +149,7 @@ export class ZeroNativeHost {
       if (resolvedToken) authMode = 'token';
     } else {
       const configPaths = [
+        process.env.ZERO_CONFIG_PATH,
         process.env.OPENCLAW_CONFIG_PATH,
         path.join(REPO_ROOT, 'backend', 'config', 'zero.json'),
         path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json'),
@@ -175,7 +176,9 @@ export class ZeroNativeHost {
     this.expectedToken = (authMode === 'none' && !resolvedToken) ? '' : (resolvedToken || this.loopbackUiToken);
 
     // Initialize persistence & state engines
-    const dataDir = options.dataDir || process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data');
+    const dataDir = options.dataDir || process.env.ZERO_DATA_DIR
+      || (process.env.ZERO_STATE_DIR ? path.join(process.env.ZERO_STATE_DIR, 'data') : null)
+      || path.join(REPO_ROOT, '.zero-data');
     this.localDesktopSessions = new DesktopSessionStore({ filePath: path.join(dataDir, 'desktop-session-metadata.json'), maxAgeMs: options.desktopSessionMaxAgeMs });
     this.localGguf = new LocalGgufEngineService({ modelsDir: options.localModelsDir || process.env.ZERO_LOCAL_MODELS_DIR || path.join(REPO_ROOT, 'models') });
     // Stable, non-secret storage namespace for the native UI's durable outbox.
@@ -251,7 +254,7 @@ export class ZeroNativeHost {
 
     const tool = (name, description, parameters, handler) => canonicalCapabilityEngine.registerCapability({ name, description, parameters, handler });
     registerLocalTools(canonicalCapabilityEngine, { cwd: REPO_ROOT });
-    tool('desktop_control', 'PRIMARY desktop control backend: agent-desktop native accessibility with physical screen interaction. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Runs in headed mode by default to ensure all actions are visible on screen.', { type: 'object', properties: { command: { type: 'string', enum: DESKTOP_COMMANDS }, args: { type: 'array', description: 'CLI tokens, NOT a shell string. snapshot example: ["--window-id","w-123"]. get example: ["@snapshot:e1","--property","value"]. click/set-value: ["@snapshot:e1"]. skills guide: ["get","desktop"]. Reuse refs only from returned snapshots.', items: { type: 'string' } }, input: { type: 'string', description: 'Text to insert for set-value/type/clipboard-set ONLY. Never put refs, flags or read instructions here. Omit for snapshot/get/click.' }, headed: { type: 'boolean', description: 'Physical keyboard/cursor input; defaults to true for visible execution.' } }, required: ['command'], additionalProperties: false }, (args, signal, context) => canonicalCapabilityEngine.execute({ agentId: context?.agentId || 'zero', toolName: 'zero_computer_action', args: { headed: args.headed ?? true, ...args, action: 'desktop' }, signal }));
+    tool('desktop_control', 'PRIMARY desktop control backend: Zero Computer Control native accessibility with physical screen interaction. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Runs in headed mode by default to ensure all actions are visible on screen.', { type: 'object', properties: { command: { type: 'string', enum: DESKTOP_COMMANDS }, args: { type: 'array', description: 'CLI tokens, NOT a shell string. snapshot example: ["--window-id","w-123"]. get example: ["@snapshot:e1","--property","value"]. click/set-value: ["@snapshot:e1"]. skills guide: ["get","desktop"]. Reuse refs only from returned snapshots.', items: { type: 'string' } }, input: { type: 'string', description: 'Text to insert for set-value/type/clipboard-set ONLY. Never put refs, flags or read instructions here. Omit for snapshot/get/click.' }, headed: { type: 'boolean', description: 'Physical keyboard/cursor input; defaults to true for visible execution.' } }, required: ['command'], additionalProperties: false }, (args, signal, context) => canonicalCapabilityEngine.execute({ agentId: context?.agentId || 'zero', toolName: 'zero_computer_action', args: { headed: args.headed ?? true, ...args, action: 'desktop' }, signal }));
     tool('research_search', 'Retrieve real search results and provenance. Retrieved sources are not independently verified.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => this.researchEngine.searchEngine.search(args.query, args));
     tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
     tool('memory_remember', 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string', enum: Object.values(MEMORY_LAYERS), default: 'semantic' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
@@ -327,10 +330,20 @@ export class ZeroNativeHost {
     tool('skills_list', 'Discover installed skills and their descriptions.', { type: 'object' }, () => ({ skills: this.skillLoader.listSkills() }));
     tool('skill_execute', 'Execute an enabled installed skill through a durable task and the model/tool loop.', { type: 'object', properties: { name: { type: 'string' }, goal: { type: 'string' } }, required: ['name', 'goal'] }, (args, signal) => this.skillLoader.executeSkill(args.name, args, { signal }));
 
+    // Long-horizon autonomy, delegation and self-learning share the same room as
+    // every other capability. They are ordinary first-party Zero tools.
+    tool('schedule_task', 'Register a durable recurring Zero automation. Use standard five-field cron or @hourly/@daily/@weekly. The job survives restarts and wakes Zero on schedule.', { type: 'object', properties: { title: { type: 'string' }, cronExpr: { type: 'string' }, targetAction: { type: 'string' }, params: { type: 'object' }, enabled: { type: 'boolean' } }, required: ['title', 'cronExpr'] }, args => this._scheduleTask(args));
+    tool('goal_plan', 'Decompose a high-level or long-horizon goal into a durable master plan with milestones and an automatic recurring execution job (Jarvis mode).', { type: 'object', properties: { goal: { type: 'string' }, cronExpr: { type: 'string' }, milestones: { type: 'array', items: { type: 'string' } } }, required: ['goal'] }, args => this._planGoal(args));
+    tool('goal_status', 'List durable long-horizon plans, scheduled jobs and learned procedures.', { type: 'object' }, () => this._goalStatus());
+    tool('delegate_agent', 'Delegate a concrete subtask to Zero specialist agents through the durable team workflow.', { type: 'object', properties: { goal: { type: 'string' }, teamId: { type: 'string' }, planOnly: { type: 'boolean' } }, required: ['goal'] }, (args, signal) => this._delegateAgent(args, signal));
+    tool('procedure_learn', 'Persist a verified multi-step procedure (trigger, working steps, verification) into durable procedural memory for future reuse.', { type: 'object', properties: { name: { type: 'string' }, trigger: { type: 'string' }, steps: { type: 'array', items: { type: 'string' } }, verification: { type: 'string' }, tags: { type: 'array', items: { type: 'string' } } }, required: ['trigger', 'steps'] }, args => this._learnProcedure(args));
+    tool('procedure_recall', 'Recall previously learned procedures that match a task before planning it again.', { type: 'object', properties: { query: { type: 'string' }, limit: { type: 'number' } }, required: ['query'] }, args => ({ procedures: this._recallProcedures(args.query, args.limit) }));
+
 
     const automationExecutor = createAutomationDispatcher({
       memoryEngine: this.unifiedMemory, researchEngine: this.researchEngine,
       capabilityEngine: canonicalCapabilityEngine,
+      goalRunner: params => this._advanceGoal(params),
     });
     this.automation = new AutomationScheduler({
       dbPath: path.join(dataDir, 'zero-automation.sqlite'),
@@ -396,7 +409,7 @@ export class ZeroNativeHost {
     await this.modelFabric.localChat.refresh();
     await this.pluginManager.initialize();
     await this.observationLifecycle.initialize();
-    if (process.platform === 'win32') {
+    if (process.platform === 'win32' && process.env.ZERO_SCREEN_AUTOSTART !== '0') {
       try {
         await this.observationLifecycle.control('start');
         console.log('[Zero Host] Screen Intelligence auto-started successfully on win32.');
@@ -494,7 +507,7 @@ export class ZeroNativeHost {
             chunks.push(chunk);
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-          if (input.replaceProviders === true && Array.isArray(input.providers)) {
+          if (Array.isArray(input.providers)) {
             res.end(JSON.stringify(replaceConfiguredProviders(this.modelFabric, input.providers)));
           } else {
             res.end(JSON.stringify(importModelSettings(this.modelFabric, { ...input, providers: input.providers || [] })));
@@ -590,7 +603,7 @@ export class ZeroNativeHost {
       }
 
       // 2. Control UI bootstrap config endpoint (NEVER disclose bootstrap credentials)
-      if (pathname === '/control-ui-config.json' || pathname === '/__openclaw__/control-ui-config.json') {
+      if (pathname === '/control-ui-config.json' || pathname === '/__openclaw__/control-ui-config.json' || pathname === '/__zero__/control-ui-config.json') {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
@@ -655,10 +668,11 @@ export class ZeroNativeHost {
       const pluginDistRoot = path.join(REPO_ROOT, 'app', 'zero-control-ui', 'dist');
 
       // Plugin assets route: /__openclaw__/plugins/control-ui/* or /plugins/control-ui/*
-      if (pathname.startsWith('/__openclaw__/plugins/control-ui/') || pathname.startsWith('/plugins/control-ui/')) {
-        const subpath = pathname.replace(/^\/__openclaw__\/plugins\/control-ui\//, '').replace(/^\/plugins\/control-ui\//, '');
+      if (pathname.startsWith('/__openclaw__/plugins/control-ui/') || pathname.startsWith('/__zero__/plugins/control-ui/') || pathname.startsWith('/plugins/control-ui/')) {
+        const subpath = pathname.replace(/^\/__openclaw__\/plugins\/control-ui\//, '').replace(/^\/__zero__\/plugins\/control-ui\//, '').replace(/^\/plugins\/control-ui\//, '');
         const candidatePaths = [
           path.join(webRoot, 'plugins', 'control-ui', subpath),
+          path.join(webRoot, '__zero__', 'plugins', 'control-ui', subpath),
           path.join(webRoot, '__openclaw__', 'plugins', 'control-ui', subpath),
           path.join(pluginDistRoot, 'control-ui', subpath),
           path.join(pluginDistRoot, 'control-ui', subpath.split('/').slice(1).join('/')),
@@ -909,6 +923,7 @@ export class ZeroNativeHost {
           'sessions.list', 'gateway.sessions.list',
           'sessions.create', 'sessions.reset', 'sessions.recover', 'sessions.fork', 'sessions.get', 'sessions.describe',
           'sessions.patch', 'sessions.patchMany', 'sessions.delete', 'sessions.deleteMany', 'sessions.archive', 'sessions.unarchive',
+          'sessions.companion.state', 'sessions.companion.ask', 'sessions.companion.reset',
           'chat.history', 'gateway.chat.history', 'chat.startup', 'chat.metadata',
           'chat.send', 'chat.abort', 'agent', 'gateway.agent',
           'models.list', 'gateway.models.list', 'models.status',
@@ -1009,8 +1024,8 @@ export class ZeroNativeHost {
         if (responseResult && typeof responseResult === 'object' && responseResult.ok === false) {
           const failureCode = responseResult.code || responseResult.error?.code;
           const failureMessage = typeof responseResult.error === 'string' ? responseResult.error : responseResult.error?.message || 'Operation failed';
-          const deliveryDetails = responseResult.backend === 'agent-desktop' && responseResult.disposition
-            ? { backend: 'agent-desktop', nativeCode: failureCode, disposition: responseResult.disposition, requiresObservation: responseResult.requiresObservation === true } : undefined;
+          const deliveryDetails = (responseResult.backend === 'zero-computer-control' || responseResult.backend === 'agent-desktop') && responseResult.disposition
+            ? { backend: (responseResult.backend || 'zero-computer-control'), nativeCode: failureCode, disposition: responseResult.disposition, requiresObservation: responseResult.requiresObservation === true } : undefined;
           if (parsed.isReferenceWire) {
             ws.send(JSON.stringify({
               type: 'res',
@@ -1370,6 +1385,33 @@ export class ZeroNativeHost {
         };
       }
 
+      case 'sessions.companion.state': {
+        // The upstream chat rail always hydrates companion exchanges. A companion
+        // is optional, but returning a concrete empty list keeps that hydration
+        // path from receiving undefined.
+        return {
+          ok: true,
+          sessionKey: params.sessionKey || params.key || 'default',
+          exchanges: [],
+        };
+      }
+
+      case 'sessions.companion.ask': {
+        return {
+          ok: true,
+          sessionKey: params.sessionKey || params.key || 'default',
+          answer: 'No companion device is connected to this session.',
+          ts: Date.now(),
+        };
+      }
+
+      case 'sessions.companion.reset': {
+        return {
+          ok: true,
+          sessionKey: params.sessionKey || params.key || 'default',
+        };
+      }
+
       case 'sessions.get':
       case 'sessions.describe': {
         const key = params.key || params.id || params.sessionKey || 'default';
@@ -1553,7 +1595,7 @@ export class ZeroNativeHost {
         const limit = Math.min(1000, Math.max(1, Number(params.limit ?? 100)));
         const offset = Number(params.offset ?? 0);
         const messages = this.sessions.getTranscript(sessionKey, { limit, offset }).map(message => ({ ...message, timestamp: message.createdAt,
-          __openclaw: { id: message.id, seq: message.seq, ...(message.runId ? { runId: message.runId, idempotencyKey: message.runId } : {}) } }));
+          __zero: { id: message.id, seq: message.seq, ...(message.runId ? { runId: message.runId, idempotencyKey: message.runId } : {}) }, __openclaw: { id: message.id, seq: message.seq, ...(message.runId ? { runId: message.runId, idempotencyKey: message.runId } : {}) } }));
         const totalMessages = this.sessions.countMessages(sessionKey);
         const hasMore = offset + messages.length < totalMessages;
         const hasActiveRun = this.activeTurns.has(sessionKey);
@@ -1639,7 +1681,7 @@ export class ZeroNativeHost {
       }
 
       case 'plugins.controlUi.list': {
-        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
+        const manifest = JSON.parse(fs.readFileSync((fs.existsSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json')) ? path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json') : path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json')), 'utf8'));
         const rev = manifest.controlUi.entry.split('/').at(-2);
         return {
           revision: rev,
@@ -1648,8 +1690,8 @@ export class ZeroNativeHost {
               pluginId: 'zero-control-ui',
               name: 'Zero Control UI',
               revision: rev,
-              entryUrl: `/__openclaw__/plugins/control-ui/zero-control-ui/${rev}/index.js`,
-              styles: [`/__openclaw__/plugins/control-ui/zero-control-ui/${rev}/index.css`],
+              entryUrl: `/__zero__/plugins/control-ui/zero-control-ui/${rev}/index.js`,
+              styles: [`/__zero__/plugins/control-ui/zero-control-ui/${rev}/index.css`],
             },
           ],
           diagnostics: [],
@@ -1660,7 +1702,7 @@ export class ZeroNativeHost {
         return { ok: true };
 
       case 'plugins.controlUi.status': {
-        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
+        const manifest = JSON.parse(fs.readFileSync((fs.existsSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json')) ? path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json') : path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json')), 'utf8'));
         const revision = manifest.controlUi.entry.split('/').at(-2);
         return {
           clients: [
@@ -2503,7 +2545,7 @@ export class ZeroNativeHost {
 
       case 'exec.approval.list':
       case 'plugin.approval.list':
-      case 'openclaw.approval.list':
+      case 'zero.approval.list': case 'openclaw.approval.list':
         return [];
 
       case 'presence.activity':
@@ -2905,6 +2947,208 @@ export class ZeroNativeHost {
     return tools;
   }
 
+  /**
+   * Persist a verified procedure. Trigger + steps produce a stable id, so the
+   * same successful workflow updates one record instead of duplicating it.
+   */
+  _learnProcedure({ name, trigger, steps, verification, tags } = {}) {
+    const triggerText = typeof trigger === 'string' ? trigger.trim() : '';
+    const stepList = Array.isArray(steps)
+      ? steps.map(step => typeof step === 'string' ? step.trim() : JSON.stringify(step)).filter(Boolean)
+      : [];
+    if (!triggerText || !stepList.length) throw new Error('procedure_learn requires a trigger and at least one step');
+    const slug = String(name || triggerText).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'procedure';
+    const content = `TRIGGER: ${triggerText}\nSTEPS:\n${stepList.map((step, index) => `${index + 1}. ${step}`).join('\n')}\nVERIFICATION: ${verification || 'Verified by the executing turn.'}`;
+    const id = `proc_${crypto.createHash('sha256').update(`${slug}\0${content}`).digest('hex').slice(0, 20)}`;
+    const memory = this.unifiedMemory.remember({
+      id,
+      layer: MEMORY_LAYERS.PROCEDURAL,
+      category: 'learned-procedure',
+      content,
+      tags: ['procedure', slug, ...(Array.isArray(tags) ? tags.map(String) : [])],
+      source: 'zero-self-learning',
+      confidence: 0.9,
+    });
+    return { ok: true, procedure: memory };
+  }
+
+  _recallProcedures(query = '', limit = 3) {
+    try {
+      return this.unifiedMemory.recall(String(query || ''), {
+        layers: [MEMORY_LAYERS.PROCEDURAL],
+        category: 'learned-procedure',
+        limit: Math.max(1, Math.min(Number(limit) || 3, 10)),
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Learn once, remember forever: every verified multi-step turn (and every
+   * turn that needed a reflex/fallback) becomes a reusable procedure.
+   */
+  _recordLearnedProcedure({ userContent, executedActions, overallOutcome }) {
+    const successful = (Array.isArray(executedActions) ? executedActions : []).filter(action =>
+      action?.execRes?.ok !== false && (action.execRes?.verified === true || action.execRes?.outcome === 'COMPLETED'));
+    const usedReflex = successful.some(action => action?.execRes?.reflex || action?.execRes?.fallback);
+    if (!successful.length || (successful.length < 2 && !usedReflex)) return null;
+    if (!['COMPLETED', 'PARTIAL'].includes(overallOutcome)) return null;
+    const steps = successful.map(action => {
+      const args = action.args || {};
+      const summary = JSON.stringify(args).slice(0, 180);
+      return `${action.action || 'action'} ${summary} -> ${action.execRes?.outcome || 'COMPLETED'}${action.execRes?.reflex ? ` (reflex: ${action.execRes.reflex})` : ''}`;
+    });
+    return this._learnProcedure({
+      name: String(userContent || 'learned-task').slice(0, 48),
+      trigger: String(userContent || '').slice(0, 320),
+      steps,
+      verification: overallOutcome,
+      tags: ['auto-learned', ...successful.map(action => String(action.action || '')), ...(usedReflex ? ['reflex'] : [])],
+    });
+  }
+
+  _isLongHorizonGoal(text) {
+    const value = String(text || '').trim();
+    if (value.length < 40) return false;
+    return /(?:for (?:a|the next) (?:month|week|quarter|year)|every (?:day|morning|evening|week|month)|daily (?:report|scan|check)|continuously|long[- ]term|reach \d|grow .{0,40} to|monitor .{0,60}(?:report|scan)|manage .{0,40}(?:channel|account|project)|build .{0,40} over time)/i.test(value);
+  }
+
+  _findPlanForGoal(goal) {
+    try {
+      const [match] = this.unifiedMemory.recall(String(goal || '').slice(0, 160), {
+        layers: [MEMORY_LAYERS.PROJECT],
+        category: 'long-horizon-plan',
+        limit: 1,
+      });
+      return match || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Create the Master Plan (milestones -> recurring task) and register the
+   * durable cron job that advances it. Stored in the project memory layer.
+   */
+  _planGoal({ goal, cronExpr = '@daily', milestones } = {}) {
+    const goalText = typeof goal === 'string' ? goal.trim() : '';
+    if (!goalText) throw new Error('goal_plan requires a goal');
+    const teamPlan = this.teamOrchestrator.planGoal(goalText, { teamId: 'team_alpha_core' });
+    const steps = Array.isArray(milestones) && milestones.length
+      ? milestones.map(String)
+      : teamPlan.subtasks.map(subtask => `${subtask.agentId}: ${subtask.goal}`);
+    const planId = `plan_${crypto.createHash('sha256').update(goalText.toLowerCase()).digest('hex').slice(0, 16)}`;
+    const plan = {
+      planId,
+      goal: goalText,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      status: 'active',
+      cronExpr,
+      step: 0,
+      milestones: steps,
+      team: teamPlan.subtasks.map(subtask => ({ id: subtask.id, agent: subtask.agentId, goal: subtask.goal })),
+    };
+    this.unifiedMemory.remember({
+      id: planId,
+      layer: MEMORY_LAYERS.PROJECT,
+      category: 'long-horizon-plan',
+      content: JSON.stringify(plan),
+      tags: ['goal', 'long-horizon', planId],
+      source: 'zero-planner',
+      confidence: 1.0,
+    });
+    let job = null;
+    try {
+      job = this.automation.registerJob({
+        id: `job_${planId}`,
+        title: `Zero goal: ${goalText.slice(0, 80)}`,
+        cronExpr,
+        targetAction: 'goal.tick',
+        params: { planId, goal: goalText },
+      });
+    } catch (error) {
+      console.warn('[Zero Host] Goal plan created without a schedule:', error.message);
+    }
+    return { ok: true, plan, job };
+  }
+
+  _scheduleTask({ title, cronExpr = '@daily', targetAction = 'goal.tick', params = {}, enabled = true, id } = {}) {
+    if (!title) throw new Error('schedule_task requires a title');
+    const job = this.automation.registerJob({ id, title, cronExpr, targetAction, params, enabled });
+    return { ok: true, job, nextRunAt: job.nextRun };
+  }
+
+  _goalStatus() {
+    let plans = [];
+    try {
+      plans = this.unifiedMemory.recall('', {
+        layers: [MEMORY_LAYERS.PROJECT],
+        category: 'long-horizon-plan',
+        limit: 50,
+      }).map(record => {
+        try { return JSON.parse(record.content); } catch { return null; }
+      }).filter(Boolean);
+    } catch {}
+    let jobs = [];
+    try { jobs = this.automation.listJobs(); } catch {}
+    return {
+      ok: true,
+      plans,
+      jobs,
+      learnedProcedures: this._recallProcedures('', 10),
+    };
+  }
+
+  /**
+   * Cron entry point for Jarvis mode. Runs the next milestone as a real Zero
+   * turn, then persists progress back into the project plan.
+   */
+  async _advanceGoal({ planId } = {}) {
+    if (!planId) return { ok: false, error: 'planId is required' };
+    const record = this.unifiedMemory.getMemory(planId);
+    if (!record) return { ok: false, error: 'plan-not-found', planId };
+    let plan;
+    try { plan = JSON.parse(record.content); } catch { return { ok: false, error: 'plan-corrupt', planId }; }
+    if (plan.status !== 'active') return { ok: true, skipped: true, plan };
+    const milestone = plan.milestones?.[plan.step % Math.max(plan.milestones.length, 1)] || plan.goal;
+    const prompt = `AUTONOMOUS GOAL TICK — ${plan.goal}\nMilestone ${plan.step + 1}/${plan.milestones?.length || 1}: ${milestone}\nExecute the next concrete work now with real tools, verify it, and report progress concisely.`;
+    let result = null;
+    try {
+      result = await this._runAssistantRequest({ sessionKey: `goal:${plan.planId}`, userContent: prompt, source: 'automation' });
+      plan.lastOutcome = 'COMPLETED';
+    } catch (error) {
+      plan.lastOutcome = 'FAILED';
+      plan.lastError = error.message;
+    }
+    plan.step = Number(plan.step || 0) + 1;
+    plan.lastRunAt = Date.now();
+    plan.updatedAt = Date.now();
+    plan.lastResult = String(result?.content || plan.lastError || '').slice(0, 2000);
+    if (plan.step >= Math.max(plan.milestones?.length || 1, 1) * 90) plan.status = 'review';
+    this.unifiedMemory.remember({
+      id: plan.planId,
+      layer: MEMORY_LAYERS.PROJECT,
+      category: 'long-horizon-plan',
+      content: JSON.stringify(plan),
+      tags: ['goal', 'long-horizon', plan.planId],
+      source: 'zero-planner',
+      confidence: 1.0,
+    });
+    return { ok: plan.lastOutcome === 'COMPLETED', planId: plan.planId, step: plan.step, summary: plan.lastResult };
+  }
+
+  async _delegateAgent({ goal, teamId = 'team_alpha_core', planOnly = false } = {}, signal) {
+    if (!goal) throw new Error('delegate_agent requires a goal');
+    const plan = this.teamOrchestrator.planGoal(goal, { teamId });
+    if (planOnly) return { ok: true, plan };
+    const result = await this.teamOrchestrator.executeTeamWorkflow({
+      goal, teamId, sessionId: `delegate_${Date.now()}`, signal,
+    });
+    return { ok: result.status === 'COMPLETED', ...result };
+  }
+
   _runAssistantRequest(options) {
     return this.executeAssistantOnce(options, request => this._executeAssistantRequest(request));
   }
@@ -2996,7 +3240,7 @@ export class ZeroNativeHost {
     }
   }
 
-  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId }) {
+  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId, source = 'chat' }) {
     if (this.computerHold.held) {
       return {
         ok: false,
@@ -3055,18 +3299,37 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 - MULTI-STEP AUTOMATION: If a task requires several steps (e.g. open browser -> navigate to form -> fill fields -> submit), carry them out sequentially to completion.
 - STRICT NO UNREQUESTED CLOSE_APP: NEVER close, exit, or terminate an application (like Notepad, Chrome, Calculator, etc.) unless the user explicitly asks to close or exit it. Keep opened applications open so the user can see the work.
 - CREDENTIAL PRIVACY & STATE HONESTY: Never echo or output plain-text passwords or secret credentials in your text responses. Always redact passwords as '[REDACTED]'. When logging into a service, report that credentials were submitted and authentication state is unverified until explicitly confirmed.
-- CONCISE JARVIS CONFIRMATION: Once completed, report the outcome clearly and concisely.`;
+- CONCISE JARVIS CONFIRMATION: Once completed, report the outcome clearly and concisely.\n- HUMAN-REFLEX EXECUTION: Never stop at an unresolved capability name or a failed fast path. The Zero Capability Registry resolves every alias and name. If a DOM/UIA action fails, Zero automatically observes a fresh frame and finishes with the physical pointer. Do not ask the user which capability to use.\n- LEARN ONCE, REMEMBER FOREVER: After a multi-step success (especially one that used a fallback), call procedure_learn with the trigger and working steps so future runs reuse it. Call procedure_recall before re-planning a familiar task.\n- LONG-HORIZON JARVIS MODE: For a macro-goal spanning days or weeks, call goal_plan to store milestones and register the recurring job, then goal_status to report progress. Do not wait to be reminded.`;
+
+      const learnedProcedures = this._recallProcedures(userContent, 3);
+      const learnedBlock = learnedProcedures.length
+        ? `\n\nLEARNED PROCEDURES (apply when the request matches; verify the current state first):\n${learnedProcedures.map((procedure, index) => `${index + 1}. ${String(procedure.content || '').replace(/\s+/g, ' ').slice(0, 600)}`).join('\n')}`
+        : '';
+      const systemPrompt = `${ZERO_SYSTEM_PROMPT}${learnedBlock}`;
 
       const existingSysIdx = currentMessages.findIndex((m) => m.role === 'system');
       if (existingSysIdx !== -1) {
         if (!currentMessages[existingSysIdx].content.includes('ZERO AUTONOMOUS OPERATOR')) {
           currentMessages[existingSysIdx] = {
             role: 'system',
-            content: `${ZERO_SYSTEM_PROMPT}\n\n${currentMessages[existingSysIdx].content}`,
+            content: `${systemPrompt}\n\n${currentMessages[existingSysIdx].content}`,
           };
         }
       } else {
-        currentMessages.unshift({ role: 'system', content: ZERO_SYSTEM_PROMPT });
+        currentMessages.unshift({ role: 'system', content: systemPrompt });
+      }
+
+      // A macro-goal given in chat becomes a durable plan with a real schedule.
+      if (source === 'chat' && this._isLongHorizonGoal(userContent) && !this._findPlanForGoal(userContent)) {
+        try {
+          const planned = this._planGoal({ goal: userContent, auto: true, cronExpr: process.env.ZERO_GOAL_CRON || '@daily' });
+          currentMessages.push({
+            role: 'system',
+            content: `Zero created a durable long-horizon plan ${planned.plan.planId} with ${planned.plan.milestones.length} milestone(s). Job ${planned.job?.id || 'unscheduled'} advances it on ${planned.plan.cronExpr}. State the plan briefly and begin the first milestone now.`,
+          });
+        } catch (planError) {
+          console.warn('[Zero Host] Automatic long-horizon planning skipped:', planError.message);
+        }
       }
 
       let turns = 0;
@@ -3821,6 +4084,13 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         overallOutcome = 'COMPLETED';
       }
 
+      // Self-learning is part of the turn, not an optional extra pass.
+      try {
+        this._recordLearnedProcedure({ userContent, executedActions, overallOutcome });
+      } catch (learnError) {
+        console.warn('[Zero Host] Procedure learning skipped:', learnError.message);
+      }
+
       // Redact sensitive credentials (passwords, tokens) from user-facing assistant content
       const sensitiveSecrets = new Set();
       for (const act of executedActions) {
@@ -3885,7 +4155,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       abortController.signal.throwIfAborted();
       if (!finalContent.trim()) throw new Error('Assistant turn ended without a final response');
       const persistedReply = this.sessions.appendMessage(sessionKey, { role: 'assistant', runId, content: finalContent });
-      publishChat({ state: 'final', message: { id: persistedReply.id, role: 'assistant', __openclaw: { id: persistedReply.id, seq: persistedReply.seq, runId }, content: [{ type: 'text', text: finalContent }], timestamp: persistedReply.createdAt } });
+      publishChat({ state: 'final', message: { id: persistedReply.id, role: 'assistant', __zero: { id: persistedReply.id, seq: persistedReply.seq, runId }, __openclaw: { id: persistedReply.id, seq: persistedReply.seq, runId }, content: [{ type: 'text', text: finalContent }], timestamp: persistedReply.createdAt } });
 
       if (ws && ws.readyState === 1) {
         const ttftMs = (firstTokenTime || Date.now()) - turnStartTime;

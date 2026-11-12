@@ -1,14 +1,14 @@
 {
   "defaults": {
-    "primary": "google/models/gemini-flash-lite-latest",
-    "utility": "google/models/gemini-flash-lite-latest",
-    "fallback": "google/models/gemini-flash-lite-latest",
-    "thinking": "default",
-    "fastMode": "google/models/gemini-flash-lite-latest"
+    "primary": "default",
+    "utility": null,
+    "fallback": null,
+    "thinking": "disabled",
+    "fastMode": null
   },
   "agentBindings": {
     "zero": {
-      "model": "google/models/gemini-flash-lite-latest",
+      "model": "default",
       "allowOverride": true
     }
   }

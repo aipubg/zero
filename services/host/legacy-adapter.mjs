@@ -18,7 +18,7 @@ export class LegacyRuntimeAdapter {
 
   async start() {
     console.warn('[LegacyRuntimeAdapter] Booting reference runtime compatibility adapter...');
-    const distDir = path.join(this.repoRoot, 'backend', 'node_modules', 'openclaw', 'dist');
+    const distDir = path.join(this.repoRoot, 'backend', 'node_modules', 'zero-runtime', 'dist');
     if (!fs.existsSync(distDir)) {
       throw new Error(`Reference runtime not found at ${distDir}`);
     }

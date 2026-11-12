@@ -7,18 +7,32 @@ import { installNativeSurfaces } from "./src/native-surfaces.js";
 import { installDesktopSessionKeepAlive } from "./src/desktop-session.js";
 
 /**
- * Native OpenClaw Control UI contribution.
+ * Native Zero Control UI.
  *
- * One app shell, Gateway-owned agents/sessions, built-in chat navigation. The
- * plugin registers no replacement pages: it extends the existing native
+ * One app shell, Gateway-owned agents/sessions, built-in chat navigation. This
+ * first-party module registers no replacement pages: it extends the native
  * Models and About routes in place and keeps Zero as the only chat identity.
  * Nothing here owns a transcript, model route, memory index, or second
  * application.
  *
- * Contract: openclaw/plugin-sdk/control-ui (defineControlUiPlugin, ControlUiHost).
+ * Contract: Zero control-ui SDK (defineControlUiPlugin, ControlUiHost).
  */
 
-export default {
+
+function autoActivate() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (window.__zero_browser_auto_activated) return;
+  window.__zero_browser_auto_activated = true;
+  const host = window.__ZERO_HOST__ || window.__zeroHost || null;
+  try {
+    const dispose = plugin.activate(host);
+    if (typeof dispose === "function") window.__zero_active_plugin_dispose = dispose;
+  } catch (e) {
+    console.warn("[zero-control-ui] auto-activate failed", e);
+  }
+}
+
+const plugin = {
   id: PLUGIN_ID,
   activate(host) {
     if (typeof window !== "undefined") {
@@ -48,3 +62,9 @@ export default {
     return disposeAll;
   },
 };
+
+export default plugin;
+if (typeof window !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", autoActivate, { once: true });
+  else autoActivate();
+}

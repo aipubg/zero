@@ -19,21 +19,47 @@ const __dirname = path.dirname(__filename);
 const REPO_ROOT = process.env.ZERO_ROOT || path.resolve(__dirname, '..', '..');
 
 const envFile = path.join(REPO_ROOT, '.env');
-if (fs.existsSync(envFile) && typeof process.loadEnvFile === 'function') {
+if (fs.existsSync(envFile)) {
+  if (typeof process.loadEnvFile === 'function') {
+    try {
+      process.loadEnvFile(envFile);
+    } catch (err) {
+      console.warn('[Zero Host] Warning loading .env file via loadEnvFile:', err.message);
+    }
+  }
   try {
-    process.loadEnvFile(envFile);
+    const content = fs.readFileSync(envFile, 'utf8');
+    for (const line of content.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx > 0) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        let val = trimmed.slice(eqIdx + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        if (!process.env[key] || process.env[key] !== val) {
+          process.env[key] = val;
+        }
+      }
+    }
   } catch (err) {
-    console.warn('[Zero Host] Warning loading .env file:', err.message);
+    console.warn('[Zero Host] Warning loading .env file fallback:', err.message);
   }
 }
 
 const PORT = Number(process.env.ZERO_PORT || process.env.PORT || 18789);
-const CONFIG_PATH = process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
-const STATE_DIR = process.env.OPENCLAW_STATE_DIR || path.join(REPO_ROOT, 'zero-system', 'state');
+// ZERO_* are the canonical first-party variables. OPENCLAW_* are accepted only
+// as an internal compatibility fallback so existing installations keep booting.
+const CONFIG_PATH = process.env.ZERO_CONFIG_PATH || process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+const STATE_DIR = process.env.ZERO_STATE_DIR || process.env.OPENCLAW_STATE_DIR || path.join(REPO_ROOT, 'zero-system', 'state');
 
 process.env.ZERO_ROOT = REPO_ROOT;
-process.env.OPENCLAW_CONFIG_PATH = CONFIG_PATH;
-process.env.OPENCLAW_STATE_DIR = STATE_DIR;
+process.env.ZERO_CONFIG_PATH = CONFIG_PATH;
+process.env.ZERO_STATE_DIR = STATE_DIR;
+process.env.OPENCLAW_CONFIG_PATH ||= CONFIG_PATH;
+process.env.OPENCLAW_STATE_DIR ||= STATE_DIR;
 process.env.OPENCLAW_NO_AUTO_UPDATE = '1';
 process.env.DO_NOT_TRACK = '1';
 

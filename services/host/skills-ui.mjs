@@ -31,8 +31,8 @@ function receipt(loader, name, state = 'saved') {
 }
 
 function redactConfig(config) {
-  return { ...config, ...(Object.hasOwn(config, 'apiKey') ? { apiKey: config.apiKey ? '__OPENCLAW_REDACTED__' : '' } : {}),
-    ...(config.env ? { env: Object.fromEntries(Object.entries(config.env).map(([key, value]) => [key, value ? '__OPENCLAW_REDACTED__' : ''])) } : {}) };
+  return { ...config, ...(Object.hasOwn(config, 'apiKey') ? { apiKey: config.apiKey ? '__ZERO_REDACTED__' : '' } : {}),
+    ...(config.env ? { env: Object.fromEntries(Object.entries(config.env).map(([key, value]) => [key, value ? '__ZERO_REDACTED__' : ''])) } : {}) };
 }
 
 function sourceOf(params) {

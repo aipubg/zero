@@ -1,4 +1,4 @@
-import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { buildJsonPluginConfigSchema, definePluginEntry } from "./src/compat/plugin-entry.mjs";
 import { OBSERVATION_CONFIG_SCHEMA } from "./observation/config.mjs";
 import { registerZeroUiRuntime } from "./runtime-core.mjs";
 import { handleZeroGatewayRequest } from "../../backend/gateway/server.mjs";
@@ -23,8 +23,8 @@ const COMBINED_CONFIG_SCHEMA = {
 };
 
 /**
- * Unified Zero Plugin Entry.
- * Single canonical plugin providing:
+ * Unified Zero Runtime Entry.
+ * One first-party runtime module providing:
  * 1. Computer hold policy (`zero-policy.computer-hold`) & control method (`zero.computer.control`)
  * 2. Control UI contribution (`dist/control-ui/...`)
  * 3. Screen observation engine & tool (`zero_screen_context`)
