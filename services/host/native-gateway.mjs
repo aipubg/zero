@@ -668,11 +668,11 @@ export class ZeroNativeHost {
       const pluginDistRoot = path.join(REPO_ROOT, 'app', 'zero-control-ui', 'dist');
 
       // Plugin assets route: /__zero__/plugins/control-ui/* or /plugins/control-ui/*
-      if (pathname.startsWith('/__openclaw__/plugins/control-ui/') || pathname.startsWith('/plugins/control-ui/')) {
+      if (pathname.startsWith('/__zero__/plugins/control-ui/') || pathname.startsWith('/plugins/control-ui/')) {
         const subpath = pathname.replace(/^\/__zero__\/plugins\/control-ui\//, '').replace(/^\/plugins\/control-ui\//, '');
         const candidatePaths = [
           path.join(webRoot, 'plugins', 'control-ui', subpath),
-          path.join(webRoot, '__openclaw__', 'plugins', 'control-ui', subpath),
+          path.join(webRoot, '__zero__', 'plugins', 'control-ui', subpath),
           path.join(pluginDistRoot, 'control-ui', subpath),
           path.join(pluginDistRoot, 'control-ui', subpath.split('/').slice(1).join('/')),
         ];
@@ -2090,11 +2090,10 @@ export class ZeroNativeHost {
         return this.unifiedMemory.consolidateMemories(params);
 
       // Durable Automation RPC Methods
-      case 'automation.listJobs':
-        return this.automation.listJobs();
-
-      case 'cron.list': {
-        const jobs = (this.automation?.listJobs?.() || []).map(j => ({
+      case 'automation.listJobs': {
+        const limit = Math.max(1, Math.min(Number(params?.limit ?? 50), 1000));
+        const offset = Math.max(0, Number(params?.offset ?? 0));
+        const allJobs = (this.automation?.listJobs?.() || []).map(j => ({
           id: j.id,
           name: j.name || j.title || j.id,
           schedule: j.cronExpression || j.schedule || 'every 1h',
@@ -2102,16 +2101,44 @@ export class ZeroNativeHost {
           lastRun: j.lastRun || null,
           nextRun: j.nextRun || null,
         }));
+        const pageJobs = allJobs.slice(offset, offset + limit);
         return {
           ok: true,
-          items: jobs,
-          jobs,
-          total: jobs.length,
-          page: 1,
-          pageSize: 50,
-          offset: 0,
-          hasMore: false,
-          nextOffset: null,
+          items: pageJobs,
+          jobs: pageJobs,
+          total: allJobs.length,
+          limit,
+          offset,
+          page: Math.floor(offset / limit) + 1,
+          pageSize: limit,
+          hasMore: offset + pageJobs.length < allJobs.length,
+          nextOffset: offset + pageJobs.length < allJobs.length ? offset + pageJobs.length : null,
+        };
+      }
+
+      case 'cron.list': {
+        const limit = Math.max(1, Math.min(Number(params?.limit ?? 50), 1000));
+        const offset = Math.max(0, Number(params?.offset ?? 0));
+        const allJobs = (this.automation?.listJobs?.() || []).map(j => ({
+          id: j.id,
+          name: j.name || j.title || j.id,
+          schedule: j.cronExpression || j.schedule || 'every 1h',
+          enabled: j.enabled !== false,
+          lastRun: j.lastRun || null,
+          nextRun: j.nextRun || null,
+        }));
+        const pageJobs = allJobs.slice(offset, offset + limit);
+        return {
+          ok: true,
+          items: pageJobs,
+          jobs: pageJobs,
+          total: allJobs.length,
+          limit,
+          offset,
+          page: Math.floor(offset / limit) + 1,
+          pageSize: limit,
+          hasMore: offset + pageJobs.length < allJobs.length,
+          nextOffset: offset + pageJobs.length < allJobs.length ? offset + pageJobs.length : null,
         };
       }
 
@@ -2575,7 +2602,7 @@ export class ZeroNativeHost {
       case 'exec.approval.list':
       case 'plugin.approval.list':
       case 'zero.approval.list':
-        return [];
+        return { ok: true, items: [], grants: [], history: [] };
 
       case 'presence.activity':
         return { ok: true, activity: 'idle', timestamp: Date.now() };
@@ -2583,11 +2610,15 @@ export class ZeroNativeHost {
       case 'users.self':
         return {
           profile: {
-            id: clientSession?.clientId || 'operator',
-            name: 'Operator',
-            email: 'operator@zero.local',
-            role: clientSession?.role || 'operator',
+            id: clientSession?.clientId || 'owner-zero',
+            name: 'Zero Owner',
+            email: 'owner@zero.local',
+            role: clientSession?.role || 'admin',
             updatedAt: Date.now(),
+            identity: {
+              name: 'Zero Owner',
+              accounts: [{ id: 'owner-zero', provider: 'local', name: 'Zero Owner', connected: true }],
+            },
           },
         };
 
@@ -2686,11 +2717,6 @@ export class ZeroNativeHost {
       case 'approval.history':
       case 'approval.resolve':
         return { ok: true, approvals: [], history: [], resolved: true };
-
-      case 'exec.approval.list':
-      case 'exec.approval.grants.list':
-      case 'plugin.approval.list':
-        return { ok: true, approvals: [], grants: [] };
 
       case 'conversations.list':
         return { ok: true, conversations: [] };
@@ -2850,13 +2876,13 @@ export class ZeroNativeHost {
 
       case 'approvals.list':
       case 'approval.list':
-        return { ok: true, items: [], grants: [] };
+        return { ok: true, items: [], grants: [], history: [] };
 
       case 'secrets.list':
       case 'secrets.get': {
         const cfg = this._redactSecrets(this.config ? this.config : {});
         const secrets = this._redactSecrets(this.secrets || {});
-        return { ok: true, secrets, config: cfg, grants: clientSession?.role === 'admin' ? ['admin'] : [] };
+        return { ok: true, secrets, config: cfg, grants: clientSession?.role === 'admin' ? ['admin'] : [], admin: clientSession?.role === 'admin' };
       }
 
       case 'dashboards.list':
@@ -2872,8 +2898,10 @@ export class ZeroNativeHost {
         };
 
       case 'automations.list':
-      case 'automation.list':
-        return { ok: true, jobs: this.automation?.listJobs?.() || [], items: this.automation?.listJobs?.() || [], total: (this.automation?.listJobs?.() || []).length };
+      case 'automation.list': {
+        const jobs = this.automation?.listJobs?.() || [];
+        return { ok: true, jobs, items: jobs, total: jobs.length, limit: 50, offset: 0, page: 1, pageSize: 50, hasMore: false, nextOffset: null };
+      }
 
       case 'system.info':
         return { ok: true, version: '1.0.0', os: process.platform, arch: process.arch, uptime: process.uptime() };

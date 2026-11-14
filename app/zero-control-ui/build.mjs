@@ -53,6 +53,12 @@ function rewriteHtmlBranding(html) {
     let next = segment.replace(/>([^<>]*)</g, (_match, text) => `>${replaceVisibleBranding(text)}<`);
     next = next.replace(/\b(aria-label|title|placeholder|alt)="([^"]*)"/gi,
       (_match, attribute, text) => `${attribute}="${replaceVisibleBranding(text)}"`);
+    // Replace custom element tag names (openclaw-* -> zero-*) so they match
+    // the scrubbed JS bundle definitions (e.g. <openclaw-app> -> <zero-app>).
+    next = next.replace(/<\/?openclaw-([a-z-]+)(\s[^>]*)?>/gi, (match, tagName, attrs) => {
+      const isClosing = match.startsWith('</');
+      return `${isClosing ? '</' : '<'}zero-${tagName}${attrs || ''}>`;
+    });
     return next;
   }).join("");
 }
