@@ -46,21 +46,6 @@ function persistLocalSecret(providerId, apiKey, repoRoot) {
 }
 
 loadEnvSafely(REPO_ROOT);
-loadProviderSecrets(REPO_ROOT);
-
-function loadProviderSecrets(repoRoot) {
-  try {
-    const secretsPath = path.resolve(repoRoot, '.zero-data', 'provider-secrets.json');
-    if (!fs.existsSync(secretsPath)) return;
-    const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8')) || {};
-    for (const [providerId, value] of Object.entries(secrets)) {
-      if (typeof value !== 'string' || !value.trim()) continue;
-      const envKey = providerId === 'google' ? 'GEMINI_API_KEY' : `${String(providerId).toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`;
-      if (!process.env[envKey]) process.env[envKey] = value.trim();
-      if (!process.env[`${providerId.toUpperCase()}_API_KEY`] && providerId !== 'google') process.env[`${providerId.toUpperCase()}_API_KEY`] = value.trim();
-    }
-  } catch {}
-}
 
 /** Model IDs that may legally be referenced by saved defaults/bindings. */
 function validModelReferences(providers) {

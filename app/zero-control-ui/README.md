@@ -32,7 +32,7 @@ composer, or session picker exists.
 | `src/constants.js`, `src/legacy-routes.js` | Shared constants and the one host route interceptor. |
 | `runtime-core.mjs` | Provider metadata/credential identity, CLI discovery + native backend readiness, cached MCP connector capabilities, and observation status/control/recent methods; never secret values, executable paths, URLs, or raw CLI output. |
 | `observation/` | In-process Windows observation engine: lazy CUA capture, bounded ring/queue, change filtering, Private Mode, local UIA/OCR adapters, SQLite summaries, durable owner opt-in preference, and the read-only `zero_screen_context` agent tool. Suggestions are config-disabled by default. No second server, chat, or transcript store. |
-| `index.js` | Server-side plugin entry (`openclaw/plugin-sdk`). |
+| `index.js` | Server-side plugin entry (`zero/plugin-sdk`). |
 
 The Control UI asset is a framework-neutral browser module. It uses the Control
 UI plugin mount lifecycle and does not embed React or CopilotKit. The Gateway's
@@ -63,15 +63,15 @@ The tests use a small fake DOM; no browser or framework is required.
 
 ## Contract and provenance
 
-- OpenClaw `2026.10.6` native Control UI plugin API, documented in
-  `upstream/openclaw/docs/plugins/feature-plugins.md` and
-  `upstream/openclaw/docs/plugins/sdk-overview/host-hooks.md`.
+- Zero `2026.10.6` native Control UI plugin API, documented in
+  `upstream/zero/docs/plugins/feature-plugins.md` and
+  `upstream/zero/docs/plugins/sdk-overview/host-hooks.md`.
 - The About connector card reads the existing native `tools.effective` method (read-only) to project
   cached MCP tool names. It does not run a connector or claim live reachability. A plugin-side probe
   is not used: in-process `api.runtime.gateway.request` is restricted to bundled/trusted-official
   plugins, and declaring `contracts.gatewayMethodDispatch` does not grant that trust.
-- OpenClaw is MIT licensed; see `upstream/openclaw/LICENSE` and
-  `upstream/openclaw/THIRD_PARTY_NOTICES.md`.
+- Zero is MIT licensed; see `upstream/zero/LICENSE` and
+  `upstream/zero/THIRD_PARTY_NOTICES.md`.
 - This package's browser view is original Zero code. No OpenDots or
   OpenMausBot source files are copied into this slice. The hold hand-back
   behavior references OpenMausBot's Apache-2.0 `src/components/computer-takeover.ts`

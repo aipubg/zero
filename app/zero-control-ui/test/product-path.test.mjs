@@ -91,6 +91,6 @@ test("built native bundle contains no CopilotKit product path", async () => {
   assert.match(bundle, /Models & Providers/);
   assert.doesNotMatch(bundle, /zero-test-marker/);
   assert.match(bundle, /Private assistant for local Gateway-backed work/);
-  assert.match(bundle, /openclaw-model-providers-page/);
-  assert.match(bundle, /openclaw-about-page/);
+  assert.match(bundle, /zero-model-providers-page/);
+  assert.match(bundle, /zero-about-page/);
 });

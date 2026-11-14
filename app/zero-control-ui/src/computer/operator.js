@@ -1,6 +1,6 @@
 /**
  * Zero Computer Operator Core.
- * Native Zero Computer Control operator core.
+ * Adapted from OpenMausBot (Apache-2.0, non-enterprise core).
  *
  * Integrates:
  * 1. Human Takeover Arbitration (refuses input when human holds lease).
@@ -15,7 +15,7 @@ import { controlSpotify } from "../../../../packages/media-control/windows-sessi
 import { ObservationCoordinator } from "./observation-coordinator.js";
 import * as Driver from "./windows-driver.js";
 import { modeManager } from "../../../../rules/mode-manager.mjs";
-import { AgentDesktop, DESKTOP_OBSERVATIONS } from "../../../../packages/agent-runtime/agent-desktop.mjs";
+import { ZeroDesktop as ZeroDesktopRuntime, DESKTOP_OBSERVATIONS } from "../../../../packages/agent-runtime/agent-desktop.mjs";
 import { defaultBrowserAutomation } from "../../../../core/execution/browser_automation.mjs";
 import { defaultOsController } from "../../../../core/execution/os_controller.mjs";
 import { defaultUiaRootTree } from "../../../../core/perception/uia_root_tree.mjs";
@@ -102,14 +102,14 @@ export class ComputerOperator {
     logger = console,
     requireFreshSnapshotAfterRelease = false,
     strictPolicy = false,
-    agentDesktop = new AgentDesktop(),
+    ZeroDesktop = new ZeroDesktopRuntime(),
     browserAutomation = defaultBrowserAutomation,
     osController = defaultOsController,
     uiaRootTree = defaultUiaRootTree,
     screenVision = defaultScreenVision,
     mediaController = new MediaController()
   } = {}) {
-    this.agentDesktop = agentDesktop;
+    this.ZeroDesktop = ZeroDesktop;
     this.browserAutomation = browserAutomation;
     this.osController = osController;
     this.uiaRootTree = uiaRootTree;
@@ -236,7 +236,7 @@ export class ComputerOperator {
     try {
       switch (normalizedAction) {
         case "desktop":
-          return await this.agentDesktop.execute(params, signal);
+          return await this.ZeroDesktop.execute(params, signal);
         case "screenshot": {
           const shot = await Driver.captureScreen({
             format: params.format ?? "png",
@@ -680,7 +680,7 @@ export class ComputerOperator {
           let notifications = [];
           let backendError = null;
           try {
-            const notifRes = await this.agentDesktop.execute({
+            const notifRes = await this.ZeroDesktop.execute({
               command: "list-notifications",
               args: [],
               headed: true,
@@ -688,7 +688,7 @@ export class ComputerOperator {
             if (notifRes?.ok && Array.isArray(notifRes.data?.notifications)) {
               notifications = notifRes.data.notifications;
             } else if (notifRes?.ok === false) {
-              backendError = notifRes.error?.message || "Notification query failed in agent-desktop";
+              backendError = notifRes.error?.message || "Notification query failed in zero-desktop";
             }
           } catch (err) {
             backendError = err.message;

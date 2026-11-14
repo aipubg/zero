@@ -18,21 +18,7 @@ import { installDesktopSessionKeepAlive } from "./src/desktop-session.js";
  * Contract: Zero control-ui SDK (defineControlUiPlugin, ControlUiHost).
  */
 
-
-function autoActivate() {
-  if (typeof window === "undefined" || typeof document === "undefined") return;
-  if (window.__zero_browser_auto_activated) return;
-  window.__zero_browser_auto_activated = true;
-  const host = window.__ZERO_HOST__ || window.__zeroHost || null;
-  try {
-    const dispose = plugin.activate(host);
-    if (typeof dispose === "function") window.__zero_active_plugin_dispose = dispose;
-  } catch (e) {
-    console.warn("[zero-control-ui] auto-activate failed", e);
-  }
-}
-
-const plugin = {
+export default {
   id: PLUGIN_ID,
   activate(host) {
     if (typeof window !== "undefined") {
@@ -43,10 +29,11 @@ const plugin = {
       window.__zero_active_plugin_dispose = null;
     }
     if (typeof document !== 'undefined') document.getElementById?.("zero-permanent-top-actions")?.remove();
-    const disposeRoutes = installLegacyRouteInterceptor(host);
-    const disposeSurfaces = installNativeSurfaces(host);
-    const disposeShell = installZeroShell(host);
-    const disposeSession = installDesktopSessionKeepAlive();
+    const zoff = (() => { try { return new Set(String(new URLSearchParams(window.location.search).get("zoff") || "").split(",").filter(Boolean)); } catch { return new Set(); } })();
+    const disposeRoutes = zoff.has("routes") ? null : installLegacyRouteInterceptor(host);
+    const disposeSurfaces = zoff.has("surfaces") ? null : installNativeSurfaces(host);
+    const disposeShell = zoff.has("shell") ? null : installZeroShell(host);
+    const disposeSession = zoff.has("session") ? null : installDesktopSessionKeepAlive();
     const disposeAll = () => {
       disposeSession?.();
       disposeShell?.();
@@ -62,9 +49,3 @@ const plugin = {
     return disposeAll;
   },
 };
-
-export default plugin;
-if (typeof window !== "undefined") {
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", autoActivate, { once: true });
-  else autoActivate();
-}

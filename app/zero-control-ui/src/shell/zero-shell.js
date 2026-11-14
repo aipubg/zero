@@ -59,9 +59,10 @@ function element(tag, className, text) {
 }
 
 /**
- * Legacy host chrome that duplicates the native Zero shell. These are removed
- * from the DOM permanently so there is exactly one search, one new-chat action
- * and one navigation surface.
+ * Legacy host chrome that duplicates the native Zero shell. These are hidden
+ * rather than detached: the host owns them as lit-managed nodes, so removing
+ * them makes the host re-render and re-create them, which feeds the tooltip
+ * slotchange handler and freezes the renderer in a mutation loop.
  */
 const LEGACY_CHROME_SELECTORS = [
   'button.topbar-search',
@@ -69,14 +70,14 @@ const LEGACY_CHROME_SELECTORS = [
   'a.sidebar-brand__new-thread',
   'a.sidebar-session-toolbar__button.sidebar-new-session',
   'nav.sidebar-nav',
-  'openclaw-theme-mode-toggle',
+  'zero-theme-mode-toggle',
   '.theme-mode-toggle',
   '[aria-label*="Color mode" i]',
   '[title*="Color mode" i]',
 ];
 
 function removeLegacyPalette() {
-  for (const node of document.querySelectorAll('openclaw-command-palette, .command-palette, dialog[open], [role="dialog"]')) {
+  for (const node of document.querySelectorAll('zero-command-palette, .command-palette, dialog[open], [role="dialog"]')) {
     if (node.closest('.zero-command-palette')) continue;
     if (/Search or start a task/i.test(node.textContent || '')) {
       try { node.close?.(); } catch {}
@@ -90,7 +91,7 @@ function neutralizeLegacyChrome() {
   for (const selector of LEGACY_CHROME_SELECTORS) {
     for (const node of document.querySelectorAll(selector)) {
       if (node.closest('[data-zero-shell-owned]')) continue;
-      node.remove();
+      if (!node.hasAttribute('data-zero-legacy-hidden')) node.setAttribute('data-zero-legacy-hidden', '');
     }
   }
   removeLegacyPalette();
@@ -145,7 +146,7 @@ export function installZeroShell(host) {
         store.setItem("zero.theme.mode", isLight ? "light" : "dark");
         for (let i = 0; i < store.length; i++) {
           const key = store.key(i);
-          if (key && key.startsWith("openclaw.control.settings.v1")) {
+          if (key && key.startsWith("zero.control.settings.v1")) {
             const s = JSON.parse(store.getItem(key) || "{}");
             s.themeMode = isLight ? "light" : "dark";
             s.theme = isLight ? "light" : "dark";
@@ -335,6 +336,9 @@ export function installZeroShell(host) {
   function mount() {
     scheduled = false;
     if (disposed) return;
+    // Flush any records queued by our own previous pass before doing work, so a
+    // self-generated mutation cannot re-schedule this function forever.
+    observerRef?.takeRecords();
     neutralizeLegacyChrome();
     if (lastPath !== window.location.pathname) {
       lastPath = window.location.pathname;
@@ -349,15 +353,32 @@ export function installZeroShell(host) {
     if (controls && tray && controls.parentElement !== tray) tray.append(controls);
     for (const welcome of document.querySelectorAll(".agent-chat__welcome")) mountWelcome(welcome);
     renderStatus();
+    // Discard the records produced by this pass. Without this, our own DOM
+    // writes are delivered to the observer after `scheduled` is reset, which
+    // re-schedules another pass on every frame and freezes the renderer.
+    observerRef?.takeRecords();
   }
   function schedule() { if (!disposed && !scheduled) { scheduled = true; requestAnimationFrame(mount); } }
+  // Only mutations that can affect the shell's own chrome need a pass. The host
+  // re-renders the chat transcript, tooltips and route outlets constantly; a
+  // subtree-wide observer would turn every one of those writes into a mount.
+  const SHELL_TOUCH_SELECTOR = ".sidebar-shell, .settings-sidebar, main.content, .agent-chat__welcome, .topbar, .topnav-shell, .assistant-panel, #zero-permanent-top-actions, .zero-shell-control-tray";
+  let observerRef = null;
   const observer = new MutationObserver(records => {
-    if (records.some(record => !record.target.closest?.("[data-zero-shell-owned]") && (
-      (record.type === "attributes" && record.target.matches?.(".sidebar-shell, .settings-sidebar, main.content, .agent-chat__welcome"))
-      || [...record.addedNodes].some(node => node.nodeType === 1 && !node.hasAttribute?.("data-zero-shell-owned"))
-      || [...record.removedNodes].some(node => node.nodeType === 1)
-    ))) schedule();
+    if (records.some(record => {
+      if (record.target.closest?.("[data-zero-shell-owned]")) return false;
+      if (record.type === "attributes") return record.target.matches?.(SHELL_TOUCH_SELECTOR) ?? false;
+      const target = record.target;
+      const touches = target?.nodeType === 1 && (target.matches?.(SHELL_TOUCH_SELECTOR) || target.closest?.(SHELL_TOUCH_SELECTOR));
+      if (touches) return true;
+      for (const node of [...record.addedNodes, ...record.removedNodes]) {
+        if (node.nodeType !== 1 || node.hasAttribute?.("data-zero-shell-owned")) continue;
+        if (node.matches?.(SHELL_TOUCH_SELECTOR) || node.querySelector?.(SHELL_TOUCH_SELECTOR)) return true;
+      }
+      return false;
+    })) schedule();
   });
+  observerRef = observer;
   observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   const onKey = event => {
     const key = String(event.key || "").toLowerCase();

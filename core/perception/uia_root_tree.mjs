@@ -1,10 +1,10 @@
 /**
- * @fileoverview Windows UI Automation Root Tree Extractor & Zero UIA State Parser
+ * @fileoverview Windows UI Automation Root Tree Extractor & UI Automation State Parser
  *
  * Production-grade implementation:
  * - Direct UI Automation COM Root Tree extraction (ControlViewWalker / RawViewWalker)
  * - Traverses desktop windows, dialogs, controls, actionable elements, inputs, and text blocks
- * - Parses and indexes elements according to Zero UIA state specifications:
+ * - Parses and indexes elements according to UI Automation state specifications:
  *   - Deterministic Element IDs (`uia_1`, `uia_2`, ...) and refs (`@uia:e0`, `@uia:e1`...)
  *   - Bounding boxes `(x, y, width, height)` and exact clickable center points `(cx, cy)`
  *   - Control types (Button, Edit, Document, ComboBox, CheckBox, MenuItem, TabItem, ListItem, Hyperlink)
@@ -46,7 +46,7 @@ export class UiaRootTreeExtractor {
   }
 
   /**
-   * Extracts the full active window or desktop UI Automation root tree with Zero UIA formatted state
+   * Extracts the full active window or desktop UI Automation root tree with UI Automation formatted state
    */
   async extractRootTree({ maxElements = 150, target = null, hwnd = null, signal = null } = {}) {
     signal?.throwIfAborted();
@@ -56,7 +56,7 @@ export class UiaRootTreeExtractor {
 
     const rawElements = Array.isArray(uiaRes?.elements) ? uiaRes.elements : [];
 
-    // Parse and structure into Zero UIA state format
+    // Parse and structure into UI Automation state format
     const parsedElements = [];
     const elementIndex = new Map();
 

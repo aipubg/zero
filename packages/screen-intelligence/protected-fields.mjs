@@ -27,7 +27,7 @@ function dpapi(buffer, operation) {
 /** Field keys never appear in SQLite. Persistent keys are bound to the Windows user. */
 export class ProtectedFields {
   constructor({ keyPath, key, hasCiphertext = false } = {}) {
-    this.keyStorage = key ? 'explicit-provider' : keyPath ? 'windows-user-dpapi' : 'ephemeral';
+    this.keyStorage = key ? 'explicit-provider' : keyPath ? 'ui automationr-dpapi' : 'ephemeral';
     this.key = key ? Buffer.from(key) : null;
     if (!this.key && keyPath) {
       if (!fs.existsSync(keyPath)) {

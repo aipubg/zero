@@ -36,7 +36,7 @@ async function runRealLiveVerification() {
     let shadowRootsChecked = 0;
     let crabSvgsFound = 0;
     let visibleCanvases = 0;
-    let openclawTextFound = [];
+    let zeroTextFound = [];
 
     function inspectRoot(root) {
       const allEls = root.querySelectorAll ? Array.from(root.querySelectorAll("*")) : [];
@@ -63,8 +63,8 @@ async function runRealLiveVerification() {
           for (const node of el.childNodes) {
             if (node.nodeType === Node.TEXT_NODE) {
               const val = (node.nodeValue || "").trim();
-              if (/\bOpenClaw\b/i.test(val) && !val.includes("openclaw/dist") && !val.includes("localhost")) {
-                openclawTextFound.push({ tag: el.tagName, text: val.slice(0, 80) });
+              if (/\bZero\b/i.test(val) && !val.includes("zero/dist") && !val.includes("localhost")) {
+                zeroTextFound.push({ tag: el.tagName, text: val.slice(0, 80) });
               }
             }
           }
@@ -84,15 +84,15 @@ async function runRealLiveVerification() {
       shadowRootsChecked,
       crabSvgsFound,
       visibleCanvases,
-      openclawTextFound,
+      zeroTextFound,
     };
   });
 
   console.log("   Shadow DOM Audit Results:", shadowAudit);
   assert.equal(shadowAudit.crabSvgsFound, 0, "No crab or lobster SVGs may exist in DOM or Shadow DOM");
   assert.equal(shadowAudit.visibleCanvases, 0, "No lobster mascot canvas may be visible");
-  assert.equal(shadowAudit.openclawTextFound.length, 0, `No user-facing OpenClaw text allowed, found: ${JSON.stringify(shadowAudit.openclawTextFound)}`);
-  console.log("✔ PASSED: 0 Crab SVGs, 0 Lobster Canvases, 0 OpenClaw Logos across ALL Shadow DOMs!");
+  assert.equal(shadowAudit.zeroTextFound.length, 0, `No user-facing Zero text allowed, found: ${JSON.stringify(shadowAudit.zeroTextFound)}`);
+  console.log("✔ PASSED: 0 Crab SVGs, 0 Lobster Canvases, 0 Zero Logos across ALL Shadow DOMs!");
 
   // 3. Real Chat Test 1: Open Notepad and Type Text
   console.log("\n[Test 3/4] Testing Real Chat Prompt 1: Notepad Open & Type...");

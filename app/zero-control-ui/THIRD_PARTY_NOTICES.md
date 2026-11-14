@@ -27,5 +27,5 @@ Source: <https://github.com/Kilo-Org/kilo-code>
 Copyright 2025-2026 Kilo Code Contributors  
 License: MIT License  
 
-Zero adapts these interaction patterns into its plain-DOM OpenClaw Control UI architecture using native Gateway RPCs. No proprietary runtime, proxy, or secret-leaking state is imported.
+Zero adapts these interaction patterns into its plain-DOM Zero Control UI architecture using native Gateway RPCs. No proprietary runtime, proxy, or secret-leaking state is imported.
 

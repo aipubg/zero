@@ -65,10 +65,10 @@ export async function captureDriverDesktop({ signal, compressed = true, format =
     } catch (error) { if (signal?.aborted) throw error; }
   }
 
-  // Primary verified native Windows capture via AgentDesktop
+  // Primary verified native Windows capture via ZeroDesktop
   try {
-    const { AgentDesktop } = await import('../agent-runtime/agent-desktop.mjs');
-    const ad = new AgentDesktop();
+    const { ZeroDesktop } = await import('../agent-runtime/agent-desktop.mjs');
+    const ad = new ZeroDesktop();
     const adRes = await ad.execute({ command: 'screenshot' }, signal);
     if (adRes?.ok && adRes?.data?.data) {
       return {
@@ -79,7 +79,7 @@ export async function captureDriverDesktop({ signal, compressed = true, format =
         height: adRes.data.height || 1080,
         bytes: Math.round(adRes.data.data.length * 0.75),
         livePixels: true,
-        captureSource: 'agent-desktop-native',
+        captureSource: 'zero-desktop-native',
         displayId: 'primary',
       };
     }

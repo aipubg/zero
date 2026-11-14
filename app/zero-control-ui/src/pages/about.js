@@ -460,7 +460,7 @@ function mountAboutPage(container, context = {}) {
     element(
       "p",
       "zero-about__text",
-      "Zero builds on the OpenClaw runtime and other open-source dependencies. Required notices are kept with the source: app/NOTICE, app/zero-control-ui/THIRD_PARTY_NOTICES.md, and the installed Gateway package's own license files.",
+      "Zero builds on the Zero runtime and other open-source dependencies. Required notices are kept with the source: app/NOTICE, app/zero-control-ui/THIRD_PARTY_NOTICES.md, and the installed Gateway package's own license files.",
     ),
   );
   legal.append(
@@ -476,7 +476,7 @@ function mountAboutPage(container, context = {}) {
     element(
       "p",
       "zero-about__footnote",
-      "Zero is a private product surface over the local Gateway. No OpenClaw marketing, community, repository, or release links are shown here.",
+      "Zero is a private product surface over the local Gateway. No Zero marketing, community, repository, or release links are shown here.",
     ),
   );
 

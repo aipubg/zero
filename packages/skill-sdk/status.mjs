@@ -21,7 +21,7 @@ export function hasBinary(name) {
 }
 
 export function skillStatusRow(skill) {
-  const metadata = skill.metadata?.zero || skill.metadata?.openclaw || skill.metadata?.clawdbot || skill.metadata?.moltbot || {};
+  const metadata = skill.metadata?.zero || skill.metadata?.clawdbot || skill.metadata?.moltbot || {};
   const requires = metadata.requires || {};
   const requirements = { bins: strings(requires.bins), anyBins: strings(requires.anyBins), env: strings(requires.env), config: strings(requires.config), os: strings(metadata.os) };
   const configChecks = requirements.config.map(key => {

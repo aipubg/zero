@@ -186,12 +186,6 @@ export class ModelFabric {
     if (!modelId || typeof modelId !== 'string') return null;
     if (modelId.trim().startsWith('local-gguf/')) return this.localChat?.resolve(modelId.trim()) || null;
     let clean = modelId.trim();
-    // Transparently alias deprecated Gemini 2.5 models to active 3.5 / 3.1 counterparts
-    if (clean.includes('gemini-2.5-flash')) {
-      clean = clean.replace('gemini-2.5-flash', 'gemini-3.5-flash');
-    } else if (clean.includes('gemini-2.5-pro')) {
-      clean = clean.replace('gemini-2.5-pro', 'gemini-3.1-pro-preview');
-    }
     const aliasResolved = this.aliases.get(clean.toLowerCase()) || clean;
 
     // 1. Direct provider-qualified lookup. Providers and models are entirely
@@ -564,8 +558,17 @@ export class ModelFabric {
     }
 
     const modelId = typeof requested === 'string' ? requested.trim() : '';
-    const resolution = this.resolveModel(modelId);
+    let resolution = this.resolveModel(modelId);
     if (!resolution) {
+      // Unknown/fake model IDs (e.g. vendor defaults or stale Gemini IDs) must
+      // not break multi-step chat. Fall back to the owner's configured best model.
+      const fallback = this.autoCandidates(options.exclude)[0];
+      if (fallback) {
+        resolution = this.resolveModel(fallback.modelId);
+        if (resolution) {
+          return this._executeResolvedChat({ ...payload, model: fallback.modelId }, options, resolution);
+        }
+      }
       const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
       err.code = 'model_not_found';
       err.status = 404;
@@ -730,8 +733,16 @@ export class ModelFabric {
     }
 
     const modelId = typeof requested === 'string' ? requested.trim() : '';
-    const resolution = this.resolveModel(modelId);
+    let resolution = this.resolveModel(modelId);
     if (!resolution) {
+      const fallback = this.autoCandidates(options.exclude)[0];
+      if (fallback) {
+        resolution = this.resolveModel(fallback.modelId);
+        if (resolution) {
+          yield* this._streamResolvedChat({ ...payload, model: fallback.modelId }, options, resolution);
+          return;
+        }
+      }
       const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
       err.code = 'model_not_found';
       err.status = 404;

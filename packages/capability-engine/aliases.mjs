@@ -1,16 +1,13 @@
-/**
- * Zero AI — Canonical Capability Alias Registry
+﻿/**
+ * Zero AI â€” Canonical Capability Alias Registry
  *
  * Every tool name the model may emit resolves to exactly one first-party Zero
  * capability. Aliases exist only at the edge: the engine, audit log and result
  * contract always speak the canonical capability name.
- *
- * `action` is injected only when the model omitted it, so an explicit action
- * always wins. `set` supplies defaults that are merged under the model's args.
  */
 
 export const CAPABILITY_ALIASES = Object.freeze({
-  // Browser — Zero Browser Control
+  // Browser â€” Zero Browser Control
   open_browser: { name: 'browser', action: 'open_url' },
   navigate: { name: 'browser', action: 'open_url' },
   open_url: { name: 'browser', action: 'open_url' },
@@ -22,11 +19,10 @@ export const CAPABILITY_ALIASES = Object.freeze({
   get_content: { name: 'browser', action: 'get_content' },
   browser_control: { name: 'browser', action: 'open_url' },
 
-  // Desktop — Zero Computer Control
+  // Desktop â€” Zero Computer Control
   computer: { name: 'zero_computer_action' },
   computer_control: { name: 'zero_computer_action' },
   zero_computer: { name: 'zero_computer_action' },
-  desktop_control: { name: 'desktop_control' },
   launch_app: { name: 'open_app', action: 'open_app' },
   kill_app: { name: 'close_app', action: 'close_app' },
   click: { name: 'zero_computer_action', action: 'left_click' },
@@ -49,7 +45,7 @@ export const CAPABILITY_ALIASES = Object.freeze({
   fill_form: { name: 'zero_computer_action', action: 'fill_form' },
   submit_form: { name: 'zero_computer_action', action: 'submit_form' },
 
-  // Terminal & Security Ops — Zero Terminal
+  // Terminal & Security Ops â€” Zero Terminal
   terminal: { name: 'run_process', set: { shell: true } },
   execute_command: { name: 'run_process', set: { shell: true } },
   run_command: { name: 'run_process', set: { shell: true } },

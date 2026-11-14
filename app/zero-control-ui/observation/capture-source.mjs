@@ -99,7 +99,7 @@ async function defaultLoadSdk(entry) {
 /**
  * CUA-driver capture source.
  *
- * Reuses the already-installed OpenClaw/CUA driver SDK (MIT, 0.32.0) instead of
+ * Reuses the already-installed Zero/CUA driver SDK (MIT, 0.32.0) instead of
  * adding a new native capture stack. It is lazy: importing this module never
  * starts the driver, and `start()` is reachable only after an explicit owner
  * observation start.

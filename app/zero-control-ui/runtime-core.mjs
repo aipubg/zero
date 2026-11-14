@@ -1,6 +1,6 @@
 // Zero Control UI runtime core — SDK-free handlers for the plugin's backend entry.
 //
-// Owned durable seams (Zero Control UI plugin runtime):
+// Owned durable seams (Zero 2026.10.6, Plugin SDK >=2026.10.6):
 //
 // 1. Display-name metadata (`zero.ui.providerNames.*`)
 //    The closed `models.providers` schema has no supported `name` field, so a typed
@@ -399,13 +399,13 @@ export function createZeroUiRuntimeHandlers({
 
   const repoRoot = process.env.ZERO_ROOT || (import.meta.dirname ? path.resolve(import.meta.dirname, "../..") : process.cwd());
   const CONFIG_PATHS = [
-    process.env.ZERO_CONFIG_PATH || process.env.OPENCLAW_CONFIG_PATH || path.join(repoRoot, "zero-system", "config", "zero.json"),
+    process.env.ZERO_CONFIG_PATH || process.env.ZERO_CONFIG_PATH || path.join(repoRoot, "zero-system", "config", "zero.json"),
     path.join(repoRoot, "zero-system", "config", "zero.json"),
     path.join(repoRoot, "zero-system", "config", "zero.template.json"),
     path.join(repoRoot, "backend", "config", "zero.json"),
     path.join(repoRoot, "backend", "config", "zero.template.json"),
-    
-    
+    path.join(repoRoot, "backend", "config", "zero.json"),
+    path.join(repoRoot, "backend", "config", "zero.template.json"),
     "",
   ];
 
@@ -649,8 +649,8 @@ export function createZeroUiRuntimeHandlers({
       logger?.warn?.(`[zero-providers] Error syncing save to 18789: ${e?.message}`);
     }
 
-    // 2. Also write strictly sanitized legacy-compatible config when present
-    const legacyProvConfig = {
+    // 2. Also write strictly sanitized live config for Zero
+    const zeroProvConfig = {
       baseUrl: baseUrl || "",
       api: api || "openai-completions",
       models: (models || []).map((m) => {
@@ -659,17 +659,17 @@ export function createZeroUiRuntimeHandlers({
       }),
     };
     if (apiKey) {
-      legacyProvConfig.apiKey = apiKey.trim();
+      zeroProvConfig.apiKey = apiKey.trim();
     }
     if (headers) {
-      legacyProvConfig.headers = headers;
+      zeroProvConfig.headers = headers;
     }
 
     writeLiveConfig((json) => {
       json.models = json.models || { mode: "replace", providers: {} };
       json.models.mode = "replace";
       json.models.providers = json.models.providers || {};
-      json.models.providers[cleanId] = legacyProvConfig;
+      json.models.providers[cleanId] = zeroProvConfig;
     });
 
     return { ok: true, providerId: cleanId, provider: newProvider };
@@ -706,7 +706,7 @@ export function createZeroUiRuntimeHandlers({
       logger?.warn?.(`[zero-providers] Error syncing delete to 18789: ${e?.message}`);
     }
 
-    // 2. Also remove from legacy-compatible config when present
+    // 2. Also remove from zero.json
     writeLiveConfig((json) => {
       json.models = json.models || { mode: "replace", providers: {} };
       json.models.mode = "replace";

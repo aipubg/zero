@@ -10,7 +10,7 @@ const GATEWAY_BASE = "http://127.0.0.1:18789";
 
 /**
  * RPC bridge to Zero Gateway on 18789.
- * Uses host.request() primarily through the OpenClaw plugin runtime bridge,
+ * Uses host.request() primarily through the Zero plugin runtime bridge,
  * with a safe loopback fallback if host is not present or method is blocked.
  */
 async function callGateway(host, method, params = {}) {
@@ -300,6 +300,8 @@ export function mountModelsPage(container, context = {}) {
 
   // --- 1. Top Header ---
   const header = element("header", "zero-models-header");
+  header.style.paddingTop = "28px";
+  header.style.paddingBottom = "12px";
   const headerLeft = element("div", "zero-models-header__left");
   const statusIcon = element("div", "zero-models-status-icon");
   const titles = element("div", "zero-models-header__titles");
@@ -796,64 +798,6 @@ export function mountModelsPage(container, context = {}) {
       cardHeader.append(left, actions);
       ggufCard.append(cardHeader);
 
-      // Model Chips Grid
-      const chipsContainer = element("div", "zero-model-chips-container");
-      chipsContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;background:rgba(0,0,0,0.18);border-top:1px solid rgba(255,255,255,0.06);";
-
-      for (const m of offlineModels) {
-        const isCurrentActive = systemDefaults.primary === `local-gguf/${m.id}` || agentBindings?.zero?.model === `local-gguf/${m.id}`;
-        const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
-        chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "rgba(255,255,255,0.04)"};border:1px solid ${isCurrentActive ? "var(--accent)" : "rgba(255,255,255,0.08)"};color:${isCurrentActive ? "var(--accent)" : "inherit"};cursor:pointer;`;
-
-        const nameSpan = element("span", "zero-model-chip__name", getCleanDisplayName(m.name, m.id));
-        nameSpan.style.fontWeight = isCurrentActive ? "700" : "500";
-        chip.append(nameSpan);
-
-        if (m.capabilities?.reasoning !== false) {
-          const rBadge = element("span", "zero-chip-badge", "R");
-          rBadge.title = "Reasoning Supported";
-          rBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,0.3);color:var(--color-warning, #fbbf24);";
-          chip.append(rBadge);
-        }
-        if (m.capabilities?.image || m.companionProjector) {
-          const vBadge = element("span", "zero-chip-badge", "Vision");
-          vBadge.title = "Multimodal Vision";
-          vBadge.style.cssText = "font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(56,189,248,0.25);color:var(--color-info, #38bdf8);";
-          chip.append(vBadge);
-        }
-
-        const setActSpan = element("span", "zero-chip-action", isCurrentActive ? "✓ Active" : "Set Active");
-        setActSpan.style.cssText = `font-size:11px;margin-left:4px;color:${isCurrentActive ? "var(--accent)" : "var(--text-muted)"};`;
-        chip.append(setActSpan);
-
-        chip.onclick = async (e) => {
-          if (e.target.closest(".zero-chip-delete")) return;
-          try {
-            await callGateway(host, "zero.providers.setActive", { modelId: `local-gguf/${m.id}` });
-            showNotice(`Active model set to "${getCleanDisplayName(m.name, m.id)}"`);
-            await loadAllData();
-          } catch (err) {
-            showNotice(err.message, true);
-          }
-        };
-
-        const delChipBtn = element("span", "zero-chip-delete", "×");
-        delChipBtn.title = "Remove this model";
-        delChipBtn.style.cssText = "margin-left:6px;font-size:15px;color:var(--text-subtle, #9ca3af);cursor:pointer;line-height:1;";
-        delChipBtn.onclick = async (e) => {
-          e.stopPropagation();
-          try {
-            await callGateway(host, "zero.gateway.localGguf", { action: "delete", modelId: m.id });
-            showNotice(`Model "${m.name || m.id}" removed.`);
-            await loadAllData();
-          } catch (err) {
-            showNotice(err.message, true);
-          }
-        };
-        chip.append(delChipBtn);
-        chipsContainer.append(chip);
-      }
-
       // Outer provider cards stay clean: model pills are shown only inside the
       // Edit/Manage modal, never on the card surface.
       modelsListContainer.append(ggufCard);
@@ -1081,7 +1025,7 @@ export function mountModelsPage(container, context = {}) {
 
     const head = element("div", "zero-modal__header");
     const titleEl = element("h2", "zero-modal__title", isEdit ? `Edit Provider: ${existingProvider.name || existingProvider.id}` : "+ Add Model Provider");
-    const closeBtn = element("button", "zero-modal__close", "×");
+    const closeBtn = element("button", "zero-modal__close", "Ã—");
     closeBtn.onclick = () => {
       modalOverlay.classList.remove("active");
       modalOverlay.style.display = "none";
@@ -1173,7 +1117,7 @@ export function mountModelsPage(container, context = {}) {
       row.append(input, showBtn);
 
       if (canDelete) {
-        const delKeyBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "×");
+        const delKeyBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Ã—");
         delKeyBtn.type = "button";
         delKeyBtn.onclick = () => {
           const idx = keyInputs.indexOf(input);
@@ -1319,7 +1263,7 @@ export function mountModelsPage(container, context = {}) {
         const modelKey = pId ? (m.id.startsWith(pId + '/') ? m.id : `${pId}/${m.id}`) : m.id;
         const isCurrentActive = Boolean(m.id) && [systemDefaults.primary, agentBindings?.zero?.model].some(value => value === modelKey || value === m.id);
 
-        const activeBtn = element("button", `zero-providers-btn ${isCurrentActive ? "zero-providers-btn--active" : "zero-providers-btn--subtle"}`, isCurrentActive ? "✓ Active" : "Set Active");
+        const activeBtn = element("button", `zero-providers-btn ${isCurrentActive ? "zero-providers-btn--active" : "zero-providers-btn--subtle"}`, isCurrentActive ? "âœ“ Active" : "Set Active");
         activeBtn.type = "button";
         activeBtn.style.cssText = `font-size:11px;padding:3px 6px;text-align:center;${isCurrentActive ? "color:var(--accent);border-color:var(--accent);font-weight:700;" : ""}`;
         activeBtn.disabled = !m.id || isCurrentActive;
@@ -1338,7 +1282,7 @@ export function mountModelsPage(container, context = {}) {
           }
         };
 
-        const delRowBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "×");
+        const delRowBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Ã—");
         delRowBtn.type = "button";
         delRowBtn.title = "Delete model";
         delRowBtn.style.padding = "3px 8px";
@@ -1627,7 +1571,7 @@ export function mountModelsPage(container, context = {}) {
 
     const head = element("div", "zero-modal__header");
     const titleEl = element("h2", "zero-modal__title", "Offline GGUF Model Manager");
-    const closeBtn = element("button", "zero-modal__close", "×");
+    const closeBtn = element("button", "zero-modal__close", "Ã—");
     closeBtn.onclick = () => {
       modalOverlay.classList.remove("active");
       modalOverlay.style.display = "none";
@@ -1902,7 +1846,7 @@ export function mountModelsPage(container, context = {}) {
           const addStep = (text, status = "active") => {
             const row = element("div", null);
             row.style.cssText = `color:${status === "done" ? "var(--accent)" : status === "active" ? "var(--accent)" : "var(--color-danger, #ef4444)"};`;
-            row.textContent = `${status === "done" ? "✓" : status === "active" ? "⏳" : "✗"} ${text}`;
+            row.textContent = `${status === "done" ? "âœ“" : status === "active" ? "â³" : "âœ—"} ${text}`;
             stepsList.append(row);
           };
 

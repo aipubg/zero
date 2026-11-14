@@ -37,7 +37,33 @@ export class SemanticObservationStore {
         this.protection = new ProtectedFields({ keyPath: this.persistent && !options.encryptionKey ? this.dbPath + '.key.dpapi' : null, key: options.encryptionKey, hasCiphertext: Boolean(encrypted) });
         this._migrateEncryption();
       }
-    } catch (error) { this.db.close(); throw error; }
+    } catch (error) {
+      // A user-bound DPAPI key can become unreadable after a Windows profile,
+      // machine or credentials change. Quarantine the unusable key/database
+      // (never delete it) and start a fresh store so observation support does
+      // not prevent the entire host from booting.
+      const recoverable = this.persistent && !options.encryptionKey && options.recoverUnreadableKey !== false
+        && /cannot be unlocked|key is missing|Key not valid/i.test(error?.message || '');
+      if (!recoverable) { this.db.close(); throw error; }
+      try { this.db.close(); } catch {}
+      const stamp = Date.now();
+      for (const suffix of ['', '-wal', '-shm']) {
+        const file = `${this.dbPath}${suffix}`;
+        if (fs.existsSync(file)) {
+          try { fs.renameSync(file, `${file}.unreadable-${stamp}`); } catch {}
+        }
+      }
+      const keyFile = `${this.dbPath}.key.dpapi`;
+      if (fs.existsSync(keyFile)) {
+        try { fs.renameSync(keyFile, `${keyFile}.unreadable-${stamp}`); } catch {}
+      }
+      this.keyRecovery = { reason: error?.message || String(error), quarantineSuffix: `.unreadable-${stamp}`, recoveredAt: new Date().toISOString() };
+      this.db = new DatabaseSync(this.dbPath);
+      this.db.exec('PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=-4096; PRAGMA wal_autocheckpoint=100; PRAGMA journal_size_limit=16777216;');
+      this.initSchema();
+      this.protection = new ProtectedFields({ keyPath: `${this.dbPath}.key.dpapi`, key: null, hasCiphertext: false });
+      this._migrateEncryption();
+    }
   }
 
   initSchema() {
@@ -221,6 +247,7 @@ export class SemanticObservationStore {
     return { active: !this.closed, path: this.dbPath, persistent: this.persistent,
       mode: this.persistent ? 'sqlite-file' : 'sqlite-memory', retentionMs: this.retentionMs,
       encryptedFields: Boolean(this.protection), keyStorage: this.protection?.keyStorage ?? 'none', migrationBackup: this.migrationBackup ?? null,
+      keyRecovery: this.keyRecovery ?? null,
       observationCount: this.closed ? null : this.db.prepare('SELECT COUNT(*) AS count FROM semantic_observations').get().count };
   }
 }

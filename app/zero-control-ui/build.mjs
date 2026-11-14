@@ -36,10 +36,14 @@ const ZERO_ORBITAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6
 
 function replaceVisibleBranding(value) {
   return String(value)
-    .replace(/Install OpenClaw Control/gi, "Install Zero")
-    .replace(/OpenClaw Control/gi, "Zero Control")
-    .replace(/OpenClaw/g, "Zero")
-    .replace(/openclaw\.app/gi, "zero.local");
+    .replace(/Install Zero Control/gi, "Install Zero")
+    .replace(/Zero Control/gi, "Zero Control")
+    .replace(/Ask Zero/gi, "Ask Zero")
+    .replace(/Zero documentation/gi, "Zero AI documentation")
+    .replace(/Choose how Zero/gi, "Choose how Zero")
+    .replace(/Crabbox/gi, "Zero Cloud")
+    .replace(/Zero/g, "Zero")
+    .replace(/zero\.app/gi, "zero.local");
 }
 
 function rewriteHtmlBranding(html) {
@@ -85,11 +89,15 @@ function rewriteServedBranding(distWeb) {
     const file = join(assetsDir, name);
     try {
       const source = readFileSync(file, "utf8");
-      if (!source.includes("OpenClaw")) continue;
+      if (!source.includes("Zero")) continue;
       const branded = source
-        .replace(/Install OpenClaw Control/gi, "Install Zero")
-        .replace(/OpenClaw Control/gi, "Zero Control")
-        .replaceAll("OpenClaw", "Zero");
+        .replace(/Install Zero Control/gi, "Install Zero")
+        .replace(/Zero Control/gi, "Zero Control")
+        .replace(/Ask Zero/gi, "Ask Zero")
+        .replace(/Zero documentation/gi, "Zero AI documentation")
+        .replace(/Choose how Zero/gi, "Choose how Zero")
+        .replace(/Crabbox/gi, "Zero Cloud")
+        .replaceAll("Zero", "Zero");
       if (branded !== source) writeFileSync(file, branded);
     } catch {}
   }
@@ -148,16 +156,12 @@ try {
   const repoDistWeb = resolve(root, "..", "..", "dist", "web");
   const targetPluginDir1 = join(repoDistWeb, "plugins", "control-ui", "zero-control-ui", generation);
   const targetPluginDir2 = join(repoDistWeb, "__openclaw__", "plugins", "control-ui", "zero-control-ui", generation);
-  const targetPluginDir3 = join(repoDistWeb, "__zero__", "plugins", "control-ui", "zero-control-ui", generation);
   mkdirSync(targetPluginDir1, { recursive: true });
   mkdirSync(targetPluginDir2, { recursive: true });
-  mkdirSync(targetPluginDir3, { recursive: true });
   copyFileSync(join(scratch, "index.js"), join(targetPluginDir1, "index.js"));
   copyFileSync(join(scratch, "index.css"), join(targetPluginDir1, "index.css"));
   copyFileSync(join(scratch, "index.js"), join(targetPluginDir2, "index.js"));
   copyFileSync(join(scratch, "index.css"), join(targetPluginDir2, "index.css"));
-  copyFileSync(join(scratch, "index.js"), join(targetPluginDir3, "index.js"));
-  copyFileSync(join(scratch, "index.css"), join(targetPluginDir3, "index.css"));
 
   // First-party root asset bundles
   const assetsDir = join(repoDistWeb, "assets");
@@ -166,7 +170,7 @@ try {
   copyFileSync(join(scratch, "index.css"), join(assetsDir, "zero-control-ui.css"));
 
   // Also sync to fallback node_modules root if present
-  const fallbackAssetsDir = resolve(root, "..", "..", "backend", "node_modules", "openclaw", "dist", "control-ui", "assets");
+  const fallbackAssetsDir = resolve(root, "..", "..", "backend", "node_modules", "zero", "dist", "control-ui", "assets");
   try {
     mkdirSync(fallbackAssetsDir, { recursive: true });
     copyFileSync(join(scratch, "index.js"), join(fallbackAssetsDir, "zero-control-ui.js"));

@@ -1,18 +1,18 @@
 /**
- * @fileoverview Direct OS Controller & Native Win32 / Zero Computer Control Runtime
+ * @fileoverview Direct OS Controller & Native Win32 / zero-desktop Controller
  *
  * Production-grade OS control implementation:
  * - High-speed persistent Win32 input daemon execution (<5ms per action)
- * - Seamless integration with Zero semantic desktop control engine
+ * - Seamless integration with ZeroDesktop semantic CLI engine
  * - Two-tier execution:
  *   - Tier 1: Direct UIA Pattern Invocation (InvokePattern.Invoke, ValuePattern.SetValue, SetFocus)
- *   - Tier 2: Precision Native Input via Zero Computer Control & Win32 SendInput (mouse click at (cx, cy), double click, type, hotkey)
+ *   - Tier 2: Precision Native Input via zero-desktop & Win32 SendInput (mouse click at (cx, cy), double click, type, hotkey)
  * - Window management (launch, focus, list_windows, resize, close)
  * - Clipboard management (get, set, clear)
  * - Zero mock / fake functions.
  */
 
-import { AgentDesktop, DESKTOP_COMMANDS } from '../../packages/agent-runtime/agent-desktop.mjs';
+import { ZeroDesktop, DESKTOP_COMMANDS } from '../../packages/agent-runtime/agent-desktop.mjs';
 import {
   runNativeWinAction,
   getWindowState,
@@ -26,17 +26,17 @@ import { defaultUiaRootTree } from '../perception/uia_root_tree.mjs';
 
 export class OsController {
   constructor(options = {}) {
-    this.agentDesktop = new AgentDesktop();
+    this.ZeroDesktop = new ZeroDesktop();
     this.uiaTree = options.uiaTree || defaultUiaRootTree;
     this.defaultTimeoutMs = options.defaultTimeoutMs || 15000;
   }
 
   /**
-   * Diagnostic check verifying OS Controller and Zero Computer Control subsystem health
+   * Diagnostic check verifying OS Controller and zero-desktop subsystem health
    */
   async getStatus() {
     try {
-      const desktopStatus = await this.agentDesktop.execute({ command: 'status' });
+      const desktopStatus = await this.ZeroDesktop.execute({ command: 'status' });
       const cursor = await getCursorPosition();
       const screen = await getScreenSize();
 
@@ -44,7 +44,7 @@ export class OsController {
         healthy: desktopStatus.ok === true,
         module: 'core/execution/os_controller',
         status: 'online',
-        agentDesktop: {
+        ZeroDesktop: {
           ok: desktopStatus.ok,
           version: desktopStatus.data?.version || '1.2.0',
           platform: desktopStatus.data?.platform || 'windows',
@@ -279,10 +279,10 @@ export class OsController {
   }
 
   /**
-   * Delegate semantic desktop commands directly to AgentDesktop engine
+   * Delegate semantic desktop commands directly to ZeroDesktop engine
    */
   async executeSemanticCommand(command, args = [], input = undefined, signal = null) {
-    return await this.agentDesktop.execute({ command, args, input, headed: true }, signal);
+    return await this.ZeroDesktop.execute({ command, args, input, headed: true }, signal);
   }
 }
 

@@ -12,9 +12,9 @@
     "esbuild": "0.28.2"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.10.6"
+    "zero": ">=2026.10.6"
   },
-  "openclaw": {
+  "zero": {
     "extensions": [
       "./index.js"
     ],
@@ -24,7 +24,7 @@
     },
     "build": {
       "bundledDist": true,
-      "openclawVersion": "2026.10.6"
+      "zeroVersion": "2026.10.6"
     }
   }
 }

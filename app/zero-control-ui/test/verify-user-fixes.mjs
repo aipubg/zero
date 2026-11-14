@@ -90,7 +90,7 @@ async function runLiveVerification() {
       }
     }
     const html = document.body.innerHTML;
-    const hasOpenclawDocs = /docs\.openclaw\.ai|openclaw\.ai\/gateway/i.test(html);
+    const hasOpenclawDocs = /docs\.zero\.ai|zero\.ai\/gateway/i.test(html);
     return { results, hasOpenclawDocs };
   });
   console.log("   Settings Sidebar Audit:", sidebarAudit);
@@ -99,7 +99,7 @@ async function runLiveVerification() {
   for (const [sel, disp] of Object.entries(sidebarAudit.results)) {
     assert.equal(disp, "flex", `Feature ${sel} must be visible with display: flex, got: ${disp}`);
   }
-  assert.equal(sidebarAudit.hasOpenclawDocs, false, "Must not contain external OpenClaw docs links");
+  assert.equal(sidebarAudit.hasOpenclawDocs, false, "Must not contain external Zero docs links");
 
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, "verified-settings-connections-visible.png"), fullPage: false });
   console.log("✔ PASSED: CONNECTIONS and all built-in Settings sections are 100% visible and restored!");
@@ -148,7 +148,7 @@ async function runLiveVerification() {
   await page.keyboard.press("Escape");
   await page.waitForTimeout(500);
 
-  // 4. Verify Ask Zero / Custodian Page (No Red Crab, No OpenClaw Title, No Message OpenClaw)
+  // 4. Verify Ask Zero / Custodian Page (No Red Crab, No Zero Title, No Message Zero)
   console.log("\n[Test 4/4] Inspecting Ask Zero / Custodian Surface at http://127.0.0.1:18789/settings/custodian...");
   await page.goto("http://127.0.0.1:18789/settings/custodian", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2500);
@@ -157,23 +157,23 @@ async function runLiveVerification() {
     const html = document.body.innerHTML;
     const h1 = document.querySelector("h1, .custodian h1");
     const textarea = document.querySelector("textarea, input[placeholder*='Message']");
-    const mascotCanvases = Array.from(document.querySelectorAll("openclaw-mascot canvas"));
+    const mascotCanvases = Array.from(document.querySelectorAll("zero-mascot canvas"));
     const visibleCanvases = mascotCanvases.filter((c) => window.getComputedStyle(c).display !== "none");
-    const hasOpenClawWord = /OpenClaw/i.test(h1?.textContent || "");
+    const hasZeroWord = /Zero/i.test(h1?.textContent || "");
     const placeholder = textarea?.getAttribute("placeholder") || "";
-    const hasMsgOpenClaw = /Message OpenClaw/i.test(placeholder);
+    const hasMsgZero = /Message Zero/i.test(placeholder);
     return {
       headingText: h1?.textContent?.trim(),
       placeholder,
-      hasOpenClawWord,
-      hasMsgOpenClaw,
-      totalMascots: document.querySelectorAll("openclaw-mascot").length,
+      hasZeroWord,
+      hasMsgZero,
+      totalMascots: document.querySelectorAll("zero-mascot").length,
       visibleCanvasesCount: visibleCanvases.length,
     };
   });
   console.log("   Custodian Page Audit:", custodianAudit);
-  assert.equal(custodianAudit.hasOpenClawWord, false, "Heading must not contain 'OpenClaw'");
-  assert.equal(custodianAudit.hasMsgOpenClaw, false, "Placeholder must not be 'Message OpenClaw'");
+  assert.equal(custodianAudit.hasZeroWord, false, "Heading must not contain 'Zero'");
+  assert.equal(custodianAudit.hasMsgZero, false, "Placeholder must not be 'Message Zero'");
   assert.equal(custodianAudit.visibleCanvasesCount, 0, "No lobster canvas may be visible (must be replaced with Zero badge)");
 
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, "verified-ask-zero-custodian-clean.png"), fullPage: false });

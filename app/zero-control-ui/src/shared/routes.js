@@ -54,14 +54,14 @@ const LEGACY_PLUGIN_TARGETS = {
  * links for diagnostics outside the product; the Zero shell blocks these.
  */
 const UPSTREAM_EXTERNAL_PATHS = [
-  "openclaw.ai",
-  "www.openclaw.ai",
-  "docs.openclaw.ai",
-  "github.com/openclaw",
+  "zero.ai",
+  "www.zero.ai",
+  "docs.zero.ai",
+  "github.com/zero",
   "discord.gg/clawd",
-  "x.com/openclaw",
-  "reddit.com/r/openclaw",
-  "www.reddit.com/r/openclaw",
+  "x.com/zero",
+  "reddit.com/r/zero",
+  "www.reddit.com/r/zero",
   "tweakcn.com",
   "www.tweakcn.com",
 ];

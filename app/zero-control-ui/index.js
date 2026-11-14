@@ -1,4 +1,4 @@
-import { buildJsonPluginConfigSchema, definePluginEntry } from "./src/compat/plugin-entry.mjs";
+import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { OBSERVATION_CONFIG_SCHEMA } from "./observation/config.mjs";
 import { registerZeroUiRuntime } from "./runtime-core.mjs";
 import { handleZeroGatewayRequest } from "../../backend/gateway/server.mjs";

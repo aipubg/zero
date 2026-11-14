@@ -104,13 +104,13 @@ test("route policy keeps native destinations and classifies legacy duplicates", 
   assert.equal(routes.isSpecialistNewRoute("/new?agent=researcher%3Amain"), true);
   assert.equal(routes.isSpecialistNewRoute("/new?agent=zero"), false);
 
-  assert.equal(routes.isUpstreamExternalHref("https://openclaw.ai"), true);
-  assert.equal(routes.isUpstreamExternalHref("https://docs.openclaw.ai/web"), true);
-  assert.equal(routes.isUpstreamExternalHref("https://github.com/openclaw/openclaw"), true);
+  assert.equal(routes.isUpstreamExternalHref("https://zero.ai"), true);
+  assert.equal(routes.isUpstreamExternalHref("https://docs.zero.ai/web"), true);
+  assert.equal(routes.isUpstreamExternalHref("https://github.com/zero/zero"), true);
   assert.equal(routes.isUpstreamExternalHref("https://discord.gg/clawd"), true);
-  assert.equal(routes.isUpstreamExternalHref("https://x.com/openclaw"), true);
-  assert.equal(routes.isUpstreamExternalHref("https://www.reddit.com/r/openclaw/"), true);
-  assert.equal(routes.isUpstreamExternalHref("https://example.com/openclaw.ai"), false);
+  assert.equal(routes.isUpstreamExternalHref("https://x.com/zero"), true);
+  assert.equal(routes.isUpstreamExternalHref("https://www.reddit.com/r/zero/"), true);
+  assert.equal(routes.isUpstreamExternalHref("https://example.com/zero.ai"), false);
   assert.equal(routes.isUpstreamExternalHref("/chat/zero/main"), false);
   assert.equal(routes.isUpstreamExternalHref("mailto:zero@example.com"), false);
   assert.equal(routes.isUpstreamExternalHref(null), false);
@@ -555,12 +555,12 @@ test("interceptor keeps native routes and re-targets duplicate destinations", as
     assert.equal(nativeClick.defaultPrevented, false);
 
     for (const href of [
-      "https://openclaw.ai",
-      "https://docs.openclaw.ai/web/control-ui",
-      "https://github.com/openclaw/openclaw",
+      "https://zero.ai",
+      "https://docs.zero.ai/web/control-ui",
+      "https://github.com/zero/zero",
       "https://discord.gg/clawd",
-      "https://x.com/openclaw",
-      "https://www.reddit.com/r/openclaw/",
+      "https://x.com/zero",
+      "https://www.reddit.com/r/zero/",
     ]) {
       const count = browser.navigations.length;
       const click = browser.click(href);
@@ -570,7 +570,7 @@ test("interceptor keeps native routes and re-targets duplicate destinations", as
     }
 
     // A model citation inside chat content is not a Zero-owned redirect.
-    const contentClick = browser.click("https://openclaw.ai/docs", false);
+    const contentClick = browser.click("https://zero.ai/docs", false);
     assert.equal(contentClick.defaultPrevented, false);
     assert.equal(contentClick.propagationStopped, false);
 
@@ -1211,15 +1211,15 @@ test("built bundle integrates native surfaces and has no duplicate product backe
   assert.doesNotMatch(bundle, /Zero Team page/);
 
   // The in-place integration and single-chat policy survive minification.
-  assert.match(bundle, /openclaw-model-providers-page/);
-  assert.match(bundle, /openclaw-about-page/);
+  assert.match(bundle, /zero-model-providers-page/);
+  assert.match(bundle, /zero-about-page/);
   assert.match(bundle, /Administrator configuration only/);
   assert.match(bundle, /zero-admin-config/);
   assert.match(bundle, /Set Default/);
   assert.match(bundle, /agents-toolbar/);
   assert.doesNotMatch(bundle, /Internal specialist/);
   assert.match(bundle, /agents-home__card/);
-  assert.match(bundle, /openclaw-agent-select/);
+  assert.match(bundle, /zero-agent-select/);
   assert.match(bundle, /zero-about__heading/);
   assert.match(bundle, /Private assistant for local Gateway-backed work/);
   assert.match(bundle, /sidebar-agent-card__main/);
@@ -1238,9 +1238,9 @@ test("built bundle integrates native surfaces and has no duplicate product backe
     ".community-invite-card",
     ".topbar-brand__logo",
     ".zero-admin-config",
-    '[href^="https://openclaw.ai"]',
+    '[href^="https://zero.ai"]',
     '[href^="https://discord.gg/clawd"]',
-    '[href^="https://x.com/openclaw"]',
+    '[href^="https://x.com/zero"]',
   ]) {
     assert.ok(styles.includes(selector), `expected CSS support for ${selector}`);
   }

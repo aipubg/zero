@@ -6,56 +6,14 @@
     "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/",
     "models": [
       {
-        "id": "default",
-        "name": "default",
+        "id": "models/gemini-2.5-flash",
+        "name": "Gemini 2.5 Flash",
         "reasoning": false,
-        "image": false
+        "image": true
       },
       {
         "id": "models/gemini-flash-lite-latest",
-        "name": "models/gemini-flash-lite-latest",
-        "reasoning": false,
-        "image": true
-      },
-      {
-        "id": "models/gemini-3-flash-preview",
-        "name": "models/gemini-3-flash-preview",
-        "reasoning": false,
-        "image": true
-      },
-      {
-        "id": "models/gemini-3.1-flash-lite-preview",
-        "name": "models/gemini-3.1-flash-lite-preview",
-        "reasoning": false,
-        "image": true
-      },
-      {
-        "id": "models/gemini-3.1-flash-lite",
-        "name": "models/gemini-3.1-flash-lite",
-        "reasoning": false,
-        "image": true
-      },
-      {
-        "id": "models/gemini-3.5-flash",
-        "name": "models/gemini-3.5-flash",
-        "reasoning": false,
-        "image": true
-      },
-      {
-        "id": "models/gemini-3.5-flash-lite",
-        "name": "models/gemini-3.5-flash-lite",
-        "reasoning": false,
-        "image": true
-      },
-      {
-        "id": "models/gemini-3.6-flash",
-        "name": "models/gemini-3.6-flash",
-        "reasoning": false,
-        "image": true
-      },
-      {
-        "id": "models/gemini-robotics-er-2-preview",
-        "name": "models/gemini-robotics-er-2-preview",
+        "name": "Gemini Flash Lite Latest",
         "reasoning": false,
         "image": true
       }

@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *
  * Reads the repository-owned production config template projection
  * (workers/tools/subagent edges only; no providers, credentials, or messages)
- * and calls the installed OpenClaw Gateway admission implementation
+ * and calls the installed Zero Gateway admission implementation
  * (`resolveSpawnAdmission`). This is the real target-policy seam, not a
  * test-local planner.
  *
@@ -21,7 +21,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(root, "..", "..");
 const configPath = path.join(repoRoot, "zero-system", "config", "zero.json");
 const policyPath = path.join(repoRoot, "backend", "agents", "zero", "delegation-policy.md");
-const distDir = path.join(repoRoot, "backend", "node_modules", "openclaw", "dist");
+const distDir = path.join(repoRoot, "backend", "node_modules", "zero", "dist");
 
 function projectConfig(full) {
   const entries = Object.fromEntries(

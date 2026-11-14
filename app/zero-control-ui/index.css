@@ -909,10 +909,10 @@
   overflow: hidden !important;
 }
 
-/* Scrub all OpenClaw external / documentation links */
-a[href*="docs.openclaw.ai"],
-a[href*="openclaw.ai"],
-a[href*="github.com/openclaw"],
+/* Scrub all Zero external / documentation links */
+a[href*="docs.zero.ai"],
+a[href*="zero.ai"],
+a[href*="github.com/zero"],
 .learn-more,
 [data-learn-more] {
   display: none !important;
@@ -1849,15 +1849,15 @@ a[href*="discord.com"],
 .menu-item:has([href*="discord"]),
 wa-dropdown-item:has([href*="discord"]),
 button:has([href*="discord"]),
-:is(.sidebar-shell__invite, .community-invite-card, openclaw-about-page, .about-hero, .settings-sidebar) a:is(
-  [href^="https://openclaw.ai"],
-  [href^="https://www.openclaw.ai"],
-  [href^="https://docs.openclaw.ai"],
-  [href^="https://github.com/openclaw"],
+:is(.sidebar-shell__invite, .community-invite-card, zero-about-page, .about-hero, .settings-sidebar) a:is(
+  [href^="https://zero.ai"],
+  [href^="https://www.zero.ai"],
+  [href^="https://docs.zero.ai"],
+  [href^="https://github.com/zero"],
   [href^="https://discord.gg/clawd"],
-  [href^="https://x.com/openclaw"],
-  [href^="https://www.reddit.com/r/openclaw"],
-  [href^="https://reddit.com/r/openclaw"]
+  [href^="https://x.com/zero"],
+  [href^="https://www.reddit.com/r/zero"],
+  [href^="https://reddit.com/r/zero"]
 ) {
   display: none !important;
 }
@@ -2067,11 +2067,11 @@ button:has([href*="discord"]),
   }
 }
 
-/* 2. Hide any residual external OpenClaw docs links */
-a[href*="openclaw.ai"],
-a[href*="docs.openclaw.ai"],
-wa-dropdown-item[href*="openclaw.ai"],
-wa-dropdown-item[href*="docs.openclaw.ai"],
+/* 2. Hide any residual external Zero docs links */
+a[href*="zero.ai"],
+a[href*="docs.zero.ai"],
+wa-dropdown-item[href*="zero.ai"],
+wa-dropdown-item[href*="docs.zero.ai"],
 wa-dropdown-item[href*="permission-modes"] {
   display: none !important;
 }
@@ -2170,11 +2170,11 @@ wa-dropdown-item[href*="permission-modes"] {
 }
 
 /* 4. Custodian / Ask Zero Pure Zero Branding & Clean Mascot Avatar */
-openclaw-mascot canvas {
+zero-mascot canvas {
   display: none !important;
 }
 
-openclaw-mascot {
+zero-mascot {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2310b981'/%3E%3Ctext x='50' y='68' font-family='-apple-system,BlinkMacSystemFont,sans-serif' font-weight='900' font-size='52' fill='%23ffffff' text-anchor='middle'%3EZ%3C/text%3E%3C/svg%3E") !important;
   background-size: contain !important;
   background-repeat: no-repeat !important;
@@ -2288,4 +2288,10 @@ html.wa-light .zero-admin-config {
 }
 
 
+
+
+/* Legacy host chrome is hidden in place (never detached) so lit-managed nodes stay stable. */
+[data-zero-legacy-hidden] {
+  display: none !important;
+}
 

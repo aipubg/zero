@@ -42,22 +42,20 @@ import {
  * It never owns a transcript, route, Gateway request or session store.
  */
 
-const SURFACE_SELECTOR = "zero-model-providers-page, zero-model-setup-page, zero-about-page, openclaw-model-providers-page, openclaw-model-setup-page, openclaw-about-page";
+const SURFACE_SELECTOR = "zero-model-providers-page, zero-model-setup-page, zero-about-page";
 const COMPUTER_SELECTOR = ".systems-desktop, .zero-computer-hold-host";
 const COMMUNITY_SELECTOR = ".sidebar-shell__invite, .community-invite-card";
-const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"], [data-sidebar-entry*="zero-control-ui"]';
+const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"]';
 const CHROME_SELECTOR = [
   'zero-plugins-page',
   'zero-skills-page',
-  'openclaw-plugins-page',
-  'openclaw-skills-page',
   COMMUNITY_SELECTOR,
   STALE_PLUGIN_NAV_SELECTOR,
   ".sidebar-agent-card",
   ".topbar-brand",
   ".assistant-panel",
   ".settings-sidebar",
-  "zero-agent-select", "openclaw-agent-select",
+  "zero-agent-select",
   ".agents-home__card",
   ".agents-toolbar",
   ".page-subtitle",
@@ -397,7 +395,7 @@ function installNativeSurfaces(host) {
     for (const panel of loginPanels) {
       rebrandText(panel);
       // Hide external docs links
-      for (const a of panel.querySelectorAll("a[href*='openclaw.ai']")) {
+      for (const a of panel.querySelectorAll("a[href*='zero.ai']")) {
         a.style.display = "none";
       }
       // If secret / token input exists, hide the secret field row
@@ -423,7 +421,7 @@ function installNativeSurfaces(host) {
     rebrandText(document.querySelector(".assistant-panel"));
     rebrandText(document.querySelector(".settings-sidebar"));
     // Rebrand custodian / Ask Zero surface dynamically
-    const custodian = document.querySelector(".custodian, openclaw-custodian-page, openclaw-custodian-surface");
+    const custodian = document.querySelector(".custodian, zero-custodian-page, zero-custodian-surface");
     if (custodian) {
       rebrandText(custodian);
       for (const input of custodian.querySelectorAll("input, textarea")) {
@@ -473,7 +471,7 @@ function installNativeSurfaces(host) {
       if (name) values.add(name);
     }
     for (const option of document.querySelectorAll(
-      "openclaw-agent-select [data-agent-option], openclaw-agent-select wa-dropdown-item",
+      "zero-agent-select [data-agent-option], zero-agent-select wa-dropdown-item",
     )) {
       const label = (option.getAttribute("aria-label") || option.textContent || "")
         .trim()
@@ -484,7 +482,7 @@ function installNativeSurfaces(host) {
 
   const removeSpecialistSelectorOnConfig = () => {
     if (!specialistConfigId()) return;
-    for (const select of document.querySelectorAll("openclaw-agent-select")) select.remove();
+    for (const select of document.querySelectorAll("zero-agent-select")) select.remove();
   };
 
   const neutralizeSettingsAgentSelector = () => {
@@ -584,6 +582,10 @@ function installNativeSurfaces(host) {
       // Product chrome cleanup is best-effort; it must never break the host.
     } finally {
       isApplyingChanges = false;
+      // Drop records produced by this pass. Otherwise the observer is handed our
+      // own DOM writes after `isApplyingChanges` resets, re-schedules cleanup,
+      // and the renderer loops forever.
+      observer.takeRecords();
     }
   };
 
@@ -638,7 +640,7 @@ function installNativeSurfaces(host) {
     }
     for (const sk of document.querySelectorAll(".chat-skeleton, .chat-loading-skeleton, .message-skeleton")) {
       const parent = sk.closest(".chat-pane, .chat-messages");
-      if (parent && parent.querySelector(".chat-bubble, .message-bubble, openclaw-chat-message")) {
+      if (parent && parent.querySelector(".chat-bubble, .message-bubble, zero-chat-message")) {
         sk.remove();
       }
     }
@@ -650,7 +652,7 @@ function installNativeSurfaces(host) {
       renderGenerativeWidgets(root, { host });
       // Permanently remove duplicate "Color mode" button and tooltips
       const colorModeToggles = root.querySelectorAll ? root.querySelectorAll(
-        "openclaw-theme-mode-toggle, .theme-mode-toggle, [aria-label*='Color mode' i], [title*='Color mode' i]"
+        "zero-theme-mode-toggle, .theme-mode-toggle, [aria-label*='Color mode' i], [title*='Color mode' i]"
       ) : [];
       for (const t of colorModeToggles) {
         t.remove();
@@ -659,7 +661,7 @@ function installNativeSurfaces(host) {
       for (const c of canvases) {
         c.style.setProperty("display", "none", "important");
       }
-      const mascots = root.querySelectorAll ? root.querySelectorAll("openclaw-mascot, .openclaw-mascot") : [];
+      const mascots = root.querySelectorAll ? root.querySelectorAll("zero-mascot, .zero-mascot") : [];
       for (const m of mascots) {
         if (!m.querySelector(".zero-mascot-badge")) {
           const badge = document.createElement("div");
@@ -688,29 +690,29 @@ function installNativeSurfaces(host) {
           el.closest("wa-dropdown-item")?.remove() || el.closest("li")?.remove() || el.remove();
         }
       }
-      const openclawItems = root.querySelectorAll ? root.querySelectorAll('wa-dropdown-item[value*="openclaw"], [aria-label*="openclaw" i], .session-menu__text') : [];
-      for (const item of openclawItems) {
-        if (item.getAttribute("value")?.toLowerCase().includes("openclaw") || item.textContent?.trim().toLowerCase() === "openclaw") {
+      const zeroItems = root.querySelectorAll ? root.querySelectorAll('wa-dropdown-item[value*="zero"], [aria-label*="zero" i], .session-menu__text') : [];
+      for (const item of zeroItems) {
+        if (item.getAttribute("value")?.toLowerCase().includes("zero") || item.textContent?.trim().toLowerCase() === "zero") {
           item.closest("wa-dropdown-item")?.remove() || item.remove();
-        } else if (item.getAttribute("aria-label")?.toLowerCase().includes("openclaw")) {
-          item.setAttribute("aria-label", (item.getAttribute("aria-label") || "").replace(/openclaw/gi, "zero"));
+        } else if (item.getAttribute("aria-label")?.toLowerCase().includes("zero")) {
+          item.setAttribute("aria-label", (item.getAttribute("aria-label") || "").replace(/zero/gi, "zero"));
         }
       }
       const inputAndCode = root.querySelectorAll ? root.querySelectorAll("input, textarea, code, pre, .terminal, .code-snippet") : [];
       for (const el of inputAndCode) {
-        if (el.value && /openclaw|oc-pair/i.test(el.value)) {
+        if (el.value && /zero|oc-pair/i.test(el.value)) {
           el.value = el.value
-            .replace(/openclaw node run/gi, "zero node run")
-            .replace(/openclaw node/gi, "zero node")
+            .replace(/zero node run/gi, "zero node run")
+            .replace(/zero node/gi, "zero node")
             .replace(/oc-pair:\/\//gi, "zero-pair://")
-            .replace(/\bopenclaw\b/gi, "zero");
+            .replace(/\bzero\b/gi, "zero");
         }
-        if (el.textContent && /openclaw|oc-pair/i.test(el.textContent)) {
+        if (el.textContent && /zero|oc-pair/i.test(el.textContent)) {
           el.textContent = el.textContent
-            .replace(/openclaw node run/gi, "zero node run")
-            .replace(/openclaw node/gi, "zero node")
+            .replace(/zero node run/gi, "zero node run")
+            .replace(/zero node/gi, "zero node")
             .replace(/oc-pair:\/\//gi, "zero-pair://")
-            .replace(/\bopenclaw\b/gi, "zero");
+            .replace(/\bzero\b/gi, "zero");
         }
       }
       if (typeof document.createTreeWalker === "function") {
@@ -721,22 +723,22 @@ function installNativeSurfaces(host) {
             if (/System setup and care/i.test(node.nodeValue)) {
               node.nodeValue = node.nodeValue.replace(/System setup and care/gi, "System Settings & Diagnostics");
             }
-            if (/openclaw configure/i.test(node.nodeValue)) {
-              node.nodeValue = node.nodeValue.replace(/`?openclaw configure`?/gi, "in Zero Models settings");
+            if (/zero configure/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/`?zero configure`?/gi, "in Zero Models settings");
             }
-            if (/openclaw node run/i.test(node.nodeValue)) {
-              node.nodeValue = node.nodeValue.replace(/openclaw node run/gi, "zero node run");
+            if (/zero node run/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/zero node run/gi, "zero node run");
             }
-            if (/openclaw node/i.test(node.nodeValue)) {
-              node.nodeValue = node.nodeValue.replace(/openclaw node/gi, "zero node");
+            if (/zero node/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/zero node/gi, "zero node");
             }
             if (/oc-pair:\/\//i.test(node.nodeValue)) {
               node.nodeValue = node.nodeValue.replace(/oc-pair:\/\//gi, "zero-pair://");
             }
-            if (/\bopenclaw\b/i.test(node.nodeValue)) {
-              node.nodeValue = node.nodeValue.replace(/\bopenclaw\b/gi, (m) => {
-                if (m === "openclaw") return "zero";
-                if (m === "OPENCLAW") return "ZERO";
+            if (/\bzero\b/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/\bzero\b/gi, (m) => {
+                if (m === "zero") return "zero";
+                if (m === "ZERO") return "ZERO";
                 return "Zero";
               });
             }
@@ -802,7 +804,7 @@ function installNativeSurfaces(host) {
 
   const removeExternalLearnMoreLinks = () => {
     for (const el of document.querySelectorAll(
-      "[href*='openclaw.ai'], [href*='docs.openclaw'], [href*='permission-modes'], [href*='tweakcn.com'], a[href*='tweakcn'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
+      "[href*='zero.ai'], [href*='docs.zero'], [href*='permission-modes'], [href*='tweakcn.com'], a[href*='tweakcn'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
     )) {
       if (el.tagName.toLowerCase() === "a") {
         el.setAttribute("href", "javascript:void(0)");
@@ -814,7 +816,7 @@ function installNativeSurfaces(host) {
     for (const a of document.querySelectorAll("a, wa-dropdown-item")) {
       const txt = (a.textContent || "").trim();
       const href = a.getAttribute("href") || "";
-      if (/^Zero Docs$/i.test(txt) || href.includes("tweakcn.com") || href.includes("openclaw.ai")) {
+      if (/^Zero Docs$/i.test(txt) || href.includes("tweakcn.com") || href.includes("zero.ai")) {
         a.remove();
       }
     }
@@ -1065,8 +1067,8 @@ function installNativeSurfaces(host) {
     isApplyingChanges = true;
     try {
       syncComputerSurface();
-      if (routePath(currentLocation()) === '/settings/plugins') mountPluginInstall(document.querySelector('openclaw-plugins-page'), host);
-      if (routePath(currentLocation()) === '/settings/skills') mountSkillInstall(document.querySelector('openclaw-skills-page'), host);
+      if (routePath(currentLocation()) === '/settings/plugins') mountPluginInstall(document.querySelector('zero-plugins-page'), host);
+      if (routePath(currentLocation()) === '/settings/skills') mountSkillInstall(document.querySelector('zero-skills-page'), host);
       const currentPath = routePath(currentLocation());
       const kind = currentSurface(host);
       if (!kind && consumeModelCatalogDirty()) {
@@ -1089,8 +1091,8 @@ function installNativeSurfaces(host) {
 
       const selector =
         kind === "models"
-          ? "openclaw-model-providers-page, openclaw-model-setup-page"
-          : "openclaw-about-page";
+          ? "zero-model-providers-page, zero-model-setup-page"
+          : "zero-about-page";
       const nativeEl = document.querySelector(selector);
       if (nativeEl) {
         // The host (re)rendered the native screen. Replace it in place and mount
@@ -1125,6 +1127,7 @@ function installNativeSurfaces(host) {
       scheduleChrome();
     } finally {
       isApplyingChanges = false;
+      observer.takeRecords();
     }
   };
 
@@ -1178,7 +1181,7 @@ function installNativeSurfaces(host) {
     if (
       target?.nodeType === 1 &&
       target.closest?.(
-        "openclaw-agent-select, .agents-home, .agents-toolbar, .systems-desktop",
+        "zero-agent-select, .agents-home, .agents-toolbar, .systems-desktop",
       )
     ) {
       return true;
