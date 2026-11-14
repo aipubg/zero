@@ -198,7 +198,12 @@ export class ModelFabric {
           const candidate = typeof m === 'string' ? m : m.id;
           return candidate === id || candidate === `models/${id}` || candidate === id.replace(/^models\//, '');
         });
-        const canonical = entry ? (typeof entry === 'string' ? entry : entry.id) : id;
+        // A provider-qualified id that is not in the provider's catalogue is
+        // stale (for example a session pinned to a model that was removed).
+        // Resolving it anyway would send the request upstream and time out,
+        // so it is treated as unresolved and the fallback chain is used.
+        if (!entry) return null;
+        const canonical = typeof entry === 'string' ? entry : entry.id;
         return { provider, canonicalModelId: canonical, capabilities: this._capabilities(entry, canonical) };
       }
     }

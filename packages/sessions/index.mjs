@@ -7,6 +7,13 @@
 import { DatabaseSync } from 'node:sqlite';
 import { EventEmitter } from 'node:events';
 
+/**
+ * Default execution permissions for a local owner session.
+ * "full" == unrestricted owner mode (no guarded / workspace-only limits).
+ */
+export const DEFAULT_PERMISSION_MODE = 'full';
+export const DEFAULT_SANDBOX_MODE = 'off';
+
 export class SessionManager {
   /**
    * @param {Object} [options]
@@ -73,11 +80,16 @@ export class SessionManager {
     const now = Date.now();
     const sessionId = id || `session_${now}_${Math.random().toString(36).slice(2, 8)}`;
     const isArchived = Boolean(metadata.archived) ? 1 : 0;
+    // The local owner session runs in unrestricted owner mode by default.
+    const storedMetadata = {
+      ...metadata,
+      permissionMode: metadata.permissionMode || DEFAULT_PERMISSION_MODE,
+    };
     const stmt = this.db.prepare(`
       INSERT INTO zero_sessions (id, title, created_at, updated_at, metadata, archived)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
-    stmt.run(sessionId, title, now, now, JSON.stringify(metadata), isArchived);
+    stmt.run(sessionId, title, now, now, JSON.stringify(storedMetadata), isArchived);
     return this.getSession(sessionId);
   }
 
@@ -98,6 +110,10 @@ export class SessionManager {
       metadata,
       involvement: metadata.involvement,
       archived: isArchived,
+      // Execution permissions for this session. "full" means the local owner
+      // runs tools without workspace-only or guarded restrictions.
+      permissionMode: metadata.permissionMode || DEFAULT_PERMISSION_MODE,
+      sandboxMode: metadata.sandboxMode || DEFAULT_SANDBOX_MODE,
     };
   }
 
@@ -141,6 +157,10 @@ export class SessionManager {
         archived: isArchived,
         canArchive: true,
         canDelete: true,
+        // Execution permissions for this session (local owner defaults to
+        // unrestricted "full" access).
+        permissionMode: meta.permissionMode || DEFAULT_PERMISSION_MODE,
+        sandboxMode: meta.sandboxMode || DEFAULT_SANDBOX_MODE,
       };
     });
   }
@@ -152,6 +172,20 @@ export class SessionManager {
     const metadata = { ...existing.metadata, ...(updates.metadata || {}) };
     if (updates.involvement !== undefined) {
       metadata.involvement = updates.involvement;
+    }
+    // Execution permissions and sandbox selection live on the session so the
+    // Control UI permission picker and the host agree on the active mode.
+    if (updates.permissionMode !== undefined) {
+      metadata.permissionMode = updates.permissionMode === null ? null : String(updates.permissionMode);
+    }
+    if (updates.sandboxMode !== undefined) {
+      metadata.sandboxMode = updates.sandboxMode === null ? null : String(updates.sandboxMode);
+    }
+    if (updates.model !== undefined) {
+      metadata.model = updates.model === null ? null : String(updates.model);
+    }
+    if (updates.thinkingLevel !== undefined) {
+      metadata.thinkingLevel = updates.thinkingLevel === null ? null : String(updates.thinkingLevel);
     }
     let isArchived = existing.archived ? 1 : 0;
     if (updates.archived !== undefined) {

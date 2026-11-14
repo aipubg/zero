@@ -47,6 +47,47 @@
           "env:GEMINI_API_KEY"
         ],
         "enabled": true
+      },
+      "nv": {
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+            "name": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+            "reasoning": false,
+            "image": false
+          },
+          {
+            "id": "nvidia/nemotron-3-super-120b-a12b",
+            "name": "nvidia/nemotron-3-super-120b-a12b",
+            "reasoning": false,
+            "image": false
+          },
+          {
+            "id": "minimaxai/minimax-m3.1-flash",
+            "name": "minimaxai/minimax-m3.1-flash",
+            "reasoning": false,
+            "image": false
+          },
+          {
+            "id": "openai/gpt-oss-20b",
+            "name": "openai/gpt-oss-20b",
+            "reasoning": false,
+            "image": false
+          },
+          {
+            "id": "deepseek-ai/deepseek-v4.1-flash",
+            "name": "deepseek-ai/deepseek-v4.1-flash",
+            "reasoning": false,
+            "image": false
+          }
+        ],
+        "apiKey": "env:NV_API_KEY",
+        "apiKeys": [
+          "env:NV_API_KEY"
+        ],
+        "enabled": true
       }
     }
   },

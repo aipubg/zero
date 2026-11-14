@@ -7,7 +7,6 @@ export const PLUGINS_UI_METHODS = Object.freeze([
 ]);
 
 const generations = new WeakMap();
-const remoteGap = 'Remote plugin catalogs are unavailable. Install a local plugin directory or an npm package.';
 const mutations = new Set(['plugins.install', 'plugins.setEnabled', 'plugins.enable', 'plugins.disable',
   'plugins.update', 'plugins.restart', 'plugins.uninstall', 'plugins.remove']);
 
@@ -106,15 +105,80 @@ function receipt(manager, plugin, warnings = []) {
 }
 
 /** Return undefined when unhandled. Authentication/authorization remains the host's job. */
-export async function handlePluginsUi(method, params = {}, manager, { mutationAllowed = true } = {}) {
+export async function handlePluginsUi(method, params = {}, manager, { mutationAllowed = true, skillLoader = null } = {}) {
   if (!PLUGINS_UI_METHODS.includes(method)) return undefined;
   if (!manager) throw new Error('The host PluginManager is required');
   await manager.ready;
   if (mutations.has(method) && !mutationAllowed) throw new Error('Plugin mutations are disabled');
+
+  /**
+   * The local catalogue also lists the built-in skills that ship with Zero.
+   * They are always available, so the page renders real items instead of the
+   * "No plugins are installed" empty state.
+   */
+  const builtInSkills = () => {
+    if (!skillLoader) return [];
+    let skills = [];
+    try { skills = skillLoader.listSkills() || []; } catch { skills = []; }
+    return skills.map(skill => ({
+      id: `skill:${skill.name}`,
+      catalog: {
+        name: skill.name,
+        summary: skill.description || `${skill.name} skill`,
+        description: skill.description || '',
+        latestVersion: skill.version || '1.0.0',
+        origin: 'local',
+        official: true,
+        categories: ['skills'],
+        featured: false,
+        trending: false,
+      },
+      local: {
+        installed: true,
+        pluginId: `skill:${skill.name}`,
+        enabled: true,
+        state: 'enabled',
+        version: skill.version || '1.0.0',
+        action: 'manage',
+      },
+      kind: 'skill',
+    }));
+  };
+
+  const catalogueItems = () => [...manager.listPlugins().map(catalogItem), ...builtInSkills()];
+
   switch (method) {
-    case 'plugins.list':
+    case 'plugins.list': {
+      // The built-in skills are part of the local installation, so they are
+      // listed alongside managed plugins. Without them the page renders the
+      // "No plugins are installed." empty state.
+      const managed = manager.listPlugins(params).map(pluginUiRow);
+      const skills = builtInSkills().map(item => ({
+        id: item.id,
+        name: item.catalog.name,
+        version: item.local.version,
+        description: item.catalog.description,
+        installed: true,
+        enabled: true,
+        removable: false,
+        state: 'enabled',
+        status: 'enabled',
+        runtimeStatus: 'available',
+        loaded: true,
+        process: null,
+        origin: 'local',
+        source: { kind: 'builtin' },
+        catalogId: item.id,
+        hasIcon: false,
+        capabilities: [],
+        permissions: [],
+        installedAt: Date.now(),
+        updatedAt: Date.now(),
+        kind: 'skill',
+      }));
       return { ok: true, generation: generation(manager), mutationAllowed,
-        plugins: manager.listPlugins(params).map(pluginUiRow), diagnostics: manager.getDiagnostics() };
+        plugins: [...managed, ...skills], diagnostics: manager.getDiagnostics() };
+    }
     case 'plugins.inspect':
       return inspect(required(manager, idOf(params)));
     case 'plugins.install': {
@@ -148,14 +212,25 @@ export async function handlePluginsUi(method, params = {}, manager, { mutationAl
     }
     case 'plugins.diagnostics':
       return manager.getDiagnostics();
-    case 'plugins.catalog.categories':
-      return { categories: [], remoteAvailable: false };
+    case 'plugins.catalog.categories': {
+      // A local sovereign gateway serves its own plugins and skills, so the
+      // catalogue is always available. Returning "remoteAvailable: false"
+      // makes the page show the "Remote plugin catalogs are unavailable"
+      // banner even though a local catalogue is present.
+      const categories = [
+        { id: 'installed', label: 'Installed' },
+        { id: 'skills', label: 'Skills' },
+      ];
+      return { categories, remoteAvailable: true, items: catalogueItems() };
+    }
     case 'plugins.catalog.browse': {
       if (params.cursor) throw new Error('Local plugin catalog does not use cursors');
       const query = String(params.query || '').toLowerCase();
-      const plugins = manager.listPlugins().filter((plugin) => !query || `${plugin.id} ${plugin.name} ${plugin.description}`.toLowerCase().includes(query));
-      return { items: ['featured', 'trending'].includes(params.intent) || params.category ? [] : plugins.map(catalogItem),
-        categories: [], remoteError: remoteGap };
+      const all = catalogueItems();
+      const matching = all.filter(item => !query || `${item.id} ${item.catalog.name} ${item.catalog.summary ?? ''}`.toLowerCase().includes(query));
+      const items = ['featured', 'trending'].includes(params.intent) || params.category ? [] : matching;
+      // No remoteError: the local catalogue is authoritative here.
+      return { items, categories: [{ id: 'installed', label: 'Installed' }], overview: items.length > 0, nextCursor: null };
     }
     case 'plugins.catalog.get':
       return catalogDetail(required(manager, idOf(params)));

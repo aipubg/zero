@@ -76,12 +76,23 @@ const LEGACY_CHROME_SELECTORS = [
   '[title*="Color mode" i]',
 ];
 
+/**
+ * Hide the upstream command palette without detaching it.
+ *
+ * The upstream Control UI renders with Lit; removing one of its nodes
+ * detaches the template part that owns it and the next Lit commit then
+ * writes to a node that no longer exists ("Cannot set properties of null
+ * (setting 'data')"). The dialog is closed and hidden in place instead.
+ */
 function removeLegacyPalette() {
   for (const node of document.querySelectorAll('zero-command-palette, .command-palette, dialog[open], [role="dialog"]')) {
     if (node.closest('.zero-command-palette')) continue;
     if (/Search or start a task/i.test(node.textContent || '')) {
       try { node.close?.(); } catch {}
-      node.remove();
+      node.setAttribute('hidden', '');
+      node.setAttribute('aria-hidden', 'true');
+      node.style.setProperty('display', 'none', 'important');
+      node.style.pointerEvents = 'none';
     }
   }
 }

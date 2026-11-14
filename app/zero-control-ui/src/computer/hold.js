@@ -509,7 +509,13 @@ function mountComputerHold(container, host, options = {}) {
           if (!String(e?.message || "").includes("request is not a function")) throw e;
         }
       }
-      const app = typeof document !== "undefined" ? (document.querySelector("zero-app") || document.querySelector("systems-page") || document.querySelector("body")) : null;
+      const app = typeof document !== "undefined"
+        ? (document.querySelector("openclaw-app")
+          || document.querySelector("zero-app")
+          || document.querySelector("openclaw-systems-page")
+          || document.querySelector("zero-systems-page")
+          || document.querySelector("body"))
+        : null;
       const appClient = app?.context?.gateway?.snapshot?.client || app?.gateway?.snapshot?.client || (typeof window !== "undefined" ? window.__zero_client : null);
       if (typeof appClient?.request === "function") {
         try {

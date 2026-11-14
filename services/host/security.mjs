@@ -178,6 +178,32 @@ export class DesktopSessionStore {
     return this.get(sessionId) !== null;
   }
 
+  /**
+   * Promote a session to the given role and scopes.
+   *
+   * The local browser owns this workstation gateway. Sessions created before
+   * the owner-mode default was introduced are still persisted with the
+   * "operator" role, which makes the Control UI hide admin-only surfaces
+   * (Secrets, Approvals) even though the session belongs to the owner.
+   * Upgrading them keeps the persisted session file consistent with the
+   * current owner-mode policy.
+   */
+  promote(sessionId, role = 'admin', scopes = null) {
+    const session = this.get(sessionId);
+    if (!session) return null;
+    const key = this._key(sessionId);
+    const previous = this.sessions.get(key);
+    const promoted = {
+      ...previous,
+      role,
+      scopes: scopes ? [...scopes] : previous.scopes,
+    };
+    this.sessions.set(key, promoted);
+    try { this._persist(); }
+    catch (error) { this.sessions.set(key, previous); throw error; }
+    return { ...promoted, id: sessionId };
+  }
+
   renew(sessionId) {
     const session = this.get(sessionId);
     if (!session) return null;

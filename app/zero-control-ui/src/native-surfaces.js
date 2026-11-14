@@ -42,13 +42,26 @@ import {
  * It never owns a transcript, route, Gateway request or session store.
  */
 
-const SURFACE_SELECTOR = "zero-model-providers-page, zero-model-setup-page, zero-about-page";
+/**
+ * Vendor custom elements keep their upstream "openclaw-" tag prefix: the
+ * shipped Control UI bundle defines and renders those tags, and renaming
+ * them would stop the components from upgrading. Our own Zero surfaces use
+ * the "zero-" prefix, so both are matched where a vendor element may appear.
+ */
+const vendorTag = (name) => `openclaw-${name}`;
+const vendorTagSelector = (name) => `openclaw-${name}, zero-${name}`;
+
+const SURFACE_SELECTOR = [
+  vendorTagSelector('model-providers-page'),
+  vendorTagSelector('model-setup-page'),
+  vendorTagSelector('about-page'),
+].join(', ');
 const COMPUTER_SELECTOR = ".systems-desktop, .zero-computer-hold-host";
 const COMMUNITY_SELECTOR = ".sidebar-shell__invite, .community-invite-card";
 const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"]';
 const CHROME_SELECTOR = [
-  'zero-plugins-page',
-  'zero-skills-page',
+  vendorTagSelector('plugins-page'),
+  vendorTagSelector('skills-page'),
   COMMUNITY_SELECTOR,
   STALE_PLUGIN_NAV_SELECTOR,
   ".sidebar-agent-card",
@@ -124,10 +137,26 @@ function removeSpecialistDefaultAction(root, specialist) {
     // reach the native action handler.
     control.setAttribute("aria-disabled", "true");
     if ("disabled" in control) control.disabled = true;
-    control.remove();
+    hideNode(control);
     removed += 1;
   }
   return removed;
+}
+
+/**
+ * Hide a node without detaching it.
+ *
+ * The upstream Control UI is rendered with Lit. Removing a node that belongs to
+ * a Lit template detaches the template part that owns it, and the next render
+ * then writes to a node that no longer exists ("Cannot set properties of null
+ * (setting 'data')"). Nodes are therefore hidden and disabled in place.
+ */
+function hideNode(el) {
+  if (!el) return;
+  el.setAttribute("hidden", "");
+  el.setAttribute("aria-hidden", "true");
+  el.style.setProperty("display", "none", "important");
+  el.style.pointerEvents = "none";
 }
 
 /**
@@ -170,7 +199,7 @@ function removeSpecialistChatEntries(root) {
   let removed = 0;
   for (const control of root.querySelectorAll("a, button, [role='button']")) {
     if (!isSpecialistChatEntryControl(control)) continue;
-    control.remove();
+    hideNode(control);
     removed += 1;
   }
   return removed;
@@ -187,7 +216,7 @@ function removeSpecialistCards(root, leadId) {
   for (const card of root.querySelectorAll(".agents-home__card[data-agent-id]")) {
     const id = card.getAttribute("data-agent-id");
     if (!id || id === leadId) continue;
-    card.remove();
+    hideNode(card);
     removed += 1;
   }
   return removed;
@@ -476,13 +505,13 @@ function installNativeSurfaces(host) {
       const label = (option.getAttribute("aria-label") || option.textContent || "")
         .trim()
         .toLowerCase();
-      if (label && values.has(label)) option.remove();
+      if (label && values.has(label)) hideNode(option);
     }
   };
 
   const removeSpecialistSelectorOnConfig = () => {
     if (!specialistConfigId()) return;
-    for (const select of document.querySelectorAll("zero-agent-select")) select.remove();
+    for (const select of document.querySelectorAll(vendorTagSelector('agent-select'))) hideNode(select);
   };
 
   const neutralizeSettingsAgentSelector = () => {
@@ -555,8 +584,8 @@ function installNativeSurfaces(host) {
     try {
       const specialist = specialistConfigId();
       const main = document.querySelector("main");
-      for (const node of document.querySelectorAll(COMMUNITY_SELECTOR)) node.remove();
-      for (const node of document.querySelectorAll(STALE_PLUGIN_NAV_SELECTOR)) node.remove();
+      for (const node of document.querySelectorAll(COMMUNITY_SELECTOR)) hideNode(node);
+      for (const node of document.querySelectorAll(STALE_PLUGIN_NAV_SELECTOR)) hideNode(node);
       neutralizeAgentSwitcher();
       removeSpecialistCards(document, leadAgentId(host) ?? "zero");
       removeSpecialistOptions();
@@ -650,12 +679,12 @@ function installNativeSurfaces(host) {
     if (!root) return;
     try {
       renderGenerativeWidgets(root, { host });
-      // Permanently remove duplicate "Color mode" button and tooltips
+      // Permanently hide duplicate "Color mode" button and tooltips.
       const colorModeToggles = root.querySelectorAll ? root.querySelectorAll(
         "zero-theme-mode-toggle, .theme-mode-toggle, [aria-label*='Color mode' i], [title*='Color mode' i]"
       ) : [];
       for (const t of colorModeToggles) {
-        t.remove();
+        hideNode(t);
       }
       const canvases = root.querySelectorAll ? root.querySelectorAll("canvas") : [];
       for (const c of canvases) {
@@ -679,21 +708,27 @@ function installNativeSurfaces(host) {
           svg.innerHTML = `<circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text>`;
         }
       }
-      // Permanently remove any Discord elements, links, or dropdown items
+      // Hide any Discord elements, links, or dropdown items.
       const discordItems = root.querySelectorAll ? root.querySelectorAll('a[href*="discord"], [aria-label*="discord" i], wa-dropdown-item[value*="discord"], .community-invite-card') : [];
       for (const item of discordItems) {
-        item.closest("wa-dropdown-item")?.remove() || item.closest("li")?.remove() || item.remove();
+        hideNode(item);
+        const dd = item.closest("wa-dropdown-item");
+        if (dd && dd !== item) hideNode(dd);
       }
       const potentialDiscordNodes = root.querySelectorAll ? root.querySelectorAll("a, button, [role='menuitem']") : [];
       for (const el of potentialDiscordNodes) {
         if (/discord/i.test(el.textContent || "") || /discord/i.test(el.getAttribute("href") || "") || /discord/i.test(el.getAttribute("aria-label") || "")) {
-          el.closest("wa-dropdown-item")?.remove() || el.closest("li")?.remove() || el.remove();
+          hideNode(el);
+          const dd = el.closest("wa-dropdown-item");
+          if (dd && dd !== el) hideNode(dd);
         }
       }
       const zeroItems = root.querySelectorAll ? root.querySelectorAll('wa-dropdown-item[value*="zero"], [aria-label*="zero" i], .session-menu__text') : [];
       for (const item of zeroItems) {
         if (item.getAttribute("value")?.toLowerCase().includes("zero") || item.textContent?.trim().toLowerCase() === "zero") {
-          item.closest("wa-dropdown-item")?.remove() || item.remove();
+          hideNode(item);
+          const dd = item.closest("wa-dropdown-item");
+          if (dd && dd !== item) hideNode(dd);
         } else if (item.getAttribute("aria-label")?.toLowerCase().includes("zero")) {
           item.setAttribute("aria-label", (item.getAttribute("aria-label") || "").replace(/zero/gi, "zero"));
         }
@@ -791,33 +826,64 @@ function installNativeSurfaces(host) {
       if (text && /Ask Zero|Ask Custodian/i.test(text.textContent)) {
         text.textContent = "Ask Zero";
       }
+      // Replacing the SVG's innerHTML would discard the Lit-rendered children,
+      // so the upstream icon is hidden and the Zero mark is added next to it.
       const icon = a.querySelector(".settings-sidebar__item-icon svg, svg");
       if (icon && !icon.classList.contains("zero-icon-done")) {
         icon.classList.add("zero-icon-done");
-        icon.innerHTML = `
-          <circle cx="60" cy="60" r="48" fill="none" stroke="#10b981" stroke-width="12"/>
-          <text x="60" y="78" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#10b981" text-anchor="middle">Z</text>
+        hideNode(icon);
+        const mark = document.createElement("span");
+        mark.className = "zero-icon-mark";
+        mark.setAttribute("aria-hidden", "true");
+        mark.innerHTML = `
+          <svg viewBox="0 0 120 120" width="100%" height="100%" fill="none">
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#10b981" stroke-width="12"/>
+            <text x="60" y="78" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#10b981" text-anchor="middle">Z</text>
+          </svg>
         `;
+        const host = icon.parentElement;
+        if (host) host.appendChild(mark);
       }
     }
   };
 
+  /**
+   * Neutralise third-party "learn more" links without removing them.
+   *
+   * The chat controls are rendered by Lit. Removing a node that lives inside a
+   * Lit template (or that contains a Lit marker comment) detaches the template
+   * part it belongs to, and the next render then tries to write to a node that
+   * is no longer there ("Cannot set properties of null (setting 'data')").
+   * So links are disabled and hidden in place instead of being removed.
+   */
   const removeExternalLearnMoreLinks = () => {
-    for (const el of document.querySelectorAll(
-      "[href*='zero.ai'], [href*='docs.zero'], [href*='permission-modes'], [href*='tweakcn.com'], a[href*='tweakcn'], .chat-controls__permission-learn-more, .learn-more-link, a.callout__link, a.help-link"
-    )) {
-      if (el.tagName.toLowerCase() === "a") {
-        el.setAttribute("href", "javascript:void(0)");
+    const selector = [
+      "[href*='zero.ai']", "[href*='docs.zero']", "[href*='permission-modes']",
+      "[href*='tweakcn.com']", "a[href*='tweakcn']",
+      ".chat-controls__permission-learn-more", ".learn-more-link",
+      "a.callout__link", "a.help-link",
+    ].join(", ");
+    for (const el of document.querySelectorAll(selector)) {
+      if (el.tagName.toLowerCase() === "a" || el.tagName.toLowerCase() === "wa-dropdown-item") {
+        el.setAttribute("href", "#");
         el.removeAttribute("target");
+        el.setAttribute("aria-disabled", "true");
         el.style.pointerEvents = "none";
       }
-      el.remove();
+      // Hide instead of remove: the node may be owned by a Lit template part.
+      el.setAttribute("hidden", "");
+      el.style.display = "none";
     }
     for (const a of document.querySelectorAll("a, wa-dropdown-item")) {
       const txt = (a.textContent || "").trim();
       const href = a.getAttribute("href") || "";
       if (/^Zero Docs$/i.test(txt) || href.includes("tweakcn.com") || href.includes("zero.ai")) {
-        a.remove();
+        a.setAttribute("href", "#");
+        a.removeAttribute("target");
+        a.setAttribute("aria-disabled", "true");
+        a.style.pointerEvents = "none";
+        a.setAttribute("hidden", "");
+        a.style.display = "none";
       }
     }
   };
@@ -1014,7 +1080,8 @@ function installNativeSurfaces(host) {
       ].join(", ");
 
       for (const g of document.querySelectorAll(obsoleteSelectors)) {
-        g.closest(".chat-controls__provider-model-group, section")?.remove() || g.remove();
+        const group = g.closest(".chat-controls__provider-model-group, section");
+        hideNode(group || g);
       }
 
       // Check headings and labels
@@ -1024,7 +1091,8 @@ function installNativeSurfaces(host) {
       for (const h of headings) {
         const txt = (h.textContent || "").trim();
         if (txt.includes("Zero Gateway") || txt.includes("Test Provider") || txt.includes("test-provider") || txt.startsWith("Zero Gateway")) {
-          h.closest(".chat-controls__provider-model-group, section")?.remove() || h.remove();
+          const group = h.closest(".chat-controls__provider-model-group, section");
+          hideNode(group || h);
         }
       }
 
@@ -1034,11 +1102,16 @@ function installNativeSurfaces(host) {
       if (defaultOption) {
         if (defaultOption.getAttribute("aria-label") !== "Default model (Auto-Best)") defaultOption.setAttribute("aria-label", "Default model (Auto-Best)");
         if (defaultOption.getAttribute("data-chat-model-name") !== "default model (auto-best)") defaultOption.setAttribute("data-chat-model-name", "default model (auto-best)");
+        // Only write text into a node that is not a Lit-managed part, otherwise
+        // the next render would fail to find its text node.
         const title = defaultOption.querySelector(".chat-controls__model-option-title");
-        if (title && title.textContent !== "Default model (Auto-Best)") title.textContent = "Default model (Auto-Best)";
-        else if (!title) {
+        if (title && !title.hasAttribute("data-lit-text") && title.childNodes.length === 1 && title.firstChild.nodeType === 3) {
+          if (title.textContent !== "Default model (Auto-Best)") title.textContent = "Default model (Auto-Best)";
+        } else if (!title) {
           const copy = defaultOption.querySelector(".chat-controls__model-option-copy");
-          if (copy && copy.textContent !== "Default model (Auto-Best)") copy.textContent = "Default model (Auto-Best)";
+          if (copy && copy.childNodes.length === 1 && copy.firstChild.nodeType === 3) {
+            if (copy.textContent !== "Default model (Auto-Best)") copy.textContent = "Default model (Auto-Best)";
+          }
         }
       }
 
@@ -1054,11 +1127,30 @@ function installNativeSurfaces(host) {
     } catch {}
   };
 
+  /**
+   * Schedule the product-chrome cleanup.
+   *
+   * The upstream Control UI renders with Lit, and Lit commits its DOM in
+   * several steps. Mutating the DOM while Lit is mid-render detaches the
+   * template parts it still owns, and its next commit then writes to a node
+   * that no longer exists ("Cannot set properties of null (setting 'data')").
+   * The cleanup therefore waits for the DOM to settle (two animation frames)
+   * before it touches anything.
+   */
   const scheduleChrome = () => {
     if (disposed || chromeTimer) return;
     chromeTimer = window.setTimeout(() => {
       chromeTimer = null;
-      cleanupChrome();
+      const raf = typeof window !== "undefined" && window.requestAnimationFrame
+        ? window.requestAnimationFrame
+        : (fn) => setTimeout(fn, 16);
+      raf(() => {
+        if (disposed) return;
+        raf(() => {
+          if (disposed) return;
+          cleanupChrome();
+        });
+      });
     }, 200);
   };
 
@@ -1067,8 +1159,8 @@ function installNativeSurfaces(host) {
     isApplyingChanges = true;
     try {
       syncComputerSurface();
-      if (routePath(currentLocation()) === '/settings/plugins') mountPluginInstall(document.querySelector('zero-plugins-page'), host);
-      if (routePath(currentLocation()) === '/settings/skills') mountSkillInstall(document.querySelector('zero-skills-page'), host);
+      if (routePath(currentLocation()) === '/settings/plugins') mountPluginInstall(document.querySelector(vendorTagSelector('plugins-page')), host);
+      if (routePath(currentLocation()) === '/settings/skills') mountSkillInstall(document.querySelector(vendorTagSelector('skills-page')), host);
       const currentPath = routePath(currentLocation());
       const kind = currentSurface(host);
       if (!kind && consumeModelCatalogDirty()) {
@@ -1091,8 +1183,8 @@ function installNativeSurfaces(host) {
 
       const selector =
         kind === "models"
-          ? "zero-model-providers-page, zero-model-setup-page"
-          : "zero-about-page";
+          ? vendorTagSelector('model-providers-page') + ", " + vendorTagSelector('model-setup-page')
+          : vendorTagSelector('about-page');
       const nativeEl = document.querySelector(selector);
       if (nativeEl) {
         // The host (re)rendered the native screen. Replace it in place and mount
@@ -1341,7 +1433,11 @@ function installNativeSurfaces(host) {
   window.addEventListener("hashchange", scheduleSync);
 
   sync();
-  cleanupChrome();
+  // The upstream Control UI is still performing its first Lit render at this
+  // point. Cleaning the chrome synchronously would interleave our DOM writes
+  // with Lit's own commit and detach its template parts, so the first pass is
+  // deferred until the DOM has settled.
+  scheduleChrome();
 
   const disposeSurfaces = () => {
     disposed = true;

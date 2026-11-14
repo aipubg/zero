@@ -18,6 +18,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { restoreVendorAssets } from "./restore-vendor-assets.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)));
 
@@ -34,16 +35,74 @@ const ZERO_ORBITAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6
 </svg>
 `;
 
+/**
+ * Token-safe replacement of user-visible branding.
+ *
+ * Identifier-shaped tokens are protected with a sentinel and restored verbatim:
+ *   openclaw-<tag>       custom element names (193 in the vendor bundle)
+ *   --openclaw-<prop>    CSS custom properties (142 in the vendor bundle)
+ *   __openclaw__         URL path segments
+ *   OPENCLAW_<WORD>      environment variable names
+ *   openclaw_<word>      snake_case identifiers
+ *   openClaw<Word>       camelCase identifiers
+ *
+ * Renaming these breaks component rendering (the boot probe reads
+ * --openclaw-css-ok and the root element is <openclaw-app>), so only
+ * human-readable text, titles, logos and external URLs are rebranded.
+ */
+const IDENTIFIER_PATTERNS = [
+  /--openclaw-[a-z0-9-]+/gi,
+  /__openclaw__/g,
+  /OPENCLAW_[A-Z0-9_]+/g,
+  /CRABBOX_[A-Z0-9_]+/g,
+  /\bcrabbox\b/g,
+  /\bopenclaw_[a-z0-9_]+/gi,
+  /\bopenClaw[A-Za-z0-9_]*/g,
+  /\bdata-[a-z0-9-]*openclaw[a-z0-9-]*/gi,
+  /\bopenclaw[A-Z][A-Za-z0-9_]*/g,
+  /\bopenclaw-[a-z0-9-]+/gi,
+];
+
+const IDENTIFIER_SENTINEL = "\u0000ZEROIDX";
+
 function replaceVisibleBranding(value) {
   return String(value)
-    .replace(/Install Zero Control/gi, "Install Zero")
-    .replace(/Zero Control/gi, "Zero Control")
-    .replace(/Ask Zero/gi, "Ask Zero")
-    .replace(/Zero documentation/gi, "Zero AI documentation")
-    .replace(/Choose how Zero/gi, "Choose how Zero")
+    .replace(/Install OpenClaw Control/gi, "Install Zero")
+    .replace(/OpenClaw Control/gi, "Zero Control")
+    .replace(/Ask OpenClaw/gi, "Ask Zero")
+    .replace(/OpenClaw documentation/gi, "Zero AI documentation")
+    .replace(/Choose how OpenClaw/gi, "Choose how Zero")
     .replace(/Crabbox/gi, "Zero Cloud")
-    .replace(/Zero/g, "Zero")
-    .replace(/zero\.app/gi, "zero.local");
+    .replace(/OpenClaw/gi, "Zero")
+    .replace(/openclaw\.app/gi, "zero.local");
+}
+
+/** Rebrand visible text only; leave every internal identifier untouched. */
+function rebrandSource(source) {
+  let out = String(source);
+  const protectedTokens = [];
+  for (const pattern of IDENTIFIER_PATTERNS) {
+    out = out.replace(pattern, (match) => {
+      protectedTokens.push(match);
+      return `${IDENTIFIER_SENTINEL}${protectedTokens.length - 1}${IDENTIFIER_SENTINEL}`;
+    });
+  }
+  out = replaceVisibleBranding(out);
+  out = out.replace(
+    new RegExp(`${IDENTIFIER_SENTINEL}(\\d+)${IDENTIFIER_SENTINEL}`, "g"),
+    (_match, index) => protectedTokens[Number(index)],
+  );
+  return out;
+}
+
+/** Neutralise third-party store / community URLs. */
+function neutralizeExternalUrls(source) {
+  return String(source)
+    .replace(/https?:\/\/apps\.apple\.com\/[^\s"'`)]*/gi, "#")
+    .replace(/https?:\/\/play\.google\.com\/[^\s"'`)]*/gi, "#")
+    .replace(/https?:\/\/discord\.gg\/[^\s"'`)]*/gi, "#")
+    .replace(/https?:\/\/discord\.com\/[^\s"'`)]*/gi, "#")
+    .replace(/https?:\/\/discordapp\.com\/[^\s"'`)]*/gi, "#");
 }
 
 function rewriteHtmlBranding(html) {
@@ -53,12 +112,6 @@ function rewriteHtmlBranding(html) {
     let next = segment.replace(/>([^<>]*)</g, (_match, text) => `>${replaceVisibleBranding(text)}<`);
     next = next.replace(/\b(aria-label|title|placeholder|alt)="([^"]*)"/gi,
       (_match, attribute, text) => `${attribute}="${replaceVisibleBranding(text)}"`);
-    // Replace custom element tag names (openclaw-* -> zero-*) so they match
-    // the scrubbed JS bundle definitions (e.g. <openclaw-app> -> <zero-app>).
-    next = next.replace(/<\/?openclaw-([a-z-]+)(\s[^>]*)?>/gi, (match, tagName, attrs) => {
-      const isClosing = match.startsWith('</');
-      return `${isClosing ? '</' : '<'}zero-${tagName}${attrs || ''}>`;
-    });
     return next;
   }).join("");
 }
@@ -91,19 +144,13 @@ function rewriteServedBranding(distWeb) {
   const assetsDir = join(distWeb, "assets");
   if (!existsSync(assetsDir)) return;
   for (const name of readdirSync(assetsDir)) {
-    if (!name.endsWith(".js")) continue;
+    const ext = name.slice(name.lastIndexOf("."));
+    if (ext !== ".js" && ext !== ".css") continue;
     const file = join(assetsDir, name);
     try {
       const source = readFileSync(file, "utf8");
-      if (!source.includes("Zero")) continue;
-      const branded = source
-        .replace(/Install Zero Control/gi, "Install Zero")
-        .replace(/Zero Control/gi, "Zero Control")
-        .replace(/Ask Zero/gi, "Ask Zero")
-        .replace(/Zero documentation/gi, "Zero AI documentation")
-        .replace(/Choose how Zero/gi, "Choose how Zero")
-        .replace(/Crabbox/gi, "Zero Cloud")
-        .replaceAll("Zero", "Zero");
+      if (!/OpenClaw|openclaw\.app|Crabbox/i.test(source)) continue;
+      const branded = neutralizeExternalUrls(rebrandSource(source));
       if (branded !== source) writeFileSync(file, branded);
     } catch {}
   }
@@ -114,6 +161,17 @@ const distControlUi = join(distRoot, "control-ui");
 const scratch = mkdtempSync(join(tmpdir(), "zero-ui-build-"));
 
 try {
+  // Self-heal step: restore the pristine vendor Control UI bundle into
+  // dist/web with token-safe branding before overlaying our own build.
+  // Without this, a partially-scrubbed or stale dist/web keeps the vendor
+  // JS and CSS out of sync and the UI fails to boot.
+  try {
+    await restoreVendorAssets({ quiet: true });
+    console.log("vendor:    restored pristine bundle into dist/web (token-safe branding)");
+  } catch (err) {
+    console.warn(`vendor:    restore skipped (${err.message})`);
+  }
+
   await build({
     absWorkingDir: root,
     entryPoints: [join(root, "browser.js")],

@@ -40,6 +40,8 @@ const NATIVE_MODELS_PATH = "/settings/model-providers";
 const UPSTREAM_CHROME_SELECTORS = [
   ".sidebar-shell__invite",
   ".community-invite-card",
+  // Vendor custom elements keep their upstream tag prefix.
+  "openclaw-about-page",
   "zero-about-page",
   ".about-hero",
   ".settings-sidebar",

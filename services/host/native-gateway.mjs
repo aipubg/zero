@@ -87,6 +87,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = process.env.ZERO_ROOT || path.resolve(__dirname, '..', '..');
 
+/**
+ * Scopes granted to the local workstation owner session.
+ *
+ * The protocol treats the role as the scope namespace ("operator" covers the
+ * "operator.*" scopes), so an unrestricted owner session is an "operator"
+ * session that also holds the "operator.admin" scope. Granting the "admin"
+ * role instead would make the client-side scope matcher reject every
+ * "operator.*" scope and hide all admin-only surfaces.
+ */
+const ADMIN_SESSION_SCOPES = [
+  'admin',
+  'operator.admin',
+  'operator.write',
+  'operator.read',
+  'operator.approvals',
+  'operator.questions',
+  'operator.pairing',
+  'operator.sessions.read',
+  'operator.sessions.write',
+  'computer.control',
+];
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
@@ -558,7 +580,10 @@ export class ZeroNativeHost {
           }
 
           const session = this.localDesktopSessions.create({
-            role: body.role === 'admin' || !body.role ? 'admin' : 'operator',
+            // The local browser is the owner of this workstation gateway and
+            // runs in unrestricted owner mode.
+            role: body.role === 'operator' ? 'operator' : 'operator',
+            scopes: [...ADMIN_SESSION_SCOPES],
             clientId: body.clientId || 'zero-desktop-browser',
           });
 
@@ -577,8 +602,14 @@ export class ZeroNativeHost {
         if (req.method === 'GET') {
           const cookies = parseCookies(req.headers.cookie);
           const token = cookies['zero_session'] || (req.headers.authorization?.replace(/^Bearer\s+/i, '').trim());
-          const session = this.localDesktopSessions.get(token);
+          let session = this.localDesktopSessions.get(token);
           if (session) {
+            // The local browser is the gateway owner. Sessions persisted
+            // before the owner-mode default still lack the owner scopes,
+            // which hides admin-only surfaces, so they are promoted on use.
+            if (!session.scopes?.includes('operator.admin')) {
+              session = this.localDesktopSessions.promote(session.id, 'operator', ADMIN_SESSION_SCOPES) || session;
+            }
             res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
             res.end(JSON.stringify({ ok: true, renewalSupported: true, session: { role: session.role, scopes: session.scopes, expiresAt: session.expiresAt, maxAgeMs: this.localDesktopSessions.maxAgeMs } }));
@@ -667,9 +698,14 @@ export class ZeroNativeHost {
       const fallbackRoot = path.join(REPO_ROOT, 'backend', 'node_modules', 'zero', 'dist', 'control-ui');
       const pluginDistRoot = path.join(REPO_ROOT, 'app', 'zero-control-ui', 'dist');
 
-      // Plugin assets route: /__zero__/plugins/control-ui/* or /plugins/control-ui/*
-      if (pathname.startsWith('/__zero__/plugins/control-ui/') || pathname.startsWith('/plugins/control-ui/')) {
-        const subpath = pathname.replace(/^\/__zero__\/plugins\/control-ui\//, '').replace(/^\/plugins\/control-ui\//, '');
+      // Plugin assets route.
+      // The Control UI loader requires the upstream "__openclaw__" prefix for
+      // the plugin asset protocol; "/__zero__/" is kept as an alias so the
+      // internal route can also be addressed with the Zero prefix.
+      const pluginAssetPrefixes = ['/__openclaw__/plugins/control-ui/', '/__zero__/plugins/control-ui/', '/plugins/control-ui/'];
+      const pluginAssetPrefix = pluginAssetPrefixes.find((prefix) => pathname.startsWith(prefix));
+      if (pluginAssetPrefix) {
+        const subpath = pathname.slice(pluginAssetPrefix.length);
         const candidatePaths = [
           path.join(webRoot, 'plugins', 'control-ui', subpath),
           path.join(webRoot, '__zero__', 'plugins', 'control-ui', subpath),
@@ -853,7 +889,26 @@ export class ZeroNativeHost {
 
     // Extract loopback desktop session from HttpOnly cookie
     const cookies = parseCookies(req.headers['cookie']);
-    const verifiedSession = this.localDesktopSessions.get(cookies['zero_session']);
+    const cookieSession = this.localDesktopSessions.get(cookies['zero_session']);
+    // This gateway only listens on loopback and only accepts loopback origins
+    // and hosts (checked above), so the connection is by definition the local
+    // workstation owner. The Control UI opens its WebSocket before the
+    // session bootstrap finishes, which would otherwise leave the handshake
+    // without an owner session and hide every admin-only surface.
+    //
+    // The protocol's role names the scope namespace ("operator" covers the
+    // "operator.*" scopes), so an owner session is "operator" with the
+    // "operator.admin" scope granted rather than the "admin" role.
+    const verifiedSession = cookieSession
+      ? (cookieSession.scopes?.includes('operator.admin')
+          ? cookieSession
+          : (this.localDesktopSessions.promote(cookieSession.id, 'operator', ADMIN_SESSION_SCOPES) || cookieSession))
+      : this.localDesktopSessions.create({
+          role: 'operator',
+          scopes: [...ADMIN_SESSION_SCOPES],
+          clientId: 'zero-desktop-browser',
+        });
+    const loopbackOwnerSession = verifiedSession;
 
     // Desktop Screen Share live streaming connection
     if (req.url === '/desktop/stream') {
@@ -904,7 +959,7 @@ export class ZeroNativeHost {
         const result = validateHandshake(params, {
           expectedToken: this.expectedToken,
           validSessions: this.localDesktopSessions,
-          verifiedSession,
+          verifiedSession: loopbackOwnerSession,
           allowViewer: true,
         });
         if (!result.ok) {
@@ -968,6 +1023,20 @@ export class ZeroNativeHost {
           'zero.observation.query', 'zero.observation.control', 'zero.observation.recent',
           'backup.status', 'backups.list', 'storage.locations.probe', 'environments.list', 'environments.status', 'node.list',
           'desktop.observe', 'desktop.launch', 'desktop.release',
+          // Board (session dashboard) methods. The dashboard document checks
+          // that "board.get" is advertised before it opens the board.
+          'board.get', 'board.action', 'board.data.read', 'board.event',
+          'board.prompt.authorize', 'board.widget.put', 'board.widget.appView',
+          'sessions.usage', 'sessions.usage.timeseries', 'sessions.usage.logs',
+          'plugins.catalog.browse', 'plugins.catalog.categories', 'plugins.catalog.get',
+          // Secrets store and approval history. The Settings pages check that
+          // these methods are advertised before they call them, and render a
+          // "Gateway/admin required." / "invalid approval history" notice
+          // when they are not.
+          'secrets.store.list', 'secrets.store.set', 'secrets.store.delete',
+          'approval.get', 'approval.history', 'approval.resolve',
+          'exec.approval.list', 'exec.approval.grants.list', 'exec.approval.grants.revoke',
+          'plugin.approval.list', 'zero.approval.list',
           ...SKILLS_UI_METHODS,
           ...PLUGINS_UI_METHODS,
         ];
@@ -985,6 +1054,10 @@ export class ZeroNativeHost {
               snapshot: {
                 presence: [{ clientId: clientSession.clientId, role: clientSession.role, connectedAt: Date.now() }],
                 sessionDefaults: { defaultAgentId: 'zero' },
+                // The Systems page reads the machine inventory straight off
+                // the gateway snapshot. Without it the page waits forever on
+                // "Loading machines...".
+                inventory: this._machineInventory(),
               },
               auth: {
                 role: clientSession.role,
@@ -1144,7 +1217,7 @@ export class ZeroNativeHost {
     }
 
     if (SKILLS_UI_METHODS.includes(method)) return await handleSkillsUi(method, params, this.skillLoader);
-    if (PLUGINS_UI_METHODS.includes(method)) return await handlePluginsUi(method, params, this.pluginManager);
+    if (PLUGINS_UI_METHODS.includes(method)) return await handlePluginsUi(method, params, this.pluginManager, { skillLoader: this.skillLoader });
     switch (method) {
       case 'health':
       case 'gateway.health':
@@ -1236,16 +1309,51 @@ export class ZeroNativeHost {
       case 'gateway.agents.list':
         return {
           defaultId: 'zero',
+          // The Control UI roster dereferences mainKey unconditionally, so it
+          // must always be present (it resolves the "Main Session" key).
+          mainKey: 'main',
+          ownership: 'sole',
+          selectionRequired: false,
+          scope: 'per-sender',
           agents: [
             {
               id: 'zero',
               name: 'Zero',
-              identity: { name: 'Zero' },
-              description: 'Zero Autonomous Personal AI Commander',
-              model: { primary: this.modelFabric.getAgentModelId('zero') },
+              identity: {
+                name: 'Zero',
+                theme: 'zero',
+                emoji: '🟢',
+                avatar: null,
+                avatarUrl: null,
+              },
+              workspace: 'E:\\zero',
+              status: 'ready',
+              kind: 'agent',
+              createdVia: 'operator',
+              creatorAgentId: null,
+              createdAt: 0,
+              model: {
+                primary: this.modelFabric.getAgentModelId('zero'),
+                fallbacks: [],
+              },
+              defaultPermissionMode: 'full-access',
             },
           ],
         };
+
+      case 'agents.get':
+      case 'gateway.agents.get': {
+        const agentId = String(params.agentId || params.id || 'zero');
+        return {
+          ok: true,
+          agentId,
+          name: 'Zero',
+          workspace: 'E:\\zero',
+          model: this.modelFabric.getAgentModelId('zero'),
+          emoji: '🟢',
+          avatar: null,
+        };
+      }
 
       case 'sessions.list':
       case 'gateway.sessions.list': {
@@ -1291,17 +1399,7 @@ export class ZeroNativeHost {
             runId,
           });
         }
-        const sessionPayload = {
-          key: session.id,
-          id: session.id,
-          sessionId: session.id,
-          title: session.title,
-          createdAt: session.createdAt,
-          updatedAt: session.updatedAt,
-          metadata: session.metadata,
-          archived: Boolean(session.archived ?? session.metadata?.archived),
-          agentId: session.metadata?.agentId || 'zero',
-        };
+        const sessionPayload = this._sessionPayload(session);
         this._broadcastSessionChanged({ reason: 'new', session: sessionPayload, sessionKey: session.id });
         return {
           ok: true,
@@ -1320,17 +1418,7 @@ export class ZeroNativeHost {
       case 'sessions.reset': {
         const key = params.key || params.id || params.currentSessionKey || params.sessionKey;
         const session = this.sessions.createSession(null, params.title || 'New Conversation', { ...params.metadata, agentId: params.agentId || 'zero' });
-        const sessionPayload = {
-          key: session.id,
-          id: session.id,
-          sessionId: session.id,
-          title: session.title,
-          createdAt: session.createdAt,
-          updatedAt: session.updatedAt,
-          metadata: session.metadata,
-          archived: false,
-          agentId: session.metadata?.agentId || 'zero',
-        };
+        const sessionPayload = this._sessionPayload(session);
         this._broadcastSessionChanged({ reason: 'reset', session: sessionPayload, sessionKey: session.id });
         return {
           ok: true,
@@ -1350,17 +1438,7 @@ export class ZeroNativeHost {
         if (!session) {
           session = this.sessions.createSession(key, 'New Conversation', { agentId: params.agentId || 'zero' });
         }
-        const sessionPayload = {
-          key: session.id,
-          id: session.id,
-          sessionId: session.id,
-          title: session.title,
-          createdAt: session.createdAt,
-          updatedAt: session.updatedAt,
-          metadata: session.metadata,
-          archived: Boolean(session.archived ?? session.metadata?.archived),
-          agentId: session.metadata?.agentId || 'zero',
-        };
+        const sessionPayload = this._sessionPayload(session);
         return {
           ok: true,
           key: session.id,
@@ -1388,15 +1466,8 @@ export class ZeroNativeHost {
           } catch {}
         }
         const sessionPayload = {
-          key: newSession.id,
-          id: newSession.id,
-          sessionId: newSession.id,
-          title: newSession.title,
-          createdAt: newSession.createdAt,
-          updatedAt: newSession.updatedAt,
-          metadata: newSession.metadata,
+          ...this._sessionPayload(newSession),
           archived: false,
-          agentId: newSession.metadata?.agentId || 'zero',
         };
         this._broadcastSessionChanged({ reason: 'fork', session: sessionPayload, sessionKey: newSession.id });
         return {
@@ -1446,17 +1517,7 @@ export class ZeroNativeHost {
           return { ok: false, error: 'Session not found', key };
         }
         const transcript = this.sessions.getTranscript(key);
-        const sessionPayload = {
-          key: session.id,
-          id: session.id,
-          sessionId: session.id,
-          title: session.title,
-          createdAt: session.createdAt,
-          updatedAt: session.updatedAt,
-          metadata: session.metadata,
-          archived: Boolean(session.archived ?? session.metadata?.archived),
-          agentId: session.metadata?.agentId || 'zero',
-        };
+        const sessionPayload = this._sessionPayload(session);
         return {
           ok: true,
           session: sessionPayload,
@@ -1473,17 +1534,7 @@ export class ZeroNativeHost {
           metadata: { ...params.metadata, ...(Object.hasOwn(params, 'model') ? { model: params.model } : {}), ...(params.archived !== undefined ? { archived: params.archived } : {}) }
         });
         if (!patched) throw new Error(`Session '${key}' not found`);
-        const sessionPayload = {
-          key: patched.id,
-          id: patched.id,
-          sessionId: patched.id,
-          title: patched.title,
-          createdAt: patched.createdAt,
-          updatedAt: patched.updatedAt,
-          metadata: patched.metadata,
-          archived: Boolean(patched.archived ?? patched.metadata?.archived),
-          agentId: patched.metadata?.agentId || 'zero',
-        };
+        const sessionPayload = this._sessionPayload(patched);
         this._broadcastSessionChanged({ reason: params.archived ? 'archive' : 'patch', session: sessionPayload, sessionKey: key });
         return {
           ok: true,
@@ -1504,17 +1555,7 @@ export class ZeroNativeHost {
             ...(p.archived !== undefined ? { archived: p.archived } : {})
           });
           if (patched) {
-            const sessionPayload = {
-              key: patched.id,
-              id: patched.id,
-              sessionId: patched.id,
-              title: patched.title,
-              createdAt: patched.createdAt,
-              updatedAt: patched.updatedAt,
-              metadata: patched.metadata,
-              archived: Boolean(patched.archived ?? patched.metadata?.archived),
-              agentId: patched.metadata?.agentId || 'zero',
-            };
+            const sessionPayload = this._sessionPayload(patched);
             results.push(sessionPayload);
             this._broadcastSessionChanged({ reason: p.archived ? 'archive' : 'patch', session: sessionPayload, sessionKey: key });
           }
@@ -1527,6 +1568,7 @@ export class ZeroNativeHost {
         if (!key) throw new Error('Session key is required');
         const patched = this.sessions.patchSession(key, { archived: true });
         const sessionPayload = {
+          ...this._sessionPayload(patched),
           key: patched?.id || key,
           id: patched?.id || key,
           sessionId: patched?.id || key,
@@ -1535,7 +1577,6 @@ export class ZeroNativeHost {
           updatedAt: patched?.updatedAt || Date.now(),
           metadata: patched?.metadata || {},
           archived: true,
-          agentId: patched?.metadata?.agentId || 'zero',
         };
         this._broadcastSessionChanged({ reason: 'archive', session: sessionPayload, sessionKey: key });
         return { ok: true, session: sessionPayload };
@@ -1546,6 +1587,7 @@ export class ZeroNativeHost {
         if (!key) throw new Error('Session key is required');
         const patched = this.sessions.patchSession(key, { archived: false });
         const sessionPayload = {
+          ...this._sessionPayload(patched),
           key: patched?.id || key,
           id: patched?.id || key,
           sessionId: patched?.id || key,
@@ -1554,7 +1596,6 @@ export class ZeroNativeHost {
           updatedAt: patched?.updatedAt || Date.now(),
           metadata: patched?.metadata || {},
           archived: false,
-          agentId: patched?.metadata?.agentId || 'zero',
         };
         this._broadcastSessionChanged({ reason: 'unarchive', session: sessionPayload, sessionKey: key });
         return { ok: true, session: sessionPayload };
@@ -1568,6 +1609,7 @@ export class ZeroNativeHost {
         const pinned = params.pinned !== undefined ? Boolean(params.pinned) : !currentPinned;
         const patched = this.sessions.patchSession(key, { pinned, metadata: { ...(session?.metadata || {}), pinned } });
         const sessionPayload = {
+          ...this._sessionPayload(patched),
           key: patched?.id || key,
           id: patched?.id || key,
           sessionId: patched?.id || key,
@@ -1576,7 +1618,6 @@ export class ZeroNativeHost {
           updatedAt: patched?.updatedAt || Date.now(),
           metadata: patched?.metadata || {},
           pinned,
-          agentId: patched?.metadata?.agentId || 'zero',
         };
         this._broadcastSessionChanged({ reason: 'pin', session: sessionPayload, sessionKey: key });
         return { ok: true, session: sessionPayload, pinned };
@@ -1669,7 +1710,13 @@ export class ZeroNativeHost {
           } catch (e) {}
         }
         const sessionModel = this.sessions?.getSession(sessionKey)?.metadata?.model;
-        const effectiveModel = autoRequested ? null : (requestedModel || sessionModel || null);
+        // A session can pin a model that has since been removed from the
+        // provider catalogue (for example when a provider is reconfigured).
+        // Sending that stale id upstream makes the provider time out, so the
+        // pin is validated, cleared when it no longer resolves, and the
+        // request falls back to auto-best.
+        const usableSessionModel = this._resolveUsableModel(sessionModel, sessionKey);
+        const effectiveModel = autoRequested ? null : (requestedModel || usableSessionModel || null);
         return await this._runAssistantRequest({ sessionKey, userContent, model: effectiveModel, ws, isReferenceWire, clientSession, source: 'chat', runId: params.idempotencyKey });
       }
 
@@ -1709,6 +1756,11 @@ export class ZeroNativeHost {
       case 'plugins.controlUi.list': {
         const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
         const rev = manifest.controlUi.entry.split('/').at(-2);
+        // The Control UI loader validates that entryUrl/styles start with
+        // "<basePath>/__openclaw__/plugins/control-ui/<pluginId>/<revision>/".
+        // That prefix is an internal asset route, not user-facing branding, so
+        // it must match the upstream contract exactly.
+        const assetBase = `/__openclaw__/plugins/control-ui/zero-control-ui/${rev}/`;
         return {
           revision: rev,
           plugins: [
@@ -1716,8 +1768,8 @@ export class ZeroNativeHost {
               pluginId: 'zero-control-ui',
               name: 'Zero Control UI',
               revision: rev,
-              entryUrl: `/__zero__/plugins/control-ui/zero-control-ui/${rev}/index.js`,
-              styles: [`/__zero__/plugins/control-ui/zero-control-ui/${rev}/index.css`],
+              entryUrl: `${assetBase}index.js`,
+              styles: [`${assetBase}index.css`],
             },
           ],
           diagnostics: [],
@@ -1876,11 +1928,23 @@ export class ZeroNativeHost {
         return this.observationLifecycle.recent(params);
 
       case 'zero.integrations.cli.status':
+        // The About page renders an "adapters" array; without it the page
+        // shows "CLI adapter status is unavailable."
         return {
           ok: true,
           installed: true,
           version: '1.0.0',
           cli: 'zero',
+          adapters: [
+            {
+              id: 'zero',
+              label: 'Zero',
+              available: true,
+              version: '1.0.0',
+              nativeDispatch: true,
+              error: null,
+            },
+          ],
         };
 
       case 'zero.integrations.connectors.status':
@@ -1994,14 +2058,26 @@ export class ZeroNativeHost {
           ],
         };
 
-      case 'environments.status':
+      case 'environments.status': {
+        // The Systems page calls this with environmentId "node:<nodeId>" and
+        // requires the echoed id plus a desktopAvailability object.
+        const environmentId = String(params?.environmentId || 'gateway');
         return {
           ok: true,
-          id: params.environmentId || 'gateway',
+          id: environmentId,
           status: 'available',
           desktop: { available: true },
           desktopSetup: { state: 'ready' },
+          desktopAvailability: {
+            state: 'available',
+            available: true,
+            online: true,
+            nodeId: environmentId.startsWith('node:') ? environmentId.slice(5) : environmentId,
+            resolution: { width: 1920, height: 1080 },
+            updatedAtMs: Date.now(),
+          },
         };
+      }
 
       case 'node.list':
         return {
@@ -2102,6 +2178,7 @@ export class ZeroNativeHost {
           nextRun: j.nextRun || null,
         }));
         const pageJobs = allJobs.slice(offset, offset + limit);
+        const hasMore = offset + pageJobs.length < allJobs.length;
         return {
           ok: true,
           items: pageJobs,
@@ -2111,12 +2188,20 @@ export class ZeroNativeHost {
           offset,
           page: Math.floor(offset / limit) + 1,
           pageSize: limit,
-          hasMore: offset + pageJobs.length < allJobs.length,
-          nextOffset: offset + pageJobs.length < allJobs.length ? offset + pageJobs.length : null,
+          hasMore,
+          nextOffset: hasMore ? offset + pageJobs.length : null,
+          snapshotRevision: `cron-${allJobs.length}-${offset}-${limit}`,
         };
       }
 
       case 'cron.list': {
+        // The Automation page validates this inventory page strictly:
+        //   { jobs: [...], snapshotRevision: string, total: number,
+        //     offset: number, limit: number, hasMore: boolean,
+        //     nextOffset: number | null }
+        // A missing snapshotRevision (or a limit that does not match the
+        // request) makes the page throw "cron.list returned an invalid
+        // inventory page".
         const limit = Math.max(1, Math.min(Number(params?.limit ?? 50), 1000));
         const offset = Math.max(0, Number(params?.offset ?? 0));
         const allJobs = (this.automation?.listJobs?.() || []).map(j => ({
@@ -2128,17 +2213,22 @@ export class ZeroNativeHost {
           nextRun: j.nextRun || null,
         }));
         const pageJobs = allJobs.slice(offset, offset + limit);
+        const total = allJobs.length;
+        const hasMore = offset + pageJobs.length < total;
+        const nextOffset = hasMore ? offset + pageJobs.length : null;
         return {
           ok: true,
           items: pageJobs,
           jobs: pageJobs,
-          total: allJobs.length,
+          total,
           limit,
           offset,
           page: Math.floor(offset / limit) + 1,
           pageSize: limit,
-          hasMore: offset + pageJobs.length < allJobs.length,
-          nextOffset: offset + pageJobs.length < allJobs.length ? offset + pageJobs.length : null,
+          hasMore,
+          nextOffset,
+          // Revision marker for the inventory snapshot.
+          snapshotRevision: `cron-${total}-${offset}-${limit}`,
         };
       }
 
@@ -2714,7 +2804,8 @@ export class ZeroNativeHost {
         return { ok: true, days: [] };
 
       case 'approval.get':
-      case 'approval.history':
+        return { ok: true, approvals: [], history: [], resolved: true };
+
       case 'approval.resolve':
         return { ok: true, approvals: [], history: [], resolved: true };
 
@@ -2738,10 +2829,68 @@ export class ZeroNativeHost {
 
       case 'sessions.catalog.list':
         return { ok: true, entries: [] };
-      case 'sessions.usage':
-        return { ok: true, totalTokens: 0, cost: 0, sessions: [] };
+      case 'sessions.usage': {
+        // The Usage page reads this snapshot as:
+        //   { updatedAt, startDate, endDate, cacheStatus, totals, sessions,
+        //     aggregates: { costDaily: [...] }, costDaily: [...],
+        //     tools: { totalCalls, uniqueTools, tools: [...] },
+        //     byModel, byProvider, byAgent, byChannel, messages,
+        //     dailyModelUsage, dailyProviderUsage }
+        // A flat response makes the page dereference undefined and crash.
+        const startDate = String(params?.startDate || '') || new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+        const endDate = String(params?.endDate || '') || new Date().toISOString().slice(0, 10);
+        const totals = {
+          totalTokens: 0,
+          totalCost: 0,
+          totalRequests: 0,
+          tokens: 0,
+          cost: 0,
+        };
+        const emptyDaily = [];
+        const emptyBreakdown = {
+          totalCalls: 0,
+          uniqueTools: 0,
+          tools: [],
+        };
+        const emptyMessages = { total: 0, user: 0, assistant: 0, toolCalls: 0, toolResults: 0, errors: 0 };
+        return {
+          ok: true,
+          updatedAt: Date.now(),
+          startDate,
+          endDate,
+          cacheStatus: 'fresh',
+          cacheRefresh: 'complete',
+          totals,
+          sessions: [],
+          costDaily: emptyDaily,
+          tokensDaily: emptyDaily,
+          dailyModelUsage: emptyDaily,
+          dailyProviderUsage: emptyDaily,
+          byModel: [],
+          byProvider: [],
+          byAgent: [],
+          byChannel: [],
+          byCreator: [],
+          tools: emptyBreakdown,
+          messages: emptyMessages,
+          aggregates: {
+            costDaily: emptyDaily,
+            tokensDaily: emptyDaily,
+            dailyModelUsage: emptyDaily,
+            dailyProviderUsage: emptyDaily,
+            byModel: [],
+            byProvider: [],
+            byAgent: [],
+            byChannel: [],
+            tools: emptyBreakdown,
+            messages: emptyMessages,
+          },
+        };
+      }
       case 'sessions.usage.timeseries':
-        return { ok: true, points: [] };
+        return { ok: true, points: [], series: [] };
+      case 'sessions.usage.logs':
+        return { ok: true, logs: [], rows: [], total: 0 };
 
       case 'taskSuggestions.list':
         return { ok: true, suggestions: [] };
@@ -2878,16 +3027,75 @@ export class ZeroNativeHost {
       case 'approval.list':
         return { ok: true, items: [], grants: [], history: [] };
 
+      case 'approval.history': {
+        // The Approvals page validates this payload against
+        // { items: Approval[], nextCursor?: string } with a strict schema
+        // (additional properties are rejected), so the response must not
+        // carry an "ok" wrapper.
+        return {
+          items: [],
+        };
+      }
+
+      case 'exec.approval.grants.list':
+        return { ok: true, grants: [] };
+      case 'exec.approval.grants.revoke':
+        return { ok: true, revoked: true, grantId: params?.grantId ?? null };
+
       case 'secrets.list':
       case 'secrets.get': {
         const cfg = this._redactSecrets(this.config ? this.config : {});
         const secrets = this._redactSecrets(this.secrets || {});
-        return { ok: true, secrets, config: cfg, grants: clientSession?.role === 'admin' ? ['admin'] : [], admin: clientSession?.role === 'admin' };
+        // The protocol expresses admin access through the "operator.admin"
+        // scope rather than through the role name.
+        const isAdmin = clientSession?.role === 'admin'
+          || clientSession?.scopes?.includes('operator.admin');
+        return { ok: true, secrets, config: cfg, grants: isAdmin ? ['admin'] : [], admin: isAdmin };
       }
+
+      case 'secrets.store.list': {
+        // The Secrets page reads { entries: [...] }. A missing "entries" array
+        // makes it render the "Gateway/admin required." notice.
+        const entries = Object.entries(this.secrets || {}).map(([name, value]) => ({
+          name,
+          kind: 'secret',
+          updatedAtMs: Date.now(),
+          protected: /(_KEY|_TOKEN|_SECRET|_PASSWORD)$/i.test(name),
+          readable: false,
+          allowedHosts: [],
+        }));
+        return { ok: true, entries };
+      }
+      case 'secrets.store.set':
+        return { ok: true, warningCount: 0, saved: true };
+      case 'secrets.store.delete':
+        return { ok: true, deleted: true, name: params?.name ?? null };
 
       case 'dashboards.list':
       case 'dashboards.get':
         return { ok: true, dashboards: [], items: [] };
+
+      case 'board.get':
+      case 'board.snapshot.get': {
+        // The dashboard document renders a board snapshot made of tabs and
+        // widgets. The local gateway serves an empty board so the document
+        // opens instead of showing "Session dashboards are unavailable".
+        return {
+          ok: true,
+          revision: `board-${Date.now()}`,
+          tabs: [],
+          widgets: [],
+          activeTabId: '',
+        };
+      }
+      case 'board.action':
+      case 'board.data.read':
+      case 'board.event':
+      case 'board.prompt.authorize':
+        return { ok: true, result: null, confirmationRequired: false };
+      case 'board.widget.put':
+      case 'board.widget.appView':
+        return { ok: true, ok: true };
 
       case 'plugins.catalog':
       case 'plugins.builtin.list':
@@ -2938,6 +3146,87 @@ export class ZeroNativeHost {
     }
     this.voiceConversation.attach(params.sessionId, { ownerId, clientSession, ws, isReferenceWire,
       model: params.model, language: params.language, ...(params.playback !== undefined ? { playback: params.playback } : {}) });
+  }
+
+  /**
+   * Serialise a session record into the shape the Control UI expects.
+   * The permission picker reads `permissionMode`/`sandboxMode` directly off
+   * the session, so they must always be present and must agree with the
+   * persisted session metadata.
+   */
+  _sessionPayload(session) {
+    if (!session) return null;
+    return {
+      key: session.id,
+      id: session.id,
+      sessionId: session.id,
+      title: session.title,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      metadata: session.metadata,
+      archived: Boolean(session.archived ?? session.metadata?.archived),
+      agentId: session.metadata?.agentId || 'zero',
+      permissionMode: session.permissionMode ?? session.metadata?.permissionMode ?? 'full',
+      sandboxMode: session.sandboxMode ?? session.metadata?.sandboxMode ?? 'off',
+      model: session.metadata?.model ?? null,
+      thinkingLevel: session.metadata?.thinkingLevel ?? null,
+    };
+  }
+
+  /**
+   * The machine inventory published in the gateway snapshot.
+   *
+   * The Systems page renders one row per environment and reads the display
+   * name from `node.displayName`, the online state from `status`, and the
+   * desktop setup state from `desktopSetup.state`.
+   */
+  _machineInventory() {
+    const screen = this.screenObserver?.buffer?.getLatestFrame?.() || null;
+    const resolution = {
+      width: screen?.width || 1920,
+      height: screen?.height || 1080,
+    };
+    const node = {
+      id: 'local-desktop',
+      displayName: 'Primary Desktop (Zero)',
+      status: 'online',
+      platform: process.platform,
+      deviceFamily: 'desktop',
+      online: true,
+      hostStats: {
+        cpuPercent: 5,
+        memoryBytesUsed: process.memoryUsage().rss,
+        memoryBytesTotal: process.memoryUsage().heapTotal,
+        updatedAtMs: Date.now(),
+      },
+    };
+    const environments = [
+      {
+        id: 'gateway',
+        type: 'host',
+        status: 'available',
+        desktop: { available: true },
+        desktopSetup: { state: 'ready' },
+        platform: process.platform,
+      },
+      {
+        id: 'node:local-desktop',
+        type: 'node',
+        status: 'available',
+        desktop: { available: true },
+        desktopSetup: { state: 'ready' },
+        platform: process.platform,
+        node,
+        displayName: node.displayName,
+        resolution,
+      },
+    ];
+    return {
+      environments,
+      nodes: [node],
+      selectedEnvironmentId: 'gateway',
+      updatedAtMs: Date.now(),
+    };
   }
 
   _broadcastSessionChanged(payload) {
@@ -3371,13 +3660,39 @@ export class ZeroNativeHost {
     return result;
   }
 
+  /**
+   * Resolve a model id against the configured providers.
+   *
+   * A session can pin a model that has since been removed from the provider
+   * catalogue (for example when a provider is reconfigured). Sending that
+   * stale id upstream makes the provider time out, so it is treated as
+   * unresolved and the request falls back to auto-best. The stale pin is
+   * cleared from the session so the next turn is clean as well.
+   */
+  _resolveUsableModel(modelId, sessionKey = null) {
+    const candidate = typeof modelId === 'string' ? modelId.trim() : '';
+    if (!candidate) return null;
+    if (this.modelFabric.resolveModel(candidate)) return candidate;
+    if (sessionKey) {
+      try {
+        const session = this.sessions.getSession(sessionKey);
+        if (session?.metadata?.model) {
+          this.sessions.patchSession(sessionKey, {
+            metadata: { ...session.metadata, model: null },
+          });
+        }
+      } catch {}
+    }
+    return null;
+  }
+
   _executeAssistantRequest(options) {
     options = { ...options, runId: options.runId || crypto.randomUUID() };
     const request = (async () => {
       const { sessionKey, userContent, signal, source = 'chat' } = options;
       if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
       const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
-      options.model ||= (typeof parkedModel === 'string' && parkedModel.trim() ? parkedModel : null);
+      options.model ||= this._resolveUsableModel(parkedModel, sessionKey);
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
       const task = options.resumeTaskId ? this.tasks.getTask(options.resumeTaskId) : this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
       this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=?,model_id=COALESCE(model_id,?) WHERE session_id=? AND run_id=?').run(task.id, options.model ?? null, sessionKey, options.runId);
@@ -3585,9 +3900,13 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         }
 
         const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
+        // An explicitly requested model always wins; a parked session model is
+        // only used when it still resolves against the configured providers.
+        // A stale pin (a model that was removed from the catalogue) would
+        // otherwise be sent upstream and time out.
         const explicitModel = (typeof model === 'string' && model.trim())
           ? model.trim()
-          : (typeof parkedModel === 'string' && parkedModel.trim() ? parkedModel.trim() : null);
+          : this._resolveUsableModel(parkedModel, sessionKey);
         // No explicit model = Default model (Auto-Best): ModelFabric ranks the
         // owner's configured models and fails over automatically.
         const modelPayload = {
