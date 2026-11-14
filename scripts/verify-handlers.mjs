@@ -1,15 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
+import { pathToFileURL } from 'node:url';
 
 const f = path.join(process.cwd(), 'services', 'host', 'native-gateway.mjs');
 const s = fs.readFileSync(f, 'utf8');
 
+// Parse with esbuild so the check needs no V8 experimental flags.
+const esbuild = await import(
+  pathToFileURL(path.resolve('app', 'zero-control-ui', 'node_modules', 'esbuild', 'lib', 'main.js')).href
+);
 try {
-  new vm.SourceTextModule(s);
+  await esbuild.transform(s, { loader: 'js', format: 'esm', sourcefile: 'native-gateway.mjs' });
   console.log('native-gateway.mjs parses OK');
 } catch (e) {
-  console.log('PARSE ERROR:', e.message);
+  console.log('PARSE ERROR:', (e.errors || []).map(x => `${x.text} @ ${x.location?.line}:${x.location?.column}`).join('; ') || e.message);
+  process.exit(1);
 }
 
 const required = [
