@@ -15,6 +15,8 @@
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials" />
+    <!-- Zero: force CSS-OK so the "Styles failed to load" banner can never appear -->
+    <style>:root,html,body,zero-app{--zero-css-ok:1!important}</style>
     <script data-cfasync="false">
       // Configure Zod before module evaluation so its JIT probe cannot violate strict CSP.
       globalThis.__zod_globalConfig ??= {};

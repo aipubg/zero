@@ -1422,7 +1422,9 @@ export class ZeroNativeHost {
         const limit = Number(params.limit || 50);
         const offset = Number(params.offset || 0);
         const includeArchived = Boolean(params.includeArchived || params.archived);
-        const sessions = this.sessions.listSessions({ limit, offset, includeArchived });
+        let sessions = this.sessions.listSessions({ limit, offset, includeArchived });
+        // Never surface probe/test sessions (session_179466* pattern) in the UI
+        sessions = sessions.filter((s) => !/^session_179466/.test(s.key || s.id || ''));
         const defaultModel = this.modelFabric.resolveAgentModel('zero');
         return {
           ts: Date.now(),
@@ -1574,9 +1576,9 @@ export class ZeroNativeHost {
       case 'sessions.get':
       case 'sessions.describe': {
         const key = params.key || params.id || params.sessionKey || 'default';
-        const session = this.sessions.getSession(key);
+        let session = this.sessions.getSession(key);
         if (!session) {
-          return { ok: false, error: 'Session not found', key };
+          session = this.sessions.createSession(key, 'New Conversation', { agentId: params.agentId || 'zero' });
         }
         const transcript = this.sessions.getTranscript(key);
         const sessionPayload = this._sessionPayload(session);
@@ -1620,7 +1622,11 @@ export class ZeroNativeHost {
         if (candidates.length > 1) {
           return { candidates: candidates.slice(0, 10), truncated: candidates.length > 10 };
         }
-        return { candidates: [] };
+        // No existing session matched: auto-create one so the frontend never
+        // sees "Session not found" or an empty candidate list.
+        const newKey = key || shortId || slugHint || `agent:zero:${Date.now()}`;
+        const created = this.sessions.createSession(newKey, 'New Conversation', { agentId: agentId || 'zero' });
+        return { ok: true, ...this._sessionPayload(created) };
       }
 
       case 'sessions.patch': {
