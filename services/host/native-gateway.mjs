@@ -2717,11 +2717,11 @@ export class ZeroNativeHost {
         const vs = defaultVoiceStatus.getStatus();
         const engineStatus = this.voiceEngine.getStatus();
         const activeSession = engineStatus.sessions?.find(s => s.microphoneActive);
-        let status = vs.ready ? 'ready' : 'idle';
+        let status = vs.ready ? 'READY' : 'IDLE';
         if (activeSession) {
           status = activeSession.state;
         } else if (engineStatus.sessions && engineStatus.sessions.length > 0) {
-          status = 'ready';
+          status = 'READY';
         }
         return { ok: true, status, ...vs, ...this.voiceEngine.getStatus() };
       }
@@ -3339,11 +3339,14 @@ export class ZeroNativeHost {
 
   _sessionPayload(session) {
     if (!session) return null;
+    const title = session.title || 'New Chat';
     return {
       key: session.id,
       id: session.id,
       sessionId: session.id,
-      title: session.title,
+      name: title,
+      label: title,
+      title,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
       metadata: session.metadata,

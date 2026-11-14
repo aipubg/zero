@@ -183,7 +183,31 @@
 </template>
   <link rel="stylesheet" href="/assets/zero-control-ui.css">
 <script type="module" src="/assets/zero-control-ui.js"></script>
-</head>
+    <!-- Zero: reset chat scroll position after app mounts so the chat area isn't stuck scrolled off-screen -->
+    <script data-cfasync="false">
+      (function () {
+        function resetChatScroll() {
+          const vp = document.querySelector('.chat-thread-viewport, .chat-main, #chat-panel-main, [id*="chat-panel"]');
+          if (vp) {
+            vp.scrollTop = vp.scrollHeight;
+          }
+          const inner = document.querySelector('.chat-thread-inner');
+          if (inner) {
+            inner.style.transform = 'translateY(0)';
+            inner.style.top = '0';
+          }
+        }
+        window.addEventListener('zero-control-ui-rendered', () => {
+          setTimeout(resetChatScroll, 500);
+          setTimeout(resetChatScroll, 2000);
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(resetChatScroll, 1000);
+          setTimeout(resetChatScroll, 3000);
+        });
+      })();
+    </script>
+  </head>
   <body>
     <zero-app></zero-app>
     <section

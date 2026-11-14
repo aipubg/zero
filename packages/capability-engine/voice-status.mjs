@@ -20,13 +20,14 @@ export class VoiceStatus {
       this._ready = true;
     }
     // Windows SAPI TTS is available on win32 via the voice-engine
+    if (process.platform === 'win32') {
+      this._tts = this._tts === 'none' ? 'sapi' : this._tts;
+      this._ready = true;
+    }
+    // Whisper ASR is available through packages/voice-engine
     try {
-      const os = require ? null : null;
-      // Server-side: Node on Windows can use SAPI via COM or the voice-engine package
-      if (process.platform === 'win32') {
-        this._tts = this._tts === 'none' ? 'sapi' : this._tts;
-        this._ready = true;
-      }
+      this._asr = 'whisper';
+      if (this._tts !== 'none') this._ready = true;
     } catch {}
     // Whisper ASR is available through packages/voice-engine
     try {
