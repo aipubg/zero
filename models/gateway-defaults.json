@@ -1,6 +1,6 @@
 {
   "defaults": {
-    "primary": "google/models/gemini-2.5-flash",
+    "primary": "models/gemini-flash-lite-latest",
     "utility": null,
     "fallback": null,
     "thinking": "default",
@@ -8,7 +8,7 @@
   },
   "agentBindings": {
     "zero": {
-      "model": "google/models/gemini-2.5-flash",
+      "model": "models/gemini-flash-lite-latest",
       "allowOverride": true
     }
   }

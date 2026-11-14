@@ -297,6 +297,79 @@ async function validateJsSyntax(assetsDir) {
 }
 
 /**
+ * Materialise the vendor bundle's "./chat/*" chunk references.
+ *
+ * The shipped Control UI bundle lists its lazy-loaded chat chunks as
+ * "./chat/zero-<name>-<hash>.<ext>" but ships those modules at the top of
+ * the asset directory as "custodian-<name>-<hash>.<ext>". The chunk graph is
+ * therefore incomplete and any lazy import of them 404s.
+ *
+ * Each referenced chunk is copied into dist/web/assets/chat under the name
+ * the bundle asks for. Because a chunk that now lives in assets/chat would
+ * resolve its own "./chat/..." imports one directory too deep (which yields
+ * "/assets/chat/chat/..."), those internal specifiers are rewritten to point
+ * at its new siblings. Only the import specifiers change; no identifier
+ * inside a module is touched.
+ */
+function materialiseChatChunks() {
+  const vendorAssets = path.join(vendorRoot, 'assets');
+  const targetAssets = path.join(distWeb, 'assets');
+  const targetChat = path.join(targetAssets, 'chat');
+  const written = [];
+
+  // Collect every "./chat/<file>" reference in the restored bundle.
+  const referenced = new Set();
+  const walk = (dir) => {
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(js|css|mjs)$/.test(entry.name)) continue;
+      if (entry.name.includes('.br') || entry.name.includes('.gz')) continue;
+      let source;
+      try { source = fs.readFileSync(full, 'utf8'); } catch { continue; }
+      for (const m of source.matchAll(/["'`](\.\/chat\/([^"'`]+))["'`]/g)) {
+        referenced.add(m[2]);
+      }
+    }
+  };
+  walk(targetAssets);
+
+  if (!referenced.size) return written;
+
+  fs.mkdirSync(targetChat, { recursive: true });
+  for (const name of referenced) {
+    const destination = path.join(targetChat, name);
+    // The bundle asks for "zero-<name>"; the vendor ships "custodian-<name>".
+    const candidates = [
+      name,
+      name.replace(/^zero-/, 'custodian-'),
+      name.replace(/^zero-/, 'openclaw-'),
+    ];
+    for (const candidate of candidates) {
+      const source = path.join(vendorAssets, candidate);
+      if (!fs.existsSync(source) || !fs.statSync(source).isFile()) continue;
+      let content = fs.readFileSync(source);
+      if (/\.(js|mjs)$/.test(candidate)) {
+        // The chunk now sits next to its siblings, so "./chat/x" must become
+        // "./x" to keep resolving inside assets/chat.
+        content = Buffer.from(
+          content.toString('utf8').replace(/(["'`])(\.\/chat\/)/g, '$1./'),
+          'utf8',
+        );
+      }
+      const previous = fs.existsSync(destination) ? fs.readFileSync(destination) : null;
+      if (previous && previous.equals(content)) break;
+      fs.writeFileSync(destination, content);
+      written.push(`chat/${name} <- ${candidate}`);
+      break;
+    }
+  }
+  return written;
+}
+
+/**
  * Restore the pristine vendor bundle into dist/web with token-safe branding
  * and verify the boot-probe pairing survives.
  *
@@ -312,6 +385,8 @@ export async function restoreVendorAssets({ quiet = false } = {}) {
   copyTree(vendorRoot, distWeb, { mutateJs: true, mutateCss: true });
   const stale = removeStaleAssets();
   if (stale.length) log(`  removed ${stale.length} stale asset(s): ${stale.join(', ')}`);
+  const chatChunks = materialiseChatChunks();
+  if (chatChunks.length) log(`  materialised ${chatChunks.length} chat chunk(s): ${chatChunks.join(', ')}`);
   log(`  restored from: ${vendorRoot}`);
   log(`  restored to:   ${distWeb}`);
 

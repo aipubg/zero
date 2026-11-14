@@ -6,12 +6,6 @@
     "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/",
     "models": [
       {
-        "id": "models/gemini-2.5-flash",
-        "name": "Gemini 2.5 Flash",
-        "reasoning": false,
-        "image": true
-      },
-      {
         "id": "models/gemini-flash-lite-latest",
         "name": "Gemini Flash Lite Latest",
         "reasoning": false,
@@ -32,12 +26,6 @@
       {
         "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
         "name": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-        "reasoning": false,
-        "image": false
-      },
-      {
-        "id": "nvidia/nemotron-3-super-120b-a12b",
-        "name": "nvidia/nemotron-3-super-120b-a12b",
         "reasoning": false,
         "image": false
       },

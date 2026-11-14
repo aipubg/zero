@@ -84,7 +84,7 @@ async function main() {
   record(
     "node.version",
     nodeOk ? "pass" : "fail",
-    `${process.version} (OpenClaw requires ${OPENCLAW_ENGINES})`,
+    `${process.version} (Zero requires ${OPENCLAW_ENGINES})`,
     nodeOk ? undefined : "install a supported Node before the GO",
   );
 
@@ -293,7 +293,7 @@ async function main() {
     "env.gatewayToken",
     haveGatewayToken ? "pass" : "warn",
     envReport[0] || "unset",
-    haveGatewayToken ? undefined : "OpenClaw refuses to bind without auth; needed from Phase 3 onward, not for Phase 1",
+    haveGatewayToken ? undefined : "Zero refuses to bind without auth; needed from Phase 3 onward, not for Phase 1",
   );
 
   // 12. secret scan & repo hygiene

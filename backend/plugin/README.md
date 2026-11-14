@@ -1,6 +1,6 @@
 # Zero Policy plugin
 
-Zero-owned OpenClaw plugin. The only Zero code that runs **inside** the Gateway process.
+Zero-owned Gateway plugin. The only Zero code that runs **inside** the Gateway process.
 
 **Status: loaded in the current backend build (D-013).** The plugin registers on the live Gateway and the `zero.computer.control` state machine has been exercised (take → release → status) without a desktop action. Logic and static contracts are unit-tested against a fake host (**94/94**). Still unproven: whether the trusted policy fires for the core `computer` tool and whether it refuses a real agent input during a hold; that is CU-01 on the designated isolated environment.
 

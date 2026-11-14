@@ -1,7 +1,7 @@
 {
   "name": "zero-app",
   "version": "0.2.0",
-  "description": "Zero's reusable OpenClaw Gateway bridge library. The product UI is the native zero-control-ui plugin in app/zero-control-ui.",
+  "description": "Zero's reusable Gateway bridge library. The product UI is the native zero-control-ui plugin in app/zero-control-ui.",
   "private": true,
   "type": "module",
   "scripts": {

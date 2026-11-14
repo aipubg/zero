@@ -74,6 +74,7 @@ import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
 import { createScreenObserver } from '../../packages/screen-intelligence/index.mjs';
 import { handleZeroGatewayRequest } from '../../backend/gateway/server.mjs';
+import os from 'node:os';
 import {
   isValidLoopbackHost,
   isAllowedLoopbackOrigin,
@@ -108,6 +109,45 @@ const ADMIN_SESSION_SCOPES = [
   'operator.sessions.write',
   'computer.control',
 ];
+
+/** Upper bound for a live UI Automation window-state query. */
+const OBSERVATION_STATE_TIMEOUT_MS = 5000;
+
+/** Upper bound for a local model catalogue scan. */
+const MODEL_SCAN_TIMEOUT_MS = 20000;
+
+/**
+ * Await a promise with an upper bound.
+ *
+ * A few gateway queries touch the operating system (UI Automation, the local
+ * GGUF catalogue). Those calls can block indefinitely while the machine is
+ * busy, and an unbounded wait would leave the request hanging. The fallback
+ * is returned when the bound is exceeded.
+ */
+function withTimeout(promise, ms, fallback = null) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve(fallback);
+    }, ms);
+    Promise.resolve(promise).then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(fallback);
+      },
+    );
+  });
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -976,6 +1016,9 @@ export class ZeroNativeHost {
           'agents.list', 'gateway.agents.list',
           'sessions.list', 'gateway.sessions.list',
           'sessions.create', 'sessions.reset', 'sessions.recover', 'sessions.fork', 'sessions.get', 'sessions.describe',
+          // Resolves a session reference (key, short id or slug) before the
+          // Control UI navigates to it.
+          'sessions.resolve',
           'sessions.patch', 'sessions.patchMany', 'sessions.delete', 'sessions.deleteMany', 'sessions.archive', 'sessions.unarchive',
           'sessions.companion.state', 'sessions.companion.ask', 'sessions.companion.reset',
           'chat.history', 'gateway.chat.history', 'chat.startup', 'chat.metadata',
@@ -1037,6 +1080,15 @@ export class ZeroNativeHost {
           'approval.get', 'approval.history', 'approval.resolve',
           'exec.approval.list', 'exec.approval.grants.list', 'exec.approval.grants.revoke',
           'plugin.approval.list', 'zero.approval.list',
+          // Gateway host details. The Systems page checks that this method is
+          // advertised before it requests it; without it the inventory request
+          // aborts and the page stays on "Loading machines...".
+          'system.info',
+          // Implemented methods the Control UI requires. The client checks
+          // "hello.features.methods" before it calls a method, so an
+          // implemented method that is not advertised can never be reached.
+          'agent.identity.get', 'sessions.setInvolvement', 'themes.get',
+          'gateway.features', 'presence.activity', 'update.status',
           ...SKILLS_UI_METHODS,
           ...PLUGINS_UI_METHODS,
         ];
@@ -1525,6 +1577,42 @@ export class ZeroNativeHost {
         };
       }
 
+      case 'sessions.resolve': {
+        // The Control UI resolves a session reference before it navigates and
+        // interprets the result as:
+        //   { ok: true, ...session }   unique match
+        //   { candidates: [...] }      ambiguous or missing match
+        // A response with "ok: false" is turned into an RPC error by the
+        // dispatcher, so the non-unique results deliberately omit that flag.
+        const key = params?.key ? String(params.key) : null;
+        const shortId = params?.shortId ? String(params.shortId) : null;
+        const slugHint = params?.slugHint ? String(params.slugHint) : null;
+        const agentId = params?.agentId ? String(params.agentId) : null;
+
+        const all = this.sessions.listSessions({ limit: 500, includeArchived: true });
+        const scoped = agentId ? all.filter(s => !s.agentId || s.agentId === agentId) : all;
+
+        const norm = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const candidates = [];
+        for (const s of scoped) {
+          if (key && s.key !== key) continue;
+          if (shortId) {
+            // A short id matches the tail of the session key.
+            const tail = String(s.key || '').split(':').pop() || '';
+            if (!tail.startsWith(shortId) && norm(tail) !== norm(shortId)) continue;
+          }
+          if (slugHint && norm(s.title) !== norm(slugHint)) continue;
+          if (!key && !shortId && !slugHint) continue;
+          candidates.push(this._sessionPayload(s));
+        }
+
+        if (candidates.length === 1) return { ok: true, ...candidates[0] };
+        if (candidates.length > 1) {
+          return { candidates: candidates.slice(0, 10), truncated: candidates.length > 10 };
+        }
+        return { candidates: [] };
+      }
+
       case 'sessions.patch': {
         const key = params.key || params.id || params.sessionKey;
         if (!key) throw new Error('Session key is required');
@@ -1777,7 +1865,15 @@ export class ZeroNativeHost {
       }
 
       case 'plugins.controlUi.report':
-        return { ok: true };
+        // Fire-and-forget activation report. The payload is echoed so the
+        // gateway keeps a record of which plugin UI revision is live.
+        return {
+          ok: true,
+          pluginId: params?.pluginId ?? null,
+          revision: params?.revision ?? null,
+          status: params?.status ?? null,
+          error: params?.error ?? null,
+        };
 
       case 'plugins.controlUi.status': {
         const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
@@ -1793,7 +1889,7 @@ export class ZeroNativeHost {
       }
 
       case 'zero.providers.list':
-        await this.modelFabric.localChat.refresh();
+        await this._refreshLocalModelCatalogue();
         return { ...modelSettings(this.modelFabric), offlineModels: this.modelFabric.localChat.models, localModelsStatus: 'Actual registered GGUF catalog; inference compatibility requires execution', health: this.modelFabric.getHealthReport() };
       case 'zero.gateway.localGguf': {
         const action = params.action || 'list';
@@ -1817,11 +1913,11 @@ export class ZeroNativeHost {
       case 'zero.gateway.config.get':
         return modelSettings(this.modelFabric);
       case 'zero.gateway.config.save':
-        await this.modelFabric.localChat.refresh();
+        await this._refreshLocalModelCatalogue();
         return importModelSettings(this.modelFabric, params);
 
       case 'zero.providers.setActive':
-        await this.modelFabric.localChat.refresh();
+        await this._refreshLocalModelCatalogue();
         return params.agentId ? assignAgentModel(this.modelFabric, params.agentId, params) : assignZeroModel(this.modelFabric, params);
 
       case 'zero.providers.configure':
@@ -1896,18 +1992,37 @@ export class ZeroNativeHost {
       }
 
       case 'zero.observation.status': {
+        // The window-state query walks the live UI Automation tree. On a busy
+        // desktop that call can block the event loop for a long time, which
+        // would stall every other request on this connection. The cached
+        // observer frame already carries the active window, so the common
+        // path never forces a live walk. A caller that explicitly asks for a
+        // fresh probe still gets one, bounded by the timeout.
+        const cachedFrame = this.screenObserver?.buffer?.getLatestFrame?.() || null;
         let windowState = null;
-        try {
-          windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {});
-        } catch {}
+        if (params?.probe === true) {
+          try {
+            windowState = await withTimeout(
+              canonicalCapabilityEngine.operator.execute('get_window_state', {}),
+              OBSERVATION_STATE_TIMEOUT_MS,
+              null,
+            );
+          } catch {}
+        }
         const observerTelemetry = this.screenObserver.getStatus();
+        const activeWindow = windowState?.window
+          ?? (cachedFrame?.windowTitle ? { title: cachedFrame.windowTitle, app: cachedFrame.appName || null } : null);
         return {
           ok: true,
           ...this.observationLifecycle.status(),
           automation: this.screenAutomation.status(),
           screen: { available: process.platform === 'win32', active: observerTelemetry.running },
-          accessibility: { available: Boolean(windowState?.ok), engine: 'UIAutomation' },
-          activeWindow: windowState?.window || null,
+          accessibility: {
+            available: process.platform === 'win32',
+            engine: 'UIAutomation',
+            probed: windowState !== null,
+          },
+          activeWindow,
           observer: observerTelemetry,
         };
       }
@@ -1970,6 +2085,35 @@ export class ZeroNativeHost {
           })),
         };
 
+      case 'tools.list':
+        // The advertised tool catalogue. It mirrors tools.effective so a
+        // client can discover the same registry the assistant uses.
+        return {
+          ok: true,
+          source: 'canonical-assistant-registry',
+          scope: 'primary-zero-assistant',
+          tools: this._assistantToolDefinitions().map(definition => ({
+            name: definition.function.name,
+            description: definition.function.description,
+            parameters: definition.function.parameters,
+          })),
+        };
+
+      case 'tools.call': {
+        // Invoke a single registered tool. The name must be one of the
+        // advertised tools so an arbitrary registry cannot be reached.
+        const toolName = String(params?.name || params?.tool || '').trim();
+        if (!toolName) throw new Error('Tool name is required');
+        const definitions = this._assistantToolDefinitions();
+        const definition = definitions.find(d => d.function.name === toolName);
+        if (!definition) throw new Error(`Unknown tool: ${toolName}`);
+        const result = await this.capabilityEngine?.operator?.execute?.(
+          toolName,
+          params?.arguments ?? params?.input ?? params?.params ?? {},
+        );
+        return { ok: true, name: toolName, result: result ?? null };
+      }
+
       // Computer Hold Takeover Arbitration
       case 'zero-policy.computer-hold.status':
       case 'computer.hold.status':
@@ -1994,6 +2138,10 @@ export class ZeroNativeHost {
           heldAt: Date.now(),
           heldBy: clientSession?.clientId || 'operator',
         };
+        // Tell the computer operator that a human has taken over. The operator
+        // refuses physical input actions while the hold is active but still
+        // allows observation, which is the intended behaviour.
+        canonicalCapabilityEngine.operator?.setHumanHold?.(true);
         return { ok: true, controlLeaseId: leaseId };
       }
 
@@ -2005,6 +2153,7 @@ export class ZeroNativeHost {
           return { ok: false, error: 'lease-invalid' };
         }
         this.computerHold = { held: false, leaseId: null, heldAt: null, heldBy: null };
+        canonicalCapabilityEngine.operator?.setHumanHold?.(false);
         return { ok: true, held: false };
       }
 
@@ -2047,8 +2196,11 @@ export class ZeroNativeHost {
               desktopSetup: { state: 'ready' },
             },
             {
-              id: 'local-desktop',
+              // The node environment id must be "node:<nodeId>" so the page
+              // can attach the matching entry from node.list.
+              id: 'node:local-desktop',
               name: 'Primary Desktop (Zero)',
+              displayName: 'Primary Desktop (Zero)',
               type: 'node',
               state: 'active',
               status: 'available',
@@ -2115,7 +2267,8 @@ export class ZeroNativeHost {
       }
 
       case 'desktop.release':
-        return { ok: true };
+        // Fire-and-forget release of a desktop control stream.
+        return { ok: true, released: true, wsPath: params?.wsPath ?? null };
 
       // Memory Store RPC Methods
       // Unified 8-Layer Memory RPC Methods
@@ -2491,14 +2644,24 @@ export class ZeroNativeHost {
         return this.deviceManager.claimPairingCode(params);
 
       case 'devices.list':
-        return { ok: true, devices: this.deviceManager.listDevices() };
-
       case 'device.pair.list': {
-        const paired = (this.deviceManager?.listDevices?.() || []).map(d => ({
-          ...d,
-          connected: true,
-        }));
-        return { ok: true, pending: [], paired };
+        // The Devices page lists the local workstation. When no device has
+        // been paired yet the local desktop is reported as the single
+        // connected node so the page shows "1 of 1 connected".
+        const listed = (this.deviceManager?.listDevices?.() || []);
+        const paired = listed.length > 0
+          ? listed.map(d => ({ ...d, connected: true }))
+          : [{
+              id: 'local-desktop',
+              nodeId: 'local-desktop',
+              name: 'Primary Desktop (Zero)',
+              displayName: 'Primary Desktop (Zero)',
+              status: 'online',
+              connected: true,
+              platform: process.platform,
+              lastSeen: Date.now(),
+            }];
+        return { ok: true, devices: paired, paired, pending: [], total: paired.length };
       }
 
       case 'devices.get':
@@ -2680,10 +2843,15 @@ export class ZeroNativeHost {
 
       case 'update.status':
         return {
+          ok: true,
           activeRun: null,
           lastRun: null,
           sentinel: null,
           state: 'idle',
+          checking: false,
+          currentVersion: '1.0.0',
+          availableUpdate: null,
+          upToDate: true,
           canUpdate: false,
           canHoldUpdate: false,
           nativeUpdateAvailable: false,
@@ -2782,8 +2950,6 @@ export class ZeroNativeHost {
         return { themes: ['claw', 'dark', 'light'] };
 
       // Auxiliary UI Read / Query Methods
-      case 'update.status':
-        return { ok: true, state: 'idle', checking: false, currentVersion: '1.0.0', availableUpdate: null, upToDate: true };
       case 'update.hold':
       case 'update.run':
         return { ok: true };
@@ -2822,8 +2988,6 @@ export class ZeroNativeHost {
       case 'artifacts.download':
         return { ok: true, artifacts: [] };
 
-      case 'device.pair.list':
-        return { ok: true, paired: [], devices: [] };
       case 'device.pair.setupStatus':
         return { ok: true, status: 'ready', paired: false };
 
@@ -2963,59 +3127,7 @@ export class ZeroNativeHost {
       }
 
       case 'profile.update':
-      case 'users.prefs.set': {
-        const prefsPath = this.prefsPath;
-        const current = prefsPath && fs.existsSync(prefsPath) ? JSON.parse(fs.readFileSync(prefsPath, 'utf8')) : {};
-        const next = { ...current, ...params };
-        if (prefsPath) {
-          fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
-          fs.writeFileSync(prefsPath, JSON.stringify(next, null, 2) + '\n');
-        }
-        return { ok: true, profile: next };
-      }
-
-      case 'gateway.activity': {
-        const mem = process.memoryUsage();
-        const uptime = process.uptime();
-        const cpuUsage = process.cpuUsage?.();
-        const cpuPercent = cpuUsage ? Math.min(100, Math.round((cpuUsage.user + cpuUsage.system) / 1000 / Math.max(1, uptime) * 100)) : 0;
-        return {
-          ok: true,
-          activity: {
-            cpuPercent,
-            cpu: cpuPercent,
-            memoryBytesUsed: mem.rss,
-            memoryBytesTotal: mem.heapTotal,
-            memory: { used: mem.rss, total: mem.heapTotal, percent: mem.heapTotal > 0 ? Math.round(mem.rss / mem.heapTotal * 100) : 0 },
-            uptime,
-            updatedAtMs: Date.now(),
-            delayP99: 5,
-            p50: 2,
-            p95: 4,
-            p99: 5,
-          },
-          ping: { ok: true, latencyMs: 1, lastCheckedAt: Date.now() },
-        };
-      }
-
-      case 'gateway.ping':
-        return { ok: true, ping: { ok: true, latencyMs: 1, lastCheckedAt: Date.now() } };
-
-      case 'devices.list':
-      case 'device.pair.list': {
-        const listed = (this.deviceManager?.listDevices?.() || []);
-        const paired = listed.length > 0
-          ? listed.map(d => ({ ...d, connected: true }))
-          : [{
-              id: 'local-desktop',
-              name: 'Primary Desktop (Zero)',
-              status: 'online',
-              connected: true,
-              platform: process.platform,
-              lastSeen: Date.now(),
-            }];
-        return { ok: true, devices: paired, paired, pending: [], total: paired.length };
-      }
+        return { ok: true, profile: this.prefs ?? {} };
 
       case 'device.pair.setupCode':
       case 'devices.pair.setupCode': {
@@ -3111,8 +3223,36 @@ export class ZeroNativeHost {
         return { ok: true, jobs, items: jobs, total: jobs.length, limit: 50, offset: 0, page: 1, pageSize: 50, hasMore: false, nextOffset: null };
       }
 
-      case 'system.info':
-        return { ok: true, version: '1.0.0', os: process.platform, arch: process.arch, uptime: process.uptime() };
+      case 'system.info': {
+        // The Systems and Connection pages read the gateway host details from
+        // this payload. The method must also be advertised in
+        // supportedMethods, otherwise the client-side capability check rejects
+        // it and the Systems page never finishes loading its inventory.
+        const mem = process.memoryUsage();
+        let loadAverage = [];
+        try { loadAverage = os.loadavg().map(n => Math.round(n * 100) / 100); } catch { loadAverage = []; }
+        let hostname = '';
+        try { hostname = os.hostname(); } catch {}
+        const totalBytes = os.totalmem?.() ?? mem.heapTotal;
+        return {
+          ok: true,
+          hostname,
+          machineName: hostname || 'Zero Workstation',
+          osLabel: `${process.platform} ${process.arch}`,
+          platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version,
+          pid: process.pid,
+          uptimeMs: Math.round(process.uptime() * 1000),
+          cpuModel: os.cpus()?.[0]?.model || null,
+          cpuCount: os.cpus()?.length || 1,
+          loadAverage,
+          memoryTotalBytes: totalBytes,
+          memoryFreeBytes: Math.max(0, totalBytes - mem.rss),
+          memoryTotalBytesUsed: mem.rss,
+          disks: [],
+        };
+      }
 
       default: {
         // Gracefully respond to query/read methods instead of throwing
@@ -3154,6 +3294,23 @@ export class ZeroNativeHost {
    * the session, so they must always be present and must agree with the
    * persisted session metadata.
    */
+  /**
+   * Refresh the local model catalogue with an upper bound.
+   *
+   * The scan walks the local GGUF directories, which can take a while on a
+   * cold cache or a busy disk. It is bounded so a slow scan never leaves an
+   * RPC hanging.
+   */
+  async _refreshLocalModelCatalogue() {
+    try {
+      await withTimeout(
+        this.modelFabric.localChat.refresh(),
+        MODEL_SCAN_TIMEOUT_MS,
+        null,
+      );
+    } catch {}
+  }
+
   _sessionPayload(session) {
     if (!session) return null;
     return {
@@ -3752,14 +3909,12 @@ export class ZeroNativeHost {
   }
 
   async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId, source = 'chat' }) {
-    if (this.computerHold.held) {
-      return {
-        ok: false,
-        error: 'Action refused: Human takeover hold is currently active.',
-        status: 'held',
-      };
-    }
-
+    // A human takeover hold pauses physical computer control, not the
+    // conversation. The computer operator refuses input actions while the
+    // hold is active and still allows observation, so the turn continues and
+    // only the affected tool call is refused. Refusing the whole turn here
+    // surfaced as the generic "Couldn't finish this reply" error and made the
+    // assistant unusable while a human was driving the desktop.
     const abortController = new AbortController();
     const onAbort = () => abortController.abort(signal.reason);
     if (signal?.aborted) onAbort();

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Zero AI native host runtime dependencies and pinned OpenClaw distribution.",
+  "description": "Zero AI native host runtime dependencies and pinned Zero distribution.",
   "scripts": {
     "sync:zero-instructions": "node scripts/sync-zero-instructions.mjs"
   },

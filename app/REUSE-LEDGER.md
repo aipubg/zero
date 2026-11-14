@@ -19,8 +19,8 @@ by the retired prototype and is no longer part of the product.
 
 | Zero file | Origin | Kind | Notes |
 |---|---|---|---|
-| `src/bridge/gateway-link.ts` | OpenClaw Gateway client contract + Zero | adapted | WS RPC, chat send/abort/history, roster, computer hold; no UI |
-| `src/bridge/pairing.ts`, `pairing-keys.ts`, `pairing-store.ts` | OpenClaw device-pairing contract + Zero | adapted | Ed25519 identity, scoped token storage; never exposes token material |
+| `src/bridge/gateway-link.ts` | Zero Gateway client contract + Zero | adapted | WS RPC, chat send/abort/history, roster, computer hold; no UI |
+| `src/bridge/pairing.ts`, `pairing-keys.ts`, `pairing-store.ts` | Zero device-pairing contract + Zero | adapted | Ed25519 identity, scoped token storage; never exposes token material |
 | `src/bridge/config.ts` | Zero | new | Environment validation for the bridge |
 | `src/shared/zero-types.ts` | Zero | new | Bridge wire-contract types |
 
@@ -37,7 +37,7 @@ they were used only by the retired React/CopilotKit prototype:
 | `src/server/runtime-scope.ts` | OpenDots | Intelligence route allow/deny guard |
 | `src/server/thread-registry.ts` | Zero | CopilotKit thread-to-session binding; Gateway sessions are canonical |
 | `src/server/index.ts` | Zero | Started the legacy runtime and Vite stack |
-| `src/server/live-relay.ts` | OpenClaw desktop pattern | Unverified second desktop relay; native Desktop panel owns input |
+| `src/server/live-relay.ts` | Zero desktop pattern | Unverified second desktop relay; native Desktop panel owns input |
 | `src/server/activity-feed.ts` | Zero | Only consumed by the retired runtime; Gateway activity is canonical |
 | `index.html`, `vite.config.ts`, `.env.example`, `tsconfig.server.json` | Zero/OpenDots | Legacy build/dev configuration |
 

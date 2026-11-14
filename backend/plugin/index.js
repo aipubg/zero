@@ -631,7 +631,7 @@ const zeroPolicyPlugin = definePluginEntry({
       } catch {}
     }
 
-    // Register Desktop & Browser Automation Tools directly with OpenClaw
+    // Register Desktop & Browser Automation Tools directly with the Zero runtime
     if (typeof api?.registerTool === "function") {
       try {
         const computerTools = createAllComputerTools({
