@@ -4,12 +4,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
+import { stopDaemon } from '../packages/capability-engine/windows-driver.mjs';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import { CapabilityEngine } from '../packages/capability-engine/index.mjs';
-import { ComputerOperator } from '../app/zero-control-ui/src/computer/operator.js';
+import { ComputerOperator } from '../packages/capability-engine/computer-operator.mjs';
 import { SessionManager } from '../packages/sessions/index.mjs';
 import { TaskStateMachine } from '../packages/agent-runtime/index.mjs';
 import { AutomationScheduler } from '../packages/automation/index.mjs';

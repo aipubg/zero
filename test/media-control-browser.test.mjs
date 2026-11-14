@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { MediaController } from '../packages/media-control/index.mjs';
-import { ComputerOperator } from '../app/zero-control-ui/src/computer/operator.js';
+import { ComputerOperator } from '../packages/capability-engine/computer-operator.mjs';
 
 test('visible controlled media playback and idempotent controls affect the same real player', { timeout: 45000 }, async t => {
   // Actual decodable silent PCM avoids an unsolicited audible tone. This proves

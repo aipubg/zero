@@ -1,5 +1,5 @@
 import { createSkill } from "../../../skills/self-learning-creator.mjs";
-import * as Driver from "../src/computer/windows-driver.js";
+import * as Driver from "../../../packages/capability-engine/windows-driver.mjs";
 
 let activeRecording = null;
 

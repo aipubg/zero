@@ -4,7 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { captureRealDesktopFrame } from '../packages/screen-intelligence/windows-capture.mjs';
-import { stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
+import { stopDaemon } from '../packages/capability-engine/windows-driver.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const directory = path.join(root, 'artifacts/screen-resource-usage', String(Date.now()));

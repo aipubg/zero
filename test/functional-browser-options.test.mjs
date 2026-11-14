@@ -24,7 +24,7 @@ test('[INTEGRATION] invalid and help CLI modes settle before browser dependencie
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-browser-options-'));
   for (const directory of ['scripts', 'packages/plugin-sdk', 'app/zero-control-ui']) fs.mkdirSync(path.join(root, directory), { recursive: true });
   for (const file of ['scripts/functional-browser-check.mjs', 'scripts/functional-browser-options.mjs', 'packages/plugin-sdk/mcp-adapter.mjs', 'packages/plugin-sdk/mcp-stdio.mjs']) fs.copyFileSync(path.join(repo, file), path.join(root, file));
-  const manifest = path.join(root, 'app/zero-control-ui/openclaw.plugin.json');
+  const manifest = path.join(root, 'app/zero-control-ui/zero.plugin.json');
   fs.writeFileSync(manifest, '{"retained":"controlled-owner-manifest"}');
   const env = path.join(root, '.env'); fs.writeFileSync(env, 'CONTROLLED_SENTINEL=retained\n');
   fs.writeFileSync(path.join(root, 'app/zero-control-ui/build.mjs'), "import fs from 'node:fs';fs.writeFileSync(new URL('../../BUILD_MUST_NOT_RUN',import.meta.url),'unexpected');");

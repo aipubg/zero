@@ -7,7 +7,7 @@ import net from 'node:net';
 import { once } from 'node:events';
 import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
 import { AgentDesktop } from '../packages/agent-runtime/agent-desktop.mjs';
-import { ComputerOperator } from '../app/zero-control-ui/src/computer/operator.js';
+import { ComputerOperator } from '../packages/capability-engine/computer-operator.mjs';
 import { canonicalCapabilityEngine } from '../packages/capability-engine/index.mjs';
 
 test('[REAL_OS] actual desktop RPC retains safe refusal and unknown delivery metadata', {

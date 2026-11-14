@@ -5,7 +5,7 @@ import os from 'node:os';
 import { performance, monitorEventLoopDelay } from 'node:perf_hooks';
 import { createScreenObserver, SemanticObservationStore } from '../packages/screen-intelligence/index.mjs';
 import { captureRealDesktopFrame } from '../packages/screen-intelligence/windows-capture.mjs';
-import { stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
+import { stopDaemon } from '../packages/capability-engine/windows-driver.mjs';
 import { LocalInferenceRuntime } from '../packages/model-fabric/local-runtime.mjs';
 import { ResourceTotals } from '../packages/screen-intelligence/resource-totals.mjs';
 import { sampleOwnedProcessTree } from '../packages/screen-intelligence/process-tree-resources.mjs';

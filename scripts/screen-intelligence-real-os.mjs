@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import { createScreenObserver } from '../packages/screen-intelligence/index.mjs';
 import { captureDriverDesktop, captureRealDesktopFrame, pngDimensions } from '../packages/screen-intelligence/windows-capture.mjs';
 import { LocalVisionExtractor } from '../packages/screen-intelligence/ocr-vision.mjs';
-import { getWindowState, stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
+import { getWindowState, stopDaemon } from '../packages/capability-engine/windows-driver.mjs';
 
 const args = process.argv.slice(2);
 if (args.length && (args.length !== 2 || args[0] !== '--output-dir')) throw new Error('Usage: node scripts/screen-intelligence-real-os.mjs [--output-dir PATH]');

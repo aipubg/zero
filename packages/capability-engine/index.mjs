@@ -9,7 +9,7 @@
  * 5. Structured Audit Events & Normalized Result Contracts
  */
 
-import { ComputerOperator } from '../../app/zero-control-ui/src/computer/operator.js';
+import { ComputerOperator } from './computer-operator.mjs';
 import { DESKTOP_OBSERVATIONS } from '../agent-runtime/agent-desktop.mjs';
 import { CAPABILITY_ALIASES, resolveCapabilityAlias } from './aliases.mjs';
 

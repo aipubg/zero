@@ -155,7 +155,7 @@ function rewriteServedBranding(distWeb) {
     } catch {}
   }
 }
-const sourceManifestPath = join(root, "openclaw.plugin.json");
+const sourceManifestPath = join(root, "zero.plugin.json");
 const distRoot = join(root, "dist");
 const distControlUi = join(distRoot, "control-ui");
 const scratch = mkdtempSync(join(tmpdir(), "zero-ui-build-"));
@@ -167,7 +167,7 @@ try {
   // JS and CSS out of sync and the UI fails to boot.
   try {
     await restoreVendorAssets({ quiet: true });
-    console.log("vendor:    restored pristine bundle into dist/web (token-safe branding)");
+    console.log("vendor:    synced the standalone Zero UI bundle into dist/web");
   } catch (err) {
     console.warn(`vendor:    restore skipped (${err.message})`);
   }
@@ -208,7 +208,7 @@ try {
 
   mkdirSync(distRoot, { recursive: true });
   writeFileSync(
-    join(distRoot, "openclaw.plugin.json"),
+    join(distRoot, "zero.plugin.json"),
     `${JSON.stringify({ controlUi }, null, 2)}\n`,
   );
 

@@ -1,5 +1,5 @@
 /** Capture pixels and retain provenance dropped by the UI driver's convenience wrapper. */
-import { getCuaDriver, getCuaDriverResourceUsage, runNativeWinAction, getWindowState } from '../../app/zero-control-ui/src/computer/windows-driver.js';
+import { getCuaDriver, getCuaDriverResourceUsage, runNativeWinAction, getWindowState } from '../capability-engine/windows-driver.mjs';
 import { LocalVisionExtractor, LOCAL_VISION_STATUS } from './ocr-vision.mjs';
 import { crc32 } from 'node:zlib';
 

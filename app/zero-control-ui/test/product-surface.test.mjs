@@ -10,7 +10,7 @@ const srcRoot = path.join(root, "src");
 
 async function loadPlugin() {
   const manifest = JSON.parse(
-    await readFile(path.join(root, "dist/openclaw.plugin.json"), "utf8"),
+    await readFile(path.join(root, "dist/zero.plugin.json"), "utf8"),
   );
   const entry = path.join(root, manifest.controlUi.entry);
   return (await import(pathToFileURL(entry).href)).default;
@@ -1189,7 +1189,7 @@ test("plugin activation registers no duplicate pages or navigation", async () =>
 
 test("built bundle integrates native surfaces and has no duplicate product backend", async () => {
   const manifest = JSON.parse(
-    await readFile(path.join(root, "dist/openclaw.plugin.json"), "utf8"),
+    await readFile(path.join(root, "dist/zero.plugin.json"), "utf8"),
   );
   const bundle = await readFile(path.join(root, manifest.controlUi.entry), "utf8");
   const styles = await readFile(path.join(root, manifest.controlUi.styles[0]), "utf8");
@@ -1290,7 +1290,7 @@ test("no duplicate Zero page module remains in the product source", async () => 
 
 test("owned manifests describe Zero, not the upstream product", async () => {
   const manifest = JSON.parse(
-    await readFile(path.join(root, "openclaw.plugin.json"), "utf8"),
+    await readFile(path.join(root, "zero.plugin.json"), "utf8"),
   );
   const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 

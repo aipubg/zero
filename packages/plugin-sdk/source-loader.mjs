@@ -171,7 +171,7 @@ export class PluginSourceLoader {
   async describe(directory) {
     const pkg = await readJson(path.join(directory, 'package.json'), true);
     let manifest;
-    for (const name of ['zero.plugin.json', 'plugin.json', 'openclaw.plugin.json']) {
+    for (const name of ['zero.plugin.json', 'plugin.json', 'zero.plugin.json']) {
       manifest = await readJson(path.join(directory, name), true);
       if (manifest) break;
     }

@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { SkillLoader } from '../packages/skill-sdk/index.mjs';
 import { ModelFabric } from '../packages/model-fabric/index.mjs';
 import { CapabilityEngine } from '../packages/capability-engine/index.mjs';
-import { registerLocalTools } from '../packages/capability-engine/local-tools.mjs';
+import { registerLocalTools } from '../packages/capability-engine/terminal-ops.mjs';
 import { TaskStateMachine } from '../packages/agent-runtime/index.mjs';
 import { chromium } from '../backend/node_modules/playwright-core/index.mjs';
 

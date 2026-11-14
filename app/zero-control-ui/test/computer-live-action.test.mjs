@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 const legacyInteractive = { skip: process.env.ZERO_RUN_INTERACTIVE_LEGACY_TESTS === "1" ? false : "BLOCKED: physical legacy actions require an isolated interactive desktop; no live owner-app mutation in default tests" };
 
-import * as Driver from "../src/computer/windows-driver.js";
+import * as Driver from "../../../packages/capability-engine/windows-driver.mjs";
 test.after(() => Driver.stopDaemon());
-import { ComputerOperator } from "../src/computer/operator.js";
+import { ComputerOperator } from "../../../packages/capability-engine/computer-operator.mjs";
 import {
   createComputerTool,
   createAllComputerTools,

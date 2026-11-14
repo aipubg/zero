@@ -24,7 +24,7 @@ import zeroPolicyPlugin, {
 } from "./index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const MANIFEST = JSON.parse(readFileSync(join(HERE, "openclaw.plugin.json"), "utf8"));
+const MANIFEST = JSON.parse(readFileSync(join(HERE, "zero.plugin.json"), "utf8"));
 const PKG = JSON.parse(readFileSync(join(HERE, "package.json"), "utf8"));
 
 let passed = 0;

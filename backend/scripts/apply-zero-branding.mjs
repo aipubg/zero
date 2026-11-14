@@ -67,7 +67,7 @@ function findControlUiDirs() {
 }
 
 export function injectZeroControlUiAssets() {
-  const pluginJsonPath = path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json');
+  const pluginJsonPath = path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json');
   if (!fs.existsSync(pluginJsonPath)) return;
   try {
     const pluginJson = JSON.parse(fs.readFileSync(pluginJsonPath, 'utf8'));

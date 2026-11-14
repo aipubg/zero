@@ -8,7 +8,7 @@ import { createScreenObserver } from '../packages/screen-intelligence/index.mjs'
 import { EventAutomationEngine } from '../packages/automation/event-automation.mjs';
 import { canonicalCapabilityEngine } from '../packages/capability-engine/index.mjs';
 import { connectScreenAutomation } from '../services/host/screen-automation.mjs';
-import { stopDaemon } from '../app/zero-control-ui/src/computer/windows-driver.js';
+import { stopDaemon } from '../packages/capability-engine/windows-driver.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const directory = path.join(root, 'artifacts/screen-automation', String(Date.now()));

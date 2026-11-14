@@ -84,7 +84,7 @@ test("pure session and error projections keep Gateway contracts stable", async (
 
 test("built native bundle contains no CopilotKit product path", async () => {
   const manifest = JSON.parse(
-    await readFile(path.join(root, "dist/openclaw.plugin.json"), "utf8"),
+    await readFile(path.join(root, "dist/zero.plugin.json"), "utf8"),
   );
   const bundle = await readFile(path.join(root, manifest.controlUi.entry), "utf8");
   assert.doesNotMatch(bundle, /copilotkit|@ag-ui|Failed to fetch threads/i);

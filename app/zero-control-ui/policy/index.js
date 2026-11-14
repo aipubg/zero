@@ -483,7 +483,7 @@ function verifyManifestDeclaration(logger, readManifest) {
     }
     logger?.error?.(
       `[${PLUGIN_ID}] MANIFEST DOES NOT DECLARE "${POLICY_ID}" in contracts.trustedToolPolicies (found: ${JSON.stringify(declared)}). ` +
-        "The host will REJECT this policy registration and the human hold will NOT exist. Fix openclaw.plugin.json.",
+        "The host will REJECT this policy registration and the human hold will NOT exist. Fix zero.plugin.json.",
     );
     return { ok: false, declared };
   } catch (err) {
@@ -494,10 +494,10 @@ function verifyManifestDeclaration(logger, readManifest) {
 
 function defaultReadManifest() {
   try {
-    const parentManifestUrl = new URL("../openclaw.plugin.json", import.meta.url);
+    const parentManifestUrl = new URL("../zero.plugin.json", import.meta.url);
     return JSON.parse(readFileSync(parentManifestUrl, "utf8"));
   } catch {
-    const manifestUrl = new URL("./openclaw.plugin.json", import.meta.url);
+    const manifestUrl = new URL("./zero.plugin.json", import.meta.url);
     return JSON.parse(readFileSync(manifestUrl, "utf8"));
   }
 }

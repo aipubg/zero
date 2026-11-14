@@ -7,7 +7,7 @@
  * - zero_computer: Unified action dispatcher (alias)
  */
 
-import { ComputerOperator } from "./operator.js";
+import { ComputerOperator } from "../../../../packages/capability-engine/computer-operator.mjs";
 import { MEDIA_COMMANDS } from "../../../../packages/media-control/index.mjs";
 
 const coordinate = { type: "integer", minimum: 0, maximum: 32767 };

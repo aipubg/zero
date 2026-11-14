@@ -1,19 +1,19 @@
 process.env.ZERO_STRICT_POLICY_TEST = "1";
 import assert from "node:assert/strict";
 import test from "node:test";
-import { stopDaemon } from "../src/computer/windows-driver.js";
+import { stopDaemon } from "../../../packages/capability-engine/windows-driver.mjs";
 test.after(() => stopDaemon());
 
 import {
   screenFrameHash,
   settledFrameIsNews,
   ObservationCoordinator,
-} from "../src/computer/observation-coordinator.js";
+} from "../../../packages/capability-engine/observation-coordinator.mjs";
 import {
   ComputerOperator,
   COMPUTER_ACTIONS,
   OBSERVATION_ACTIONS,
-} from "../src/computer/operator.js";
+} from "../../../packages/capability-engine/computer-operator.mjs";
 import {
   createComputerTool,
   ZERO_COMPUTER_TOOL_NAME,

@@ -209,7 +209,7 @@ async function main() {
   }
 
   // 10. plugin files
-  const pluginFiles = ["openclaw.plugin.json", "package.json", "index.js", "selftest.mjs"];
+  const pluginFiles = ["zero.plugin.json", "package.json", "index.js", "selftest.mjs"];
   const missing = pluginFiles.filter((f) => !existsSync(join(PLUGIN_DIR, f)));
   record("plugin.files", missing.length === 0 ? "pass" : "fail", missing.length ? `missing: ${missing.join(", ")}` : "manifest, package, entry and selftest present");
 
@@ -217,7 +217,7 @@ async function main() {
   // and must be explicitly enabled. Undeclared ids are rejected before registration, which
   // would make the hold a silent no-op (src/plugins/registry-registrars-host.ts:166-182).
   try {
-    const manifest = JSON.parse(readFileSync(join(PLUGIN_DIR, "openclaw.plugin.json"), "utf8"));
+    const manifest = JSON.parse(readFileSync(join(PLUGIN_DIR, "zero.plugin.json"), "utf8"));
     const declared = manifest?.contracts?.trustedToolPolicies;
     const expected = "zero-policy.computer-hold";
     const declaredOk = Array.isArray(declared) && declared.includes(expected);

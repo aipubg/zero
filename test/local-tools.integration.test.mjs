@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { CapabilityEngine } from '../packages/capability-engine/index.mjs';
-import { registerLocalTools } from '../packages/capability-engine/local-tools.mjs';
+import { registerLocalTools } from '../packages/capability-engine/terminal-ops.mjs';
 
 test('[INTEGRATION] local tools write/read real files and execute a real argument-safe subprocess', async t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-local-tools-'));

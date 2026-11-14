@@ -1,0 +1,27 @@
+{
+  "name": "Zero Control",
+  "short_name": "Zero",
+  "description": "Multi-channel AI gateway control panel",
+  "start_url": "./",
+  "display": "standalone",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "./favicon.svg?v=2026.10.6-release-fe06181dc5ec-2026-10-22T08-54-27.830Z-010f999991d275831f307093b3a46cdd2dda1bdd04a84c0c48319b2e2157fda6",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./favicon-32.png?v=2026.10.6-release-fe06181dc5ec-2026-10-22T08-54-27.830Z-010f999991d275831f307093b3a46cdd2dda1bdd04a84c0c48319b2e2157fda6",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "./apple-touch-icon.png?v=2026.10.6-release-fe06181dc5ec-2026-10-22T08-54-27.830Z-010f999991d275831f307093b3a46cdd2dda1bdd04a84c0c48319b2e2157fda6",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

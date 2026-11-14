@@ -1,7 +1,7 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { CapabilityEngine } from '../index.mjs';
-import { stopDaemon } from '../../../app/zero-control-ui/src/computer/windows-driver.js';
+import { stopDaemon } from '../windows-driver.mjs';
 after(() => stopDaemon());
 
 describe('Zero Capability Execution Engine', () => {

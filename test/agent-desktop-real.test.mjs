@@ -6,7 +6,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { AgentDesktop } from '../packages/agent-runtime/agent-desktop.mjs';
-import { ComputerOperator } from '../app/zero-control-ui/src/computer/operator.js';
+import { ComputerOperator } from '../packages/capability-engine/computer-operator.mjs';
 import { canonicalCapabilityEngine, CapabilityEngine } from '../packages/capability-engine/index.mjs';
 import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
 

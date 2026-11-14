@@ -1,5 +1,5 @@
 import { sanitizeObservedText } from "./perception.mjs";
-import * as Driver from "../src/computer/windows-driver.js";
+import * as Driver from "../../../packages/capability-engine/windows-driver.mjs";
 
 export const OBSERVATION_TOOL_NAME = "zero_screen_context";
 

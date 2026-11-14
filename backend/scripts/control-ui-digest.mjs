@@ -28,7 +28,7 @@ function take(flag, fallback) {
 }
 const root = resolve(take("--root", "app/zero-control-ui"));
 const expect = take("--expect", null);
-const manifestPath = join(root, "openclaw.plugin.json");
+const manifestPath = join(root, "zero.plugin.json");
 
 if (!existsSync(manifestPath)) {
   console.error(`manifest not found: ${manifestPath}`);

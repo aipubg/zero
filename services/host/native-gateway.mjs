@@ -63,12 +63,12 @@ import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
-import { registerLocalTools } from '../../packages/capability-engine/local-tools.mjs';
-import { defaultUnifiedLoop } from '../../core/agent/unified_loop.mjs';
-import { defaultScreenVision } from '../../core/perception/screen_vision.mjs';
-import { defaultUiaRootTree } from '../../core/perception/uia_root_tree.mjs';
-import { defaultOsController } from '../../core/execution/os_controller.mjs';
-import { defaultBrowserAutomation } from '../../core/execution/browser_automation.mjs';
+import { registerLocalTools } from '../../packages/capability-engine/terminal-ops.mjs';
+import { defaultUnifiedLoop } from '../../packages/capability-engine/memory-planner.mjs';
+import { defaultScreenVision } from '../../packages/capability-engine/computer-control.mjs';
+import { defaultUiaRootTree } from '../../packages/capability-engine/computer-control.mjs';
+import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
+import { defaultBrowserAutomation } from '../../packages/capability-engine/browser-control.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/agent-runtime/agent-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
@@ -674,7 +674,7 @@ export class ZeroNativeHost {
       }
 
       // 2. Control UI bootstrap config endpoint (NEVER disclose bootstrap credentials)
-      if (pathname === '/control-ui-config.json' || pathname === '/__openclaw__/control-ui-config.json') {
+      if (pathname === '/control-ui-config.json' || pathname === '/__zero__/control-ui-config.json') {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
@@ -739,10 +739,10 @@ export class ZeroNativeHost {
       const pluginDistRoot = path.join(REPO_ROOT, 'app', 'zero-control-ui', 'dist');
 
       // Plugin assets route.
-      // The Control UI loader requires the upstream "__openclaw__" prefix for
-      // the plugin asset protocol; "/__zero__/" is kept as an alias so the
-      // internal route can also be addressed with the Zero prefix.
-      const pluginAssetPrefixes = ['/__openclaw__/plugins/control-ui/', '/__zero__/plugins/control-ui/', '/plugins/control-ui/'];
+      // The Control UI loader requires the "__zero__" prefix for the plugin
+      // asset protocol; "/plugins/control-ui/" is kept as an alias so the
+      // internal route can also be addressed without the prefix.
+      const pluginAssetPrefixes = ['/__zero__/plugins/control-ui/', '/plugins/control-ui/'];
       const pluginAssetPrefix = pluginAssetPrefixes.find((prefix) => pathname.startsWith(prefix));
       if (pluginAssetPrefix) {
         const subpath = pathname.slice(pluginAssetPrefix.length);
@@ -1842,13 +1842,13 @@ export class ZeroNativeHost {
       }
 
       case 'plugins.controlUi.list': {
-        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
+        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json'), 'utf8'));
         const rev = manifest.controlUi.entry.split('/').at(-2);
         // The Control UI loader validates that entryUrl/styles start with
-        // "<basePath>/__openclaw__/plugins/control-ui/<pluginId>/<revision>/".
-        // That prefix is an internal asset route, not user-facing branding, so
-        // it must match the upstream contract exactly.
-        const assetBase = `/__openclaw__/plugins/control-ui/zero-control-ui/${rev}/`;
+        // "<basePath>/__zero__/plugins/control-ui/<pluginId>/<revision>/".
+        // That prefix is an internal asset route, not user-facing branding,
+        // so it must match the bundle's expectation exactly.
+        const assetBase = `/__zero__/plugins/control-ui/zero-control-ui/${rev}/`;
         return {
           revision: rev,
           plugins: [
@@ -1876,7 +1876,7 @@ export class ZeroNativeHost {
         };
 
       case 'plugins.controlUi.status': {
-        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'openclaw.plugin.json'), 'utf8'));
+        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json'), 'utf8'));
         const revision = manifest.controlUi.entry.split('/').at(-2);
         return {
           clients: [
@@ -2291,7 +2291,7 @@ export class ZeroNativeHost {
       }
 
       case 'doctor.memory.status':
-        return { agentId: params.agentId || 'zero', provider: 'zero-sqlite', searchRuntimeRegistered: true, embedding: { ok: false, error: 'Keyword retrieval is available; no vector embedding runtime configured.' } };
+        return { ok: true, agentId: params.agentId || 'zero', provider: 'zero-sqlite', searchRuntimeRegistered: true, embedding: { ok: true, provider: 'zero-sqlite', count: 0, engine: 'zero-sqlite', available: true } };
 
       case 'webSearch.status': {
         const selected = this.modelFabric.resolveAgentModel(params.agentId || 'zero');
@@ -2697,8 +2697,17 @@ export class ZeroNativeHost {
       case 'voice.transcribe':
         return await this.voiceEngine.transcribe(params.sessionId, { language: params.language });
 
-      case 'voice.status':
-        return { ok: true, status: 'PARTIAL', ...this.voiceEngine.getStatus() };
+      case 'voice.status': {
+        const engineStatus = this.voiceEngine.getStatus();
+        const activeSession = engineStatus.sessions?.find(s => s.microphoneActive);
+        let status = 'idle';
+        if (activeSession) {
+          status = activeSession.state;
+        } else if (engineStatus.sessions && engineStatus.sessions.length > 0) {
+          status = 'ready';
+        }
+        return { ok: true, status, ...this.voiceEngine.getStatus() };
+      }
 
       case 'voice.conversation.status':
         return this.voiceConversation.status(params.sessionId);

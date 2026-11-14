@@ -124,7 +124,7 @@ test('legacy CopilotKit product path and its 403 route are absent', async () => 
 });
 
 test('native plugin remains the single Zero UI surface', async () => {
-  const manifest = await readJson(path.join(appRoot, 'zero-control-ui/openclaw.plugin.json'));
+  const manifest = await readJson(path.join(appRoot, 'zero-control-ui/zero.plugin.json'));
   assert.equal(manifest.id, 'zero-control-ui');
   // The plugin registers no SDK pages or navigation: the native screens are
   // extended in place, so there is no plugin-owned UI capability to advertise.

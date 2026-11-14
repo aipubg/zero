@@ -10,7 +10,7 @@ const distIndex = join(root, "dist", "control-ui");
 // The Control UI build writes a standalone JSON manifest into dist/. Validate the
 // exact generation it declares instead of guessing from readdir order: old
 // immutable generations are intentionally retained under dist/control-ui/.
-const manifestPath = join(root, "dist", "openclaw.plugin.json");
+const manifestPath = join(root, "dist", "zero.plugin.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 
 ok(typeof manifest.controlUi?.entry === "string", "generated manifest is missing controlUi.entry");

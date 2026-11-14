@@ -69,7 +69,7 @@ const WS = globalThis.WebSocket;
 
 // Subsystem components
 import { RollingFrameBuffer, ChangeDetector, SemanticObservationStore } from '../packages/screen-intelligence/index.mjs';
-import { COMPUTER_ACTIONS } from '../app/zero-control-ui/src/computer/operator.js';
+import { COMPUTER_ACTIONS } from '../packages/capability-engine/computer-operator.mjs';
 import { TaskStateMachine, TASK_STATUS } from '../packages/agent-runtime/index.mjs';
 import { ModelFabric } from '../packages/model-fabric/index.mjs';
 

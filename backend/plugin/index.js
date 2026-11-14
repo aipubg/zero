@@ -38,7 +38,7 @@
 // is taken. Run interruption and gateway.nodes.commands.deny remain the separate emergency layers.
 
 import { readFileSync } from "node:fs";
-import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { buildJsonPluginConfigSchema, definePluginEntry } from "../../packages/plugin-sdk/plugin-entry.mjs";
 import { modeManager } from "../../rules/mode-manager.mjs";
 import { createAllComputerTools } from "../../app/zero-control-ui/src/computer/tools.js";
 
@@ -505,9 +505,9 @@ function verifyManifestDeclaration(logger, readManifest) {
       logger?.info?.(`[${PLUGIN_ID}] manifest declares trusted policy "${POLICY_ID}" - registration should be accepted`);
       return { ok: true, declared };
     }
-    logger?.error?.(
+        logger?.error?.(
       `[${PLUGIN_ID}] MANIFEST DOES NOT DECLARE "${POLICY_ID}" in contracts.trustedToolPolicies (found: ${JSON.stringify(declared)}). ` +
-        "The host will REJECT this policy registration and the human hold will NOT exist. Fix openclaw.plugin.json.",
+        "The host will REJECT this policy registration and the human hold will NOT exist. Fix zero.plugin.json.",
     );
     return { ok: false, declared };
   } catch (err) {
@@ -517,7 +517,7 @@ function verifyManifestDeclaration(logger, readManifest) {
 }
 
 function defaultReadManifest() {
-  const manifestUrl = new URL("./openclaw.plugin.json", import.meta.url);
+  const manifestUrl = new URL("./zero.plugin.json", import.meta.url);
   return JSON.parse(readFileSync(manifestUrl, "utf8"));
 }
 

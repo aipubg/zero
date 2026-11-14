@@ -174,7 +174,7 @@ test("observation tool rejects invalid parameters and exposes only the safe mani
   await assert.rejects(() => tool.execute("id", { includeSuggestions: "yes" }), /includeSuggestions/);
   assert.equal(engineReads, 0, "Malformed input must reject before consulting observation memory");
 
-  const manifest = JSON.parse(await readFile(path.join(root, "openclaw.plugin.json"), "utf8"));
+  const manifest = JSON.parse(await readFile(path.join(root, "zero.plugin.json"), "utf8"));
   assert.ok(manifest.contracts.tools.includes(OBSERVATION_TOOL_NAME));
   assert.deepEqual(manifest.toolMetadata[OBSERVATION_TOOL_NAME].profiles, ["coding", "full"]);
   assert.equal(manifest.toolMetadata[OBSERVATION_TOOL_NAME].optional, false);
