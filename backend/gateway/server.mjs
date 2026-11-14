@@ -9,13 +9,10 @@ import {
 } from './server/local-gguf-middleware.ts';
 import { localGgufService } from './server/local-gguf-service.ts';
 import { modeManager } from '../../rules/mode-manager.mjs';
-import { ComputerOperator } from '../../packages/capability-engine/computer-operator.mjs';
-import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
+import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS } from '../../packages/capability-engine/index.mjs';
 import { TaskStateMachine, TASK_STATUS } from '../../packages/agent-runtime/index.mjs';
 import { AutomationScheduler } from '../../packages/automation/index.mjs';
 import { PersistentMemoryStore } from '../../packages/memory/index.mjs';
-
-const gatewayOperator = new ComputerOperator();
 
 export function setScopedCorsHeaders(req, res) {
   const origin = req.headers?.origin;
@@ -78,7 +75,11 @@ export const persistentMemoryStore = new PersistentMemoryStore({ dbPath: memoryD
 export const automationScheduler = new AutomationScheduler({
   dbPath: automationDbPath,
   executor: async (action, params) => {
-    return canonicalCapabilityEngine.execute(action, params);
+    return canonicalCapabilityEngine.execute({
+      agentId: 'zero',
+      toolName: action,
+      args: params || {},
+    });
   },
 });
 
@@ -292,7 +293,11 @@ When asked to perform an action (e.g. play a song on Spotify or YouTube, open an
         }
 
         console.log(`[Zero Model Fabric] Model called tool '${fnName}' -> executing action '${action}' with args:`, args);
-        const execRes = await gatewayOperator.execute(action, args);
+        const execRes = await canonicalCapabilityEngine.execute({
+          agentId: 'zero',
+          toolName: 'zero_computer_action',
+          args: { action, ...args },
+        });
         executedActions.push({ action, args, execRes });
 
         if (action === 'play' && execRes.ok) {
@@ -735,91 +740,45 @@ async function handleChatCompletions(req, res) {
     }
 
     // 2. Inject desktop automation tools if not provided
-    const DESKTOP_TOOLS = [
-      {
+    // Derive from canonical CAPABILITY_DEFINITIONS (packages/capability-engine/index.mjs)
+    const DESKTOP_TOOLS = [];
+    for (const [name, def] of Object.entries(CAPABILITY_DEFINITIONS)) {
+      DESKTOP_TOOLS.push({
         type: 'function',
         function: {
-          name: 'zero_computer_action',
-          description: 'Autonomous Windows OS & Browser Controller (JARVIS). Operates the live computer screen: open apps (e.g. "chrome", "notepad", "spotify"), open URLs, play songs on YouTube, control Spotify (play, pause, next, search, set_volume), click elements, move mouse, drag, scroll, type text, press shortcuts/keys, and find UI elements.',
+          name,
+          description: def.description,
           parameters: {
             type: 'object',
             required: ['action'],
             properties: {
               action: {
                 type: 'string',
-                enum: [
-                  'open_app', 'launch_app', 'type_text', 'play', 'browser', 'open_url', 'press_key', 'hotkey',
-                  'mouse_move', 'left_click', 'right_click', 'double_click', 'mouse_drag', 'scroll',
-                  'spotify_control', 'media_control', 'get_elements', 'get_uia_elements', 'get_cursor_position',
-                  'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size',
-                  'clipboard_get', 'clipboard_set'
-                ],
+                enum: def.allowedActions,
+                description: `Action to perform via ${name}`,
               },
-              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome", "spotify")' },
-              text: { type: 'string', description: 'Text to type into the focused window or input field' },
-              query: { type: 'string', description: 'Search term or song name to search and play on YouTube' },
-              command: { type: 'string', description: 'spotify_control / media_control command: "play", "pause", "next", "previous", "set_volume", "status", "search"' },
-              track: { type: 'string', description: 'Specific song/track name to search and play on Spotify' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Volume percentage (0-100)' },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Playback speed (e.g. 2 for 2x)' },
-              url: { type: 'string', description: 'URL to open in the browser' },
-              key: { type: 'string', description: 'Key or shortcut to press (e.g. "enter", "alt+f4", "ctrl+a", "escape")' },
-              x: { type: 'number', description: 'X screen coordinate for mouse actions' },
-              y: { type: 'number', description: 'Y screen coordinate for mouse actions' },
-              button: { type: 'string', enum: ['left', 'right', 'middle'], description: 'Mouse button for click' },
-              target: { type: 'string', description: 'Window title or process name to focus (e.g. "chrome", "spotify")' },
             },
+            additionalProperties: true,
+          },
+        },
+      });
+    }
+    // Add spotify_control (not in canonical definitions but used by the gateway)
+    DESKTOP_TOOLS.push({
+      type: 'function',
+      function: {
+        name: 'spotify_control',
+        description: 'Control Spotify on Windows: search and play songs, pause, resume, change tracks, or set volume.',
+        parameters: {
+          type: 'object',
+          properties: {
+            command: { type: 'string', enum: ['play', 'pause', 'next', 'previous', 'set_volume', 'status', 'search', 'play_track'], description: 'Spotify command' },
+            track: { type: 'string', description: 'Song or track name to search and play on Spotify' },
+            volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Volume level (0-100)' },
           },
         },
       },
-      {
-        type: 'function',
-        function: {
-          name: 'spotify_control',
-          description: 'Control Spotify on Windows: search and play songs, pause, resume, change tracks, or set volume.',
-          parameters: {
-            type: 'object',
-            properties: {
-              command: { type: 'string', enum: ['play', 'pause', 'next', 'previous', 'set_volume', 'status', 'search', 'play_track'], description: 'Spotify command' },
-              track: { type: 'string', description: 'Song or track name to search and play on Spotify' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Volume level (0-100)' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'browser',
-          description: 'Control web browser on Windows: navigate URLs, search and play songs/videos on YouTube, fill forms, click and type.',
-          parameters: {
-            type: 'object',
-            required: ['action'],
-            properties: {
-              action: { type: 'string', enum: ['open', 'play', 'navigate', 'search', 'open_url'] },
-              query: { type: 'string', description: 'Song or video name to play on YouTube' },
-              url: { type: 'string', description: 'Web URL' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100 },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'open_app',
-          description: 'Launch an application on Windows desktop (e.g. "notepad", "calc", "chrome", "spotify").',
-          parameters: {
-            type: 'object',
-            required: ['app'],
-            properties: {
-              app: { type: 'string', description: 'Application name (e.g. "notepad", "chrome", "spotify")' },
-            },
-          },
-        },
-      },
-    ];
+    });
 
     const callerProvidedTools = Array.isArray(body.tools) && body.tools.length > 0;
     if (!callerProvidedTools) {
@@ -1097,14 +1056,17 @@ async function handleMediaControlApi(req, res) {
         console.log(`[Zero Gateway] /api/zero/media received action: ${action}`);
 
         if (action === 'bailout') {
-          gatewayOperator.stopExecution();
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ ok: true, status: 'stopped' }));
           return;
         }
 
-        const result = await gatewayOperator.execute('media_control', { command: action });
+        const result = await canonicalCapabilityEngine.execute({
+          agentId: 'zero',
+          toolName: 'zero_computer_action',
+          args: { action: 'media_control', command: action },
+        });
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ ok: true, action, result }));
@@ -1120,7 +1082,11 @@ async function handleMediaControlApi(req, res) {
 
   // GET returns current active window/media status
   try {
-    const winState = await gatewayOperator.execute('get_window_state');
+    const winState = await canonicalCapabilityEngine.execute({
+      agentId: 'zero',
+      toolName: 'zero_computer_action',
+      args: { action: 'get_window_state' },
+    });
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ ok: true, window: winState.window }));
@@ -1155,7 +1121,11 @@ async function handleComputerControlApi(req, res) {
         const params = body.params || {};
         console.log(`[Zero Gateway] /api/zero/computer executing action: ${action}`);
 
-        const result = await gatewayOperator.execute(action, params);
+        const result = await canonicalCapabilityEngine.execute({
+          agentId: 'zero',
+          toolName: 'zero_computer_action',
+          args: { action, ...params },
+        });
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ ok: true, action, result }));

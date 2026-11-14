@@ -62,7 +62,7 @@ import { VoiceConversation } from '../../packages/voice-engine/conversation.mjs'
 import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
-import { canonicalCapabilityEngine } from '../../packages/capability-engine/index.mjs';
+import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS } from '../../packages/capability-engine/index.mjs';
 import { registerLocalTools } from '../../packages/capability-engine/terminal-ops.mjs';
 import { defaultUnifiedLoop } from '../../packages/capability-engine/memory-planner.mjs';
 import { defaultScreenVision } from '../../packages/capability-engine/computer-control.mjs';
@@ -894,12 +894,10 @@ export class ZeroNativeHost {
       res.statusCode = 200;
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Length', stat.size);
-
-      if (filePath.includes('-') && ext !== '.html' && ext !== '.json' && ext !== '.webmanifest') {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      } else {
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-      }
+      // Force no-cache on all static assets so browsers never serve stale JS/CSS bundles
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
 
       if (req.method === 'HEAD') {
         res.end();
@@ -2116,17 +2114,18 @@ export class ZeroNativeHost {
         };
 
       case 'tools.call': {
-        // Invoke a single registered tool. The name must be one of the
-        // advertised tools so an arbitrary registry cannot be reached.
+        // Invoke a single registered tool through the canonical capability engine.
+        // The name must be one of the advertised tools so an arbitrary registry cannot be reached.
         const toolName = String(params?.name || params?.tool || '').trim();
         if (!toolName) throw new Error('Tool name is required');
         const definitions = this._assistantToolDefinitions();
         const definition = definitions.find(d => d.function.name === toolName);
         if (!definition) throw new Error(`Unknown tool: ${toolName}`);
-        const result = await this.capabilityEngine?.operator?.execute?.(
+        const result = await canonicalCapabilityEngine.execute({
+          agentId: clientSession?.clientId || 'zero',
           toolName,
-          params?.arguments ?? params?.input ?? params?.params ?? {},
-        );
+          args: params?.arguments ?? params?.input ?? params?.params ?? {},
+        });
         return { ok: true, name: toolName, result: result ?? null };
       }
 
@@ -2276,9 +2275,11 @@ export class ZeroNativeHost {
 
       case 'desktop.launch': {
         const app = params.app || 'chrome';
-        if (this.computerOperator) {
-          await this.computerOperator.executeAction('open_app', { app });
-        }
+        await canonicalCapabilityEngine.execute({
+          agentId: clientSession?.clientId || 'zero',
+          toolName: 'zero_computer_action',
+          args: { action: 'open_app', app },
+        });
         return { ok: true, app };
       }
 
@@ -3442,177 +3443,41 @@ export class ZeroNativeHost {
   }
 
   _assistantToolDefinitions() {
-    const tools = [
-      {
+    // Derive all tool definitions from the canonical registry (CAPABILITY_DEFINITIONS
+    // in packages/capability-engine/index.mjs) plus any dynamically registered
+    // custom capabilities. No inline duplicate tool schemas are maintained here.
+    const tools = [];
+    for (const [name, def] of Object.entries(CAPABILITY_DEFINITIONS)) {
+      tools.push({
         type: 'function',
         function: {
-          name: 'spotify_control',
-          description: 'Control Spotify on Windows: search and play songs, pause, resume, change tracks, or set volume.',
-          parameters: {
-            type: 'object',
-            properties: {
-              command: { type: 'string', enum: ['play', 'pause', 'next', 'previous', 'set_volume', 'status', 'search', 'play_track'], description: 'Spotify command' },
-              track: { type: 'string', description: 'Song or track name to search and play on Spotify' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Volume level (0-100)' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'zero_computer_action',
-          description: 'Unified Windows & Browser Actions. Drives apps and browser in the foreground. Use mouse_move, left_click, type_text, and press_key to visually operate the desktop and browser. Use get_elements to discover interactive controls (buttons, inputs, links) with exact screen centerX and centerY coordinates for direct mouse clicks.',
+          name,
+          description: def.description,
           parameters: {
             type: 'object',
             required: ['action'],
             properties: {
               action: {
                 type: 'string',
-                enum: ['open_app', 'launch_app', 'close_app', 'kill_app', 'type_text', 'play', 'media_control', 'spotify_control', 'browser', 'open_url', 'navigate', 'search', 'press_key', 'press', 'mouse_move', 'left_click', 'click', 'type', 'fill', 'right_click', 'double_click', 'mouse_drag', 'scroll', 'get_elements', 'get_cursor_position', 'focus_window', 'bring_to_front', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size', 'fill_form', 'scrape', 'get_content', 'read_page', 'act', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'],
+                enum: def.allowedActions,
+                description: `Action to perform via ${name}`,
               },
-              app: { type: 'string', description: 'Application name or path to open (e.g. "notepad", "chrome")' },
-              text: { type: 'string', description: 'Text to type into the focused window or element' },
-              query: { type: 'string', description: 'Search term or song name to play on YouTube' },
-              command: { type: 'string', enum: [...MEDIA_COMMANDS, 'status'], description: 'media_control: ZERO-owned browser player. spotify_control: status/play/pause/next/previous/set_volume on the exact Windows Spotify session.' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'Exact player volume, e.g. 5 for 5%.' },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'Exact playback speed, e.g. 2 for 2x.' },
-              url: { type: 'string', description: 'URL to open in the foreground browser' },
-              key: { type: 'string', description: 'Key or shortcut to press (e.g. Return, Escape, Tab, ctrl+a)' },
-              x: { type: 'number', description: 'X screen coordinate for mouse_move or click' },
-              y: { type: 'number', description: 'Y screen coordinate for mouse_move or click' },
-              button: { type: 'string', enum: ['left', 'right', 'middle'], description: 'Mouse button for click action' },
-              direction: { type: 'string', enum: ['up', 'down', 'left', 'right'], description: 'Scroll direction' },
-              amount: { type: 'number', description: 'Scroll amount (ticks)' },
-              target: { type: 'string', description: 'Target window title or process name to focus/bring to front (e.g. "chrome", "notepad")' },
-              fields: { type: 'object', description: 'Form fields key-value dictionary' },
-              service: { type: 'string', description: 'Service name (e.g. "gmail")' },
-              username: { type: 'string', description: 'Username or email for login' },
-              password: { type: 'string', description: 'Password for login' },
-              submit: { type: 'boolean', description: 'Press Enter after action' },
             },
+            additionalProperties: true,
           },
         },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'open_app',
-          description: 'Launch an application on Windows desktop (e.g. notepad, calc, chrome).',
-          parameters: {
-            type: 'object',
-            required: ['app'],
-            properties: {
-              app: { type: 'string', description: 'Installed app name or executable path. Spotify and Camera use Windows packaged-app discovery. Camera launch is not photo capture; inspect the real app with desktop_control and verify saved photo before claiming capture.' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'close_app',
-          description: 'CRITICAL GUARD: Only call close_app when the user EXPLICITLY asks to close or exit an application. NEVER close an application automatically or prematurely after opening or typing into it.',
-          parameters: {
-            type: 'object',
-            required: ['app'],
-            properties: {
-              app: { type: 'string', description: 'Application or window title to close (e.g. "calculator", "notepad")' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'browser',
-          description: 'Full autonomous browser control: navigate to URLs, search the web, fill forms, click buttons, type text, extract page content/scrape, check notifications, and handle login/logout.',
-          parameters: {
-            type: 'object',
-            properties: {
-              action: { type: 'string', enum: ['play', 'open_url', 'navigate', 'search', 'fill_form', 'type', 'click', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'], description: 'Browser action to execute' },
-              query: { type: 'string', description: 'Search query or song name to play on YouTube' },
-              volume_percent: { type: 'number', minimum: 0, maximum: 100 },
-              playback_rate: { type: 'number', minimum: 0.25, maximum: 4 },
-              url: { type: 'string', description: 'Web page URL to navigate to' },
-              text: { type: 'string', description: 'Text to type into focused form or element' },
-              fields: { type: 'object', description: 'Key-value map of form fields to fill' },
-              selector: { type: 'string', description: 'Element text or selector to click/focus' },
-              x: { type: 'number', description: 'X screen coordinate to click' },
-              y: { type: 'number', description: 'Y screen coordinate to click' },
-              service: { type: 'string', description: 'Service name (e.g. "gmail")' },
-              username: { type: 'string', description: 'Username or email for login' },
-              password: { type: 'string', description: 'Password for login' },
-              submit: { type: 'boolean', description: 'Press Enter after action' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'see_screen',
-          description: 'Inspect what is currently on the desktop or browser screen in real time. Returns the active window, recent on-screen OCR text, and interactive elements with coordinates.',
-          parameters: {
-            type: 'object',
-            properties: {
-              query: { type: 'string', description: 'Optional query to find specific text or UI elements on screen' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'run_process',
-          description: 'Execute any local program, software, PowerShell, or CLI command with explicit arguments. Allows opening software, checking system state, running scripts, and automating tools.',
-          parameters: {
-            type: 'object',
-            required: ['command'],
-            properties: {
-              command: { type: 'string', description: 'Executable command (e.g. "powershell.exe", "cmd.exe", "notepad.exe", "python")' },
-              args: { type: 'array', items: { type: 'string' }, description: 'Array of string arguments' },
-              cwd: { type: 'string', description: 'Working directory path' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'read_file',
-          description: 'Read the contents of any local file on the computer.',
-          parameters: {
-            type: 'object',
-            required: ['path'],
-            properties: {
-              path: { type: 'string', description: 'Absolute or relative file path to read' },
-            },
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'write_file',
-          description: 'Create or update a local file on the computer.',
-          parameters: {
-            type: 'object',
-            required: ['path', 'content'],
-            properties: {
-              path: { type: 'string', description: 'File path to write' },
-              content: { type: 'string', description: 'File text content' },
-            },
-          },
-        },
-      },
-    ];
-
-    const existingNames = new Set(tools.map(t => t.function.name));
+      });
+    }
     for (const definition of canonicalCapabilityEngine.customCapabilities.values()) {
-      if (!definition.disabled && !existingNames.has(definition.name)) {
-        tools.push({ type: 'function', function: { name: definition.name, description: definition.description, parameters: definition.parameters || { type: 'object' } } });
-        existingNames.add(definition.name);
+      if (!definition.disabled) {
+        tools.push({
+          type: 'function',
+          function: {
+            name: definition.name,
+            description: definition.description,
+            parameters: definition.parameters || { type: 'object' },
+          },
+        });
       }
     }
     return tools;
