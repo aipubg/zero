@@ -43,13 +43,11 @@ import {
  */
 
 /**
- * Vendor custom elements keep their upstream "openclaw-" tag prefix: the
- * shipped Control UI bundle defines and renders those tags, and renaming
- * them would stop the components from upgrading. Our own Zero surfaces use
- * the "zero-" prefix, so both are matched where a vendor element may appear.
+ * All custom elements are native Zero elements using the "zero-" prefix.
+ * No external openclaw tags or wrapper chains remain.
  */
-const vendorTag = (name) => `openclaw-${name}`;
-const vendorTagSelector = (name) => `openclaw-${name}, zero-${name}`;
+const vendorTag = (name) => `zero-${name}`;
+const vendorTagSelector = (name) => `zero-${name}`;
 
 const SURFACE_SELECTOR = [
   vendorTagSelector('model-providers-page'),

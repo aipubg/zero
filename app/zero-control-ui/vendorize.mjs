@@ -27,7 +27,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const sourceRoot = path.join(repoRoot, 'backend', 'node_modules', 'openclaw', 'dist', 'control-ui');
+const sourceRoot = path.join(repoRoot, 'app', 'zero-control-ui', 'vendor');
 const vendorRoot = path.join(repoRoot, 'app', 'zero-control-ui', 'vendor');
 
 const checkOnly = process.argv.includes('--check');
@@ -174,57 +174,63 @@ if (checkOnly) {
 
 // -------------------------------------------------------------- vendorize
 if (!checkOnly) {
-  console.log(`Vendoring ${path.relative(repoRoot, sourceRoot)} -> ${path.relative(repoRoot, vendorRoot)}`);
-  fs.rmSync(vendorRoot, { recursive: true, force: true });
+  // When source and vendor are the same tree (committed vendor is source of truth),
+  // skip the destructive copy/transform step.
+  if (path.resolve(sourceRoot) !== path.resolve(vendorRoot)) {
+    console.log(`Vendoring ${path.relative(repoRoot, sourceRoot)} -> ${path.relative(repoRoot, vendorRoot)}`);
+    fs.rmSync(vendorRoot, { recursive: true, force: true });
 
-  let files = 0;
-  let textFiles = 0;
-  let bytes = 0;
-  const renamed = [];
+    let files = 0;
+    let textFiles = 0;
+    let bytes = 0;
+    const renamed = [];
 
-  for (const rel of walkFiles(sourceRoot)) {
-    const from = path.join(sourceRoot, rel);
-    const to = path.join(vendorRoot, rel);
-    fs.mkdirSync(path.dirname(to), { recursive: true });
+    for (const rel of walkFiles(sourceRoot)) {
+      const from = path.join(sourceRoot, rel);
+      const to = path.join(vendorRoot, rel);
+      fs.mkdirSync(path.dirname(to), { recursive: true });
 
-    if (isPrecompressed(rel)) continue; // never served
-    if (path.basename(rel).startsWith('.')) continue;
+      if (isPrecompressed(rel)) continue; // never served
+      if (path.basename(rel).startsWith('.')) continue;
 
-    if (isTextFile(rel)) {
-      const source = fs.readFileSync(from, 'utf8');
-      const next = transformText(source);
-      fs.writeFileSync(to, next, 'utf8');
-      textFiles++;
-      bytes += Buffer.byteLength(next);
-      if (next !== source) renamed.push(rel);
-    } else {
-      fs.copyFileSync(from, to);
+      if (isTextFile(rel)) {
+        const source = fs.readFileSync(from, 'utf8');
+        const next = transformText(source);
+        fs.writeFileSync(to, next, 'utf8');
+        textFiles++;
+        bytes += Buffer.byteLength(next);
+        if (next !== source) renamed.push(rel);
+      } else {
+        fs.copyFileSync(from, to);
+      }
+      files++;
     }
-    files++;
-  }
 
-  console.log(`  files: ${files} (${textFiles} transformed)`);
-  console.log(`  size:  ${(bytes / 1048576).toFixed(1)} MB of transformed text`);
-  console.log(`  rewritten files: ${renamed.length}`);
+    console.log(`  files: ${files} (${textFiles} transformed)`);
+    console.log(`  size:  ${(bytes / 1048576).toFixed(1)} MB of transformed text`);
+    console.log(`  rewritten files: ${renamed.length}`);
 
-  // The vendored tree is the committed source of truth, so it must parse.
-  const esbuild = await import(
-    pathToFileURL(path.join(repoRoot, 'app', 'zero-control-ui', 'node_modules', 'esbuild', 'lib', 'main.js')).href
-  );
-  const broken = [];
-  for (const rel of walkFiles(path.join(vendorRoot, 'assets'))) {
-    if (!rel.endsWith('.js') || isPrecompressed(rel)) continue;
-    const source = fs.readFileSync(path.join(vendorRoot, 'assets', rel), 'utf8');
-    try {
-      await esbuild.transform(source, { loader: 'js', format: 'esm', sourcefile: rel });
-    } catch (err) {
-      broken.push(`${rel}: ${(err.errors || []).map(e => `${e.text} @${e.location?.line}:${e.location?.column}`).join('; ')}`);
+    // The vendored tree is the committed source of truth, so it must parse.
+    const esbuild = await import(
+      pathToFileURL(path.join(repoRoot, 'app', 'zero-control-ui', 'node_modules', 'esbuild', 'lib', 'main.js')).href
+    );
+    const broken = [];
+    for (const rel of walkFiles(path.join(vendorRoot, 'assets'))) {
+      if (!rel.endsWith('.js') || isPrecompressed(rel)) continue;
+      const source = fs.readFileSync(path.join(vendorRoot, 'assets', rel), 'utf8');
+      try {
+        await esbuild.transform(source, { loader: 'js', format: 'esm', sourcefile: rel });
+      } catch (err) {
+        broken.push(`${rel}: ${(err.errors || []).map(e => `${e.text} @${e.location?.line}:${e.location?.column}`).join('; ')}`);
+      }
     }
+    if (broken.length) {
+      console.error(`\nERROR: ${broken.length} vendored bundle(s) do not parse:`);
+      for (const b of broken) console.error(`  ${b}`);
+      process.exit(1);
+    }
+    console.log('  every vendored bundle parses as an ES module');
+  } else {
+    console.log(`Source and vendor are the same tree; vendoring is a no-op.`);
   }
-  if (broken.length) {
-    console.error(`\nERROR: ${broken.length} vendored bundle(s) do not parse:`);
-    for (const b of broken) console.error(`  ${b}`);
-    process.exit(1);
-  }
-  console.log('  every vendored bundle parses as an ES module');
 }

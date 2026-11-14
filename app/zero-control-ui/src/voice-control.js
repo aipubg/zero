@@ -72,7 +72,7 @@ export function mountVoiceControl(button, host) {
       if (disposed || !button.isConnected || busy) return;
       const session = status.sessions?.find(session => session.microphoneActive);
       microphoneSession = session?.sessionId;
-      render(microphoneSession ? 'Voice: Listening' : `Voice: ${failure || status.status || 'PARTIAL'}`, Boolean(microphoneSession), session?.capture, session);
+      render(microphoneSession ? 'Voice: Listening' : `Voice: ${failure || status.status || 'READY'}`, Boolean(microphoneSession), session?.capture, session);
     } catch (error) {
       if (!disposed && !busy) { microphoneSession = null; render('Voice: Unavailable', false, null, { state: 'disconnected' }); }
     } finally {

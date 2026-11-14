@@ -69,6 +69,8 @@ import { defaultScreenVision } from '../../packages/capability-engine/computer-c
 import { defaultUiaRootTree } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultBrowserAutomation } from '../../packages/capability-engine/browser-control.mjs';
+import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
+import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/agent-runtime/agent-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
@@ -316,6 +318,14 @@ export class ZeroNativeHost {
 
     const tool = (name, description, parameters, handler) => canonicalCapabilityEngine.registerCapability({ name, description, parameters, handler });
     registerLocalTools(canonicalCapabilityEngine, { cwd: REPO_ROOT });
+    tool('doctor.memory.status', 'Memory and embedding subsystem health.', {}, () => {
+      const engStatus = defaultEmbedEngine.getStatus();
+      return { ok: true, agentId: 'zero', provider: 'zero-local-embeddings', searchRuntimeRegistered: true, embedding: { ...engStatus, available: true } };
+    });
+    tool('voice.status', 'Voice TTS/ASR availability.', {}, () => {
+      const vs = defaultVoiceStatus.getStatus();
+      return { ok: true, status: vs.ready ? 'ready' : 'idle', ...vs };
+    });
     tool('desktop_control', 'PRIMARY desktop control backend: zero-desktop native accessibility with physical screen interaction. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Runs in headed mode by default to ensure all actions are visible on screen.', { type: 'object', properties: { command: { type: 'string', enum: DESKTOP_COMMANDS }, args: { type: 'array', description: 'CLI tokens, NOT a shell string. snapshot example: ["--window-id","w-123"]. get example: ["@snapshot:e1","--property","value"]. click/set-value: ["@snapshot:e1"]. skills guide: ["get","desktop"]. Reuse refs only from returned snapshots.', items: { type: 'string' } }, input: { type: 'string', description: 'Text to insert for set-value/type/clipboard-set ONLY. Never put refs, flags or read instructions here. Omit for snapshot/get/click.' }, headed: { type: 'boolean', description: 'Physical keyboard/cursor input; defaults to true for visible execution.' } }, required: ['command'], additionalProperties: false }, (args, signal, context) => canonicalCapabilityEngine.execute({ agentId: context?.agentId || 'zero', toolName: 'zero_computer_action', args: { headed: args.headed ?? true, ...args, action: 'desktop' }, signal }));
     tool('research_search', 'Retrieve real search results and provenance. Retrieved sources are not independently verified.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => this.researchEngine.searchEngine.search(args.query, args));
     tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
@@ -2291,7 +2301,7 @@ export class ZeroNativeHost {
       }
 
       case 'doctor.memory.status':
-        return { ok: true, agentId: params.agentId || 'zero', provider: 'zero-sqlite', searchRuntimeRegistered: true, embedding: { ok: true, provider: 'zero-sqlite', count: 0, engine: 'zero-sqlite', available: true } };
+        return { ok: true, agentId: params.agentId || 'zero', provider: 'zero-local-embeddings', searchRuntimeRegistered: true, embedding: { ...defaultEmbedEngine.getStatus(), available: true } };
 
       case 'webSearch.status': {
         const selected = this.modelFabric.resolveAgentModel(params.agentId || 'zero');
@@ -2698,15 +2708,16 @@ export class ZeroNativeHost {
         return await this.voiceEngine.transcribe(params.sessionId, { language: params.language });
 
       case 'voice.status': {
+        const vs = defaultVoiceStatus.getStatus();
         const engineStatus = this.voiceEngine.getStatus();
         const activeSession = engineStatus.sessions?.find(s => s.microphoneActive);
-        let status = 'idle';
+        let status = vs.ready ? 'ready' : 'idle';
         if (activeSession) {
           status = activeSession.state;
         } else if (engineStatus.sessions && engineStatus.sessions.length > 0) {
           status = 'ready';
         }
-        return { ok: true, status, ...this.voiceEngine.getStatus() };
+        return { ok: true, status, ...vs, ...this.voiceEngine.getStatus() };
       }
 
       case 'voice.conversation.status':
@@ -4395,8 +4406,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           // 2. browser actions with automatic fallback
           if (!execRes && (targetCapability === 'browser' || fnName === 'browser')) {
-            const { defaultBrowserAutomation } = await import('../../core/execution/browser_automation.mjs');
-            const { defaultOsController } = await import('../../core/execution/os_controller.mjs');
+            // defaultBrowserAutomation and defaultOsController are module-level imports
+            // from packages/capability-engine — no dead core/ imports remain.
 
             try {
               if (action === 'open_url' || action === 'navigate') {
@@ -4599,8 +4610,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           // 3. type_text / type with Automatic Cross-Hand Fallback & State Verification
           if (!execRes && (action === 'type_text' || action === 'type')) {
-            const { defaultOsController } = await import('../../core/execution/os_controller.mjs');
-            const { defaultUiaRootTree } = await import('../../core/perception/uia_root_tree.mjs');
+            // defaultOsController and defaultUiaRootTree are module-level imports
+            // from packages/capability-engine — no dead core/ imports remain.
             const textToType = String(args.text || args.value || '');
             const targetAppOrWindow = args.target || args.app;
 

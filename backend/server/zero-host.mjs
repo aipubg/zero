@@ -50,17 +50,13 @@ if (fs.existsSync(envFile)) {
 }
 
 const PORT = Number(process.env.ZERO_PORT || process.env.PORT || 18789);
-// ZERO_* are the canonical first-party variables. OPENCLAW_* are accepted only
-// as an internal compatibility fallback so existing installations keep booting.
-const CONFIG_PATH = process.env.ZERO_CONFIG_PATH || process.env.OPENCLAW_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
-const STATE_DIR = process.env.ZERO_STATE_DIR || process.env.OPENCLAW_STATE_DIR || path.join(REPO_ROOT, 'zero-system', 'state');
+const CONFIG_PATH = process.env.ZERO_CONFIG_PATH || path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json');
+const STATE_DIR = process.env.ZERO_STATE_DIR || path.join(REPO_ROOT, 'zero-system', 'state');
 
 process.env.ZERO_ROOT = REPO_ROOT;
 process.env.ZERO_CONFIG_PATH = CONFIG_PATH;
 process.env.ZERO_STATE_DIR = STATE_DIR;
-process.env.OPENCLAW_CONFIG_PATH ||= CONFIG_PATH;
-process.env.OPENCLAW_STATE_DIR ||= STATE_DIR;
-process.env.OPENCLAW_NO_AUTO_UPDATE = '1';
+process.env.ZERO_NO_AUTO_UPDATE = '1';
 process.env.DO_NOT_TRACK = '1';
 
 // Global error handlers: prevent any unhandled exception or rejection from terminating Zero Host

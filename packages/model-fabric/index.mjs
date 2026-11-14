@@ -730,8 +730,11 @@ export class ModelFabric {
         } catch (error) {
           lastError = error;
           if (options.signal?.aborted) throw error;
-          // Fail over only before any visible content was produced.
-          if (emitted) throw error;
+          // Fail over only before any visible content was produced, unless the
+          // error is retryable (transient network/429/5xx) — then continue to
+          // the next candidate even after partial emission so multi-step turns
+          // can recover instead of aborting with "Couldn't finish this reply".
+          if (emitted && !error.retryable) throw error;
         }
       }
       throw lastError || this._noConfiguredModelError();

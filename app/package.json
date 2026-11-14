@@ -12,8 +12,6 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@openclaw/gateway-client": "2026.10.6",
-    "@openclaw/gateway-protocol": "2026.10.6",
     "zod": "3.25.76"
   },
   "devDependencies": {
@@ -21,8 +19,6 @@
     "typescript": "^6.0.3"
   },
   "overrides": {
-    "undici": "^6.29.0",
-    "rxjs": "7.8.1",
     "zod": "3.25.76"
   }
 }
