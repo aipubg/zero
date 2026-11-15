@@ -1755,7 +1755,7 @@ import{n as e}from"./rolldown-runtime-8BhlS34s.js";import{$r as t,B as n,Fa as r
                 </div>`}):D}
       </div>
     </section>
-  `}function Pl(){return(Pl=e((()=>{k(),Er(),Be(),rt(),Dr(),Zi(),ta(),R(),Wr(),d(),se(),ho()})))()}function Fl(e,t){return(e===`custom`||e.includes(`/`))&&t!==e?O`<span class="settings-theme-card__icon" aria-hidden="true"
+  `}function Pl(){return(Pl=e((()=>{k(),Er(),Be(),rt(),Dr(),Zi(),ta(),R(),Wr(),d(),se(),ho()})))()}function Fl(e,t){return(e===`custom`||(e??'').includes(`/`))&&t!==e?O`<span class="settings-theme-card__icon" aria-hidden="true"
       >${T.download}</span
     >`:O`
     <span class="settings-theme-card__palette" aria-hidden="true">
@@ -1804,7 +1804,7 @@ import{n as e}from"./rolldown-runtime-8BhlS34s.js";import{$r as t,B as n,Fa as r
         </div>
       </div>
     </section>
-  `}function zl(e){let t=e.viewState,n=e.hasCustomTheme||e.customThemeImportExpanded===!0;n&&e.customThemeImportFocusToken!=null&&e.customThemeImportFocusToken!==t.lastCustomThemeImportFocusToken&&(t.lastCustomThemeImportFocusToken=e.customThemeImportFocusToken,Ll());let r=Il(e),i=[...(e.themeCatalog?.themes.length?e.themeCatalog.themes:ir).map(e=>({id:e.id,label:e.source===`builtin`?S(`configView.themes.${e.id}.label`):e.name,description:e.source===`builtin`?S(`configView.themes.${e.id}.description`):e.description})),{id:`custom`,label:e.hasCustomTheme?r:S(`configView.appearance.import`),description:e.hasCustomTheme?S(`configView.appearance.importedFrom`,{name:r}):S(`configView.appearance.importHint`)}],a=i.find(t=>t.id===e.theme),o=e.themeCatalog?.unavailableId===e.theme||e.theme.includes(`/`)&&!!e.themeCatalog?.themes.length&&!a,s=a??{id:C.theme,label:S(`configView.themes.claw.label`)},c=i.find(t=>t.id===e.themeResetValue)?.label??S(`configView.themes.claw.label`),l=e.themeModeResetValue===`light`?S(`common.light`):e.themeModeResetValue===`dark`?S(`common.dark`):S(`common.system`),u=Tl(e.themeProvenance),d=Tl(e.themeModeProvenance),ee=Tl(e.accentProvenance),f=e.accent===`theme`,p=f?void 0:e.accent,m=e.accent===e.accentResetValue||f&&e.accentResetValue===void 0,h=e.accentResetValue&&e.accentResetValue!==`theme`?e.accentResetValue:`var(--theme-chip-accent)`,g=!(m||f||!e.accent||Vl.some(t=>t.hex===e.accent)),_=Vl.find(t=>t.hex!==void 0&&t.hex===e.accent),te=f?S(`configView.appearance.usingThemeAccent`):m?null:S(`configView.appearance.usingAccent`,{value:S(_?_.labelKey:`configView.appearance.customAccent`)});return O`
+  `}function zl(e){let t=e.viewState,n=e.hasCustomTheme||e.customThemeImportExpanded===!0;n&&e.customThemeImportFocusToken!=null&&e.customThemeImportFocusToken!==t.lastCustomThemeImportFocusToken&&(t.lastCustomThemeImportFocusToken=e.customThemeImportFocusToken,Ll());let r=Il(e),i=[...(e.themeCatalog?.themes.length?e.themeCatalog.themes:ir).map(e=>({id:e.id,label:e.source===`builtin`?S(`configView.themes.${e.id}.label`):e.name,description:e.source===`builtin`?S(`configView.themes.${e.id}.description`):e.description})),{id:`custom`,label:e.hasCustomTheme?r:S(`configView.appearance.import`),description:e.hasCustomTheme?S(`configView.appearance.importedFrom`,{name:r}):S(`configView.appearance.importHint`)}],a=i.find(t=>t.id===e.theme),o=e.themeCatalog?.unavailableId===e.theme||e.theme?.includes(`/`)&&!!e.themeCatalog?.themes.length&&!a,s=a??{id:C.theme,label:S(`configView.themes.claw.label`)},c=i.find(t=>t.id===e.themeResetValue)?.label??S(`configView.themes.claw.label`),l=e.themeModeResetValue===`light`?S(`common.light`):e.themeModeResetValue===`dark`?S(`common.dark`):S(`common.system`),u=Tl(e.themeProvenance),d=Tl(e.themeModeProvenance),ee=Tl(e.accentProvenance),f=e.accent===`theme`,p=f?void 0:e.accent,m=e.accent===e.accentResetValue||f&&e.accentResetValue===void 0,h=e.accentResetValue&&e.accentResetValue!==`theme`?e.accentResetValue:`var(--theme-chip-accent)`,g=!(m||f||!e.accent||Vl.some(t=>t.hex===e.accent)),_=Vl.find(t=>t.hex!==void 0&&t.hex===e.accent),te=f?S(`configView.appearance.usingThemeAccent`):m?null:S(`configView.appearance.usingAccent`,{value:S(_?_.labelKey:`configView.appearance.customAccent`)});return O`
     <div class="settings-page" ${E({settingsPage:!0})}>
       ${El(e)}
       <section id=${b.theme} class="settings-section">
@@ -1828,7 +1828,7 @@ import{n as e}from"./rolldown-runtime-8BhlS34s.js";import{$r as t,B as n,Fa as r
             <div class="settings-theme-grid">
               ${i.map(t=>O`
                   <button
-                    class="settings-theme-card settings-theme-card--${t.id.includes(`/`)?`custom`:t.id} ${t.id===s.id?`settings-theme-card--active`:``}"
+                    class="settings-theme-card settings-theme-card--${(t.id??'').includes(`/`)?`custom`:t.id} ${t.id===s.id?`settings-theme-card--active`:``}"
                     aria-pressed=${t.id===`custom`&&!e.hasCustomTheme?D:String(t.id===s.id)}
                     title=${t.description}
                     data-theme-id=${t.id}
@@ -1920,7 +1920,7 @@ import{n as e}from"./rolldown-runtime-8BhlS34s.js";import{$r as t,B as n,Fa as r
         <div class="settings-group">
           <div class="settings-row settings-row--stacked">
             <div class="settings-accent-swatches">
-              ${Vl.map(t=>{let n=t.hex===void 0,r=n?m:!m&&t.hex===e.accent,i=S(t.labelKey),a=n?` settings-accent-theme--${s.id.includes(`/`)?`custom`:s.id}`:``;return O`
+              ${Vl.map(t=>{let n=t.hex===void 0,r=n?m:!m&&t.hex===e.accent,i=S(t.labelKey),a=n?` settings-accent-theme--${(s.id??'').includes(`/`)?`custom`:s.id}`:``;return O`
                   <button
                     type="button"
                     class="settings-accent-swatch${a} ${r?`settings-accent-swatch--active`:``}"

@@ -10,8 +10,7 @@
  * 5. Instant Safety Bailout (triggers human takeover when physical mouse motion or Esc detected).
  *
  * Single-Room: all imports resolved within packages/capability-engine/.
- * External subsystems (MediaController, ZeroDesktop, modeManager) are provided
- * as local stubs that gracefully degrade when the host has not injected them.
+ * Real implementations: MediaController, controlSpotify, modeManager, ZeroDesktop.
  */
 
 import { ObservationCoordinator } from "./observation-coordinator.mjs";
@@ -20,34 +19,10 @@ import { defaultBrowserAutomation } from "./browser-control.mjs";
 import { defaultOsController } from "./computer-control.mjs";
 import { defaultUiaRootTree } from "./computer-control.mjs";
 import { defaultScreenVision } from "./computer-control.mjs";
-
-// --- Local stubs (Single-Room: no cross-package imports) ---
-
-/** Minimal media controller stub. The host may inject a real MediaController via constructor. */
-export class LocalMediaController {
-  async control(command, signal, params) {
-    return { ok: false, executed: false, verified: false, outcome: 'UNVERIFIED', error: 'media:unavailable', message: 'Media controller not available in this build.' };
-  }
-  close() {}
-}
-
-/** Minimal spotify control stub. */
-export async function localControlSpotify(params, signal) {
-  return { ok: false, executed: false, verified: false, outcome: 'UNVERIFIED', error: 'spotify:unavailable', message: 'Spotify control not available in this build.' };
-}
-
-/** Minimal mode manager stub. Owner mode is the default. */
-export const localModeManager = {
-  getMode: () => 'owner',
-  isOwnerMode: () => true,
-};
-
-/** Minimal ZeroDesktop stub. The host may inject a real ZeroDesktop via constructor. */
-export class LocalZeroDesktop {
-  async execute(params, signal) {
-    return { ok: false, executed: false, verified: false, outcome: 'UNVERIFIED', error: 'desktop:unavailable', message: 'ZeroDesktop runtime not available in this build.' };
-  }
-}
+import { MediaController, defaultMediaController } from "./media-control.mjs";
+import { controlSpotify, defaultSpotifyControl } from "./spotify-control.mjs";
+import { ModeManager, modeManager, MODES } from "./mode-manager.mjs";
+import { ZeroDesktop, DESKTOP_OBSERVATIONS, defaultZeroDesktop } from "./zero-desktop.mjs";
 
 function redactSensitive(val, fieldName = '') {
   if (!val) return val;
@@ -130,12 +105,12 @@ export class ComputerOperator {
     logger = console,
     requireFreshSnapshotAfterRelease = false,
     strictPolicy = false,
-    ZeroDesktop = new LocalZeroDesktop(),
+    ZeroDesktop = defaultZeroDesktop,
     browserAutomation = defaultBrowserAutomation,
     osController = defaultOsController,
     uiaRootTree = defaultUiaRootTree,
     screenVision = defaultScreenVision,
-    mediaController = new LocalMediaController()
+    mediaController = defaultMediaController
   } = {}) {
     this.ZeroDesktop = ZeroDesktop;
     this.browserAutomation = browserAutomation;
@@ -143,6 +118,7 @@ export class ComputerOperator {
     this.uiaRootTree = uiaRootTree;
     this.screenVision = screenVision;
     this.mediaController = mediaController;
+    this.modeManager = modeManager;
     this.getPolicyState = getPolicyState;
     this.logger = logger;
     this.humanHold = false;
@@ -175,8 +151,8 @@ export class ComputerOperator {
     const policy = typeof this.getPolicyState === "function" ? this.getPolicyState() : null;
 
     // In Owner Mode, gateway lease locks and stale-frame gating from zero-policy are 100% bypassed for zero-friction speed
-    const isStrict = this.strictPolicy || process.env.ZERO_STRICT_POLICY_TEST === "1" || (localModeManager && localModeManager.getMode() === "distribution");
-    const isOwnerBypass = !isStrict && localModeManager?.isOwnerMode();
+    const isStrict = this.strictPolicy || process.env.ZERO_STRICT_POLICY_TEST === "1" || (this.modeManager && this.modeManager.getMode() === "distribution");
+    const isOwnerBypass = !isStrict && this.modeManager?.isOwnerMode();
 
     const holdActive = this.humanHold || (!isOwnerBypass && Boolean(policy && policy.hold));
     const freshnessNeeded = (this.requireFreshSnapshotAfterRelease && this.requireFreshSnapshot) || (!isOwnerBypass && (this.requireFreshSnapshot || Boolean(policy && policy.needsFreshSnapshot)));
@@ -598,7 +574,7 @@ export class ComputerOperator {
           if (track) {
             await Driver.bringToFront("spotify", signal).catch(() => {});
           }
-          return await localControlSpotify({
+          return await controlSpotify({
             ...params,
             ...(track ? { track, command: params.command || "play" } : {}),
             ...(volume !== undefined ? { volume_percent: Number(volume) } : {})
