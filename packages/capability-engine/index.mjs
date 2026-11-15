@@ -188,6 +188,39 @@ export const CAPABILITY_PARAMETERS = Object.freeze({
   system_info: params({}),
   doctor_memory_status: params({}),
   voice_status: params({}),
+  // Action-dispatch capabilities: one tool, many actions. Each argument says
+  // which actions use it, so the model does not have to guess names.
+  open_app: params({ app: str('App to launch, e.g. "notepad", "calc", "chrome", or a full path. The result says whether its window is in front.') }, ['app']),
+  zero_computer_action: params({
+    action: { type: 'string', enum: CAPABILITY_DEFINITIONS.zero_computer_action.allowedActions, description: 'What to do. Windows: list_windows, focus_window, get_window_state, open_app, close_app. Mouse: left_click, right_click, double_click, mouse_move, mouse_drag, scroll. Keyboard: type_text, press_key, hotkey. Looking: screenshot, get_elements. Other: wait, clipboard_get, clipboard_set.' },
+    target: str('focus_window / close_app / type_text: window title or app name (or hwnd from list_windows) to act on. Give it to type_text so the text goes to the right window.'),
+    command: str('focus_window only: "restore" (default, bring to front), "maximize", "minimize" or "close".'),
+    app: str('open_app / close_app: app name, e.g. "notepad".'),
+    x: { type: 'integer', description: 'Mouse actions: screen X in pixels. Take coordinates from get_elements (centerX) or see_screen.' },
+    y: { type: 'integer', description: 'Mouse actions: screen Y in pixels (centerY from get_elements).' },
+    to_x: { type: 'integer', description: 'mouse_drag: destination X.' },
+    to_y: { type: 'integer', description: 'mouse_drag: destination Y.' },
+    text: str('type_text / clipboard_set: the exact text. Typing inserts at the caret; it never replaces existing content.'),
+    key: str('press_key / hotkey: one key or a combination, e.g. "enter", "tab", "escape", "f5", "ctrl+s", "ctrl+shift+n", "alt+f4".'),
+    direction: str('scroll: "up" or "down".'),
+    amount: { type: 'integer', description: 'scroll: number of notches (default 3).' },
+    ms: { type: 'integer', description: 'wait: milliseconds, at most 8000.' },
+  }, ['action']),
+  browser: params({
+    action: { type: 'string', enum: CAPABILITY_DEFINITIONS.browser.allowedActions, description: 'open_url (go to a page), search (web search in the browser), play (find and play media on YouTube), get_content (read the current page), click / type / fill_form (interact with the page), press_key, screenshot.' },
+    url: str('open_url: full address including https://.'),
+    query: str('search / play: what to search for.'),
+    ref: str('click / type: element ref from the interactive elements of the last page result.'),
+    text: str('type: text to enter into the element.'),
+    fields: { type: 'object', description: 'fill_form: field label -> value.' },
+    key: str('press_key: key name, e.g. "Enter".'),
+    submit: { type: 'boolean', description: 'type / fill_form: press Enter afterwards.' },
+  }, ['action']),
+  spotify_control: params({
+    action: { type: 'string', enum: CAPABILITY_DEFINITIONS.spotify_control.allowedActions, description: 'Spotify desktop control.' },
+    track: str('search / play_track: song or artist to play.'),
+    volume_percent: { type: 'integer', minimum: 0, maximum: 100, description: 'set_volume only.' },
+  }, ['action']),
 });
 
 export class CapabilityEngine {

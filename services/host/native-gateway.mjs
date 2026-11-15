@@ -4019,6 +4019,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       let mediaResult = null;
       const executedActions = [];
       const completedCalls = new Map();
+      // The window Zero itself opened or focused during this request. Keyboard
+      // input is only sent to a window that was named, never to "whatever
+      // happens to be in front".
+      let turnFocusedWindow = null;
+      const KEYBOARD_ACTIONS = new Set(['type_text', 'type', 'press_key', 'press', 'hotkey']);
       const IDEMPOTENT_TOOLS = new Set(['open_app', 'launch_app', 'play', 'write_file', 'memory_remember', 'schedule_task', 'goal_plan', 'procedure_learn', 'zero_skill_learn']);
       const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
       const recordTool = (name, args, result) => this.tasks.recordStep(taskId, {
@@ -4359,6 +4364,28 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           let execRes = null;
 
+          // 0. Keyboard input needs a known destination window.
+          if (!hasOwnHandler && targetCapability !== 'browser' && KEYBOARD_ACTIONS.has(action)) {
+            const namedWindow = args.target || args.app || args.window || args.window_title || null;
+            const hasPoint = args.x !== undefined && args.y !== undefined;
+            if (!namedWindow && !hasPoint && !turnFocusedWindow) {
+              execRes = {
+                ok: false, executed: false, verified: false, completed: false, outcome: 'FAILED', action,
+                error: 'keyboard-target-required',
+                message: action + ' was not sent: no destination window. Pass `target` (window title or app name), or call open_app / focus_window first. Keystrokes are never sent to an unknown window.',
+              };
+            } else if (!namedWindow && !hasPoint && turnFocusedWindow) {
+              args.target = turnFocusedWindow;
+            }
+            if (!execRes && !['type_text', 'type'].includes(action) && (args.target || args.app)) {
+              // press_key / hotkey: bring the destination to the front first.
+              const focusRes = await defaultOsController.focusWindow(String(args.target || args.app), 'restore', abortController.signal).catch(error => ({ ok: false, error: error.message }));
+              if (focusRes?.ok === false) {
+                execRes = { ok: false, executed: false, verified: false, completed: false, outcome: 'FAILED', action, error: 'focus-failed', message: action + ' was not sent: ' + (focusRes.error || 'the destination window could not be brought to the front') + '.' };
+              }
+            }
+          }
+
           // 1. see_screen directly utilizes defaultScreenVision + defaultUiaRootTree
           if (!execRes && (fnName === 'see_screen' || action === 'see_screen')) {
             try {
@@ -4621,68 +4648,61 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             }
           }
 
-          // 3. type_text / type with Automatic Cross-Hand Fallback & State Verification
+          // 3. type_text / type: put the keyboard focus in the right place, type,
+          // and report what the control actually holds afterwards.
           if (!execRes && !hasOwnHandler && (action === 'type_text' || action === 'type')) {
-            // defaultOsController and defaultUiaRootTree are module-level imports
-            // from packages/capability-engine — no dead core/ imports remain.
             const textToType = String(args.text || args.value || '');
             const targetAppOrWindow = args.target || args.app;
 
             try {
-              // Ensure genuine window focus first
+              let focusNote = null;
               if (targetAppOrWindow) {
-                await defaultOsController.focusWindow(targetAppOrWindow, 'restore', abortController.signal).catch(() => {});
-                await new Promise(r => setTimeout(r, 400));
+                const focusRes = await defaultOsController.focusWindow(targetAppOrWindow, 'restore', abortController.signal).catch(error => ({ ok: false, error: error.message }));
+                if (focusRes?.ok === false) focusNote = `Could not bring '${targetAppOrWindow}' to the front: ${focusRes.error || 'unknown reason'}`;
+                await new Promise(r => setTimeout(r, 300));
               }
 
-              // Extract UIA tree to locate editable control
-              const uiaTree = await defaultUiaRootTree.extractRootTree({ maxElements: 100, signal: abortController.signal });
-              const editEls = uiaTree.filterByType('edit');
-              const docEls = uiaTree.filterByType('document');
-              const targetEl = editEls[0] || docEls[0] || (uiaTree.elements || []).find(e => e.isInteractive);
-
-              let typeSuccess = false;
-              if (targetEl) {
-                try {
-                  const typeRes = await defaultOsController.typeIntoElement(targetEl.uia_id, textToType, abortController.signal);
-                  if (typeRes?.ok) typeSuccess = true;
-                } catch {}
+              const uiaTree = await defaultUiaRootTree.extractRootTree({ maxElements: 150, signal: abortController.signal }).catch(() => null);
+              const editors = uiaTree ? [...uiaTree.filterByType('edit'), ...uiaTree.filterByType('document')] : [];
+              // Only an editable control is ever clicked, and only when the
+              // keyboard is not already in one. Typing never replaces the
+              // existing content of a control; it inserts at the caret.
+              const focusedEditor = editors.find(e => e.hasKeyboardFocus);
+              const targetEl = focusedEditor || editors[0] || null;
+              if (args.x !== undefined && args.y !== undefined) {
+                await defaultOsController.click({ x: args.x, y: args.y }, abortController.signal);
+                await new Promise(r => setTimeout(r, 150));
+              } else if (targetEl && !focusedEditor) {
+                await defaultOsController.click({ x: targetEl.cx, y: targetEl.cy }, abortController.signal);
+                await new Promise(r => setTimeout(r, 150));
               }
 
-              if (!typeSuccess) {
-                // Tier 2 Fallback: Focus HWND, click center (cx, cy) if available, and SendInput text
-                if (targetEl && targetEl.cx && targetEl.cy) {
-                  await defaultOsController.click({ x: targetEl.cx, y: targetEl.cy }, abortController.signal);
-                  await new Promise(r => setTimeout(r, 200));
-                }
-                await defaultOsController.typeText(textToType, {}, abortController.signal);
-              }
-
-              // Post-typing verification: verify text in Notepad / active window via UIA or OCR
-              let verified = true;
-              try {
-                const postTree = await defaultUiaRootTree.extractRootTree({ maxElements: 60, signal: abortController.signal });
-                const postEdit = postTree.filterByType('edit')[0] || postTree.filterByType('document')[0];
-                if (postEdit && postEdit.value && !postEdit.value.includes(textToType)) {
-                  // retry typing once directly into edit control
-                  await defaultOsController.click({ x: postEdit.cx, y: postEdit.cy }, abortController.signal);
-                  await defaultOsController.typeText(textToType, {}, abortController.signal);
-                }
-              } catch {}
-
+              const typeRes = await defaultOsController.typeText(textToType, {}, abortController.signal);
+              const typedOk = typeRes?.ok !== false;
+              const verified = typedOk && typeRes?.verified === true;
               execRes = {
-                ok: true,
-                executed: true,
-                verified: true,
-                completed: true,
-                outcome: 'COMPLETED',
+                ok: typedOk,
+                executed: typedOk,
+                verified,
+                // Sending the keystrokes is the action; reading them back is a
+                // bonus that only text controls offer (a calculator does not).
+                completed: typedOk,
+                outcome: typedOk ? 'COMPLETED' : 'FAILED',
                 action: 'type_text',
                 text: textToType,
-                target: targetAppOrWindow || uiaTree.activeWindow?.title || 'active',
-                verifiedText: textToType,
+                typedChars: typeRes?.typedChars,
+                target: targetAppOrWindow || uiaTree?.activeWindow?.title || 'active window',
+                receivedByWindow: uiaTree?.activeWindow?.title || null,
+                ...(verified
+                  ? { verifiedText: textToType, message: `Typed and confirmed in "${uiaTree?.activeWindow?.title || 'the active window'}".` }
+                  : (typedOk
+                    ? { message: `All ${typeRes?.typedChars ?? textToType.length} characters were sent to "${uiaTree?.activeWindow?.title || 'the active window'}". This control does not show its text to Zero, which is normal for apps like Calculator. Do not retype. Call get_elements once to read the result.` }
+                    : { error: typeRes?.error || 'typing-failed', message: typeRes?.error || 'Windows did not accept the keystrokes.' })),
+                ...(focusNote ? { focusWarning: focusNote } : {}),
               };
             } catch (typeErr) {
-              console.warn('[Zero Host] Cross-hand type_text failed:', typeErr.message);
+              console.warn('[Zero Host] type_text failed:', typeErr.message);
+              execRes = { ok: false, executed: false, verified: false, completed: false, outcome: 'FAILED', action: 'type_text', error: typeErr.message, message: typeErr.message };
             }
           }
 
@@ -4700,6 +4720,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           executedActions.push({ stepId, action, args, execRes });
           recordTool(fnName, args, execRes);
 
+          // Track the window Zero opened or focused, for later keyboard input.
+          if (execRes?.ok === true && ['open_app', 'launch_app', 'focus_window', 'control_window', 'bring_to_front'].includes(action)) {
+            const focusedTitle = (typeof execRes.window === 'string' ? execRes.window : execRes.window?.title) || execRes.data?.window?.title || execRes.details?.title || null;
+            if (focusedTitle && !['minimize', 'close'].includes(String(args.command || '').toLowerCase())) turnFocusedWindow = focusedTitle;
+          }
           // Remember a completed idempotent call so an identical repeat reuses it.
           if (isIdempotentCall && execRes?.ok === true && (execRes.completed === true || execRes.outcome === 'COMPLETED')) {
             completedCalls.set(intentKey, execRes);

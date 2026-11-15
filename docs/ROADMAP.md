@@ -47,18 +47,30 @@ Status values: `done`, `partial`, `todo`.
 - `done` Screenshot fallback no longer fails on large frames.
 - `done` Every screen/input action waited 4 s for a daemon that never starts;
   it now falls back at once (capture 4.3 s -> 0.35 s).
-- `todo` Windows Defender blocks `win-actions-daemon.ps1` (the block is in its
-  action cases, not the C# header). The one-off fallback script has no real
-  `get_elements`, and its `focus_window` / `control_window` report success
-  without doing anything. Move the real implementations into a path that is
-  not blocked, without hiding code from the antivirus.
+- `done` The one-off action script (`win-actions.ps1`) is now a real set of
+  hands: UI Automation element discovery, window focus/minimize/maximize/close
+  by title or app, the real top-level window list, Unicode typing (any
+  language), hotkey combinations, and every action name the driver uses.
+- `done` Typing inserts at the caret and never rewrites a control. The old
+  path could replace a whole document with the typed text.
+- `done` `open_app` waits for the app's window and brings it to the front.
+- `done` Keyboard input is only sent to a named window, or to one Zero opened
+  or focused in the same request. Closing a window needs an exact match.
+- `done` The model is shown the arguments of `zero_computer_action`,
+  `browser`, `open_app` and `spotify_control`.
+- `todo` Windows Defender blocks `win-actions-daemon.ps1`, so each action
+  starts a new PowerShell (0.35–0.6 s). A persistent helper that the
+  antivirus accepts would bring this under 0.1 s. Do not hide code from it.
+- `todo` `uia_invoke`, `uia_set_value`, `apply_playback_settings` and
+  `inspect_media_playback` exist only in the blocked daemon.
 - `todo` Desktop runtime is not installed (`artifacts/zero-desktop-runtime/bin/zero-desktop.exe`
   is missing), so accessibility snapshots are off. `scripts/install-agent-desktop.mjs`
   points at a release URL that was broken by a blanket rename; fix the URL and
   checksum before running it.
-- `todo` UI element discovery returns nothing for Electron/Chromium windows.
-- `todo` A capture takes 4–9 s; target is under 1 s (keep the capture helper
-  process warm).
+- `todo` A simple WinForms test window exposed only 2 elements; check
+  element discovery on more app types.
+- `todo` Each GUI step costs one model round trip (~5 s). Let the model send
+  a short batch of actions in one call.
 - `todo` A simple browser task took 62 s end to end; most of it before the
   first token. Measure browser start and model latency separately.
 - `todo` Local vision: `models/local-vision.json` points at a

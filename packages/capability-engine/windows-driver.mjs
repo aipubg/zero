@@ -258,18 +258,32 @@ export async function runNativeWinActionOneOff(action, args = {}, signal = null)
     action,
   ];
 
+  // Callers use both snake_case and camelCase, and hotkeys arrive as arrays.
+  args = { ...args };
+  if (args.from_x === undefined && args.fromX !== undefined) args.from_x = args.fromX;
+  if (args.from_y === undefined && args.fromY !== undefined) args.from_y = args.fromY;
+  if (args.to_x === undefined && args.toX !== undefined) args.to_x = args.toX;
+  if (args.to_y === undefined && args.toY !== undefined) args.to_y = args.toY;
+  if (args.key === undefined && Array.isArray(args.keys)) {
+    args.key = args.keys.map(k => String(k).toLowerCase().replace(/^control$/, "ctrl").replace(/^(meta|super|windows)$/, "win")).join("+");
+  }
   if (args.x !== undefined) params.push("-X", String(Math.round(args.x)));
   if (args.y !== undefined) params.push("-Y", String(Math.round(args.y)));
   if (args.to_x !== undefined) params.push("-ToX", String(Math.round(args.to_x)));
   if (args.to_y !== undefined) params.push("-ToY", String(Math.round(args.to_y)));
   if (args.button !== undefined) params.push("-Button", String(args.button));
   if (args.count !== undefined) params.push("-Count", String(args.count));
-  if (args.text !== undefined) params.push("-Text", String(args.text));
+  if (args.text !== undefined) params.push("-TextB64", Buffer.from(String(args.text), "utf8").toString("base64"));
   if (args.key !== undefined) params.push("-Key", String(args.key));
   if (args.app !== undefined) params.push("-App", String(args.app));
   if (args.url !== undefined) params.push("-Url", String(args.url));
   if (args.direction !== undefined) params.push("-Direction", String(args.direction));
   if (args.amount !== undefined) params.push("-Amount", String(args.amount));
+  if (args.target !== undefined && args.target !== null) params.push("-Target", String(args.target));
+  if (args.command !== undefined && args.command !== null) params.push("-Command", String(args.command));
+  if (args.from_x !== undefined) params.push("-FromX", String(Math.round(args.from_x)));
+  if (args.from_y !== undefined) params.push("-FromY", String(Math.round(args.from_y)));
+  if (args.ms !== undefined) params.push("-WaitMs", String(Math.round(args.ms)));
 
   const { stdout } = await execFileAsync("powershell.exe", params, {
     windowsHide: true,

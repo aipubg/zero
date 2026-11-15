@@ -443,27 +443,69 @@ export class ComputerOperator {
         case "focus_window":
         case "control_window":
         case "bring_to_front": {
-          const target = params.target ?? params.title ?? params.app ?? params.pid;
+          // A window is named by its title or app/process name (or an hwnd
+          // from list_windows). A pid is not a window handle and is ignored.
+          const target = params.hwnd ?? params.target ?? params.title ?? params.window_title ?? params.window ?? params.app ?? params.name;
           const cmd = String(params.command ?? "restore").toLowerCase();
-          const res = await Driver.focusWindow({ target, command: cmd }, signal);
-          const ok = res?.ok !== false && res?.focused !== false;
-          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "UNVERIFIED", action: normalizedAction, target, command: cmd, details: res };
+          if (target === undefined || target === null || String(target).trim() === "") {
+            return { ok: false, executed: false, verified: false, completed: false, outcome: "FAILED", action: normalizedAction, error: "missing-target", message: "focus_window needs `target`: a window title, an app name, or an hwnd from list_windows." };
+          }
+          const res = await Driver.focusWindow({ target: String(target), command: cmd }, signal);
+          const acted = res?.ok !== false;
+          const ok = acted && (["minimize", "close"].includes(cmd) || res?.focused !== false);
+          return { ok, executed: acted, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "FAILED", action: normalizedAction, target, command: cmd, window: res?.title, ...(ok ? {} : { error: res?.error || "focus-failed", message: res?.error || "The window could not be brought to the front." }), details: res };
         }
 
         case "launch_app":
         case "open_app": {
           const app = String(params.app ?? params.name ?? params.command ?? "");
           if (!app) return { ok: false, message: "Missing app name for launch_app" };
+          // Launching is only done when the app's window is on screen and in
+          // front; otherwise the next keystrokes land in some other window.
+          const windowsOf = async () => {
+            const listed = await Driver.listWindows(signal).catch(() => null);
+            return Array.isArray(listed?.windows) ? listed.windows : [];
+          };
+          const before = new Set((await windowsOf()).map(w => String(w.hwnd)));
           const res = await Driver.launchApp(app, signal);
           const ok = res?.ok !== false;
+          if (!ok) {
+            return { ok: false, executed: false, verified: false, completed: false, outcome: "FAILED", action: "launch_app", app, details: res, message: res?.error || `Could not launch ${app}` };
+          }
+          const base = app.toLowerCase().replace(/^.*[\\/]/, "").replace(/\.exe$/, "");
+          const names = { calc: "calculator", mspaint: "paint", msedge: "edge", winword: "word", excel: "excel", cmd: "command prompt", explorer: "file explorer" };
+          const needles = [base, names[base]].filter(Boolean);
+          const matches = w => needles.some(n => String(w.title || "").toLowerCase().includes(n) || String(w.process || "").toLowerCase().includes(n));
+          let appWindow = null;
+          const deadline = Date.now() + 8000;
+          while (!appWindow && Date.now() < deadline) {
+            signal?.throwIfAborted?.();
+            await new Promise(resolve => setTimeout(resolve, 400));
+            const now = await windowsOf();
+            appWindow = now.find(w => !before.has(String(w.hwnd)) && matches(w))
+              || now.find(w => !before.has(String(w.hwnd)) && w.isForeground)
+              || now.find(matches)
+              || null;
+          }
+          let focused = false;
+          if (appWindow?.hwnd) {
+            const focusRes = await Driver.focusWindow({ target: String(appWindow.hwnd), command: "restore" }, signal).catch(() => null);
+            focused = focusRes?.focused === true;
+          }
           return {
-            ok,
-            executed: Boolean(res?.launched || ok),
-            verified: ok,
-            completed: ok,
-            outcome: ok ? "COMPLETED" : "UNVERIFIED",
+            ok: true,
+            executed: true,
+            verified: Boolean(appWindow),
+            completed: Boolean(appWindow),
+            outcome: appWindow ? "COMPLETED" : "UNVERIFIED",
             action: "launch_app",
             app,
+            launched: Boolean(appWindow),
+            window: appWindow ? { title: appWindow.title, process: appWindow.process, hwnd: appWindow.hwnd } : null,
+            focused,
+            message: appWindow
+              ? `${app} is open${focused ? " and in front" : ", but Windows did not bring it to the front; call focus_window before typing"}. Window title: "${appWindow.title}".`
+              : `${app} was started, but no window for it appeared within 8 seconds.`,
             details: res
           };
         }
