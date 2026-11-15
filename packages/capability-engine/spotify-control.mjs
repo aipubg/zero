@@ -1,6 +1,5 @@
 /**
  * Zero Spotify Control — real working implementation.
- * Consolidated from packages/media-control/windows-session.mjs into the Single Room.
  * Controls the Windows Spotify desktop application via PowerShell/SMTC.
  */
 

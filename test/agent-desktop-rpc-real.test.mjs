@@ -6,7 +6,7 @@ import path from 'node:path';
 import net from 'node:net';
 import { once } from 'node:events';
 import { ZeroNativeHost } from '../services/host/native-gateway.mjs';
-import { AgentDesktop } from '../packages/agent-runtime/agent-desktop.mjs';
+import { AgentDesktop } from '../packages/capability-engine/zero-desktop.mjs';
 import { ComputerOperator } from '../packages/capability-engine/computer-operator.mjs';
 import { canonicalCapabilityEngine } from '../packages/capability-engine/index.mjs';
 

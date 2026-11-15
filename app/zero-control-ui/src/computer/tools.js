@@ -8,7 +8,7 @@
  */
 
 import { ComputerOperator } from "../../../../packages/capability-engine/computer-operator.mjs";
-import { MEDIA_COMMANDS } from "../../../../packages/media-control/index.mjs";
+import { MEDIA_COMMANDS } from "../../../../packages/capability-engine/media-control.mjs";
 
 const coordinate = { type: "integer", minimum: 0, maximum: 32767 };
 

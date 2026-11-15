@@ -10,7 +10,7 @@
  * between them: DOM/UIA first, then screen vision, then physical input.
  */
 
-import { ZeroDesktop, DESKTOP_COMMANDS } from '../agent-runtime/agent-desktop.mjs';
+import { ZeroDesktop, DESKTOP_COMMANDS } from './zero-desktop.mjs';
 import {
   runNativeWinAction,
   getWindowState,

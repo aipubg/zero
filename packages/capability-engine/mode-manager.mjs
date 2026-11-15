@@ -1,6 +1,5 @@
 /**
  * Zero Mode Manager — real working implementation.
- * Consolidated from rules/mode-manager.mjs into the Single Room.
  * Manages owner/distribution modes and policy evaluation.
  */
 
@@ -8,7 +7,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Policy data lives in the repository-level rules/ directory.
+const __dirname = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../rules");
 const STATE_FILE = path.join(__dirname, "active-mode.json");
 
 export const MODES = Object.freeze({

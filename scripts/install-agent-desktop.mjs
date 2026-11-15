@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { ZERO_DESKTOP_SHA256, ZERO_DESKTOP_VERSION } from '../packages/agent-runtime/agent-desktop.mjs';
+import { ZERO_DESKTOP_SHA256, ZERO_DESKTOP_VERSION } from '../packages/capability-engine/zero-desktop.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('This pinned installer supports Windows x64');
 const directory = path.join(root, 'artifacts/zero-desktop-runtime');

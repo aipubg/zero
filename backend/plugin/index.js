@@ -39,7 +39,7 @@
 
 import { readFileSync } from "node:fs";
 import { buildJsonPluginConfigSchema, definePluginEntry } from "../../packages/plugin-sdk/plugin-entry.mjs";
-import { modeManager } from "../../rules/mode-manager.mjs";
+import { modeManager } from "../../packages/capability-engine/mode-manager.mjs";
 import { createAllComputerTools } from "../../app/zero-control-ui/src/computer/tools.js";
 
 const PLUGIN_ID = "zero-policy";

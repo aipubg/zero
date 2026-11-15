@@ -454,8 +454,10 @@ export class CapabilityEngine {
           || Boolean(returned.observed);
         const verified = ok && executed && (returned.verified === true || Boolean(returned.observed)) && Boolean(hasEvidence);
         const outcome = !ok
-          ? (['BLOCKED', 'CANCELLED'].includes(returned.outcome) ? returned.outcome : 'UNVERIFIED')
-          : (verified ? 'COMPLETED' : 'UNVERIFIED');
+          ? (['BLOCKED', 'CANCELLED'].includes(returned.outcome) ? returned.outcome : 'FAILED')
+          // A handler that ran to the end and reports its task complete is done,
+          // even when it has no separate evidence object (system_info, status).
+          : ((verified || returned.taskComplete === true) ? 'COMPLETED' : 'UNVERIFIED');
         const res = {
           ...returned,
           ok,
@@ -478,7 +480,7 @@ export class CapabilityEngine {
           executed: false,
           verified: false,
           completed: false,
-          outcome: 'UNVERIFIED',
+          outcome: 'FAILED',
           capability: toolName,
           action,
           error: err.message,
@@ -486,7 +488,7 @@ export class CapabilityEngine {
           durationMs,
           auditId,
         };
-        this._recordAudit(agentId, toolName, params, 'UNVERIFIED', res);
+        this._recordAudit(agentId, toolName, params, 'FAILED', res);
         return res;
       }
     }

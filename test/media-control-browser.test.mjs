@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { MediaController } from '../packages/media-control/index.mjs';
+import { MediaController } from '../packages/capability-engine/media-control.mjs';
 import { ComputerOperator } from '../packages/capability-engine/computer-operator.mjs';
 
 test('visible controlled media playback and idempotent controls affect the same real player', { timeout: 45000 }, async t => {

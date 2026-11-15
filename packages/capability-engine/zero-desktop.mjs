@@ -1,6 +1,5 @@
 /**
  * Zero Desktop — real working implementation.
- * Consolidated from packages/agent-runtime/agent-desktop.mjs into the Single Room.
  * Native Windows desktop transport via zero-desktop.exe binary.
  */
 
@@ -35,7 +34,7 @@ export class ZeroDesktop {
     signal?.throwIfAborted();
     if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Pinned ZERO zero-desktop runtime currently supports Windows x64');
     const stat = await fs.promises.stat(this.binary).catch(() => null);
-    if (!stat) throw new Error('zero-desktop runtime missing; run node scripts/install-zero-desktop.mjs');
+    if (!stat) throw new Error('zero-desktop runtime missing; run node scripts/install-agent-desktop.mjs');
     const cached = verifiedBinaries.get(this.binary);
     if (!cached || cached.size !== stat.size || cached.mtimeMs !== stat.mtimeMs) {
       const hash = createHash('sha256').update(await fs.promises.readFile(this.binary)).digest('hex');

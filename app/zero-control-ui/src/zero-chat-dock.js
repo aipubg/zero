@@ -41,9 +41,15 @@ function isChatRoute(pathname) {
 /** A composer only counts when it is on screen, sized, and not transparent. */
 function composerIsUsable(textarea) {
   if (!textarea || !textarea.isConnected) return false;
+  // A hidden or zero-sized tab reports no layout at all; that says nothing
+  // about the composer, so do not mount a second one because of it.
+  if (document.hidden || window.innerHeight === 0) return true;
   const rect = textarea.getBoundingClientRect();
   if (rect.width < 120 || rect.height < 12) return false;
-  if (rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
+  // A composer further down a scrollable page (the /new page in a short
+  // window) is still usable. Only one stranded far outside the page counts
+  // as missing: above the viewport, or more than three screens below it.
+  if (rect.bottom <= 0 || rect.top >= window.innerHeight * 3) return false;
   const style = window.getComputedStyle(textarea);
   if (style.display === 'none' || style.visibility === 'hidden') return false;
   if (Number(style.opacity) === 0) return false;

@@ -8,7 +8,7 @@ import {
   createLocalGgufMiddleware,
 } from './server/local-gguf-middleware.ts';
 import { localGgufService } from './server/local-gguf-service.ts';
-import { modeManager } from '../../rules/mode-manager.mjs';
+import { modeManager } from '../../packages/capability-engine/mode-manager.mjs';
 import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS } from '../../packages/capability-engine/index.mjs';
 import { TaskStateMachine, TASK_STATUS } from '../../packages/agent-runtime/index.mjs';
 import { AutomationScheduler } from '../../packages/automation/index.mjs';

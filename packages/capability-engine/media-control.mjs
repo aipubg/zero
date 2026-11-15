@@ -1,6 +1,5 @@
 /**
  * Zero Media Control — real working implementation.
- * Consolidated from packages/media-control/index.mjs into the Single Room.
  * Controls browser-based media playback (YouTube, HTML5 media elements).
  */
 

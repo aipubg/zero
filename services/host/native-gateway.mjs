@@ -20,7 +20,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { modelSettings, assignZeroModel, assignAgentModel, saveConfiguredProvider, deleteConfiguredProvider, deleteConfiguredModel, probeConfiguredProvider, importModelSettings, replaceConfiguredProviders } from './model-settings.mjs';
 import { recoverModelImport } from '../../packages/model-fabric/config-transaction.mjs';
 import { prepareToolBatch } from './tool-batch.mjs';
-import { MEDIA_COMMANDS } from '../../packages/media-control/index.mjs';
+import { MEDIA_COMMANDS } from '../../packages/capability-engine/media-control.mjs';
 import { createAutomationDispatcher } from './automation-dispatcher.mjs';
 import { LocalGgufEngineService } from '../../backend/gateway/server/local-gguf-service.ts';
 import { LocalChatTransport } from '../../packages/model-fabric/local-chat-transport.mjs';
@@ -70,7 +70,7 @@ import { defaultOsController } from '../../packages/capability-engine/computer-c
 import { defaultBrowserAutomation } from '../../packages/capability-engine/browser-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
 import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
-import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/agent-runtime/agent-desktop.mjs';
+import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/capability-engine/zero-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
 import { createScreenObserver } from '../../packages/screen-intelligence/index.mjs';
@@ -190,7 +190,7 @@ async function loadWs() {
 
 export class ZeroNativeHost {
   constructor(options = {}) {
-    this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 6);
+    this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 12);
     if (!Number.isInteger(this.maxAssistantTurns) || this.maxAssistantTurns < 1 || this.maxAssistantTurns > 128) throw new Error('maxAssistantTurns must be an integer between 1 and 128');
     this.voiceRecognitionBackend = options.voiceRecognitionBackend ?? process.env.ZERO_VOICE_RECOGNITION_BACKEND;
     if (this.voiceRecognitionBackend !== undefined && !['windows', 'whisper'].includes(this.voiceRecognitionBackend)) throw new Error('Unknown voice recognition backend');
@@ -3964,6 +3964,13 @@ YOUR FULL CONTROL CAPABILITIES:
    - Read and write files anywhere on the computer.
    - Run PowerShell, CMD, Python, or execute CLI programs.
 
+TOOL SELECTION (choose the most direct tool, in this order):
+1. Backend first. Anything a command or file operation can do (system info, hostname, network, git, scripts, reading or writing files, installing, searching files) uses run_process, read_file, write_file or system_info. Never open a terminal window and type a command into it.
+2. Web facts use web_search / web_extract. Use the browser tool only when the task needs a real page: logging in, clicking, filling forms, playing media, or reading a page that needs the owner's session.
+3. Use mouse, keyboard and see_screen only when the task is about an application on screen that has no command-line or browser path.
+4. One call per step. After a tool reports ok, move to the next step; do not repeat a call that already succeeded.
+5. When the work is done, or you cannot go further, stop calling tools and answer the owner in plain words: what was done and the result.
+
 AUTONOMOUS EXECUTION PRINCIPLES:
 - ALWAYS EXECUTE DIRECTLY VIA TOOL CALLS: When the user asks you to do something (open software, search YouTube, fill a form, click something, type a note), IMMEDIATELY emit native function tool calls (open_app, zero_computer_action, browser, see_screen).
 - NEVER ROLEPLAY ACTIONS IN PLAIN TEXT: NEVER output text like "Action: open_app", "⏳ Loading...", "Pending / Queued Actions", or "I'll wait for results". If an action needs to happen, YOU MUST CALL THE TOOL. You will only receive real tool results by executing tool calls. Outputting text pretending to execute actions is strictly prohibited.
@@ -4011,7 +4018,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       let observedProviderModel = null;
       let mediaResult = null;
       const executedActions = [];
-      const completedIntents = new Set();
+      const completedCalls = new Map();
+      const IDEMPOTENT_TOOLS = new Set(['open_app', 'launch_app', 'play', 'write_file', 'memory_remember', 'schedule_task', 'goal_plan', 'procedure_learn', 'zero_skill_learn']);
       const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
       const recordTool = (name, args, result) => this.tasks.recordStep(taskId, {
         stepNumber: this.tasks.getTaskSteps(taskId).length + 1,
@@ -4055,20 +4063,24 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         }
       }
 
+      // An explicitly requested model always wins; a parked session model is
+      // only used when it still resolves against the configured providers.
+      // A stale pin (a model that was removed from the catalogue) would
+      // otherwise be sent upstream and time out.
+      const resolveTurnModel = () => ((typeof model === 'string' && model.trim())
+        ? model.trim()
+        : this._resolveUsableModel(this.sessions.getSession(sessionKey)?.metadata?.model, sessionKey));
+
       while (turns < maxTurns && !completedModelTurn) {
         turns++;
         if (abortController.signal.aborted) {
           throw abortController.signal.reason;
         }
+        // Each model turn starts with its own text. Carrying the previous
+        // turns' text forward repeated the same sentence in the reply.
+        accumulatedContent = '';
 
-        const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
-        // An explicitly requested model always wins; a parked session model is
-        // only used when it still resolves against the configured providers.
-        // A stale pin (a model that was removed from the catalogue) would
-        // otherwise be sent upstream and time out.
-        const explicitModel = (typeof model === 'string' && model.trim())
-          ? model.trim()
-          : this._resolveUsableModel(parkedModel, sessionKey);
+        const explicitModel = resolveTurnModel();
         // No explicit model = Default model (Auto-Best): ModelFabric ranks the
         // owner's configured models and fails over automatically.
         const modelPayload = {
@@ -4078,7 +4090,6 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         };
 
         const toolCallsMap = new Map();
-        const seenToolIntents = new Set();
         let finishReason = null;
 
         try {
@@ -4107,21 +4118,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
             if (chunk.tool_calls && Array.isArray(chunk.tool_calls)) {
               for (const tc of chunk.tool_calls) {
-                const toolName = tc.function?.name || '';
-                const toolArgs = tc.function?.arguments || '';
-                // Providers stream tool arguments in fragments, so a chunk is only
-                // comparable once it carries a tool name and complete JSON
-                // arguments. Fragments are always accumulated below.
-                let parsedArgs = null;
-                try { parsedArgs = JSON.parse(toolArgs); } catch {}
-                if (toolName && parsedArgs && typeof parsedArgs === 'object') {
-                  const intentKey = `${toolName}:${parsedArgs.action || ''}:${String(parsedArgs.command || parsedArgs.query || parsedArgs.path || parsedArgs.app || '').trim().toLowerCase()}`;
-                  if (seenToolIntents.has(intentKey)) {
-                    console.log(`[Zero Host] Skipping duplicate tool intent '${intentKey}' in streaming chunk`);
-                    continue;
-                  }
-                  seenToolIntents.add(intentKey);
-                }
+                // Providers stream tool arguments in fragments keyed by index;
+                // every fragment is accumulated. Repeated calls are handled at
+                // execution time, where the full arguments are known.
                 const idx = tc.index ?? 0;
                 if (!toolCallsMap.has(idx)) {
                   toolCallsMap.set(idx, {
@@ -4189,43 +4188,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           break;
         }
 
-        // If no API tool calls were requested, check if the model hallucinates action execution in text:
-        // e.g. "Action: open_app (notepad)", "⏳ Loading...", "Pending / Queued Actions", "I'll wait for results"
-        if (toolCallsMap.size === 0) {
-          const hasRoleplayActions = /(?:Action:\s*(?:open_app|browser|type_text|click)|(?:⏳|⌛)\s*Loading|Pending\s*(?:\/|&)\s*Queued\s*Actions|I'll\s*wait\s*for\s*(?:the\s*)?results)/i.test(accumulatedContent);
-          if (hasRoleplayActions) {
-            console.warn('[Zero Host] Detected plain-text action roleplay/hallucination without real tool calls. Extracting inline intent into actual execution loop.');
-            
-            // Inline parser for hallucinated actions:
-            if (/open_app\s*\(\s*notepad\s*\)/i.test(accumulatedContent) || /open(?:ing)?\s*notepad/i.test(accumulatedContent)) {
-              toolCallsMap.set(0, {
-                id: `call_synth_open_${Date.now()}`,
-                type: 'function',
-                function: { name: 'open_app', arguments: JSON.stringify({ app: 'notepad' }) }
-              });
-            }
-            if (/type(?:_text)?\s*\(.*['"]([^'"]+)['"].*\)/i.test(accumulatedContent) || /Zero AI Test Successful/i.test(accumulatedContent) || /Testing the Notepad functionality/i.test(accumulatedContent)) {
-              const textMatch = accumulatedContent.match(/['"](Zero AI Test Successful[^'"]*)['"]/) || accumulatedContent.match(/['"]([^'"]+)['"]/);
-              const textToType = textMatch ? textMatch[1] : 'Zero AI Test Successful';
-              toolCallsMap.set(toolCallsMap.size, {
-                id: `call_synth_type_${Date.now()}`,
-                type: 'function',
-                function: { name: 'zero_computer_action', arguments: JSON.stringify({ action: 'type_text', target: 'notepad', text: textToType }) }
-              });
-            }
-            if (/browser\s*play\s*\(([^)]+)\)/i.test(accumulatedContent) || /youtube.*search.*Physics Wallah/i.test(accumulatedContent)) {
-              const queryMatch = accumulatedContent.match(/browser\s*play\s*\(([^)]+)\)/i) || accumulatedContent.match(/search\s*(?:for\s*)?['"]?([^'"\n]+)['"]?/i);
-              const ytQuery = queryMatch ? queryMatch[1].replace(/['"]/g, '').trim() : 'Physics Wallah';
-              toolCallsMap.set(toolCallsMap.size, {
-                id: `call_synth_yt_${Date.now()}`,
-                type: 'function',
-                function: { name: 'browser', arguments: JSON.stringify({ action: 'search', query: ytQuery }) }
-              });
-            }
-          }
-        }
-
-        // If STILL no tool calls, validate finish reason and complete turn
+        // No tool calls: validate the finish reason and complete the turn
         if (toolCallsMap.size === 0) {
           // Protocol-shaped assistant text is not an executed API tool call.
           // Never interpret it as code or report the requested action complete.
@@ -4348,26 +4311,20 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             }
           }
 
-          // Duplicate intent prevention: skip if this exact intent already succeeded
-          const intentKey = `${fnName}:${action}:${String(args.command || args.query || args.path || args.app || '').trim().toLowerCase()}`;
-          if (completedIntents.has(intentKey)) {
-            console.log(`[Zero Host] Skipping duplicate intent '${intentKey}' - already completed successfully`);
-            const duplicateResult = {
-              ok: true,
-              status: 'COMPLETED',
-              outcome: 'VERIFIED',
-              taskComplete: true,
-              executed: false,
-              skipped: true,
-              message: `Already completed: ${fnName} ${action} (intent '${intentKey}')`,
-              verified: true,
-            };
-            executedActions.push({ action: fnName, args: args || {}, execRes: duplicateResult });
-            recordTool(fnName, args || {}, duplicateResult);
+          // An identical repeat of an idempotent call (same tool, same arguments)
+          // reuses the earlier real result. Observation and input actions are
+          // never reused: looking twice or pressing a key twice is legitimate.
+          const isIdempotentCall = IDEMPOTENT_TOOLS.has(fnName) || IDEMPOTENT_TOOLS.has(action);
+          const intentKey = `${fnName}:${action}:${JSON.stringify(args)}`;
+          if (isIdempotentCall && completedCalls.has(intentKey)) {
+            console.log(`[Zero Host] Reusing result of identical '${fnName}' call`);
+            const reusedResult = { ...completedCalls.get(intentKey), reused: true, message: 'Identical call already completed earlier in this turn; its result is reused. Do not repeat it.' };
+            executedActions.push({ stepId: `step_${executedActions.length + 1}`, action, args: args || {}, execRes: reusedResult });
+            recordTool(fnName, args || {}, reusedResult);
             const toolMsg = {
               role: 'tool',
               tool_call_id: callId || call.id,
-              content: JSON.stringify(duplicateResult),
+              content: JSON.stringify(this._sanitizeToolResultForLlm(reusedResult, { isVisionModel: false })),
             };
             currentMessages.push(toolMsg);
             this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
@@ -4401,24 +4358,6 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           }
 
           let execRes = null;
-
-          // Cross-Hand Fallback & Core Integration:
-          // 0. Strict Guard: Disallow unrequested close_app / kill_app
-          if (fnName === 'close_app' || action === 'close_app' || action === 'kill_app') {
-            const userAskedClose = /(?:close|exit|band|kill|terminate|hatao|quit|shut\s*down)/i.test(userContent);
-            if (!userAskedClose) {
-              console.warn('[Zero Host] Blocked unrequested close_app tool call:', args);
-              execRes = {
-                ok: false,
-                executed: false,
-                verified: false,
-                completed: false,
-                outcome: 'BLOCKED',
-                action: 'close_app',
-                message: 'Refused unrequested close_app: applications must remain open and visible for the user unless explicitly requested to close.',
-              };
-            }
-          }
 
           // 1. see_screen directly utilizes defaultScreenVision + defaultUiaRootTree
           if (!execRes && (fnName === 'see_screen' || action === 'see_screen')) {
@@ -4761,11 +4700,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           executedActions.push({ stepId, action, args, execRes });
           recordTool(fnName, args, execRes);
 
-          // Track successful intents to prevent duplicate retries
-          // The engine reports success as outcome 'COMPLETED' (never 'VERIFIED').
-          if (execRes?.ok === true && (execRes.completed === true || execRes.outcome === 'COMPLETED')) {
-            const successIntentKey = `${fnName}:${action}:${String(args.command || args.query || args.path || args.app || '').trim().toLowerCase()}`;
-            completedIntents.add(successIntentKey);
+          // Remember a completed idempotent call so an identical repeat reuses it.
+          if (isIdempotentCall && execRes?.ok === true && (execRes.completed === true || execRes.outcome === 'COMPLETED')) {
+            completedCalls.set(intentKey, execRes);
           }
 
           if (action === 'play') {
@@ -4809,8 +4746,27 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       }
 
       if (!completedModelTurn) {
-        console.warn('[Zero Host] Assistant tool-turn limit reached before a final response; returning partial results');
-        finalContent = accumulatedContent || `Autonomous task executed: ${executedActions.length} action(s) processed.`;
+        console.warn('[Zero Host] Assistant tool-turn limit reached before a final response; asking the model for a closing report');
+        // The step budget is spent, but the owner still needs an answer: one
+        // last request without tools, so the model can only report.
+        let closingReport = '';
+        try {
+          const closingModel = resolveTurnModel();
+          const closingMessages = [...currentMessages, {
+            role: 'user',
+            content: 'The step budget for this request is used up. Do not call any tools. Reply to the owner now: what you did, what you found, and what is still not done.',
+          }];
+          for await (const chunk of this.modelFabric.streamChat({ ...(closingModel ? { model: closingModel } : {}), messages: closingMessages }, { signal: abortController.signal })) {
+            if (chunk.delta) {
+              closingReport += chunk.delta;
+              publishChat({ state: 'delta', message: { role: 'assistant', content: [{ type: 'text', text: closingReport }] } });
+            }
+          }
+        } catch (closingError) {
+          if (abortController.signal.aborted) throw abortController.signal.reason;
+          console.warn('[Zero Host] Closing report failed:', closingError.message);
+        }
+        finalContent = closingReport.trim() || accumulatedContent || `Stopped after ${executedActions.length} step(s) without finishing; the step budget ran out.`;
         completedModelTurn = true;
       }
 

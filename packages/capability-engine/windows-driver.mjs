@@ -251,6 +251,9 @@ export async function runNativeWinActionOneOff(action, args = {}, signal = null)
   const { stdout } = await execFileAsync("powershell.exe", params, {
     windowsHide: true,
     timeout: 10_000,
+    // A full-screen PNG as base64 is several MB; the 1 MB default cut it off
+    // and screenshots failed with "stdout maxBuffer length exceeded".
+    maxBuffer: 64 * 1024 * 1024,
     signal: signal || undefined,
   });
 

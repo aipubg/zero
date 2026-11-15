@@ -67,7 +67,7 @@ export async function captureDriverDesktop({ signal, compressed = true, format =
 
   // Primary verified native Windows capture via ZeroDesktop
   try {
-    const { ZeroDesktop } = await import('../agent-runtime/agent-desktop.mjs');
+    const { ZeroDesktop } = await import('../capability-engine/zero-desktop.mjs');
     const ad = new ZeroDesktop();
     const adRes = await ad.execute({ command: 'screenshot' }, signal);
     if (adRes?.ok && adRes?.data?.data) {
