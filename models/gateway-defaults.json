@@ -1,6 +1,6 @@
 {
   "defaults": {
-    "primary": "models/gemini-flash-lite-latest",
+    "primary": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
     "utility": null,
     "fallback": null,
     "thinking": "default",
@@ -8,7 +8,7 @@
   },
   "agentBindings": {
     "zero": {
-      "model": "models/gemini-flash-lite-latest",
+      "model": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
       "allowOverride": true
     }
   }

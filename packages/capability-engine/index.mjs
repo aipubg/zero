@@ -339,7 +339,7 @@ export class CapabilityEngine {
       return refusalResult;
     }
 
-    const { action, params } = validation;
+    const { action, params, capability: capabilityName } = validation;
 
     if (validation.custom) {
       const customDef = this.customCapabilities.get(toolName);
