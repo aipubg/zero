@@ -45,6 +45,13 @@ Status values: `done`, `partial`, `todo`.
 ## Phase 3 — Eyes and hands  (`partial`)
 
 - `done` Screenshot fallback no longer fails on large frames.
+- `done` Every screen/input action waited 4 s for a daemon that never starts;
+  it now falls back at once (capture 4.3 s -> 0.35 s).
+- `todo` Windows Defender blocks `win-actions-daemon.ps1` (the block is in its
+  action cases, not the C# header). The one-off fallback script has no real
+  `get_elements`, and its `focus_window` / `control_window` report success
+  without doing anything. Move the real implementations into a path that is
+  not blocked, without hiding code from the antivirus.
 - `todo` Desktop runtime is not installed (`artifacts/zero-desktop-runtime/bin/zero-desktop.exe`
   is missing), so accessibility snapshots are off. `scripts/install-agent-desktop.mjs`
   points at a release URL that was broken by a blanket rename; fix the URL and

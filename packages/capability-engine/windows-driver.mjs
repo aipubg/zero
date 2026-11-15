@@ -84,10 +84,28 @@ class WindowsInputDaemon {
     this.buffer = "";
     this.ready = false;
     this.startPromise = null;
+    // When the daemon cannot start (for example the script is blocked by
+    // antivirus), every action used to wait the full start timeout again
+    // before falling back. Remember the failure and fall back at once.
+    this.unavailableUntil = 0;
+    this.unavailableReason = null;
+  }
+
+  markUnavailable(reason) {
+    this.unavailableUntil = Date.now() + 10 * 60 * 1000;
+    if (this.unavailableReason !== reason) {
+      this.unavailableReason = reason;
+      console.warn(`[Zero] Fast input daemon unavailable (${reason}); using the one-off action path for 10 minutes.`);
+    }
+  }
+
+  getStatus() {
+    return { ready: this.ready, unavailable: Date.now() < this.unavailableUntil, reason: this.unavailableReason };
   }
 
   async ensureStarted() {
     if (this.process && this.ready && !this.process.killed) return true;
+    if (Date.now() < this.unavailableUntil) return false;
     if (this.startPromise) return this.startPromise;
 
     this.startPromise = new Promise((resolve) => {
@@ -146,6 +164,7 @@ class WindowsInputDaemon {
         });
 
         this.process.on("exit", () => {
+          if (!this.ready) { this.markUnavailable("process exited before it was ready"); resolve(false); }
           this.ready = false;
           this.process = null;
           this.startPromise = null;
@@ -155,7 +174,11 @@ class WindowsInputDaemon {
         });
 
         setTimeout(() => {
-          if (!this.ready) resolve(false);
+          if (!this.ready) {
+            this.markUnavailable("no ready signal within 4s");
+            try { this.process?.kill(); } catch {}
+            resolve(false);
+          }
         }, 4000);
       } catch {
         resolve(false);
