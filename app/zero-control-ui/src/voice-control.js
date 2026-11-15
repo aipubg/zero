@@ -70,10 +70,12 @@ export function mountVoiceControl(button, host) {
     } else if (!isConnected()) {
       voiceState = 'disconnected';
     } else if (speaking) {
+      // When the browser drives the turn it also owns the speaking badge, so
+      // the server's session phase must not keep it stuck on "Speaking".
       voiceState = 'speaking';
-    } else if (sessionState?.playbackActive || sessionState?.state === 'speaking') {
+    } else if (!browserAsr && (sessionState?.playbackActive || sessionState?.state === 'speaking')) {
       voiceState = 'speaking';
-    } else if (sessionState?.transcriptionActive || sessionState?.state === 'transcribing') {
+    } else if (!browserAsr && (sessionState?.transcriptionActive || sessionState?.state === 'transcribing')) {
       voiceState = 'transcribing';
     } else if (sessionState?.muted) {
       voiceState = 'muted';
@@ -148,6 +150,9 @@ export function mountVoiceControl(button, host) {
       failure = error.message;
     } finally {
       speaking = false;
+      // Re-render immediately so the badge leaves "Speaking..." without
+      // waiting for the next status poll.
+      if (!disposed && button.isConnected) render('Voice: READY', active, null, null);
     }
   };
 

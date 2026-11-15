@@ -3375,7 +3375,11 @@ export class ZeroNativeHost {
     const previous = this.voiceConversation.bindings.get(params.sessionId);
     const ownerId = ws || clientSession;
     if (previous && previous.context.ownerId !== ownerId) {
-      if (clientSession?.role !== 'admin') throw new Error('Voice conversation belongs to another client');
+      // A closed owner socket must not lock the session out: a browser refresh
+      // or reconnect has to be able to resume the same voice conversation.
+      const previousSocket = previous.context.ws;
+      const previousAlive = previousSocket && previousSocket.readyState === 1;
+      if (previousAlive && clientSession?.role !== 'admin') throw new Error('Voice conversation belongs to another client');
       await this.voiceConversation.detach(params.sessionId);
     }
     this.voiceConversation.attach(params.sessionId, { ownerId, clientSession, ws, isReferenceWire,

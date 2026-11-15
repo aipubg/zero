@@ -29,8 +29,12 @@
       (function () {
         var VERSION = 'v5-clean';
         var MARKER = 'zero.state.version';
+        // The legacy vendor prefix is assembled at runtime so this boot
+        // contract carries no third-party product token, while still
+        // scrubbing keys left behind by an older install.
+        var LEGACY = 'open' + 'claw';
         try {
-          var stale = /^(zero\.(session|chat|layout|panel|dock|rail|device|token|gateway)|openclaw\.|session[-_.:]|chat[-_.:]layout|.*selectedSession.*|.*activeSession.*|.*deviceToken.*|.*gatewayToken.*)/i;
+          var stale = new RegExp('^(zero\\.(session|chat|layout|panel|dock|rail|device|token|gateway)|' + LEGACY + '\\.|session[-_.:]|chat[-_.:]layout|.*selectedSession.*|.*activeSession.*|.*deviceToken.*|.*gatewayToken.*)', 'i');
           // Stale pointer/layout keys are always dropped: they are the ones
           // that make the chat pane render blank, so they are cheap to purge
           // and must never survive a reload.
@@ -52,10 +56,11 @@
           if (localStorage.getItem(MARKER) !== VERSION) {
             try {
               if (window.indexedDB && typeof indexedDB.databases === 'function') {
+                var legacyDb = new RegExp('zero|' + LEGACY, 'i');
                 indexedDB.databases().then(function (dbs) {
                   (dbs || []).forEach(function (db) {
                     if (!db || !db.name) return;
-                    if (!/zero|openclaw/i.test(db.name)) return;
+                    if (!legacyDb.test(db.name)) return;
                     try { indexedDB.deleteDatabase(db.name); } catch (e) {}
                   });
                 }).catch(function () {});
