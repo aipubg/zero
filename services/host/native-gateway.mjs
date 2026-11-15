@@ -62,7 +62,7 @@ import { VoiceConversation } from '../../packages/voice-engine/conversation.mjs'
 import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
-import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS } from '../../packages/capability-engine/index.mjs';
+import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS, CAPABILITY_PARAMETERS } from '../../packages/capability-engine/index.mjs';
 import { defaultUnifiedLoop } from '../../packages/capability-engine/memory-planner.mjs';
 import { defaultScreenVision } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultUiaRootTree } from '../../packages/capability-engine/computer-control.mjs';
@@ -3562,7 +3562,9 @@ export class ZeroNativeHost {
         function: {
           name,
           description: def.description,
-          parameters: {
+          // Handler-based capabilities publish their real argument names;
+          // action-dispatch capabilities publish their allowed actions.
+          parameters: CAPABILITY_PARAMETERS[name] || {
             type: 'object',
             required: ['action'],
             properties: {
@@ -4107,14 +4109,19 @@ AUTONOMOUS EXECUTION PRINCIPLES:
               for (const tc of chunk.tool_calls) {
                 const toolName = tc.function?.name || '';
                 const toolArgs = tc.function?.arguments || '';
-                let toolAction = '';
-                try { toolAction = JSON.parse(toolArgs)?.action || ''; } catch {}
-                const intentKey = `${toolName}:${toolAction}:${String(JSON.parse(toolArgs)?.command || JSON.parse(toolArgs)?.query || JSON.parse(toolArgs)?.path || JSON.parse(toolArgs)?.app || '').trim().toLowerCase()}`;
-                if (seenToolIntents.has(intentKey)) {
-                  console.log(`[Zero Host] Skipping duplicate tool intent '${intentKey}' in streaming chunk`);
-                  continue;
+                // Providers stream tool arguments in fragments, so a chunk is only
+                // comparable once it carries a tool name and complete JSON
+                // arguments. Fragments are always accumulated below.
+                let parsedArgs = null;
+                try { parsedArgs = JSON.parse(toolArgs); } catch {}
+                if (toolName && parsedArgs && typeof parsedArgs === 'object') {
+                  const intentKey = `${toolName}:${parsedArgs.action || ''}:${String(parsedArgs.command || parsedArgs.query || parsedArgs.path || parsedArgs.app || '').trim().toLowerCase()}`;
+                  if (seenToolIntents.has(intentKey)) {
+                    console.log(`[Zero Host] Skipping duplicate tool intent '${intentKey}' in streaming chunk`);
+                    continue;
+                  }
+                  seenToolIntents.add(intentKey);
                 }
-                seenToolIntents.add(intentKey);
                 const idx = tc.index ?? 0;
                 if (!toolCallsMap.has(idx)) {
                   toolCallsMap.set(idx, {
@@ -4380,7 +4387,12 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           let targetCapability = 'zero_computer_action';
           const isBrowserAction = fnName === 'browser' || ['play', 'open_url', 'navigate', 'search', 'web_search', 'fill_form', 'scrape', 'get_content', 'read_page'].includes(action) || (['click', 'type', 'fill', 'press', 'act'].includes(action) && (args.ref || (args.x === undefined && args.y === undefined)));
-          if (canonicalCapabilityEngine.customCapabilities.has(fnName)) {
+          // A capability with its own registered handler (run_process, read_file,
+          // write_file, web_search, memory_recall, goal_plan, ...) must be
+          // dispatched under its own name. Folding it into zero_computer_action
+          // made the engine reject it as a non-permitted action.
+          const hasOwnHandler = canonicalCapabilityEngine.handlers.has(fnName);
+          if (canonicalCapabilityEngine.customCapabilities.has(fnName) || hasOwnHandler) {
             targetCapability = fnName;
           } else if (isBrowserAction) {
             targetCapability = 'browser';
@@ -4671,7 +4683,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           }
 
           // 3. type_text / type with Automatic Cross-Hand Fallback & State Verification
-          if (!execRes && (action === 'type_text' || action === 'type')) {
+          if (!execRes && !hasOwnHandler && (action === 'type_text' || action === 'type')) {
             // defaultOsController and defaultUiaRootTree are module-level imports
             // from packages/capability-engine — no dead core/ imports remain.
             const textToType = String(args.text || args.value || '');
@@ -4740,7 +4752,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             execRes = await canonicalCapabilityEngine.execute({
               agentId: clientSession?.clientId || 'zero',
               toolName: targetCapability,
-              args: { ...args, action },
+              args: hasOwnHandler ? args : { ...args, action },
               signal: abortController.signal,
             });
           }
@@ -4750,7 +4762,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           recordTool(fnName, args, execRes);
 
           // Track successful intents to prevent duplicate retries
-          if (execRes?.ok === true && execRes.outcome === 'VERIFIED') {
+          // The engine reports success as outcome 'COMPLETED' (never 'VERIFIED').
+          if (execRes?.ok === true && (execRes.completed === true || execRes.outcome === 'COMPLETED')) {
             const successIntentKey = `${fnName}:${action}:${String(args.command || args.query || args.path || args.app || '').trim().toLowerCase()}`;
             completedIntents.add(successIntentKey);
           }

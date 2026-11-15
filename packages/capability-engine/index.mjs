@@ -153,6 +153,43 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
   },
 });
 
+/**
+ * Argument schemas for handler-based capabilities. These are what the model is
+ * shown, so it knows the real parameter names instead of guessing them. Names
+ * mirror the handler signatures registered for each capability.
+ */
+const str = description => ({ type: 'string', description });
+const params = (properties, required = []) => Object.freeze({ type: 'object', properties, required, additionalProperties: true });
+export const CAPABILITY_PARAMETERS = Object.freeze({
+  read_file: params({ path: str('Absolute or relative path of the UTF-8 file to read') }, ['path']),
+  write_file: params({ path: str('Path of the file to create or overwrite'), content: str('Full UTF-8 text content to write') }, ['path', 'content']),
+  run_process: params({
+    command: str('Executable to run, e.g. "hostname", "powershell.exe", "git". Use this tool (not GUI typing) for any shell/CLI task.'),
+    args: { type: 'array', items: { type: 'string' }, description: 'Arguments as separate strings, e.g. ["-NoProfile","-Command","Get-Date"]. Use [] when there are none.' },
+    cwd: str('Optional working directory'),
+    timeoutMs: { type: 'integer', minimum: 1, maximum: 300000, description: 'Optional timeout in milliseconds (default 60000)' },
+  }, ['command']),
+  web_search: params({ query: str('Search query'), maxResults: { type: 'integer', minimum: 1, maximum: 20 } }, ['query']),
+  web_extract: params({ url: str('HTTP(S) URL to fetch and extract text from') }, ['url']),
+  research_search: params({ query: str('Research query') }, ['query']),
+  memory_recall: params({ query: str('What to recall from memory') }, ['query']),
+  memory_remember: params({ content: str('Fact or note to remember'), layer: str('Memory layer, default "semantic"') }, ['content']),
+  screen_context: params({ query: str('What to look for in recent screen activity') }),
+  see_screen: params({ query: str('Optional focus for the screen inspection') }),
+  skill_execute: params({ name: str('Skill name from skills_list'), goal: str('What the skill should accomplish') }, ['name']),
+  schedule_task: params({ title: str('Task title'), cronExpr: str('Cron expression or @daily/@hourly'), targetAction: str('Action to trigger, default "goal.tick"'), params: { type: 'object' }, enabled: { type: 'boolean' } }, ['title']),
+  goal_plan: params({ goal: str('The long-horizon goal'), cronExpr: str('Schedule, default @daily'), milestones: { type: 'array', items: { type: 'string' } } }, ['goal']),
+  delegate_agent: params({ goal: str('Goal to delegate'), teamId: str('Team id'), planOnly: { type: 'boolean' } }, ['goal']),
+  procedure_learn: params({ name: str('Short procedure name'), trigger: str('When this procedure applies'), steps: { type: 'array', items: { type: 'string' } }, verification: str('How success was verified'), tags: { type: 'array', items: { type: 'string' } } }, ['trigger', 'steps']),
+  procedure_recall: params({ query: str('Task to find a learned procedure for'), limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['query']),
+  zero_skill_learn: params({ name: str('Skill name'), description: str('What the skill does'), triggers: { type: 'array', items: { type: 'string' } }, capabilities: { type: 'array', items: { type: 'string' } }, workflowSteps: { type: 'array', items: { type: 'string' } }, examples: { type: 'array', items: { type: 'string' } }, overwrite: { type: 'boolean' } }, ['name']),
+  skills_list: params({}),
+  goal_status: params({}),
+  system_info: params({}),
+  doctor_memory_status: params({}),
+  voice_status: params({}),
+});
+
 export class CapabilityEngine {
   constructor({ operator = null, leaseManager = null, logger = console } = {}) {
     this.leaseManager = leaseManager;
@@ -751,10 +788,14 @@ canonicalCapabilityEngine.registerHandler('write_file', async ({ path: file, con
   return { ok: actual === content, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, path: resolved, verified: actual === content, summary: `Wrote ${Buffer.byteLength(actual)} bytes to ${resolved}`, evidence: { bytes: Buffer.byteLength(actual), sha256: createHash('sha256').update(actual).digest('hex') } };
 });
 
-canonicalCapabilityEngine.registerHandler('run_process', async ({ command, args = [], cwd: directory, timeoutMs = 5000, shell = false, shellExecutable = '' }, signal) => {
+canonicalCapabilityEngine.registerHandler('run_process', async ({ command, args = [], cwd: directory, timeoutMs = 60000, shell = false, shellExecutable = '' }, signal) => {
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const execute = promisify(execFile);
+  // Tolerate the common model slips: a single string or null instead of an array.
+  if (args == null) args = [];
+  else if (typeof args === 'string') args = args.trim() ? [args] : [];
+  else if (Array.isArray(args)) args = args.filter(arg => arg !== '' && arg != null).map(arg => (typeof arg === 'number' ? String(arg) : arg));
   if (typeof command !== 'string' || !command || !Array.isArray(args) || args.some(arg => typeof arg !== 'string')) throw new Error('Expected a command and an array of string arguments');
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) throw new Error('Process timeout must be between 1 and 300000 ms');
   const workingDirectory = directory ? resolvePath(directory) : process.cwd();
@@ -841,7 +882,8 @@ canonicalCapabilityEngine.registerHandler('zero_skill_learn', async ({ name, des
   const cleanName = name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
   const targetDir = path.join(process.cwd(), 'skills', cleanName);
   const targetFile = path.join(targetDir, 'SKILL.md');
-  if (fs.existsSync(targetFile) && !overwrite) return { ok: false, status: 'FAILED', outcome: 'BLOCKED', taskComplete: false, reason: 'skill-already-exists', path: targetFile };
+  const alreadyExists = await fs.access(targetFile).then(() => true, () => false);
+  if (alreadyExists && !overwrite) return { ok: false, status: 'FAILED', outcome: 'BLOCKED', taskComplete: false, reason: 'skill-already-exists', path: targetFile };
   await fs.mkdir(targetDir, { recursive: true });
   const triggersYaml = (triggers.length > 0 ? triggers : [cleanName]).map((t) => `  - "${t.replace(/"/g, '\\"')}"`).join('\n');
   const capabilitiesMd = (capabilities.length > 0 ? capabilities : ['Autonomous task execution']).map((c, i) => `${i + 1}. **${c}**`).join('\n');
