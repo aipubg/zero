@@ -32,7 +32,15 @@ export class WhisperSpeechBackend extends WindowsSpeechBackend {
       await this.verifyRecognitionAssets(options.signal);
       availability.recognition = { available: true, backend: 'whisper.cpp', version: WHISPER_VERSION, model: 'base', inferenceVerified: false };
     } catch (error) {
-      availability.recognition = { available: false, backend: 'whisper.cpp', reason: error.code || 'VOICE_ASSETS_UNAVAILABLE' };
+      // Whisper is preferred but optional: Windows System Speech recognition is
+      // always present on win32 and is used as the live fallback.
+      const windowsRecognition = availability.recognition;
+      availability.recognition = {
+        available: Boolean(windowsRecognition?.available),
+        backend: 'windows-system-speech',
+        fallbackFrom: 'whisper.cpp',
+        reason: windowsRecognition?.available ? 'whisper-unavailable' : (error.code || 'VOICE_ASSETS_UNAVAILABLE'),
+      };
     }
     return availability;
   }
@@ -45,7 +53,14 @@ export class WhisperSpeechBackend extends WindowsSpeechBackend {
     const nativeLanguage = language.split('-')[0];
     let assets;
     try { assets = await this.verifyRecognitionAssets(signal); }
-    catch (error) { if (signal?.aborted) throw abortError(); throw error; }
+    catch (error) {
+      if (signal?.aborted) throw abortError();
+      // Whisper assets are optional. When the pinned runtime is not installed,
+      // fall back to the always-present Windows System Speech recognizer so
+      // the listen -> transcribe -> reply -> speak loop still works.
+      const fallback = await super.transcribe(pcm, { sampleRate, signal, language, onStarted });
+      return { ...fallback, backend: 'windows-system-speech', fallbackFrom: 'whisper.cpp' };
+    }
     if (signal?.aborted) throw abortError();
     const header = Buffer.alloc(44);
     header.write('RIFF'); header.writeUInt32LE(pcm.length + 36, 4); header.write('WAVEfmt ', 8);

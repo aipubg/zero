@@ -265,6 +265,10 @@ export class ZeroNativeHost {
       agentBindingsPath: options.agentBindingsPath || process.env.ZERO_AGENT_BINDINGS_PATH || path.join(REPO_ROOT, 'models', 'gateway-defaults.json'),
     });
     this.sessions = new SessionManager({ dbPath: sessionDb });
+    this._purgeMachineSessions();
+    // sessionId -> owning socket, used to route voice events without
+    // serialising the socket into the event frame.
+    this.voiceOwners = new Map();
     this.executeAssistantOnce = createAssistantReceipts(this.sessions.db);
     this.tasks = new TaskStateMachine({ dbPath: path.join(dataDir, 'zero-tasks.sqlite') });
     this.messageBus = new AgentMessageBus({ db: this.tasks.db });
@@ -311,8 +315,17 @@ export class ZeroNativeHost {
     });
     for (const event of ['transcript', 'turn-complete', 'turn-error', 'interrupted']) {
       this.voiceConversation.on(event, payload => {
-        const frame = JSON.stringify({ type: 'event', event: `voice.${event}`, payload });
-        for (const client of this.clients) if (client.readyState === 1 && client.subscribedSessions?.has(payload.sessionId)) client.send(frame);
+        // The owner socket is tracked separately: it must never be
+        // serialised into the event frame that reaches the browser.
+        const owner = this.voiceOwners.get(payload.sessionId) || null;
+        const { ownerId, ...safePayload } = payload;
+        const frame = JSON.stringify({ type: 'event', event: `voice.${event}`, payload: safePayload });
+        for (const client of this.clients) {
+          if (client.readyState !== 1) continue;
+          // Deliver to the conversation owner first, then to any subscriber.
+          if (client !== owner && !client.subscribedSessions?.has(payload.sessionId)) continue;
+          client.send(frame);
+        }
       });
     }
 
@@ -1424,19 +1437,26 @@ export class ZeroNativeHost {
         const limit = Number(params.limit || 50);
         const offset = Number(params.offset || 0);
         const includeArchived = Boolean(params.includeArchived || params.archived);
-        let sessions = this.sessions.listSessions({ limit, offset, includeArchived });
-        // Never surface probe/test sessions (session_179466* pattern) in the UI
-        sessions = sessions.filter((s) => !/^session_179466/.test(s.key || s.id || ''));
+        const raw = this.sessions.listSessions({ limit: offset + limit * 4, offset: 0, includeArchived });
+        // Sessions whose key is a raw generated id (agent:zero:<epoch_ms>, session_<epoch_ms>_*)
+        // are machine handles, never user-facing chats. They are dropped so the
+        // sidebar can never render a truncated hex id such as "...5694".
+        const usable = raw.filter((s) => !this._isMachineSessionKey(s?.key || s?.id || ''));
+        const sessions = usable
+          .slice(offset, offset + limit)
+          .map((s) => this._sessionPayload(s))
+          .filter(Boolean)
+          .map((payload) => ({ ...payload, title: payload.title || 'New Chat', name: payload.title || 'New Chat', label: payload.title || 'New Chat' }));
         const defaultModel = this.modelFabric.resolveAgentModel('zero');
         return {
           ts: Date.now(),
           defaults: { model: defaultModel?.canonicalModelId || null, modelProvider: defaultModel?.provider?.id || null },
           sessions,
-          total: sessions.length,
+          total: usable.length,
           count: sessions.length,
-          totalCount: sessions.length,
-          hasMore: false,
-          nextOffset: null,
+          totalCount: usable.length,
+          hasMore: offset + limit < usable.length,
+          nextOffset: offset + limit < usable.length ? offset + limit : null,
         };
       }
 
@@ -1624,10 +1644,11 @@ export class ZeroNativeHost {
         if (candidates.length > 1) {
           return { candidates: candidates.slice(0, 10), truncated: candidates.length > 10 };
         }
-        // No existing session matched: auto-create one so the frontend never
-        // sees "Session not found" or an empty candidate list.
-        const newKey = key || shortId || slugHint || `agent:zero:${Date.now()}`;
-        const created = this.sessions.createSession(newKey, 'New Conversation', { agentId: agentId || 'zero' });
+        // No existing session matched: auto-create the canonical main session so
+        // the frontend never sees "Session not found" or an empty candidate
+        // list, and no machine-generated id ever reaches the sidebar.
+        const newKey = key || shortId || slugHint || 'agent:zero:main';
+        const created = this.sessions.createSession(newKey, 'Main Session', { agentId: agentId || 'zero' });
         return { ok: true, ...this._sessionPayload(created) };
       }
 
@@ -2716,11 +2737,29 @@ export class ZeroNativeHost {
       case 'voice.synthesize':
         return await this.voiceEngine.synthesizeSpeech(params.sessionId, params.text);
 
+      case 'voice.speak': {
+        // Speak text out loud through the Windows System Speech synthesizer.
+        // This is the backend fallback used when browser speechSynthesis is
+        // muted or unavailable, so a voice turn can always be spoken aloud.
+        const text = String(params.text || '').trim();
+        if (!text) return { ok: false, error: 'voice.speak requires text' };
+        const sessionId = String(params.sessionId || '').trim();
+        if (sessionId) {
+          this.voiceEngine.startSession(sessionId);
+        }
+        const spoken = await this.voiceEngine.synthesizeSpeech(sessionId || 'voice.speak', text);
+        return { ok: true, ...spoken };
+      }
+
       case 'voice.transcribe':
         return await this.voiceEngine.transcribe(params.sessionId, { language: params.language });
 
       case 'voice.status': {
         const vs = defaultVoiceStatus.getStatus();
+        // Resolve the real device/recognition probe so the badge never
+        // reports a provisional "unknown" state.
+        let availability = this.voiceEngine.availability;
+        try { availability = await this.voiceEngine.refreshAvailability(); } catch {}
         const engineStatus = this.voiceEngine.getStatus();
         const activeSession = engineStatus.sessions?.find(s => s.microphoneActive);
         let status = vs.ready ? 'READY' : 'IDLE';
@@ -2729,20 +2768,43 @@ export class ZeroNativeHost {
         } else if (engineStatus.sessions && engineStatus.sessions.length > 0) {
           status = 'READY';
         }
-        return { ok: true, status, ...vs, ...this.voiceEngine.getStatus() };
+        const recognition = availability?.recognition || {};
+        return {
+          ok: true,
+          status,
+          ...vs,
+          // The effective recognizer is reported truthfully: Whisper when the
+          // pinned runtime is installed, otherwise Windows System Speech.
+          asr: recognition.backend || vs.asr,
+          recognition,
+          synthesis: availability?.synthesis || { available: false },
+          microphone: availability?.microphone || { available: false },
+          availability,
+          ...engineStatus,
+        };
       }
 
       case 'voice.conversation.status':
         return this.voiceConversation.status(params.sessionId);
 
-      case 'voice.turn':
+      case 'voice.turn': {
         await this._attachVoice(params, clientSession, ws, isReferenceWire);
+        // The turn needs an active engine session to transcribe against.
+        if (!this.voiceEngine.getStatus().sessions?.some(s => s.sessionId === params.sessionId)) {
+          this.voiceEngine.startSession(params.sessionId);
+        }
         return await this.voiceConversation.process(params.sessionId);
+      }
 
-      case 'voice.microphone.start':
+      case 'voice.microphone.start': {
         await this._attachVoice(params, clientSession, ws, isReferenceWire);
+        // Subscribe the requesting client so voice transcripts and turn
+        // results are delivered back over the same socket.
+        if (ws && !ws.subscribedSessions) ws.subscribedSessions = new Set();
+        if (ws && params.sessionId) ws.subscribedSessions.add(params.sessionId);
         this.voiceEngine.startSession(params.sessionId);
         return await this.voiceEngine.startMicrophone(params.sessionId, { deviceId: params.deviceId });
+      }
 
       case 'voice.microphone.stop':
         await this.voiceConversation.detach(params.sessionId);
@@ -3317,7 +3379,10 @@ export class ZeroNativeHost {
       await this.voiceConversation.detach(params.sessionId);
     }
     this.voiceConversation.attach(params.sessionId, { ownerId, clientSession, ws, isReferenceWire,
-      model: params.model, language: params.language, ...(params.playback !== undefined ? { playback: params.playback } : {}) });
+      model: params.model, language: params.language,
+      autoConversation: params.autoConversation !== false,
+      ...(params.playback !== undefined ? { playback: params.playback } : {}) });
+    if (ws) this.voiceOwners.set(params.sessionId, ws);
   }
 
   /**
@@ -3343,13 +3408,53 @@ export class ZeroNativeHost {
     } catch {}
   }
 
+  /**
+   * A session key is a machine handle when it is a generated identifier
+   * (agent:<agent>:<epoch_ms>, session_<epoch_ms>_<suffix>, or a bare hex id).
+   * These are never user-facing chats and must never appear in the sidebar.
+   */
+  _isMachineSessionKey(key) {
+    const text = String(key || '').trim();
+    if (!text) return true;
+    if (/^agent:[^:]+:\d{10,}$/i.test(text)) return true;
+    if (/^session_\d{10,}_[a-z0-9]{4,}$/i.test(text)) return true;
+    if (/^[0-9a-f]{8,}$/i.test(text)) return true;
+    if (/^session_[0-9a-f]{6,}$/i.test(text)) return true;
+    return false;
+  }
+
+  /**
+   * Remove machine-generated sessions left behind by earlier builds so the
+   * sidebar can never render a truncated raw id such as "...5694".
+   */
+  _purgeMachineSessions() {
+    try {
+      const all = this.sessions.listSessions({ limit: 5000, offset: 0, includeArchived: true });
+      let removed = 0;
+      for (const session of all) {
+        const key = session?.key || session?.id || session?.sessionId || '';
+        if (!this._isMachineSessionKey(key)) continue;
+        try { if (this.sessions.deleteSession(key)) removed++; } catch {}
+      }
+      if (removed > 0) this.logger?.info?.(`[Zero] purged ${removed} machine-generated session(s)`);
+      return removed;
+    } catch {
+      return 0;
+    }
+  }
+
   _sessionPayload(session) {
     if (!session) return null;
-    const title = session.title || 'New Chat';
+    const rawTitle = String(session.title || '').trim();
+    const key = session.id || '';
+    // A title that is itself a truncated/raw id is never shown to the user.
+    const title = (!rawTitle || rawTitle.startsWith('...') || this._isMachineSessionKey(rawTitle))
+      ? (key === 'main' || key === 'agent:zero:main' ? 'Main Session' : 'New Chat')
+      : rawTitle;
     return {
-      key: session.id,
-      id: session.id,
-      sessionId: session.id,
+      key,
+      id: key,
+      sessionId: key,
       name: title,
       label: title,
       title,

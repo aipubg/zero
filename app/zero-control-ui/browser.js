@@ -1,9 +1,11 @@
 import "./index.css";
 import "./src/shell/zero-shell.css";
+import "./src/zero-chat-dock.css";
 import { installZeroShell } from "./src/shell/zero-shell.js";
 import { PLUGIN_ID } from "./src/constants.js";
 import { installLegacyRouteInterceptor } from "./src/legacy-routes.js";
 import { installNativeSurfaces } from "./src/native-surfaces.js";
+import { installGuaranteedChatComposer } from "./src/zero-chat-dock.js";
 import { installDesktopSessionKeepAlive } from "./src/desktop-session.js";
 
 /**
@@ -34,9 +36,13 @@ export default {
     const disposeSurfaces = zoff.has("surfaces") ? null : installNativeSurfaces(host);
     const disposeShell = zoff.has("shell") ? null : installZeroShell(host);
     const disposeSession = zoff.has("session") ? null : installDesktopSessionKeepAlive();
+    // The composer watchdog is never disabled: a chat route must always have
+    // a usable input, even when the vendor chat surface fails to mount.
+    const disposeDock = installGuaranteedChatComposer(host);
     const disposeAll = () => {
       disposeSession?.();
       disposeShell?.();
+      disposeDock?.();
       disposeSurfaces?.();
       disposeRoutes?.();
       if (typeof window !== "undefined" && window.__zero_active_plugin_dispose === disposeAll) {

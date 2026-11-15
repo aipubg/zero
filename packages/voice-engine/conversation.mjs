@@ -25,6 +25,12 @@ export class VoiceConversation extends EventEmitter {
       const binding = this.bindings.get(sessionId);
       if (!binding) return;
       clearTimeout(binding.endpointTimer);
+      // When the client drives recognition itself (browser SpeechRecognition),
+      // the server must not run a second turn for the same utterance.
+      if (binding.context.autoConversation === false) {
+        binding.endpointTimer = null;
+        return;
+      }
       // Do not drain audio at every short VAD pause. Resumed speech cancels
       // this timer before recognition starts, preserving the utterance prefix.
       binding.endpointTimer = setTimeout(() => {
@@ -75,7 +81,7 @@ export class VoiceConversation extends EventEmitter {
         const transcript = await cancellable(() => this.engine.transcribe(sessionId, { signal: controller.signal, language: binding.context.language }), controller.signal);
         current();
         if (!transcript.transcribed || !transcript.text?.trim()) { binding.state = 'listening'; return { ok: true, empty: true }; }
-        this.emit('transcript', { sessionId, text: transcript.text });
+        this.emit('transcript', { sessionId, text: transcript.text, ownerId: binding.context.ownerId });
         binding.state = 'executing';
         const result = await cancellable(() => this.executeTurn({ sessionId, text: transcript.text, signal: controller.signal, context: binding.context }), controller.signal);
         current();
@@ -87,13 +93,13 @@ export class VoiceConversation extends EventEmitter {
         const speech = await cancellable(() => this.engine.synthesizeSpeech(sessionId, text, { signal: controller.signal, ...(binding.context.playback !== undefined ? { playback: binding.context.playback } : {}) }), controller.signal);
         current();
         binding.turns++; binding.state = 'listening'; binding.lastError = null;
-        const output = { ok: true, sessionId, transcript: transcript.text, content: result.content, taskId: result.taskId, played: speech.played, pcmByteLength: speech.pcmByteLength };
+        const output = { ok: true, sessionId, transcript: transcript.text, content: result.content, taskId: result.taskId, played: speech.played, pcmByteLength: speech.pcmByteLength, ownerId: binding.context.ownerId };
         this.emit('turn-complete', output);
         return output;
       } catch (error) {
         if (controller.signal.aborted || error.name === 'AbortError') return { ok: false, cancelled: true, code: 'VOICE_CANCELLED', error: 'Voice turn was interrupted or cancelled', sessionId };
         binding.lastError = error.message; binding.state = 'error';
-        this.emit('turn-error', { sessionId, error: error.message });
+        this.emit('turn-error', { sessionId, error: error.message, ownerId: binding.context.ownerId });
         throw error;
       } finally { if (binding.controller === controller) binding.controller = null; }
     });

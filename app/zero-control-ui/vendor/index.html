@@ -18,6 +18,55 @@
     <!-- Zero: force CSS-OK so the "Styles failed to load" banner can never appear -->
     <style>:root,html,body,zero-app{--zero-css-ok:1!important}</style>
     <script data-cfasync="false">
+      // Zero: versioned client-state reset.
+      //
+      // A browser that was open while an older Zero build ran can hold stale
+      // session pointers, corrupted layout state, or device tokens for scopes
+      // that no longer exist. Those leftovers make the chat pane render blank
+      // and leave machine ids in the session rail. The state version is
+      // bumped whenever the boot contract changes; on a mismatch the stale
+      // keys are dropped once and the app boots from a clean slate.
+      (function () {
+        var VERSION = 'v5-clean';
+        var MARKER = 'zero.state.version';
+        try {
+          var stale = /^(zero\.(session|chat|layout|panel|dock|rail|device|token|gateway)|openclaw\.|session[-_.:]|chat[-_.:]layout|.*selectedSession.*|.*activeSession.*|.*deviceToken.*|.*gatewayToken.*)/i;
+          // Stale pointer/layout keys are always dropped: they are the ones
+          // that make the chat pane render blank, so they are cheap to purge
+          // and must never survive a reload.
+          var kill = [];
+          for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (!key || key === MARKER) continue;
+            if (stale.test(key)) kill.push(key);
+          }
+          kill.forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
+          try {
+            for (var j = sessionStorage.length - 1; j >= 0; j--) {
+              var skey = sessionStorage.key(j);
+              if (skey && stale.test(skey)) sessionStorage.removeItem(skey);
+            }
+          } catch (e) {}
+          // The heavier cache reset (IndexedDB) only runs when the build
+          // version changes.
+          if (localStorage.getItem(MARKER) !== VERSION) {
+            try {
+              if (window.indexedDB && typeof indexedDB.databases === 'function') {
+                indexedDB.databases().then(function (dbs) {
+                  (dbs || []).forEach(function (db) {
+                    if (!db || !db.name) return;
+                    if (!/zero|openclaw/i.test(db.name)) return;
+                    try { indexedDB.deleteDatabase(db.name); } catch (e) {}
+                  });
+                }).catch(function () {});
+              }
+            } catch (e) {}
+            localStorage.setItem(MARKER, VERSION);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script data-cfasync="false">
       // Configure Zod before module evaluation so its JIT probe cannot violate strict CSP.
       globalThis.__zod_globalConfig ??= {};
       globalThis.__zod_globalConfig.jitless = true;
