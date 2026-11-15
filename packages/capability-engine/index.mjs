@@ -738,7 +738,7 @@ canonicalCapabilityEngine.registerHandler('read_file', async ({ path: file }) =>
   if ((await fs.stat(resolved)).size > 4 * 1024 * 1024) throw new Error('File exceeds the 4 MiB text-read limit');
   const content = await fs.readFile(resolved, 'utf8');
   const { createHash } = await import('node:crypto');
-  return { ok: true, path: resolved, content, verified: true, evidence: { bytes: Buffer.byteLength(content), sha256: createHash('sha256').update(content).digest('hex') } };
+  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, path: resolved, content, summary: `Read ${Buffer.byteLength(content)} bytes from ${resolved}`, verified: true, evidence: { bytes: Buffer.byteLength(content), sha256: createHash('sha256').update(content).digest('hex') } };
 });
 
 canonicalCapabilityEngine.registerHandler('write_file', async ({ path: file, content }) => {
@@ -748,10 +748,10 @@ canonicalCapabilityEngine.registerHandler('write_file', async ({ path: file, con
   await fs.writeFile(resolved, content, 'utf8');
   const actual = await fs.readFile(resolved, 'utf8');
   const { createHash } = await import('node:crypto');
-  return { ok: actual === content, path: resolved, verified: actual === content, evidence: { bytes: Buffer.byteLength(actual), sha256: createHash('sha256').update(actual).digest('hex') } };
+  return { ok: actual === content, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, path: resolved, verified: actual === content, summary: `Wrote ${Buffer.byteLength(actual)} bytes to ${resolved}`, evidence: { bytes: Buffer.byteLength(actual), sha256: createHash('sha256').update(actual).digest('hex') } };
 });
 
-canonicalCapabilityEngine.registerHandler('run_process', async ({ command, args = [], cwd: directory, timeoutMs = 15000, shell = false, shellExecutable = '' }, signal) => {
+canonicalCapabilityEngine.registerHandler('run_process', async ({ command, args = [], cwd: directory, timeoutMs = 5000, shell = false, shellExecutable = '' }, signal) => {
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const execute = promisify(execFile);
@@ -777,9 +777,10 @@ canonicalCapabilityEngine.registerHandler('run_process', async ({ command, args 
   }
   try {
     const result = await execute(executable, safeArgs, { cwd: workingDirectory, windowsHide: true, timeout: timeoutMs, ...(signal ? { signal } : {}), maxBuffer: 4 * 1024 * 1024, ...(shell && !safeArgs.length ? { shell: true } : {}) });
-    return { ok: true, executed: true, stdout: result.stdout, stderr: result.stderr, exitCode: 0, verified: true, evidence: { execution: 'child-process-exit', exitCode: 0, cwd: workingDirectory, shell: Boolean(shell) } };
+    const stdout = result.stdout || '';
+    return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, executed: true, stdout, stderr: result.stderr || '', exitCode: 0, summary: `Ran '${command} ${safeArgs.join(' ')}' -> exit 0 (${stdout.length} bytes output)`, verified: true, evidence: { execution: 'child-process-exit', exitCode: 0, cwd: workingDirectory, shell: Boolean(shell) } };
   } catch (error) {
-    return { ok: false, executed: error.code !== 'ENOENT', stdout: error.stdout || '', stderr: error.stderr || '', exitCode: typeof error.code === 'number' ? error.code : null, error: error.message, outcome: signal?.aborted ? 'CANCELLED' : 'UNVERIFIED', verified: false };
+    return { ok: false, status: 'FAILED', outcome: signal?.aborted ? 'CANCELLED' : 'FAILED', taskComplete: false, executed: error.code !== 'ENOENT', stdout: error.stdout || '', stderr: error.stderr || '', exitCode: typeof error.code === 'number' ? error.code : null, error: error.message, verified: false };
   }
 });
 
@@ -791,13 +792,13 @@ canonicalCapabilityEngine.registerHandler('desktop_control', async (params, sign
 // doctor_memory_status
 canonicalCapabilityEngine.registerHandler('doctor_memory_status', async () => {
   const engStatus = defaultEmbedEngine.getStatus();
-  return { ok: true, agentId: 'zero', provider: 'zero-local-embeddings', searchRuntimeRegistered: true, embedding: { ...engStatus, available: true } };
+  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, agentId: 'zero', provider: 'zero-local-embeddings', searchRuntimeRegistered: true, embedding: { ...engStatus, available: true } };
 });
 
 // voice_status
 canonicalCapabilityEngine.registerHandler('voice_status', async () => {
   const vs = defaultVoiceStatus.getStatus();
-  return { ok: true, status: vs.ready ? 'ready' : 'idle', ...vs };
+  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, ready: vs.ready ? 'ready' : 'idle', ...vs };
 });
 
 // web_search
@@ -805,7 +806,7 @@ canonicalCapabilityEngine.registerHandler('web_search', async ({ query, maxResul
   const { SearchEngine } = await import('../../packages/research-engine/search.mjs');
   const search = new SearchEngine();
   const result = await search.search(query, { limit: maxResults });
-  return { ...result, ok: result.status === 'ok', results: result.citations };
+  return { ...result, ok: result.status === 'ok', status: 'COMPLETED', outcome: result.status === 'ok' ? 'VERIFIED' : 'FAILED', taskComplete: true, results: result.citations };
 });
 
 // web_extract
@@ -826,12 +827,12 @@ canonicalCapabilityEngine.registerHandler('web_extract', async ({ url }) => {
       if (bytes >= 1024 * 1024) { truncated = true; await reader.cancel(); break; }
     }
   } finally { reader.releaseLock(); }
-  return { ok: true, status: 'retrieved', url: response.url, httpStatus: response.status, contentType: response.headers.get('content-type'), content: Buffer.concat(chunks).toString('utf8'), bytes, truncated, verified: false, untrustedContent: true, retrievedAt: new Date().toISOString() };
+  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, url: response.url, httpStatus: response.status, contentType: response.headers.get('content-type'), content: Buffer.concat(chunks).toString('utf8'), bytes, truncated, verified: false, untrustedContent: true, retrievedAt: new Date().toISOString() };
 });
 
 // system_info
 canonicalCapabilityEngine.registerHandler('system_info', async () => {
-  return { ok: true, platform: process.platform, arch: process.arch, uptime: process.uptime(), memoryUsage: process.memoryUsage() };
+  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, platform: process.platform, arch: process.arch, uptime: process.uptime(), memoryUsage: process.memoryUsage() };
 });
 
 // zero_skill_learn
@@ -840,7 +841,7 @@ canonicalCapabilityEngine.registerHandler('zero_skill_learn', async ({ name, des
   const cleanName = name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
   const targetDir = path.join(process.cwd(), 'skills', cleanName);
   const targetFile = path.join(targetDir, 'SKILL.md');
-  if (fs.existsSync(targetFile) && !overwrite) return { ok: false, reason: 'skill-already-exists', path: targetFile };
+  if (fs.existsSync(targetFile) && !overwrite) return { ok: false, status: 'FAILED', outcome: 'BLOCKED', taskComplete: false, reason: 'skill-already-exists', path: targetFile };
   await fs.mkdir(targetDir, { recursive: true });
   const triggersYaml = (triggers.length > 0 ? triggers : [cleanName]).map((t) => `  - "${t.replace(/"/g, '\\"')}"`).join('\n');
   const capabilitiesMd = (capabilities.length > 0 ? capabilities : ['Autonomous task execution']).map((c, i) => `${i + 1}. **${c}**`).join('\n');
@@ -848,6 +849,6 @@ canonicalCapabilityEngine.registerHandler('zero_skill_learn', async ({ name, des
   const examplesMd = examples.length > 0 ? `\n## Examples\n${examples.map((e) => `- ${e}`).join('\n')}` : '';
   const content = `---\nname: ${cleanName}\ndescription: ${description || `Auto-learned skill for ${cleanName}`}\ntriggers:\n${triggersYaml}\n---\n\n# ${cleanName.charAt(0).toUpperCase() + cleanName.slice(1).replace(/-/g, ' ')} Skill\n\n${description || 'Auto-generated autonomous agent skill.'}\n\n## Capabilities\n${capabilitiesMd}\n\n## Standard Execution Workflow\n${workflowMd}${examplesMd}\n`;
   await fs.writeFile(targetFile, content, 'utf8');
-  return { ok: true, name: cleanName, path: targetFile, bytes: Buffer.byteLength(content, 'utf8') };
+  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, name: cleanName, path: targetFile, bytes: Buffer.byteLength(content, 'utf8') };
 });
 

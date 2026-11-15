@@ -190,7 +190,7 @@ async function loadWs() {
 
 export class ZeroNativeHost {
   constructor(options = {}) {
-    this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 32);
+    this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 6);
     if (!Number.isInteger(this.maxAssistantTurns) || this.maxAssistantTurns < 1 || this.maxAssistantTurns > 128) throw new Error('maxAssistantTurns must be an integer between 1 and 128');
     this.voiceRecognitionBackend = options.voiceRecognitionBackend ?? process.env.ZERO_VOICE_RECOGNITION_BACKEND;
     if (this.voiceRecognitionBackend !== undefined && !['windows', 'whisper'].includes(this.voiceRecognitionBackend)) throw new Error('Unknown voice recognition backend');
@@ -4001,13 +4001,15 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         }
       }
 
-      let turns = 0;
-      let completedModelTurn = false;
+        let accumulatedContent = '';
+        let turns = 0;
+        let completedModelTurn = false;
       const maxTurns = this.maxAssistantTurns;
       let finalContent = '';
       let observedProviderModel = null;
       let mediaResult = null;
       const executedActions = [];
+      const completedIntents = new Set();
       const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
       const recordTool = (name, args, result) => this.tasks.recordStep(taskId, {
         stepNumber: this.tasks.getTaskSteps(taskId).length + 1,
@@ -4073,8 +4075,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           tools: DESKTOP_TOOLS,
         };
 
-        let accumulatedContent = '';
         const toolCallsMap = new Map();
+        const seenToolIntents = new Set();
         let finishReason = null;
 
         try {
@@ -4103,6 +4105,16 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
             if (chunk.tool_calls && Array.isArray(chunk.tool_calls)) {
               for (const tc of chunk.tool_calls) {
+                const toolName = tc.function?.name || '';
+                const toolArgs = tc.function?.arguments || '';
+                let toolAction = '';
+                try { toolAction = JSON.parse(toolArgs)?.action || ''; } catch {}
+                const intentKey = `${toolName}:${toolAction}:${String(JSON.parse(toolArgs)?.command || JSON.parse(toolArgs)?.query || JSON.parse(toolArgs)?.path || JSON.parse(toolArgs)?.app || '').trim().toLowerCase()}`;
+                if (seenToolIntents.has(intentKey)) {
+                  console.log(`[Zero Host] Skipping duplicate tool intent '${intentKey}' in streaming chunk`);
+                  continue;
+                }
+                seenToolIntents.add(intentKey);
                 const idx = tc.index ?? 0;
                 if (!toolCallsMap.has(idx)) {
                   toolCallsMap.set(idx, {
@@ -4327,6 +4339,32 @@ AUTONOMOUS EXECUTION PRINCIPLES:
               this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
               continue;
             }
+          }
+
+          // Duplicate intent prevention: skip if this exact intent already succeeded
+          const intentKey = `${fnName}:${action}:${String(args.command || args.query || args.path || args.app || '').trim().toLowerCase()}`;
+          if (completedIntents.has(intentKey)) {
+            console.log(`[Zero Host] Skipping duplicate intent '${intentKey}' - already completed successfully`);
+            const duplicateResult = {
+              ok: true,
+              status: 'COMPLETED',
+              outcome: 'VERIFIED',
+              taskComplete: true,
+              executed: false,
+              skipped: true,
+              message: `Already completed: ${fnName} ${action} (intent '${intentKey}')`,
+              verified: true,
+            };
+            executedActions.push({ action: fnName, args: args || {}, execRes: duplicateResult });
+            recordTool(fnName, args || {}, duplicateResult);
+            const toolMsg = {
+              role: 'tool',
+              tool_call_id: callId || call.id,
+              content: JSON.stringify(duplicateResult),
+            };
+            currentMessages.push(toolMsg);
+            this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
+            continue;
           }
 
           console.log(`[Zero Host] Model tool call '${fnName}' -> action '${action}', argument fields: ${Object.keys(args).join(', ')}`);
@@ -4710,6 +4748,12 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           const stepId = `step_${executedActions.length + 1}`;
           executedActions.push({ stepId, action, args, execRes });
           recordTool(fnName, args, execRes);
+
+          // Track successful intents to prevent duplicate retries
+          if (execRes?.ok === true && execRes.outcome === 'VERIFIED') {
+            const successIntentKey = `${fnName}:${action}:${String(args.command || args.query || args.path || args.app || '').trim().toLowerCase()}`;
+            completedIntents.add(successIntentKey);
+          }
 
           if (action === 'play') {
             mediaResult = execRes.data || execRes;

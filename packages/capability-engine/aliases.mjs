@@ -83,6 +83,11 @@ export const CAPABILITY_ALIASES = Object.freeze({
   spawn_agent: { name: 'delegate_agent' },
   delegate: { name: 'delegate_agent' },
 
+  // System & diagnostics
+  system_info: { name: 'system_info' },
+  info: { name: 'system_info' },
+  sysinfo: { name: 'system_info' },
+
   // Research & files
   research_search: { name: 'research_search' },
   web_research: { name: 'research_search' },
@@ -91,6 +96,7 @@ export const CAPABILITY_ALIASES = Object.freeze({
   watch_workflow: { name: 'watch_workflow' },
   read_file: { name: 'read_file' },
   write_file: { name: 'write_file' },
+  run: { name: 'run_process' },
   run_process: { name: 'run_process' },
 });
 
