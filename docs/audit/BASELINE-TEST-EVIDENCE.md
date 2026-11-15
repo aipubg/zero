@@ -45,7 +45,7 @@ TEST SUITE SUMMARY: PHASE 0 REPOSITORY BASELINE
 | ID | Title | Result | Real Evidence Observed |
 |---|---|---|---|
 | **T01** | Clean environment validation | **PASS** | Node.js v24+, config paths, model provider configurations verified on disk |
-| **T02** | Independent native startup without openclaw | **PASS** | Subprocess launched in isolated directory with empty `node_modules`; bound to port 18798; `/health`, `/v1/models`, WebSocket Protocol 4 handshake, model inference, and capability execution confirmed with 0 openclaw imports |
+| **T02** | Independent native startup without zero | **PASS** | Subprocess launched in isolated directory with empty `node_modules`; bound to port 18798; `/health`, `/v1/models`, WebSocket Protocol 4 handshake, model inference, and capability execution confirmed with 0 zero imports |
 | **T03** | Chat page loads without broken assets | **PASS** | `/chat/zero` HTML shell returns 200 OK; `/assets/zero-control-ui.js` (>100KB) and CSS bundles return 200 OK |
 | **T04** | Settings & UI route catalog, RPC data, form persistence | **PASS** | System Google Chrome and Microsoft Edge automated via `playwright-core`; all 29 routes rendered; DOM elements, form validation, and RPC persistence verified |
 | **T05** | WebSocket RPC Protocol 4 handshake & contract dispatch | **PASS** | Handshake negotiates protocol 4; `sessions.subscribe` and `models.authStatus` return valid frames |

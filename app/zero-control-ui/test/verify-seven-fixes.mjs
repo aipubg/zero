@@ -142,14 +142,14 @@ async function runLiveVerification() {
       results[sel] = el ? window.getComputedStyle(el).display : "none";
     }
     const html = document.body.innerHTML;
-    const hasOpenclawExternalLinks = /zero\.ai|docs\.zero\.ai|tweakcn\.com/i.test(html);
-    return { results, hasOpenclawExternalLinks };
+    const haszeroExternalLinks = /zero\.ai|docs\.zero\.ai|tweakcn\.com/i.test(html);
+    return { results, haszeroExternalLinks };
   });
   console.log("   Settings Cleanliness Check:", settingsCleanliness);
   for (const [sel, disp] of Object.entries(settingsCleanliness.results)) {
     assert.equal(disp, "none", `Element ${sel} must be hidden with display: none`);
   }
-  assert.equal(settingsCleanliness.hasOpenclawExternalLinks, false, "Must not contain external zero.ai or tweakcn links");
+  assert.equal(settingsCleanliness.haszeroExternalLinks, false, "Must not contain external zero.ai or tweakcn links");
 
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, "verified-settings-sidebar-clean.png"), fullPage: false });
   console.log("✔ PASSED: Settings sidebar hides all unfinished sections and removes all external links!");

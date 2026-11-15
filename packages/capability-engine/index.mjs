@@ -10,8 +10,18 @@
  */
 
 import { ComputerOperator } from './computer-operator.mjs';
-import { DESKTOP_OBSERVATIONS } from '../agent-runtime/agent-desktop.mjs';
 import { CAPABILITY_ALIASES, resolveCapabilityAlias } from './aliases.mjs';
+
+export const DESKTOP_OBSERVATIONS = new Set([
+  'status', 'version', 'snapshot', 'find', 'get', 'is', 'list-apps', 'list-windows',
+  'list-displays', 'list-surfaces', 'skills', 'wait', 'clipboard-get', 'screenshot', 'list-notifications',
+  'click', 'double-click', 'right-click', 'type', 'set-value', 'clear', 'focus', 'select',
+  'toggle', 'check', 'uncheck', 'expand', 'collapse', 'scroll', 'scroll-to', 'press', 'hover',
+  'drag', 'mouse-move', 'mouse-click', 'mouse-wheel', 'launch', 'close-app', 'focus-window',
+  'resize-window', 'move-window', 'minimize', 'maximize', 'restore', 'clipboard-set',
+  'clipboard-clear', 'dismiss-notification', 'dismiss-all-notifications', 'notification-action',
+  'open-system-surface',
+]);
 
 export const CAPABILITY_DEFINITIONS = Object.freeze({
   'zero_computer_action': {
@@ -45,6 +55,102 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Control Spotify on Windows: search and play songs, pause, resume, change tracks, or set volume.',
     allowedActions: ['play', 'pause', 'next', 'previous', 'set_volume', 'status', 'search', 'play_track'],
   },
+
+  // === Unified Single-Room capabilities (moved from services/host/native-gateway.mjs,
+  // packages/capability-engine/terminal-ops.mjs, plugins/, skills/) ===
+
+  'desktop_control': {
+    description: 'PRIMARY desktop control backend: zero-desktop native accessibility with physical screen interaction. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Runs in headed mode by default to ensure all actions are visible on screen.',
+    allowedActions: ['status', 'snapshot', 'find', 'get', 'is', 'list-apps', 'list-windows', 'list-displays', 'list-surfaces', 'skills', 'wait', 'clipboard-get', 'screenshot', 'list-notifications', 'click', 'double-click', 'right-click', 'type', 'set-value', 'clear', 'focus', 'select', 'toggle', 'check', 'uncheck', 'expand', 'collapse', 'scroll', 'scroll-to', 'press', 'hover', 'drag', 'mouse-move', 'mouse-click', 'mouse-wheel', 'launch', 'close-app', 'focus-window', 'resize-window', 'move-window', 'minimize', 'maximize', 'restore', 'clipboard-set', 'clipboard-clear', 'dismiss-notification', 'dismiss-all-notifications', 'notification-action', 'open-system-surface'],
+  },
+  'research_search': {
+    description: 'Retrieve real search results and provenance. Retrieved sources are not independently verified.',
+    allowedActions: ['search'],
+  },
+  'memory_recall': {
+    description: 'Retrieve previously stored context from Zero memory.',
+    allowedActions: ['recall'],
+  },
+  'memory_remember': {
+    description: 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.',
+    allowedActions: ['remember'],
+  },
+  'screen_context': {
+    description: 'Retrieve real local screen observations; may be empty when observation is stopped.',
+    allowedActions: ['query'],
+  },
+  'see_screen': {
+    description: 'Inspect what is currently displayed on the user desktop or browser screen. Returns active window title, on-screen text via OCR, interactive UI elements, and screen dimensions.',
+    allowedActions: ['inspect'],
+  },
+  'skills_list': {
+    description: 'Discover installed skills and their descriptions.',
+    allowedActions: ['list'],
+  },
+  'skill_execute': {
+    description: 'Execute an enabled installed skill through a durable task and the model/tool loop.',
+    allowedActions: ['execute'],
+  },
+  'schedule_task': {
+    description: 'Register a durable recurring Zero automation. Use standard five-field cron or @hourly/@daily/@weekly. The job survives restarts and wakes Zero on schedule.',
+    allowedActions: ['register'],
+  },
+  'goal_plan': {
+    description: 'Decompose a high-level or long-horizon goal into a durable master plan with milestones and an automatic recurring execution job (Jarvis mode).',
+    allowedActions: ['plan'],
+  },
+  'goal_status': {
+    description: 'List durable long-horizon plans, scheduled jobs and learned procedures.',
+    allowedActions: ['status'],
+  },
+  'delegate_agent': {
+    description: 'Delegate a concrete subtask to Zero specialist agents through the durable team workflow.',
+    allowedActions: ['delegate'],
+  },
+  'procedure_learn': {
+    description: 'Persist a verified multi-step procedure (trigger, working steps, verification) into durable procedural memory for future reuse.',
+    allowedActions: ['learn'],
+  },
+  'procedure_recall': {
+    description: 'Recall previously learned procedures that match a task before planning it again.',
+    allowedActions: ['recall'],
+  },
+  'read_file': {
+    description: 'Read a UTF-8 local file, including skill instructions and supporting scripts.',
+    allowedActions: ['read'],
+  },
+  'write_file': {
+    description: 'Create or update a UTF-8 local file and read it back to verify the write.',
+    allowedActions: ['write'],
+  },
+  'run_process': {
+    description: 'Zero Terminal & Security Ops: execute any local program or command line, including PowerShell/bash pipelines, Python scripts, network and security tooling (nmap, curl, git, ffmpeg, gh) and bug-hunting scripts.',
+    allowedActions: ['run'],
+  },
+  'web_search': {
+    description: 'Search the web for up-to-date information, documentation, and real-time facts.',
+    allowedActions: ['search'],
+  },
+  'web_extract': {
+    description: 'Extract readable text and main content from a specified URL.',
+    allowedActions: ['extract'],
+  },
+  'system_info': {
+    description: 'Get Windows OS environment, memory status, and running process info.',
+    allowedActions: ['info'],
+  },
+  'zero_skill_learn': {
+    description: 'Save a newly learned multi-step workflow or task instructions into the persistent skills library for future autonomous reuse.',
+    allowedActions: ['learn'],
+  },
+  'doctor_memory_status': {
+    description: 'Memory and embedding subsystem health.',
+    allowedActions: ['status'],
+  },
+  'voice_status': {
+    description: 'Voice TTS/ASR availability.',
+    allowedActions: ['status'],
+  },
 });
 
 export class CapabilityEngine {
@@ -55,6 +161,7 @@ export class CapabilityEngine {
     this.auditLog = [];
     this.maxAuditEntries = 1000;
     this.customCapabilities = new Map();
+    this.handlers = new Map();
   }
 
   /**
@@ -65,6 +172,22 @@ export class CapabilityEngine {
       throw new Error('Capability definition requires a valid name');
     }
     this.customCapabilities.set(definition.name, definition);
+    return true;
+  }
+
+  /**
+   * Register a handler function for a unified capability. Handlers are called
+   * instead of the ComputerOperator for capabilities that need custom logic
+   * (desktop_control, read_file, write_file, web_search, etc.).
+   */
+  registerHandler(name, handler) {
+    if (!name || typeof name !== 'string') {
+      throw new Error('Handler registration requires a valid name');
+    }
+    if (typeof handler !== 'function') {
+      throw new Error(`Handler for '${name}' must be a function`);
+    }
+    this.handlers.set(name, handler);
     return true;
   }
 
@@ -166,7 +289,11 @@ export class CapabilityEngine {
     }
 
     let normAction = String(action || '').toLowerCase().trim();
-    if (!def.allowedActions.includes(normAction)) {
+    // Handler-based capabilities (desktop_control, read_file, etc.) carry their
+    // sub-command in params (e.g. params.command) rather than args.action, so
+    // skip the allowedActions check when a handler is registered.
+    const hasHandler = this.handlers.has(capabilityName) || this.handlers.has(toolName);
+    if (!hasHandler && !def.allowedActions.includes(normAction)) {
       return {
         valid: false,
         error: `Action '${normAction}' is not permitted for capability '${capabilityName}'. Allowed: ${def.allowedActions.join(', ')}`,
@@ -270,6 +397,59 @@ export class CapabilityEngine {
           auditId,
         };
         this._recordAudit(agentId, toolName, args, 'FAILED', res);
+        return res;
+      }
+    }
+
+    // Handler-based unified capabilities (desktop_control, read_file, write_file,
+    // web_search, etc.) are dispatched here before the ComputerOperator fallback.
+    const handler = this.handlers.get(capabilityName) || this.handlers.get(toolName);
+    if (handler) {
+      try {
+        const handlerRes = await handler(params, signal, { agentId, capability: toolName, action, auditId });
+        const durationMs = Date.now() - startedAt;
+        const returned = typeof handlerRes === 'object' && handlerRes !== null ? handlerRes : {};
+        const ok = returned.ok !== false;
+        const executed = returned.executed ?? (returned.outcome !== 'BLOCKED');
+        const hasEvidence = (returned.evidence != null && returned.evidence !== '')
+          || (returned.verification != null && returned.verification !== false)
+          || (typeof returned.verifiedText === 'string' && returned.verifiedText.length > 0)
+          || Boolean(returned.observed);
+        const verified = ok && executed && (returned.verified === true || Boolean(returned.observed)) && Boolean(hasEvidence);
+        const outcome = !ok
+          ? (['BLOCKED', 'CANCELLED'].includes(returned.outcome) ? returned.outcome : 'UNVERIFIED')
+          : (verified ? 'COMPLETED' : 'UNVERIFIED');
+        const res = {
+          ...returned,
+          ok,
+          executed: Boolean(executed),
+          verified,
+          completed: outcome === 'COMPLETED' && ok,
+          outcome,
+          capability: toolName,
+          action,
+          data: handlerRes,
+          durationMs,
+          auditId,
+        };
+        this._recordAudit(agentId, toolName, params, outcome, res);
+        return res;
+      } catch (err) {
+        const durationMs = Date.now() - startedAt;
+        const res = {
+          ok: false,
+          executed: false,
+          verified: false,
+          completed: false,
+          outcome: 'UNVERIFIED',
+          capability: toolName,
+          action,
+          error: err.message,
+          message: err.message,
+          durationMs,
+          auditId,
+        };
+        this._recordAudit(agentId, toolName, params, 'UNVERIFIED', res);
         return res;
       }
     }
@@ -538,3 +718,136 @@ export class CapabilityEngine {
 }
 
 export const canonicalCapabilityEngine = new CapabilityEngine();
+
+// === Register built-in handlers for all unified Single-Room capabilities ===
+
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+import { defaultEmbedEngine } from './embed-engine.mjs';
+import { defaultVoiceStatus } from './voice-status.mjs';
+
+// read_file / write_file / run_process (moved from terminal-ops.mjs)
+const resolvePath = (value, cwd = process.cwd()) => {
+  if (typeof value !== 'string' || !value || value.includes('\0')) throw new Error('A valid filesystem path is required');
+  return path.resolve(cwd, value);
+};
+
+canonicalCapabilityEngine.registerHandler('read_file', async ({ path: file }) => {
+  const resolved = resolvePath(file);
+  if ((await fs.stat(resolved)).size > 4 * 1024 * 1024) throw new Error('File exceeds the 4 MiB text-read limit');
+  const content = await fs.readFile(resolved, 'utf8');
+  const { createHash } = await import('node:crypto');
+  return { ok: true, path: resolved, content, verified: true, evidence: { bytes: Buffer.byteLength(content), sha256: createHash('sha256').update(content).digest('hex') } };
+});
+
+canonicalCapabilityEngine.registerHandler('write_file', async ({ path: file, content }) => {
+  if (typeof content !== 'string' || Buffer.byteLength(content) > 4 * 1024 * 1024) throw new Error('Expected at most 4 MiB of UTF-8 text');
+  const resolved = resolvePath(file);
+  await fs.mkdir(path.dirname(resolved), { recursive: true });
+  await fs.writeFile(resolved, content, 'utf8');
+  const actual = await fs.readFile(resolved, 'utf8');
+  const { createHash } = await import('node:crypto');
+  return { ok: actual === content, path: resolved, verified: actual === content, evidence: { bytes: Buffer.byteLength(actual), sha256: createHash('sha256').update(actual).digest('hex') } };
+});
+
+canonicalCapabilityEngine.registerHandler('run_process', async ({ command, args = [], cwd: directory, timeoutMs = 15000, shell = false, shellExecutable = '' }, signal) => {
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execute = promisify(execFile);
+  if (typeof command !== 'string' || !command || !Array.isArray(args) || args.some(arg => typeof arg !== 'string')) throw new Error('Expected a command and an array of string arguments');
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) throw new Error('Process timeout must be between 1 and 300000 ms');
+  const workingDirectory = directory ? resolvePath(directory) : process.cwd();
+  let safeArgs = [...args];
+  let executable = command;
+  if (/^(cmd|cmd\.exe)$/i.test(path.basename(executable))) {
+    safeArgs = safeArgs.map(arg => (/^[\/-]k$/i.test(arg) ? '/c' : arg));
+    if (!safeArgs.some(a => /^[\/-][cC]$/.test(a))) safeArgs = ['/c', ...safeArgs];
+  }
+  if (shell && !args.length) {
+    const requestedShell = String(shellExecutable || '').trim();
+    if (requestedShell) {
+      executable = requestedShell;
+      safeArgs = /powershell/i.test(requestedShell)
+        ? ['-NoProfile', '-NonInteractive', '-Command', command]
+        : ['-lc', command];
+    } else {
+      safeArgs = [];
+    }
+  }
+  try {
+    const result = await execute(executable, safeArgs, { cwd: workingDirectory, windowsHide: true, timeout: timeoutMs, ...(signal ? { signal } : {}), maxBuffer: 4 * 1024 * 1024, ...(shell && !safeArgs.length ? { shell: true } : {}) });
+    return { ok: true, executed: true, stdout: result.stdout, stderr: result.stderr, exitCode: 0, verified: true, evidence: { execution: 'child-process-exit', exitCode: 0, cwd: workingDirectory, shell: Boolean(shell) } };
+  } catch (error) {
+    return { ok: false, executed: error.code !== 'ENOENT', stdout: error.stdout || '', stderr: error.stderr || '', exitCode: typeof error.code === 'number' ? error.code : null, error: error.message, outcome: signal?.aborted ? 'CANCELLED' : 'UNVERIFIED', verified: false };
+  }
+});
+
+// desktop_control (delegates to ComputerOperator desktop action)
+canonicalCapabilityEngine.registerHandler('desktop_control', async (params, signal, { capability, action }) => {
+  return await canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { headed: params.headed ?? true, ...params, action: 'desktop' }, signal });
+});
+
+// doctor_memory_status
+canonicalCapabilityEngine.registerHandler('doctor_memory_status', async () => {
+  const engStatus = defaultEmbedEngine.getStatus();
+  return { ok: true, agentId: 'zero', provider: 'zero-local-embeddings', searchRuntimeRegistered: true, embedding: { ...engStatus, available: true } };
+});
+
+// voice_status
+canonicalCapabilityEngine.registerHandler('voice_status', async () => {
+  const vs = defaultVoiceStatus.getStatus();
+  return { ok: true, status: vs.ready ? 'ready' : 'idle', ...vs };
+});
+
+// web_search
+canonicalCapabilityEngine.registerHandler('web_search', async ({ query, maxResults = 5 }) => {
+  const { SearchEngine } = await import('../../packages/research-engine/search.mjs');
+  const search = new SearchEngine();
+  const result = await search.search(query, { limit: maxResults });
+  return { ...result, ok: result.status === 'ok', results: result.citations };
+});
+
+// web_extract
+canonicalCapabilityEngine.registerHandler('web_extract', async ({ url }) => {
+  const parsed = new URL(url);
+  if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Expected an HTTP(S) URL without credentials');
+  const response = await fetch(parsed, { signal: AbortSignal.timeout(15000) });
+  if (!response.ok) return { ok: false, status: 'failed', url: parsed.href, httpStatus: response.status, content: '' };
+  const reader = response.body.getReader();
+  const chunks = []; let bytes = 0; let truncated = false;
+  try {
+    while (true) {
+      const next = await reader.read();
+      if (next.done) break;
+      const remaining = 1024 * 1024 - bytes;
+      chunks.push(next.value.subarray(0, remaining));
+      bytes += Math.min(next.value.length, remaining);
+      if (bytes >= 1024 * 1024) { truncated = true; await reader.cancel(); break; }
+    }
+  } finally { reader.releaseLock(); }
+  return { ok: true, status: 'retrieved', url: response.url, httpStatus: response.status, contentType: response.headers.get('content-type'), content: Buffer.concat(chunks).toString('utf8'), bytes, truncated, verified: false, untrustedContent: true, retrievedAt: new Date().toISOString() };
+});
+
+// system_info
+canonicalCapabilityEngine.registerHandler('system_info', async () => {
+  return { ok: true, platform: process.platform, arch: process.arch, uptime: process.uptime(), memoryUsage: process.memoryUsage() };
+});
+
+// zero_skill_learn
+canonicalCapabilityEngine.registerHandler('zero_skill_learn', async ({ name, description, triggers = [], capabilities = [], workflowSteps = [], examples = [], overwrite = false }) => {
+  if (!name || typeof name !== 'string') throw new Error('Skill name is required and must be a string');
+  const cleanName = name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+  const targetDir = path.join(process.cwd(), 'skills', cleanName);
+  const targetFile = path.join(targetDir, 'SKILL.md');
+  if (fs.existsSync(targetFile) && !overwrite) return { ok: false, reason: 'skill-already-exists', path: targetFile };
+  await fs.mkdir(targetDir, { recursive: true });
+  const triggersYaml = (triggers.length > 0 ? triggers : [cleanName]).map((t) => `  - "${t.replace(/"/g, '\\"')}"`).join('\n');
+  const capabilitiesMd = (capabilities.length > 0 ? capabilities : ['Autonomous task execution']).map((c, i) => `${i + 1}. **${c}**`).join('\n');
+  const workflowMd = (workflowSteps.length > 0 ? workflowSteps : ['Execute task steps cleanly and verify.']).map((s, i) => `${i + 1}. ${s}`).join('\n');
+  const examplesMd = examples.length > 0 ? `\n## Examples\n${examples.map((e) => `- ${e}`).join('\n')}` : '';
+  const content = `---\nname: ${cleanName}\ndescription: ${description || `Auto-learned skill for ${cleanName}`}\ntriggers:\n${triggersYaml}\n---\n\n# ${cleanName.charAt(0).toUpperCase() + cleanName.slice(1).replace(/-/g, ' ')} Skill\n\n${description || 'Auto-generated autonomous agent skill.'}\n\n## Capabilities\n${capabilitiesMd}\n\n## Standard Execution Workflow\n${workflowMd}${examplesMd}\n`;
+  await fs.writeFile(targetFile, content, 'utf8');
+  return { ok: true, name: cleanName, path: targetFile, bytes: Buffer.byteLength(content, 'utf8') };
+});
+

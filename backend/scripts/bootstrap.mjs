@@ -1,19 +1,19 @@
 #!/usr/bin/env node
-// Zero backend bootstrap: turn the config template into a live openclaw config.
+// Zero backend bootstrap: turn the config template into a live zero config.
 //
 // DRY RUN BY DEFAULT. It writes nothing unless you pass --write.
 // It never contains, prints, or writes the gateway key: the config references the
-// environment variable NAME (ZERO_GATEWAY_KEY), and OpenClaw resolves it at runtime.
+// environment variable NAME (ZERO_GATEWAY_KEY), and zero resolves it at runtime.
 //
 // The template contains no provider or model seeds. The owner adds providers in
 // Settings → Models; this script validates and writes the config as-is.
 //
 // Run:
 //   node backend/scripts/bootstrap.mjs            # dry run, shows what would be written
-//   node backend/scripts/bootstrap.mjs --write    # writes backend/config/openclaw.json
+//   node backend/scripts/bootstrap.mjs --write    # writes backend/config/zero.json
 //
-// Runtime env consumed by OpenClaw (never written here):
-//   ZERO_GATEWAY_KEY, OPENCLAW_GATEWAY_TOKEN, OPENCLAW_STATE_DIR, OPENCLAW_CONFIG_PATH
+// Runtime env consumed by zero (never written here):
+//   ZERO_GATEWAY_KEY, zero, zero, zero
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -116,16 +116,16 @@ function main() {
   mkdirSync(dirname(OUTPUT), { recursive: true });
   writeFileSync(OUTPUT, `${JSON.stringify(config, null, 2)}\n`, "utf8");
   console.log(`\n  wrote ${OUTPUT}`);
-  console.log("  The file contains no secret: apiKey is an env SecretRef, gateway auth comes from OPENCLAW_GATEWAY_TOKEN.\n");
+  console.log("  The file contains no secret: apiKey is an env SecretRef, gateway auth comes from zero.\n");
 
   if (!existsSync(ENV_EXAMPLE)) {
     const envLines = [
       "# Zero backend runtime environment (names only - never commit values)",
-      "# Gateway auth (OpenClaw reads this directly):",
-      "OPENCLAW_GATEWAY_TOKEN=",
+      "# Gateway auth (zero reads this directly):",
+      "zero=",
       "# Isolate Zero runtime state from the user profile:",
-      `OPENCLAW_STATE_DIR=${join(BACKEND, ".openclaw")}`,
-      `OPENCLAW_CONFIG_PATH=${OUTPUT}`,
+      `zero=${join(BACKEND, ".zero")}`,
+      `zero=${OUTPUT}`,
       "",
     ].join("\n");
     writeFileSync(ENV_EXAMPLE, envLines, "utf8");

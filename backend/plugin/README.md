@@ -17,7 +17,7 @@ Zero-owned Gateway plugin. The only Zero code that runs **inside** the Gateway p
 
 | # | Finding | Resolution |
 |---|---|---|
-| **C1** | Manifest declared no `contracts.trustedToolPolicies`, so an installed plugin's policy is rejected *before* registration — the hold would silently not exist | `openclaw.plugin.json` now declares `["zero-policy.computer-hold"]`, the **exact** string passed as `policy.id`. Verified against `src/plugins/registry-registrars-host.ts:166-175`: the check is `.includes(id)` on the raw id with no prefixing. `package.json` now declares `openclaw.compat.pluginApi: ">=2026.10.6"` and `install.minHostVersion`. |
+| **C1** | Manifest declared no `contracts.trustedToolPolicies`, so an installed plugin's policy is rejected *before* registration — the hold would silently not exist | `zero.plugin.json` now declares `["zero-policy.computer-hold"]`, the **exact** string passed as `policy.id`. Verified against `src/plugins/registry-registrars-host.ts:166-175`: the check is `.includes(id)` on the raw id with no prefixing. `package.json` now declares `zero.compat.pluginApi: ">=2026.10.6"` and `install.minHostVersion`. |
 | **C2** | Field-name break with the accepted bridge contract (`leaseId` vs `controlLeaseId`) | Renamed in request **and** response. The old name now gets `computer-hold:lease-invalid`, and a test asserts it. |
 | **C4** | Observe allowlist had 3 names; upstream's observation surface is 8 | Default is now 10: the 8 from `computer-act-actions.json → observationNamesForHoldAllowlist` plus `screenshot` and `wait` (the two actions that ride `screen.snapshot` locally). |
 | **C5** | Staleness gated only coordinate actions, so `set_value`, `kill_app`, `browser_*` could act on a pre-handover reference | Staleness now gates **every non-observation action**, and an unknown/missing action fails closed. Only a call that actually returns a new capture clears it: `screenshot`, or `get_window_state` with `includeScreenshot: true`. |
@@ -39,7 +39,7 @@ Zero-owned Gateway plugin. The only Zero code that runs **inside** the Gateway p
 
 ## Activation self-check
 
-A rejected registration is otherwise invisible until a live check, so `register()` reads its own `openclaw.plugin.json` and verifies that `contracts.trustedToolPolicies` contains the exact policy id:
+A rejected registration is otherwise invisible until a live check, so `register()` reads its own `zero.plugin.json` and verifies that `contracts.trustedToolPolicies` contains the exact policy id:
 
 - declared → `info: manifest declares trusted policy "zero-policy.computer-hold" - registration should be accepted`
 - **not** declared → `error: MANIFEST DOES NOT DECLARE "…" … the human hold will NOT exist`

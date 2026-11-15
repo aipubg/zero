@@ -47,7 +47,7 @@ Interfaces preserved to prevent breaking existing tools, skills, or UI workflows
 | Subsystem / Path | Consumers Protected | Phase-Out Condition |
 |---|---|---|
 | `control-ui-config.json` | Control UI bootstrap client | Retain until UI view-model contracts decouple from config endpoint |
-| Legacy RPC contract adapters (`openclaw.*` / `config.get`) | Settings pages and external test runners | Retain behind `packages/gateway-protocol/compat.mjs` |
+| Legacy RPC contract adapters (`zero.*` / `config.get`) | Settings pages and external test runners | Retain behind `packages/gateway-protocol/compat.mjs` |
 | Skill markdown format (`SKILL.md`) | Existing 11 built-in and community skills | Maintain 100% backward compatibility indefinitely |
 
 ---
@@ -57,10 +57,10 @@ Code scheduled for controlled deletion **ONLY** after replacement modules exist 
 
 | Subsystem / Path | Reason for Future Retirement | Prerequisite for Removal |
 |---|---|---|
-| `backend/server/zero-host.mjs` fallback logic | Historical wrapper fallback to openclaw dist | Fully superseded by `ZeroNativeHost` default execution |
+| `backend/server/zero-host.mjs` fallback logic | Historical wrapper fallback to zero dist | Fully superseded by `ZeroNativeHost` default execution |
 | Unused test harnesses asserting mock states | Obsolete false-positive tests | Replaced by `test/e2e-matrix.test.mjs` (T01–T25) |
 | Duplicate gateway routes in `backend/gateway/server.mjs` | Dual route handling with `native-gateway.mjs` | Route convergence into single Zero Host router |
-| `backend/node_modules/openclaw` production dependency | Legacy runtime package | Verified 100% independence in Phase 1 / T02 isolation |
+| `backend/node_modules/zero` production dependency | Legacy runtime package | Verified 100% independence in Phase 1 / T02 isolation |
 
 ---
 
@@ -69,7 +69,7 @@ State, user history, and assets that must never be deleted:
 
 | Resource Path | Contents | Policy |
 |---|---|---|
-| `zero-system/state/state/openclaw.sqlite` | Sessions, tasks, cron jobs, preferences, audit logs | Automated backup prior to every migration; strict zero-data-loss rule |
+| `zero-system/state/state/zero.sqlite` | Sessions, tasks, cron jobs, preferences, audit logs | Automated backup prior to every migration; strict zero-data-loss rule |
 | `zero-system/config/zero.json` | System configurations & model endpoints | Atomic write with deep merge; never overwrite blindly |
 | Historical Git tags (`v2026.11.01-release`) | Production release baseline | Permanent immutability; never delete or move |
 | User artifacts in `brain/` | Reports, generated files, diagrams | Preserved across all executions |

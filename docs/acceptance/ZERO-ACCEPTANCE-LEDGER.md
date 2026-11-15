@@ -27,7 +27,7 @@ Total Acceptance Scenarios:  25
 ### Scope Classification
 
 1. **Fully Supported Core Scope:**
-   - Standalone `ZeroNativeHost` on port 18789 with 0 runtime dependencies on legacy openclaw.
+   - Standalone `ZeroNativeHost` on port 18789 with 0 runtime dependencies on legacy zero.
    - Real local browser control UI (`/chat/zero` and all 29 `/settings/*` surfaces) verified in Chrome and Edge.
    - Complete WebSocket Protocol 4 RPC engine with server-side role/scope enforcement.
    - Unified Model Fabric with single-pass SSE streaming (1:1 upstream counting) and live switching.
@@ -47,7 +47,7 @@ Total Acceptance Scenarios:  25
 | ID | Scenario Title | Category | Verified Evidence | Sub-Conditions & Integrity Constraints |
 |---|---|---|---|---|
 | **T01** | Clean installation & environment validation | **PASS** | Node.js v24+, config paths, model provider configurations verified on disk | No missing essential runtime files |
-| **T02** | Independent native startup without legacy runtime | **PASS** | Subprocess launched in isolated directory with empty `node_modules`; port 18798 bound; `/health`, `/v1/models`, WebSocket handshake, model inference, and capability execution confirmed | 0 openclaw imports; runs purely on native gateway |
+| **T02** | Independent native startup without legacy runtime | **PASS** | Subprocess launched in isolated directory with empty `node_modules`; port 18798 bound; `/health`, `/v1/models`, WebSocket handshake, model inference, and capability execution confirmed | 0 zero imports; runs purely on native gateway |
 | **T03** | Chat page loads without broken assets | **PASS** | `/chat/zero` HTML shell returns 200 OK; `/assets/zero-control-ui.js` (>100KB) and CSS bundles load cleanly | Asset generation hash `36a42defcd8df5b5112abb20e7ac5632ac511b36de5e755644122d0182bd5e46` |
 | **T04** | Settings & UI route catalog, RPC data, form persistence | **PASS** | Real Playwright browser (Chrome & Edge) navigates all 29 routes; form controls and live RPC data validated | Actual DOM component verification |
 | **T05** | WebSocket RPC Protocol 4 handshake & contract dispatch | **PASS** | Protocol 4 handshake with auth validation; `sessions.subscribe`, `models.authStatus` return valid frames | No legacy protocol degradation |

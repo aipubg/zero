@@ -3,21 +3,21 @@
  * Vendor the Control UI into the Zero repository as standalone, fully
  * rebranded source.
  *
- * The upstream bundle is published under the "openclaw" prefix. This script
+ * The upstream bundle is published under the "zero" prefix. This script
  * rewrites that prefix across the HTML, CSS and JavaScript in one pass, so
  * every cross-reference stays paired:
  *
- *   <openclaw-app>              -> <zero-app>
- *   --openclaw-modal-width      -> --zero-modal-width
- *   .openclaw-native-desktop    -> .zero-native-desktop
- *   __openclaw__/plugins/...    -> __zero__/plugins/...
- *   openclaw/settings.json      -> zero/settings.json
- *   notOpenclawRoot             -> notZeroRoot
- *   openClawMemory              -> zeroMemory
+ *   <zero-app>              -> <zero-app>
+ *   --zero-modal-width      -> --zero-modal-width
+ *   .zero-native-desktop    -> .zero-native-desktop
+ *   __ZERO/plugins/...    -> __zero__/plugins/...
+ *   zero/settings.json      -> zero/settings.json
+ *   notzeroRoot             -> notZeroRoot
+ *   zero              -> zeroMemory
  *
  * The result is written to app/zero-control-ui/vendor/ and becomes the only
  * source the build uses, so the project no longer depends on
- * backend/node_modules/openclaw.
+ * backend/node_modules/zero.
  *
  * Run with --check to verify the vendored tree without rewriting it.
  */
@@ -51,18 +51,18 @@ function isPrecompressed(name) {
  *
  * These are plain substring rules on purpose. Word boundaries would miss the
  * underscore and camelCase forms the bundle actually uses, for example
- * "__openclaw__", ".__openclaw", "notOpenclawRoot", "__OPENCLAW_REDACTED__"
- * and "__openclawAgentPath".
+ * "__ZERO", ".__zero", "notzeroRoot", "__ZERO"
+ * and "__zeroAgentPath".
  */
 const TOKEN_RULES = [
-  [/OPENCLAW/g, 'ZERO'],
-  [/OpenClaw/g, 'Zero'],
-  [/Openclaw/g, 'Zero'],
-  [/openClaw/g, 'zero'],
-  [/openclaw/g, 'zero'],
-  [/CRABBOX/g, 'ZERO'],
-  [/Crabbox/g, 'Zero Cloud'],
-  [/crabbox/g, 'zero'],
+  [/zero/g, 'ZERO'],
+  [/zero/g, 'Zero'],
+  [/zero/g, 'Zero'],
+  [/zero/g, 'zero'],
+  [/zero/g, 'zero'],
+  [/zero/g, 'ZERO'],
+  [/zero/g, 'Zero Cloud'],
+  [/zero/g, 'zero'],
 ];
 
 /**
@@ -145,10 +145,10 @@ if (checkOnly) {
     if (!isTextFile(rel)) continue;
     const source = fs.readFileSync(path.join(vendorRoot, rel), 'utf8');
     checked++;
-    const hits = source.match(/openclaw|crabbox/i);
+    const hits = source.match(/zero|zero/i);
     if (hits) {
       residual += hits.length;
-      const idx = source.search(/openclaw|crabbox/i);
+      const idx = source.search(/zero|zero/i);
       console.log(`  RESIDUAL ${rel}: ${JSON.stringify(source.slice(Math.max(0, idx - 60), idx + 60))}`);
     }
   }

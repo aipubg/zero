@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const dirs = [
-  'backend/node_modules/openclaw/dist/control-ui/assets',
+  'backend/node_modules/zero/dist/control-ui/assets',
   'dist/web/assets',
 ];
 

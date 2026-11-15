@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Migrate Zero config to the single-agent model: keep only `zero`, remove the
 // worker entries and their delegation policy, and grant Zero the computer tool
-// it now needs. The patch is validated and applied through `openclaw config
+// it now needs. The patch is validated and applied through `zero config
 // patch`; the current file is backed up first.
 //
 // Run:
-//   node backend/scripts/migrate-zero-only-agents.mjs --config <openclaw.json> --dry-run
-//   node backend/scripts/migrate-zero-only-agents.mjs --config <openclaw.json> --apply
+//   node backend/scripts/migrate-zero-only-agents.mjs --config <zero.json> --dry-run
+//   node backend/scripts/migrate-zero-only-agents.mjs --config <zero.json> --apply
 
 import { copyFileSync, existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BACKEND = resolve(HERE, "..");
-const OPENCLAW = join(BACKEND, "node_modules", "openclaw", "openclaw.mjs");
+const zero = join(BACKEND, "node_modules", "zero", "zero.mjs");
 const WORKERS = ["researcher", "operator"];
 
 export const ZERO_ONLY_UNSET_PATHS = WORKERS.map((id) => `agents.entries.${id}`);
@@ -96,8 +96,8 @@ export function modelSignature(config) {
 }
 
 function runCli(args, configPath) {
-  return spawnSync(process.execPath, [OPENCLAW, "config", ...args], {
-    env: { ...process.env, OPENCLAW_CONFIG_PATH: configPath },
+  return spawnSync(process.execPath, [zero, "config", ...args], {
+    env: { ...process.env, zero: configPath },
     encoding: "utf8",
     timeout: 60000,
     windowsHide: true,
@@ -107,7 +107,7 @@ function runCli(args, configPath) {
 // Config-only agent removal: the same mutation used by `agents delete`, without
 // its workspace/session pruning. Already verified on a temp config copy.
 async function loadDeleteAgentConfigEntry() {
-  const dist = join(BACKEND, "node_modules", "openclaw", "dist");
+  const dist = join(BACKEND, "node_modules", "zero", "dist");
   const file = readdirSync(dist).find(
     (name) => name.startsWith("agents-config-mutations-") && name.endsWith(".mjs"),
   );
@@ -124,10 +124,10 @@ async function main() {
   const args = process.argv.slice(2);
   const configArg = args.includes("--config")
     ? args[args.indexOf("--config") + 1]
-    : process.env.OPENCLAW_CONFIG_PATH;
+    : process.env.zero;
   const apply = args.includes("--apply");
   if (!configArg) {
-    console.error("migrate-zero-only-agents: provide --config or OPENCLAW_CONFIG_PATH");
+    console.error("migrate-zero-only-agents: provide --config or zero");
     process.exit(2);
   }
   const configPath = resolve(configArg);
@@ -170,8 +170,8 @@ async function main() {
     process.exit(applied.status ?? 1);
   }
 
-  process.env.OPENCLAW_CONFIG_PATH = configPath;
-  process.env.OPENCLAW_STATE_DIR ??= join(dirname(configPath), "gateway-state");
+  process.env.zero = configPath;
+  process.env.zero ??= join(dirname(configPath), "gateway-state");
   const removeAgent = await loadDeleteAgentConfigEntry();
   for (const path of unsets) {
     await removeAgent({ agentId: path.split(".").at(-1), allowMissing: false });

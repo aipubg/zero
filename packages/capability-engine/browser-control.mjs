@@ -142,17 +142,9 @@ export class BrowserAutomationEngine {
       const bPid = info?.processInfo?.find(p => p.type === 'browser')?.id;
       if (!bPid) return;
 
-      const { runNativeWinAction } = await import('../../app/zero-control-ui/src/computer/windows-driver.js');
       // Use topmost positioning at (x: 80, y: 60, w: 1280, h: 820)
-      await runNativeWinAction('focus_window', {
-        target: bPid,
-        command: 'topmost',
-        topmost: true,
-        x: 80,
-        y: 60,
-        width: 1280,
-        height: 820,
-      });
+      const { focusWindow } = await import('./windows-driver.mjs');
+      await focusWindow({ target: String(bPid), command: 'topmost' });
     } catch {}
   }
 

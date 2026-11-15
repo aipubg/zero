@@ -46,7 +46,7 @@ test('ZERO AI — scoped historical T01–T15 scenarios', { timeout: 90000 }, as
     const content = fs.readFileSync(scriptPath, 'utf8');
     assert.ok(content.includes('$PSScriptRoot'), 'Uses dynamic $PSScriptRoot');
     assert.ok(content.includes('zero-host.mjs'), 'Executes native zero-host.mjs daemon');
-    assert.ok(!content.includes('openclaw.cmd'), 'Does not invoke legacy openclaw.cmd wrapper');
+    assert.ok(!content.includes('zero.cmd'), 'Does not invoke legacy zero.cmd wrapper');
     assert.ok(content.includes('Remove-Item Env:\\ZERO_GATEWAY_KEY'), 'Cleans sensitive env before launch');
   });
 

@@ -2,7 +2,7 @@
 
 **Audit Date:** 2026-11-01  
 **Repository:** https://github.com/aipubg/zero  
-**Reference Baseline:** OpenClaw 2026.10.6  
+**Reference Baseline:** zero 2026.10.6  
 **Auditor:** Antigravity (Google DeepMind - Advanced Agentic Coding)  
 **Status:** Canonical Audit Baseline
 
@@ -28,7 +28,7 @@ This system inventory provides a recursive, file-by-file audit of the Zero AI re
 | Path | Type | Status | Assessment & Description |
 |---|---|---|---|
 | `start-all.ps1` | PowerShell Script | `OBSOLETE` | Legacy launcher that invokes runtime patching (`apply-zero-branding.mjs`) and destructive session wipes (`purge-all-test-sessions.mjs`). Starts two separate ports (`18790` and `18789`). |
-| `zero-host.ps1` | PowerShell Script | `PARTIAL` | Launches `openclaw.cmd gateway` on port `18789` with environment variables. Contains hardcoded absolute paths (`E:\zero`) and executes startup patching. |
+| `zero-host.ps1` | PowerShell Script | `PARTIAL` | Launches `zero.cmd gateway` on port `18789` with environment variables. Contains hardcoded absolute paths (`E:\zero`) and executes startup patching. |
 | `zero-gateway.ps1` | PowerShell Script | `OBSOLETE` | Launches secondary standalone server (`backend/gateway/server.mjs`) on port `18790`. Creates architectural collision with single-port `18789` architecture. |
 | `README.md` | Markdown | `WORKING` | Clean Zero AI product entry point documenting single-port `18789` architecture, physical desktop automation, and quick start guides. |
 | `.gitignore` | Config | `WORKING` | Standard git exclusions for `node_modules`, state journals, credentials, and local test artifacts. |
@@ -38,7 +38,7 @@ This system inventory provides a recursive, file-by-file audit of the Zero AI re
 ### 2.2 `app/` — Application Layer & Bridge
 | Path | Type | Status | Assessment & Description |
 |---|---|---|---|
-| `app/package.json` | Manifest | `PARTIAL` | Declares dependencies on `@openclaw/gateway-client` and `@openclaw/gateway-protocol`. Lacks local Zero Host client package. |
+| `app/package.json` | Manifest | `PARTIAL` | Declares dependencies on `@zero/gateway-client` and `@zero/gateway-protocol`. Lacks local Zero Host client package. |
 | `app/pnpm-workspace.yaml` | Workspace Config | `WORKING` | Workspace definition managing `app` packages. |
 | `app/tsconfig.json` | TS Config | `PARTIAL` | TypeScript configuration for bridge library. References `src/` which was removed. |
 | `app/test/bridge.test.mjs` | Test Suite | `BROKEN` | Fails with `ERR_MODULE_NOT_FOUND` on `E:\zero\app\src\bridge\config.ts` and `ENOENT` on `E:\zero\app\src`. |
@@ -52,9 +52,9 @@ This system inventory provides a recursive, file-by-file audit of the Zero AI re
 | `browser.js` | JS Entry | `WORKING` | Control UI browser bundle entry importing `native-surfaces.js`. |
 | `build.mjs` | Build Script | `WORKING` | Uses `esbuild` to compile `browser.js` and `index.css` into content-hashed bundles in `dist/control-ui/`. |
 | `index.css` | Stylesheet | `WORKING` | Pure Zero dark theme stylesheet with custom CSS variables, modal dropdown reset, and top-right control button styling. |
-| `index.js` | Plugin Entry | `WORKING` | OpenClaw plugin registration entry point binding computer-hold policy, observation engine, and control UI. |
+| `index.js` | Plugin Entry | `WORKING` | zero plugin registration entry point binding computer-hold policy, observation engine, and control UI. |
 | `runtime-core.mjs` | Module | `WORKING` | Backend runtime handlers for provider display-names, CLI status, connectors, and observation RPCs. |
-| `openclaw.plugin.json` | Manifest | `WORKING` | Plugin manifest configuring `zero-control-ui` extensions and control UI assets. |
+| `zero.plugin.json` | Manifest | `WORKING` | Plugin manifest configuring `zero-control-ui` extensions and control UI assets. |
 | `src/constants.js` | Module | `WORKING` | UI constants and surface identifier declarations. |
 | `src/legacy-routes.js` | Module | `WORKING` | Route interceptor keeping native routes and redirecting legacy upstream chrome to canonical `/chat/zero`. |
 | `src/native-surfaces.js` | Module | `WORKING` | DOM manipulation and custom Lit component mounts: permanent top actions, theme-synced custom dropdowns, skeleton cleanup. |
@@ -79,7 +79,7 @@ This system inventory provides a recursive, file-by-file audit of the Zero AI re
 ### 2.4 `backend/` — Server Runtime & Services
 | Path | Type | Status | Assessment & Description |
 |---|---|---|---|
-| `backend/package.json` | Manifest | `PARTIAL` | Directly pins `openclaw: 2026.10.6`. Lacks native Zero Host package definition. |
+| `backend/package.json` | Manifest | `PARTIAL` | Directly pins `zero: 2026.10.6`. Lacks native Zero Host package definition. |
 | `backend/config/zero.json` | Config | `PARTIAL` | Canonical active configuration. Contains hardcoded `E:\zero` absolute paths. |
 | `backend/config/zero.template.json` | Config Template | `PARTIAL` | Template used for bootstrapping. Contains hardcoded `E:\zero` absolute paths. |
 | `backend/agents/zero/delegation-policy.md` | Policy Doc | `WORKING` | Single-agent delegation policy enforcing explicit permissions. |
@@ -93,7 +93,7 @@ This system inventory provides a recursive, file-by-file audit of the Zero AI re
 | `backend/plugin/selftest.mjs` | Test Suite | `WORKING` | 110 passed contract tests verifying lease state machine, stale-frame gating, and budgets. |
 | `backend/scripts/apply-zero-branding.mjs` | Script | `OBSOLETE` | 823-line startup patching script that mutates installed node_modules files at runtime. |
 | `backend/scripts/purge-all-test-sessions.mjs`| Script | `OBSOLETE` | Destructive script that drops SQLite session tables on startup. |
-| `backend/scripts/test/migrate-zero-only-agents.test.mjs` | Test Suite | `BROKEN` | Fails with `ENOENT` looking for deleted `openclaw.template.json`. |
+| `backend/scripts/test/migrate-zero-only-agents.test.mjs` | Test Suite | `BROKEN` | Fails with `ENOENT` looking for deleted `zero.template.json`. |
 | `backend/scripts/test/sync-zero-instructions.test.mjs` | Test Suite | `WORKING` | Passes managed block instruction synchronization tests. |
 
 ---
@@ -130,10 +130,10 @@ This system inventory provides a recursive, file-by-file audit of the Zero AI re
 ### 2.8 `zero-system/` — System Configuration & State
 | Path | Type | Status | Assessment & Description |
 |---|---|---|---|
-| `zero-system/config/zero.json` | Config | `PARTIAL` | Main system configuration file for OpenClaw gateway. Contains hardcoded absolute paths `E:\zero`. |
+| `zero-system/config/zero.json` | Config | `PARTIAL` | Main system configuration file for zero gateway. Contains hardcoded absolute paths `E:\zero`. |
 | `zero-system/config/zero.template.json` | Config Template | `PARTIAL` | System template with hardcoded absolute paths `E:\zero`. |
-| `zero-system/state/state/openclaw.sqlite` | Database | `PARTIAL` | Primary SQLite database storing sessions, audit logs, devices, and cron jobs. Retains legacy naming. |
-| `zero-system/state/openclaw-agent.sqlite`| Database | `WORKING` | Secondary agent state database. |
+| `zero-system/state/state/zero.sqlite` | Database | `PARTIAL` | Primary SQLite database storing sessions, audit logs, devices, and cron jobs. Retains legacy naming. |
+| `zero-system/state/zero-agent.sqlite`| Database | `WORKING` | Secondary agent state database. |
 
 ---
 
@@ -142,8 +142,8 @@ This system inventory provides a recursive, file-by-file audit of the Zero AI re
 | Classification | Count | Key Components |
 |---|---|---|
 | **WORKING** | 42 | Lit UI bundle, `windows-driver.js`, `win-actions-daemon.ps1`, `ComputerOperator`, `observation/` subsystem, `zero-policy` plugin, `dynamic-loader.mjs`, `mode-manager.mjs`, 9 skill definitions, 128 UI tests, 110 policy tests. |
-| **PARTIAL** | 8 | `backend/gateway/server.mjs` (hardcoded regex intercepts & open proxy), `zero-host.ps1` (hardcoded paths & runtime patching), `zero.json` / `zero.template.json` (hardcoded `E:\zero` paths), `gateway-providers.json` (plaintext API keys), `openclaw.sqlite` (legacy schema/table names). |
-| **BROKEN** | 4 | `app/test/bridge.test.mjs` (missing `app/src`), `backend/gateway/registry.ts` (`localStorage` ReferenceError), `backend/gateway/test-final-suite.mjs` (crashes on fetch/assert), `backend/scripts/test/migrate-zero-only-agents.test.mjs` (missing `openclaw.template.json`). |
-| **MISSING** | 2 | `app/src/` directory, Zero-native host daemon (pure Node.js process launcher replacing `openclaw.cmd`). |
+| **PARTIAL** | 8 | `backend/gateway/server.mjs` (hardcoded regex intercepts & open proxy), `zero-host.ps1` (hardcoded paths & runtime patching), `zero.json` / `zero.template.json` (hardcoded `E:\zero` paths), `gateway-providers.json` (plaintext API keys), `zero.sqlite` (legacy schema/table names). |
+| **BROKEN** | 4 | `app/test/bridge.test.mjs` (missing `app/src`), `backend/gateway/registry.ts` (`localStorage` ReferenceError), `backend/gateway/test-final-suite.mjs` (crashes on fetch/assert), `backend/scripts/test/migrate-zero-only-agents.test.mjs` (missing `zero.template.json`). |
+| **MISSING** | 2 | `app/src/` directory, Zero-native host daemon (pure Node.js process launcher replacing `zero.cmd`). |
 | **DUPLICATED** | 1 | `src/gateway/` (identical copy of `backend/gateway/`). |
 | **OBSOLETE** | 4 | `backend/scripts/apply-zero-branding.mjs` (runtime patching of node_modules), `backend/scripts/purge-all-test-sessions.mjs` (destructive session drop), `start-all.ps1` (dual-port launcher), `zero-gateway.ps1` (redundant secondary port 18790 launcher). |

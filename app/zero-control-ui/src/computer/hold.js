@@ -510,9 +510,9 @@ function mountComputerHold(container, host, options = {}) {
         }
       }
       const app = typeof document !== "undefined"
-        ? (document.querySelector("openclaw-app")
+        ? (document.querySelector("zero-app")
           || document.querySelector("zero-app")
-          || document.querySelector("openclaw-systems-page")
+          || document.querySelector("zero-systems-page")
           || document.querySelector("zero-systems-page")
           || document.querySelector("body"))
         : null;

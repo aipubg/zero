@@ -122,7 +122,7 @@ async function start() {
       ZERO_PREFS_PATH: path.join(temporary, 'prefs.json'), ZERO_SKILLS_DIR: path.join(temporary, 'skills'),
       ZERO_PROVIDERS_PATH: path.join(temporary, 'providers.json'), ZERO_AGENT_BINDINGS_PATH: path.join(temporary, 'bindings.json'),
       ZERO_LOCAL_MODELS_DIR: path.join(temporary, 'local-models'),
-      OPENCLAW_CONFIG_PATH: path.join(temporary, 'config.json') },
+      zero: path.join(temporary, 'config.json') },
   });
   child.stderr.on('data', data => errors.push(String(data)));
   child.stdout.resume();
@@ -706,7 +706,7 @@ try {
     await page.getByText(marker, { exact: true }).last().waitFor();
     const history = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
     assert.equal(history.messages.at(-1).content.trim(), marker);
-    assert.equal(history.messages.at(-1).__openclaw.runId, response.payload.runId);
+    assert.equal(history.messages.at(-1).__zero.runId, response.payload.runId);
     assert.equal(history.sessionInfo.hasActiveRun, false);
     const nextMarker = `${marker}_SECOND`;
     const beforeReplies = chatResponses.length;
@@ -719,9 +719,9 @@ try {
     assert.equal(nextResponse.ok, true, JSON.stringify(nextResponse.error));
     assert.equal(nextResponse.payload.content.trim(), nextMarker);
     const nextHistory = await rpc('chat.history', { sessionKey: response.payload.sessionKey });
-    assert.equal(nextHistory.messages.at(-1).__openclaw.runId, nextResponse.payload.runId);
+    assert.equal(nextHistory.messages.at(-1).__zero.runId, nextResponse.payload.runId);
     assert.equal(nextHistory.messages.at(-1).content.trim(), nextMarker);
-    assert.ok(nextHistory.messages.some(message => message.role === 'user' && message.__openclaw.runId === nextResponse.payload.runId));
+    assert.ok(nextHistory.messages.some(message => message.role === 'user' && message.__zero.runId === nextResponse.payload.runId));
     await page.reload();
     await page.getByText(marker, { exact: true }).last().waitFor();
     return { taskId: response.payload.taskId, secondTaskId: nextResponse.payload.taskId, secondRunId: nextResponse.payload.runId, secondReply: nextMarker, samePageSecondSend: true, durableRunIdentity: true, sessionKey: response.payload.sessionKey, reply: marker, persistedAfterReload: true };
@@ -745,7 +745,7 @@ try {
     let receipt; try { receipt = db.prepare('select task_id,status from zero_assistant_receipts where run_id=?').get(request.idempotencyKey); } finally { db.close(); }
     assert.equal((await rpc('tasks.get', { id: receipt.task_id })).status, 'CANCELLED');
     const history = await rpc('chat.history', { sessionKey: request.sessionKey });
-    const partial = history.messages.find(message => message.role === 'assistant' && message.__openclaw.runId === request.idempotencyKey && message.status === 'interrupted');
+    const partial = history.messages.find(message => message.role === 'assistant' && message.__zero.runId === request.idempotencyKey && message.status === 'interrupted');
     assert.ok(partial?.content.trim(), 'Actual partial text must persist as interrupted');
     assert.equal(history.sessionInfo.hasActiveRun, false);
     const marker = `AFTER_STOP_${port}`;

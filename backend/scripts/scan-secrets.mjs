@@ -21,7 +21,7 @@ const EXCLUDED_DIRS = new Set([
   'build',
   '.zero-data',
   'zero-data',
-  '.openclaw',
+  '.zero',
   'state',
   'venv',
   '.venv',

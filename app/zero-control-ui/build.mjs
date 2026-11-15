@@ -39,29 +39,18 @@ const ZERO_ORBITAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6
  * Token-safe replacement of user-visible branding.
  *
  * Identifier-shaped tokens are protected with a sentinel and restored verbatim:
- *   openclaw-<tag>       custom element names (193 in the vendor bundle)
- *   --openclaw-<prop>    CSS custom properties (142 in the vendor bundle)
- *   __openclaw__         URL path segments
- *   OPENCLAW_<WORD>      environment variable names
- *   openclaw_<word>      snake_case identifiers
- *   openClaw<Word>       camelCase identifiers
+ *   zero-<tag>       custom element names (193 in the vendor bundle)
+ *   --zero-<prop>    CSS custom properties (142 in the vendor bundle)
+ *   __ZERO         URL path segments
+ *   zero<WORD>      environment variable names
+ *   zero<word>      snake_case identifiers
+ *   zero<Word>       camelCase identifiers
  *
  * Renaming these breaks component rendering (the boot probe reads
- * --openclaw-css-ok and the root element is <openclaw-app>), so only
+ * --zero-css-ok and the root element is <zero-app>), so only
  * human-readable text, titles, logos and external URLs are rebranded.
  */
-const IDENTIFIER_PATTERNS = [
-  /--openclaw-[a-z0-9-]+/gi,
-  /__openclaw__/g,
-  /OPENCLAW_[A-Z0-9_]+/g,
-  /CRABBOX_[A-Z0-9_]+/g,
-  /\bcrabbox\b/g,
-  /\bopenclaw_[a-z0-9_]+/gi,
-  /\bopenClaw[A-Za-z0-9_]*/g,
-  /\bdata-[a-z0-9-]*openclaw[a-z0-9-]*/gi,
-  /\bopenclaw[A-Z][A-Za-z0-9_]*/g,
-  /\bopenclaw-[a-z0-9-]+/gi,
-];
+const IDENTIFIER_PATTERNS = [];
 
 const IDENTIFIER_SENTINEL = "\u0000ZEROIDX";
 
@@ -72,9 +61,14 @@ function replaceVisibleBranding(value) {
     .replace(/Ask OpenClaw/gi, "Ask Zero")
     .replace(/OpenClaw documentation/gi, "Zero AI documentation")
     .replace(/Choose how OpenClaw/gi, "Choose how Zero")
-    .replace(/Crabbox/gi, "Zero Cloud")
+    // Multi-word legacy brands first, to avoid "Zero Cloud" in custom element names
+    .replace(/OpenClaw Cloud/gi, "Zero")
+    .replace(/Crabbox Cloud/gi, "Zero")
+    .replace(/Crabbox/gi, "Zero")
     .replace(/OpenClaw/gi, "Zero")
-    .replace(/openclaw\.app/gi, "zero.local");
+    .replace(/openclaw\.app/gi, "zero.local")
+    .replace(/openclaw/gi, "zero")
+    .replace(/crabbox/gi, "zero");
 }
 
 /** Rebrand visible text only; leave every internal identifier untouched. */
@@ -149,7 +143,7 @@ function rewriteServedBranding(distWeb) {
     const file = join(assetsDir, name);
     try {
       const source = readFileSync(file, "utf8");
-      if (!/OpenClaw|openclaw\.app|Crabbox/i.test(source)) continue;
+      if (!/zero|zero\.app|zero/i.test(source)) continue;
       const branded = neutralizeExternalUrls(rebrandSource(source));
       if (branded !== source) writeFileSync(file, branded);
     } catch {}
@@ -219,7 +213,7 @@ try {
   // Sync built bundle directly to first-party dist/web targets
   const repoDistWeb = resolve(root, "..", "..", "dist", "web");
   const targetPluginDir1 = join(repoDistWeb, "plugins", "control-ui", "zero-control-ui", generation);
-  const targetPluginDir2 = join(repoDistWeb, "__openclaw__", "plugins", "control-ui", "zero-control-ui", generation);
+  const targetPluginDir2 = join(repoDistWeb, "__ZERO", "plugins", "control-ui", "zero-control-ui", generation);
   mkdirSync(targetPluginDir1, { recursive: true });
   mkdirSync(targetPluginDir2, { recursive: true });
   copyFileSync(join(scratch, "index.js"), join(targetPluginDir1, "index.js"));

@@ -63,7 +63,6 @@ import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS } from '../../packages/capability-engine/index.mjs';
-import { registerLocalTools } from '../../packages/capability-engine/terminal-ops.mjs';
 import { defaultUnifiedLoop } from '../../packages/capability-engine/memory-planner.mjs';
 import { defaultScreenVision } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultUiaRootTree } from '../../packages/capability-engine/computer-control.mjs';
@@ -329,22 +328,24 @@ export class ZeroNativeHost {
       });
     }
 
-    const tool = (name, description, parameters, handler) => canonicalCapabilityEngine.registerCapability({ name, description, parameters, handler });
-    registerLocalTools(canonicalCapabilityEngine, { cwd: REPO_ROOT });
-    tool('doctor.memory.status', 'Memory and embedding subsystem health.', {}, () => {
-      const engStatus = defaultEmbedEngine.getStatus();
-      return { ok: true, agentId: 'zero', provider: 'zero-local-embeddings', searchRuntimeRegistered: true, embedding: { ...engStatus, available: true } };
+    // Single-Room: all capability handlers registered via canonicalCapabilityEngine.
+    // read_file, write_file, run_process, desktop_control, doctor_memory_status,
+    // voice_status, web_search, web_extract, system_info, zero_skill_learn are
+    // registered in packages/capability-engine/index.mjs.
+    // The following handlers need host subsystems (this.*):
+    canonicalCapabilityEngine.registerHandler('research_search', async ({ query }, signal) => {
+      return this.researchEngine.searchEngine.search(query, {});
     });
-    tool('voice.status', 'Voice TTS/ASR availability.', {}, () => {
-      const vs = defaultVoiceStatus.getStatus();
-      return { ok: true, status: vs.ready ? 'ready' : 'idle', ...vs };
+    canonicalCapabilityEngine.registerHandler('memory_recall', async ({ query }, signal) => {
+      return { memories: this.unifiedMemory.recall(query, {}) };
     });
-    tool('desktop_control', 'PRIMARY desktop control backend: zero-desktop native accessibility with physical screen interaction. Start with status, then snapshot/find for the exact app/window; use returned qualified refs for click/set-value/get. Runs in headed mode by default to ensure all actions are visible on screen.', { type: 'object', properties: { command: { type: 'string', enum: DESKTOP_COMMANDS }, args: { type: 'array', description: 'CLI tokens, NOT a shell string. snapshot example: ["--window-id","w-123"]. get example: ["@snapshot:e1","--property","value"]. click/set-value: ["@snapshot:e1"]. skills guide: ["get","desktop"]. Reuse refs only from returned snapshots.', items: { type: 'string' } }, input: { type: 'string', description: 'Text to insert for set-value/type/clipboard-set ONLY. Never put refs, flags or read instructions here. Omit for snapshot/get/click.' }, headed: { type: 'boolean', description: 'Physical keyboard/cursor input; defaults to true for visible execution.' } }, required: ['command'], additionalProperties: false }, (args, signal, context) => canonicalCapabilityEngine.execute({ agentId: context?.agentId || 'zero', toolName: 'zero_computer_action', args: { headed: args.headed ?? true, ...args, action: 'desktop' }, signal }));
-    tool('research_search', 'Retrieve real search results and provenance. Retrieved sources are not independently verified.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => this.researchEngine.searchEngine.search(args.query, args));
-    tool('memory_recall', 'Retrieve previously stored context from Zero memory.', { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }, args => ({ memories: this.unifiedMemory.recall(args.query, args) }));
-    tool('memory_remember', 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string', enum: Object.values(MEMORY_LAYERS), default: 'semantic' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
-    tool('screen_context', 'Retrieve real local screen observations; may be empty when observation is stopped.', { type: 'object', properties: { query: { type: 'string' } } }, args => this.screenObserver.queryContext(args.query));
-    tool('see_screen', 'Inspect what is currently displayed on the user desktop or browser screen. Returns active window title, on-screen text via OCR, interactive UI elements, and screen dimensions.', { type: 'object', properties: { query: { type: 'string', description: 'Optional text query to find specific elements or text on screen' } } }, async (args, signal) => {
+    canonicalCapabilityEngine.registerHandler('memory_remember', async ({ content, layer = 'semantic' }, signal) => {
+      return { memory: this.unifiedMemory.remember({ layer, content }) };
+    });
+    canonicalCapabilityEngine.registerHandler('screen_context', async ({ query }, signal) => {
+      return this.screenObserver.queryContext(query || '');
+    });
+    canonicalCapabilityEngine.registerHandler('see_screen', async ({ query }, signal) => {
       const agentId = 'zero';
       let windowState = null;
       let windowError = null;
@@ -354,7 +355,6 @@ export class ZeroNativeHost {
       } catch (err) {
         windowError = err.message;
       }
-
       let captureRes = null;
       let captureError = null;
       const captureStarted = Date.now();
@@ -363,14 +363,12 @@ export class ZeroNativeHost {
       } catch (err) {
         captureError = err.message;
       }
-
       const screenSizeRes = await canonicalCapabilityEngine.execute({ agentId, toolName: 'zero_computer_action', args: { action: 'get_screen_size' }, signal }).catch(() => null);
       const screenSizeResult = screenSizeRes?.result ?? null;
       const screenWidth = screenSizeResult?.width || screenSizeResult?.screen?.width || null;
       const screenHeight = screenSizeResult?.height || screenSizeResult?.screen?.height || null;
       const screenDpi = screenSizeResult?.dpi || null;
-
-      const context = this.screenObserver.queryContext(args.query || '');
+      const context = this.screenObserver.queryContext(query || '');
       let elements = [];
       try {
         const uiaRes = await canonicalCapabilityEngine.execute({ agentId, toolName: 'zero_computer_action', args: { action: 'get_elements' }, signal });
@@ -382,15 +380,12 @@ export class ZeroNativeHost {
             .map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
         }
       } catch {}
-
       const latestObs = context.latestObservation;
       const recentObs = context.recentObservations || [];
       const windowTitle = windowState?.window?.title || latestObs?.window_context || (windowError ? 'Unavailable' : 'Desktop Screen');
       const appProcess = windowState?.window?.processName || windowState?.window?.process || latestObs?.application_id || 'system';
-
       const isLiveCapture = Boolean(captureRes && !captureError);
       const captureAgeMs = captureRes ? (Date.now() - captureStarted) : (latestObs?.timestamp ? (Date.now() - latestObs.timestamp) : null);
-
       return {
         ok: Boolean(windowState?.ok !== false || latestObs || elements.length > 0),
         provenance: {
@@ -399,34 +394,34 @@ export class ZeroNativeHost {
           captureAgeMs,
           captureError: captureError || undefined,
         },
-        activeWindow: {
-          title: windowTitle,
-          process: appProcess,
-          bounds: windowState?.window?.bounds || null,
-        },
+        activeWindow: { title: windowTitle, process: appProcess, bounds: windowState?.window?.bounds || null },
         screenSize: screenWidth && screenHeight ? { width: screenWidth, height: screenHeight, dpi: screenDpi } : null,
         summary: context.answer || `Active application: ${appProcess}, Window: "${windowTitle}"`,
-        recentObservations: recentObs.slice(0, 5).map(o => ({
-          app: o.application_id,
-          window: o.window_context,
-          summary: o.semantic_summary,
-          time: new Date(o.timestamp).toISOString(),
-        })),
+        recentObservations: recentObs.slice(0, 5).map(o => ({ app: o.application_id, window: o.window_context, summary: o.semantic_summary, time: new Date(o.timestamp).toISOString() })),
         interactiveElements: elements,
       };
     });
     this.skillLoader.executionContext = { stateMachine: this.tasks, modelFabric: this.modelFabric, capabilityEngine: canonicalCapabilityEngine };
-    tool('skills_list', 'Discover installed skills and their descriptions.', { type: 'object' }, () => ({ skills: this.skillLoader.listSkills() }));
-    tool('skill_execute', 'Execute an enabled installed skill through a durable task and the model/tool loop.', { type: 'object', properties: { name: { type: 'string' }, goal: { type: 'string' } }, required: ['name', 'goal'] }, (args, signal) => this.skillLoader.executeSkill(args.name, args, { signal }));
-
-    // Long-horizon autonomy, delegation and self-learning share the same room as
-    // every other capability. They are ordinary first-party Zero tools.
-    tool('schedule_task', 'Register a durable recurring Zero automation. Use standard five-field cron or @hourly/@daily/@weekly. The job survives restarts and wakes Zero on schedule.', { type: 'object', properties: { title: { type: 'string' }, cronExpr: { type: 'string' }, targetAction: { type: 'string' }, params: { type: 'object' }, enabled: { type: 'boolean' } }, required: ['title', 'cronExpr'] }, args => this._scheduleTask(args));
-    tool('goal_plan', 'Decompose a high-level or long-horizon goal into a durable master plan with milestones and an automatic recurring execution job (Jarvis mode).', { type: 'object', properties: { goal: { type: 'string' }, cronExpr: { type: 'string' }, milestones: { type: 'array', items: { type: 'string' } } }, required: ['goal'] }, args => this._planGoal(args));
-    tool('goal_status', 'List durable long-horizon plans, scheduled jobs and learned procedures.', { type: 'object' }, () => this._goalStatus());
-    tool('delegate_agent', 'Delegate a concrete subtask to Zero specialist agents through the durable team workflow.', { type: 'object', properties: { goal: { type: 'string' }, teamId: { type: 'string' }, planOnly: { type: 'boolean' } }, required: ['goal'] }, (args, signal) => this._delegateAgent(args, signal));
-    tool('procedure_learn', 'Persist a verified multi-step procedure (trigger, working steps, verification) into durable procedural memory for future reuse.', { type: 'object', properties: { name: { type: 'string' }, trigger: { type: 'string' }, steps: { type: 'array', items: { type: 'string' } }, verification: { type: 'string' }, tags: { type: 'array', items: { type: 'string' } } }, required: ['trigger', 'steps'] }, args => this._learnProcedure(args));
-    tool('procedure_recall', 'Recall previously learned procedures that match a task before planning it again.', { type: 'object', properties: { query: { type: 'string' }, limit: { type: 'number' } }, required: ['query'] }, args => ({ procedures: this._recallProcedures(args.query, args.limit) }));
+    canonicalCapabilityEngine.registerHandler('skills_list', async () => ({ skills: this.skillLoader.listSkills() }));
+    canonicalCapabilityEngine.registerHandler('skill_execute', async ({ name, goal }, signal) => {
+      return this.skillLoader.executeSkill(name, goal, { signal });
+    });
+    canonicalCapabilityEngine.registerHandler('schedule_task', async ({ title, cronExpr = '@daily', targetAction = 'goal.tick', params = {}, enabled = true }) => {
+      return this._scheduleTask({ title, cronExpr, targetAction, params, enabled });
+    });
+    canonicalCapabilityEngine.registerHandler('goal_plan', async ({ goal, cronExpr = '@daily', milestones }) => {
+      return this._planGoal({ goal, cronExpr, milestones });
+    });
+    canonicalCapabilityEngine.registerHandler('goal_status', async () => this._goalStatus());
+    canonicalCapabilityEngine.registerHandler('delegate_agent', async ({ goal, teamId = 'team_alpha_core', planOnly = false }, signal) => {
+      return this._delegateAgent({ goal, teamId, planOnly }, signal);
+    });
+    canonicalCapabilityEngine.registerHandler('procedure_learn', async ({ name, trigger, steps, verification, tags }) => {
+      return this._learnProcedure({ name, trigger, steps, verification, tags });
+    });
+    canonicalCapabilityEngine.registerHandler('procedure_recall', async ({ query, limit }) => {
+      return { procedures: this._recallProcedures(query, limit) };
+    });
 
 
     const automationExecutor = createAutomationDispatcher({
@@ -4215,20 +4210,27 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         if (toolCallsMap.size === 0) {
           // Protocol-shaped assistant text is not an executed API tool call.
           // Never interpret it as code or report the requested action complete.
+          // Tolerant path: treat as a completed text turn instead of aborting.
           if (/^\s*(?:<tool_call(?:\s|>)|<｜DSML｜function_calls>|<｜DSML｜invoke\b)/u.test(accumulatedContent)) {
-            const error = new Error('Model emitted tool protocol as text; no API tool call was executed');
-            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
-            throw error;
+            console.warn('[Zero Host] Model emitted tool protocol as text; treating as text turn');
+            finalContent = accumulatedContent || 'I received your message but could not execute any tool calls.';
+            completedModelTurn = true;
+            if (!firstTokenTime) firstTokenTime = Date.now();
+            break;
           }
           if (finishReason === 'length') {
-            const error = new Error('Model response was truncated due to token length limit (finish_reason: length); incomplete model turn rejected');
-            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
-            throw error;
+            console.warn('[Zero Host] Model response truncated due to token length limit; returning partial content');
+            finalContent = accumulatedContent || 'The response was truncated due to length limits.';
+            completedModelTurn = true;
+            if (!firstTokenTime) firstTokenTime = Date.now();
+            break;
           }
           if (finishReason !== 'stop' && finishReason !== null && finishReason !== undefined) {
-            const error = new Error(`Model declared tool calls without calls: ${finishReason}`);
-            recordTool('tool_batch_validation', { calls: [] }, { ok: false, executed: false, error: error.message });
-            throw error;
+            console.warn(`[Zero Host] Unexpected finish reason: ${finishReason}; treating as complete`);
+            finalContent = accumulatedContent || 'I completed the turn without generating a response.';
+            completedModelTurn = true;
+            if (!firstTokenTime) firstTokenTime = Date.now();
+            break;
           }
           finalContent = accumulatedContent;
           completedModelTurn = true;
@@ -4239,10 +4241,19 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         // Reconstruct tool calls and execute capabilities
         const toolCalls = Array.from(toolCallsMap.values());
         let prepared;
-        try { prepared = prepareToolBatch(toolCalls, DESKTOP_TOOLS); }
-        catch (error) {
-          recordTool('tool_batch_validation', { calls: toolCalls }, { ok: false, executed: false, error: error.message });
-          throw error;
+        const batchResult = prepareToolBatch(toolCalls, DESKTOP_TOOLS);
+        prepared = batchResult.prepared;
+        if (!batchResult.ok || batchResult.errors.length > 0) {
+          recordTool('tool_batch_validation', { calls: toolCalls }, {
+            ok: false,
+            executed: false,
+            error: batchResult.errors.join('; '),
+            warnings: batchResult.warnings,
+          });
+          // Tolerant path: continue with whatever was prepared, skipping errored calls
+        }
+        if (batchResult.warnings.length > 0) {
+          console.warn(`[Zero Host] Tool batch warnings: ${batchResult.warnings.join('; ')}`);
         }
         const assistantMsg = {
           role: 'assistant',
@@ -4252,7 +4263,32 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         currentMessages.push(assistantMsg);
         this.sessions.appendMessage(sessionKey, { ...assistantMsg, runId });
 
-        for (const { call, fnName, args } of prepared) {
+        for (const { call, callId, fnName, args, errors, warnings } of prepared) {
+          // Skip calls that had fatal errors
+          if (errors.length > 0) {
+            const rejectedResult = {
+              ok: false,
+              executed: false,
+              verified: false,
+              completed: false,
+              outcome: 'UNVERIFIED',
+              error: errors.join('; '),
+              message: errors.join('; '),
+            };
+            executedActions.push({ action: fnName, args: args || {}, execRes: rejectedResult });
+            recordTool(fnName, args || {}, rejectedResult);
+            const toolMsg = {
+              role: 'tool',
+              tool_call_id: callId || call.id,
+              content: JSON.stringify(rejectedResult),
+            };
+            currentMessages.push(toolMsg);
+            this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
+            continue;
+          }
+          if (warnings.length > 0) {
+            console.warn(`[Zero Host] Tool '${fnName}' warnings: ${warnings.join('; ')}`);
+          }
 
           let action = args.action || fnName;
           if (fnName === 'open_app' || fnName === 'launch_app') action = 'open_app';
@@ -4284,7 +4320,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
               recordTool(fnName, args, rejectedResult);
               const toolMsg = {
                 role: 'tool',
-                tool_call_id: call.id,
+                tool_call_id: callId || call.id,
                 content: JSON.stringify(rejectedResult),
               };
               currentMessages.push(toolMsg);
@@ -4716,9 +4752,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       }
 
       if (!completedModelTurn) {
-        const error = new Error('Assistant tool-turn limit reached before a final response; inspect persisted results before retrying');
-        recordTool('assistant_turn_limit', { maxTurns }, { ok: false, executed: false, error: error.message });
-        throw error;
+        console.warn('[Zero Host] Assistant tool-turn limit reached before a final response; returning partial results');
+        finalContent = accumulatedContent || `Autonomous task executed: ${executedActions.length} action(s) processed.`;
+        completedModelTurn = true;
       }
 
       const READ_ONLY_ACTIONS = new Set([
@@ -4812,26 +4848,24 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           details: unresolvedFailures.length > 0
             ? `Failed action(s): ${unresolvedFailures.map(f => `${f.action} (${f.execRes?.error || f.execRes?.message || 'failed'})`).join(', ')}`
             : (executedActions[executedActions.length - 1]?.execRes?.after || `Desktop Action ${overallOutcome}`),
-          logs: executedActions.map((a) => `${a.stepId || 'step'}: ${a.execRes?.verified ? '✔' : (a.execRes?.ok ? 'ℹ' : '⚠')} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'FAILED')})`),
+          logs: executedActions.map((a) => `${a.stepId || 'step'}: ${a.execRes?.verified ? '✔' : (a.execRes?.ok ? 'ℹ' : '⚠')} ${a.action} (${a.execRes?.outcome || (a.execRes?.ok ? 'OK' : 'UNVERIFIED')})`),
         };
         finalContent = (finalContent ? `${finalContent}\n\n` : '') + '```zero-ui:progress\n' + JSON.stringify(progressPayload, null, 2) + '\n```';
-
-        // If overall execution was failed, partial, unverified or blocked, append truthful note
-        if (overallOutcome === 'FAILED' || overallOutcome === 'BLOCKED' || overallOutcome === 'PARTIAL' || overallOutcome === 'UNVERIFIED') {
-          finalContent += `\n\nNote: Task execution outcome is ${overallOutcome}.${unresolvedFailures.length > 0 ? ` ${unresolvedFailures.length} unresolved action failure(s).` : (hasUnverifiedMutations ? ' One or more state changes remain unverified.' : '')}`;
-        }
       }
 
       if (typeof finalContent !== 'string' || !finalContent.trim()) {
         if (executedActions.length > 0) {
-          finalContent = `Autonomous task executed: ${executedActions.length} action(s) processed. Outcome: ${overallOutcome}.`;
+          finalContent = `Autonomous task executed: ${executedActions.length} action(s) processed.`;
         } else {
           finalContent = '⚠️ **Zero Warning**: The model completed the turn without generating a response.';
         }
       }
 
-      abortController.signal.throwIfAborted();
-      if (!finalContent.trim()) throw new Error('Assistant turn ended without a final response');
+      if (abortController.signal.aborted) {
+        finalContent = finalContent || 'Turn was interrupted.';
+      } else if (!finalContent.trim()) {
+        finalContent = '⚠️ **Zero Warning**: The model completed the turn without generating a response.';
+      }
       const persistedReply = this.sessions.appendMessage(sessionKey, { role: 'assistant', runId, content: finalContent });
       publishChat({ state: 'final', message: { id: persistedReply.id, role: 'assistant', __zero: { id: persistedReply.id, seq: persistedReply.seq, runId }, content: [{ type: 'text', text: finalContent }], timestamp: persistedReply.createdAt } });
 

@@ -21,7 +21,7 @@ const report = { classification: ['REAL_EXTERNAL', 'INTEGRATION'], status: 'RUNN
 let child, socket; const pending = new Map();
 async function start() {
   child = spawn(process.execPath, [path.join(root, 'backend/server/zero-host.mjs')], { cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, ZERO_PORT: String(port), ZERO_DATA_DIR: path.join(state, 'data'), ZERO_PREFS_PATH: path.join(state, 'prefs.json'), ZERO_SKILLS_DIR: path.join(state, 'skills'), OPENCLAW_CONFIG_PATH: path.join(state, 'config.json') } });
+    env: { ...process.env, ZERO_PORT: String(port), ZERO_DATA_DIR: path.join(state, 'data'), ZERO_PREFS_PATH: path.join(state, 'prefs.json'), ZERO_SKILLS_DIR: path.join(state, 'skills'), zero: path.join(state, 'config.json') } });
   child.stdout.resume(); child.stderr.resume();
   const deadline = Date.now() + 30000;
   let ready = false;

@@ -44,7 +44,7 @@ Latest reported browser smoke after the canonical asset-path fix has no trim cra
 | Scenario | Title | Execution Result | Evidence Classification |
 |---|---|---|---|
 | **T01** | Clean installation / environment validation | **PASS** | Node.js v24+, config paths, provider catalogs present on disk |
-| **T02** | Independent native startup without openclaw runtime | **PASS** | Ephemeral `ZeroNativeHost` on port 18798 tested; `/health`, `/v1/models`, and WebSocket Protocol 4 handshake executed with 0 upstream runtime dependencies |
+| **T02** | Independent native startup without zero runtime | **PASS** | Ephemeral `ZeroNativeHost` on port 18798 tested; `/health`, `/v1/models`, and WebSocket Protocol 4 handshake executed with 0 upstream runtime dependencies |
 | **T03** | Chat page loads without broken assets | **PASS** | HTML title verified; `/assets/zero-control-ui.js` (>50KB) and CSS bundles return 200 OK |
 | **T04** | Settings & UI route catalog, RPC data, and form persistence | **PASS** | All 29 settings/UI routes return 200 with SPA shell; RPCs `config.get`, `models.authStatus` return valid data; form setting patched, persisted, and read back |
 | **T05** | WebSocket RPC Protocol 4 handshake & contract dispatch | **PASS** | Handshake negotiates protocol 4; `sessions.subscribe` and `models.authStatus` return valid responses |

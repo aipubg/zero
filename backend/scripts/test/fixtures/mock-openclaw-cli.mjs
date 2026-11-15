@@ -1,4 +1,4 @@
-// Test fixture: emulates `openclaw gateway call <method> --params <json>`.
+// Test fixture: emulates `zero gateway call <method> --params <json>`.
 // Never touches the network. Scenario is selected by MOCK_SCENARIO; when
 // MOCK_CAPTURE is set, each received call is appended as one JSON line.
 

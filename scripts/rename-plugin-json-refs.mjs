@@ -25,7 +25,7 @@ for (const rel of FILES) {
   if (!fs.existsSync(f)) continue;
   const source = fs.readFileSync(f, 'utf8');
   const original = source;
-  const updated = source.replace(/openclaw\.plugin\.json/g, 'zero.plugin.json');
+  const updated = source.replace(/zero\.plugin\.json/g, 'zero.plugin.json');
   if (updated !== original) {
     fs.writeFileSync(f, updated, 'utf8');
     changedFiles++;

@@ -2,7 +2,7 @@
  * Zero AI — Voice Status Engine
  *
  * Detects Web Speech API (browser TTS/ASR) and Windows SAPI TTS availability.
- * No external OpenClaw dependency.
+ * No external zero dependency.
  */
 
 export class VoiceStatus {

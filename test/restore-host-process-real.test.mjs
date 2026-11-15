@@ -24,7 +24,7 @@ test('[REAL_EXTERNAL] actual chat survives backup, restore and a new native host
     child = spawn(process.execPath, ['backend/server/zero-host.mjs'], { cwd: process.cwd(), windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'], env: {
       ...process.env, ZERO_PORT: String(port), ZERO_DATA_DIR: dataDir, ZERO_PREFS_PATH: path.join(dataDir, 'preferences.json'),
       ZERO_PROVIDERS_PATH: path.join(configRoot, 'models/gateway-providers.json'), ZERO_AGENT_BINDINGS_PATH: path.join(configRoot, 'models/gateway-defaults.json'),
-      OPENCLAW_CONFIG_PATH: path.join(configRoot, 'zero-system/config/zero.json'), ZERO_LOCAL_MODELS_DIR: path.join(temporary, 'empty-models'), ZERO_SKILLS_DIR: path.join(temporary, 'skills'),
+      zero: path.join(configRoot, 'zero-system/config/zero.json'), ZERO_LOCAL_MODELS_DIR: path.join(temporary, 'empty-models'), ZERO_SKILLS_DIR: path.join(temporary, 'skills'),
     } });
     child.stderr.resume();
     const deadline = Date.now() + 30000;

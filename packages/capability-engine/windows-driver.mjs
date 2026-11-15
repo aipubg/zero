@@ -21,7 +21,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { resolveCuaDriverEntry } from "../../app/zero-control-ui/observation/capture-source.mjs";
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -51,7 +50,17 @@ export async function getCuaDriver() {
   cuaDriverInitAttempted = true;
 
   try {
-    const entryPath = resolveCuaDriverEntry({ cwd: process.cwd() });
+    // Resolve @trycua/cua-driver from local node_modules (Single-Room: no external app/ imports)
+    const cuaCandidates = [
+      path.join(process.cwd(), 'node_modules', '@trycua', 'cua-driver', 'index.mjs'),
+      path.join(process.cwd(), 'backend', 'node_modules', '@trycua', 'cua-driver', 'index.mjs'),
+      path.join(process.cwd(), 'node_modules', '@trycua', 'cua-driver', 'index.js'),
+      path.join(process.cwd(), 'backend', 'node_modules', '@trycua', 'cua-driver', 'index.js'),
+    ];
+    let entryPath = null;
+    for (const candidate of cuaCandidates) {
+      try { if (fs.existsSync(candidate)) { entryPath = candidate; break; } } catch {}
+    }
     if (!entryPath) return null;
     const sdk = await import(pathToFileURL(entryPath).href);
     if (typeof sdk.CuaDriver?.create === "function") {

@@ -57,7 +57,7 @@ TEST SUITE SUMMARY: PHASE 0 REPOSITORY BASELINE
 | ID | Title | Result | Real Evidence Observed |
 |---|---|---|---|
 | **T01** | Clean environment validation | **PASS** | Node.js v24+, config paths, model provider configurations verified on disk |
-| **T02** | Independent native startup without openclaw | **PASS** | Subprocess launched in isolated directory with empty `node_modules`; bound to port 18798; `/health`, `/v1/models`, WebSocket Protocol 4 handshake, model inference, and capability execution confirmed with 0 openclaw imports |
+| **T02** | Independent native startup without zero | **PASS** | Subprocess launched in isolated directory with empty `node_modules`; bound to port 18798; `/health`, `/v1/models`, WebSocket Protocol 4 handshake, model inference, and capability execution confirmed with 0 zero imports |
 | **T03** | Chat page loads without broken assets | **PASS** | `/chat/zero` HTML shell returns 200 OK; `/assets/zero-control-ui.js` (>100KB) and CSS bundles return 200 OK |
 | **T04** | Settings & UI route catalog, RPC data, form persistence | **PASS** | System Google Chrome and Microsoft Edge automated via `playwright-core`; all 29 routes rendered; DOM elements, form validation, and RPC persistence verified |
 | **T05** | WebSocket RPC Protocol 4 handshake & contract dispatch | **PASS** | Handshake negotiates protocol 4; `sessions.subscribe` and `models.authStatus` return valid frames |
@@ -186,7 +186,7 @@ The test suite `test/real-world-requirements-48.test.mjs` directly maps and exec
 | **39** | Human takeover | **PASS** | `zero-policy.computer-hold.take` activates human hold, preventing unauthorized computer actions |
 | **40** | Gateway restart recovery | **PASS** | `zero.gateway.restart` enforces supervisor contract without host process corruption |
 | **41** | Worker crash recovery | **PASS** | `TaskStateMachine.failTask` and `retryFailedTask` transition task back to `QUEUED` |
-| **42** | No unintended data loss | **PASS** | Canonical user database `zero-system/state/state/openclaw.sqlite` verified intact (>4.4MB) |
+| **42** | No unintended data loss | **PASS** | Canonical user database `zero-system/state/state/zero.sqlite` verified intact (>4.4MB) |
 | **43** | CPU and RAM measurements | **PASS** | `/health/liveness` returns real process memory RSS, heap usage, and uptime telemetry |
 | **44** | Long-duration observation stability | **PASS** | `RollingFrameBuffer` handles 1,000 continuous frames while strictly capping RAM under 250MB |
 | **45** | Clean-machine installation | **PASS** | `backend/package.json` verified with clean dependency boundaries and valid startup scripts |

@@ -1,10 +1,10 @@
 // Self-test for the Zero Policy plugin. Runs the plugin's logic against a fake
 // host AND asserts the static manifest contracts, so REVIEW-02 findings C1-C7
-// stay fixed without needing OpenClaw installed.
+// stay fixed without needing zero installed.
 //
 // Proves: decision logic, lease state machine, error codes, and manifest/package
 // contract declarations.
-// Does NOT prove: that OpenClaw's loader calls register() as expected, that a
+// Does NOT prove: that zero's loader calls register() as expected, that a
 // trusted policy fires for the core `computer` tool, or that a Gateway RPC
 // reaches the handler. Those need the install window.
 //
@@ -96,8 +96,8 @@ console.log("\nC1 manifest/package contracts");
   const host = createHost();
   check("registered policy id equals the declared id", host.policies[0]?.id === POLICY_ID, host.policies[0]?.id);
 
-  const pluginApi = PKG?.openclaw?.compat?.pluginApi;
-  check("package declares openclaw.compat.pluginApi floor", typeof pluginApi === "string" && pluginApi.startsWith(">="), String(pluginApi));
+  const pluginApi = PKG?.zero?.compat?.pluginApi;
+  check("package declares zero.compat.pluginApi floor", typeof pluginApi === "string" && pluginApi.startsWith(">="), String(pluginApi));
   check("pluginApi floor targets the pinned host", pluginApi === ">=2026.10.6", String(pluginApi));
 
   const schemaProps = Object.keys(MANIFEST?.configSchema?.properties ?? {});
@@ -136,7 +136,7 @@ console.log("\nC1 manifest/package contracts");
   if (typeof deployed === "function") {
     const fromTemplate = (() => {
       try {
-        const t = JSON.parse(readFileSync(join(HERE, "..", "config", "openclaw.template.json"), "utf8"));
+        const t = JSON.parse(readFileSync(join(HERE, "..", "config", "zero.template.json"), "utf8"));
         return t?.plugins?.entries?.["zero-policy"]?.config;
       } catch {
         return undefined;

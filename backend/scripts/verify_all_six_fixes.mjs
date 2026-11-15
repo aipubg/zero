@@ -82,9 +82,9 @@ async function verifyAll() {
 
   const approvalsContent = await page.evaluate(() => {
     const text = document.body.innerText;
-    const hasDoctor = text.includes("openclaw doctor");
-    const hasConfigGet = text.includes("openclaw config get");
-    const hasPnpm = text.includes("pnpm/openclaw");
+    const hasDoctor = text.includes("zero doctor");
+    const hasConfigGet = text.includes("zero config get");
+    const hasPnpm = text.includes("pnpm/zero");
     const learnMoreLinks = Array.from(document.querySelectorAll("a"))
       .filter(a => (a.innerText || "").includes("Learn more") && a.offsetParent !== null);
     return {
@@ -96,7 +96,7 @@ async function verifyAll() {
   });
   console.log("   Approvals content analysis:", approvalsContent);
   if (approvalsContent.hasDoctor || approvalsContent.hasConfigGet || approvalsContent.hasPnpm) {
-    throw new Error(`FAILED: Approvals page still contains old openclaw commands: ${JSON.stringify(approvalsContent)}`);
+    throw new Error(`FAILED: Approvals page still contains old zero commands: ${JSON.stringify(approvalsContent)}`);
   }
   if (approvalsContent.visibleLearnMoreCount > 0) {
     throw new Error(`FAILED: Visible 'Learn more' links still exist on Approvals page!`);

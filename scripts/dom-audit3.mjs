@@ -9,7 +9,7 @@ await page.goto('http://127.0.0.1:18789/chat/zero', { waitUntil: 'domcontentload
 await page.waitForTimeout(4000);
 
 const chat = await page.evaluate(() => {
-  const nodes = [...document.querySelectorAll('openclaw-chat-message, [data-role], .chat-text, .chat-message, .chat-bubble, .agent-chat__message')];
+  const nodes = [...document.querySelectorAll('zero-chat-message, [data-role], .chat-text, .chat-message, .chat-bubble, .agent-chat__message')];
   return nodes.slice(-20).map(n => ({
     tag: n.tagName.toLowerCase(), cls: String(n.className || '').slice(0, 100),
     role: n.getAttribute('data-role') || '', text: (n.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),

@@ -17,7 +17,7 @@ const listener = net.createServer(); listener.listen(0, '127.0.0.1'); await once
 const port = listener.address().port; await new Promise(r => listener.close(r)); const base = `http://127.0.0.1:${port}`;
 let child, browser, page;
 async function start() {
-  child = spawn(process.execPath, [path.join(root, 'backend/server/zero-host.mjs')], { cwd: root, windowsHide: true, stdio: 'ignore', env: { ...process.env, ZERO_PORT: String(port), ZERO_PROVIDERS_PATH: providers, ZERO_AGENT_BINDINGS_PATH: bindings, ZERO_DATA_DIR: path.join(state, 'data'), ZERO_PREFS_PATH: path.join(state, 'prefs.json'), ZERO_LOCAL_MODELS_DIR: path.join(state, 'local-models'), OPENCLAW_CONFIG_PATH: path.join(state, 'config.json') } });
+  child = spawn(process.execPath, [path.join(root, 'backend/server/zero-host.mjs')], { cwd: root, windowsHide: true, stdio: 'ignore', env: { ...process.env, ZERO_PORT: String(port), ZERO_PROVIDERS_PATH: providers, ZERO_AGENT_BINDINGS_PATH: bindings, ZERO_DATA_DIR: path.join(state, 'data'), ZERO_PREFS_PATH: path.join(state, 'prefs.json'), ZERO_LOCAL_MODELS_DIR: path.join(state, 'local-models'), zero: path.join(state, 'config.json') } });
   for (let i = 0; i < 600; i++) { try { if ((await fetch(base + '/health')).ok) return; } catch {} if (child.exitCode !== null) throw new Error('Isolated host exited'); await new Promise(r => setTimeout(r, 100)); }
   throw new Error('Host readiness timeout');
 }

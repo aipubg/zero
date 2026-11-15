@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Zero Host - Native Programmatic Control Plane Runner
- * Replaces upstream openclaw.cmd gateway wrapper with a direct Node.js daemon.
+ * Replaces upstream zero.cmd gateway wrapper with a direct Node.js daemon.
  *
  * Provides:
  * 1. Single control plane on port 18789
@@ -72,9 +72,7 @@ async function bootstrap() {
   console.log(`[Zero Host] Initializing Zero Host control plane on port ${PORT}...`);
   console.log(`[Zero Host] Root: ${REPO_ROOT}`);
   console.log(`[Zero Host] Config: ${CONFIG_PATH}`);
-
-  const runtimeMode = process.env.ZERO_RUNTIME_MODE || 'native';
-  console.log(`[Zero Host] Runtime Mode: ${runtimeMode.toUpperCase()}`);
+  console.log(`[Zero Host] Runtime Mode: native`);
 
   let instance;
 
@@ -87,23 +85,18 @@ async function bootstrap() {
       }
     }
 
-    if (runtimeMode === 'legacy-compat') {
-      const { LegacyRuntimeAdapter } = await import('../../services/host/legacy-adapter.mjs');
-      const adapter = new LegacyRuntimeAdapter({ port: PORT, repoRoot: REPO_ROOT });
-      instance = await adapter.start();
-    } else {
-      const { ZeroNativeHost } = await import('../../services/host/native-gateway.mjs');
-      const host = new ZeroNativeHost({ port: PORT, host: '127.0.0.1' });
-      host.onRestart = async () => {
-        console.log('[Zero Host] In-process gateway restart triggered via supervisor...');
-        try {
-          await startServer();
-        } catch (rErr) {
-          console.error('[Zero Host] Error during in-process restart:', rErr);
-        }
-      };
-      instance = await host.start();
-    }
+    // Single-Room: only the native ZeroNativeHost gateway is started.
+    const { ZeroNativeHost } = await import('../../services/host/native-gateway.mjs');
+    const host = new ZeroNativeHost({ port: PORT, host: '127.0.0.1' });
+    host.onRestart = async () => {
+      console.log('[Zero Host] In-process gateway restart triggered via supervisor...');
+      try {
+        await startServer();
+      } catch (rErr) {
+        console.error('[Zero Host] Error during in-process restart:', rErr);
+      }
+    };
+    instance = await host.start();
     console.log(`[Zero Host] Zero Host successfully operational on http://127.0.0.1:${PORT}`);
   }
 

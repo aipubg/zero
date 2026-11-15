@@ -109,7 +109,7 @@ test('Phase 16 — Original Zero Interface & Product Experience', async (suite) 
       assert.equal(res.status(), 200, 'Workspaces route returns HTTP 200');
       await page.waitForTimeout(400);
 
-      const bodyCount = await page.locator('body, #root, openclaw-app').count();
+      const bodyCount = await page.locator('body, #root, zero-app').count();
       assert.ok(bodyCount > 0, 'Workspaces shell rendered');
     });
 

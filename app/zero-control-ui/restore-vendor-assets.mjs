@@ -4,13 +4,13 @@
  *
  * The vendor tree in app/zero-control-ui/vendor is the committed, fully
  * rebranded source of truth. It was produced by vendorize.mjs, which rewrote
- * the upstream "openclaw" prefix across HTML, CSS and JavaScript in one
+ * the upstream "zero" prefix across HTML, CSS and JavaScript in one
  * pass so that every cross-reference stays paired:
  *
- *   <openclaw-app>            -> <zero-app>
- *   --openclaw-modal-width    -> --zero-modal-width
- *   .openclaw-native-desktop  -> .zero-native-desktop
- *   __openclaw__/plugins/...  -> __zero__/plugins/...
+ *   <zero-app>            -> <zero-app>
+ *   --zero-modal-width    -> --zero-modal-width
+ *   .zero-native-desktop  -> .zero-native-desktop
+ *   __ZERO/plugins/...  -> __zero__/plugins/...
  *
  * This script copies that tree into dist/web and then applies the remaining
  * user-visible substitutions (product titles, external store/community links).
@@ -46,14 +46,12 @@ const VENDOR_SKIP = new Set(['sw.js']);
  */
 function replaceVisibleBranding(value) {
   return String(value)
-    .replace(/Install OpenClaw Control/gi, 'Install Zero')
-    .replace(/OpenClaw Control/gi, 'Zero Control')
-    .replace(/Ask OpenClaw/gi, 'Ask Zero')
-    .replace(/OpenClaw documentation/gi, 'Zero AI documentation')
-    .replace(/Choose how OpenClaw/gi, 'Choose how Zero')
-    .replace(/Crabbox/gi, 'Zero Cloud')
-    .replace(/OpenClaw/gi, 'Zero')
-    .replace(/openclaw\.app/gi, 'zero.local');
+    .replace(/Install zero Control/gi, 'Install Zero')
+    .replace(/zero Control/gi, 'Zero Control')
+    .replace(/Ask zero/gi, 'Ask Zero')
+    .replace(/zero documentation/gi, 'Zero AI documentation')
+    .replace(/Choose how zero/gi, 'Choose how Zero')
+    .replace(/zero\.app/gi, 'zero.local');
 }
 
 /** Neutralise third-party store / community URLs. */
@@ -139,7 +137,7 @@ function materialiseChatChunks() {
     const candidates = [
       name,
       name.replace(/^zero-/, 'custodian-'),
-      name.replace(/^zero-/, 'openclaw-'),
+      name.replace(/^zero-/, 'zero-'),
     ];
     for (const candidate of candidates) {
       const source = path.join(vendorAssets, candidate);
@@ -269,8 +267,8 @@ export async function restoreVendorAssets({ quiet = false } = {}) {
   const assetsDir = path.join(distWeb, 'assets');
   let cssOk = 0;
   let jsOk = 0;
-  let cssOpenclaw = 0;
-  let jsOpenclaw = 0;
+  let csszero = 0;
+  let jszero = 0;
   for (const name of readdirSync(assetsDir)) {
     if (name.endsWith('.br') || name.endsWith('.gz')) continue;
     const file = path.join(assetsDir, name);
@@ -279,19 +277,19 @@ export async function restoreVendorAssets({ quiet = false } = {}) {
     if (!stat.isFile()) continue;
     if (name.endsWith('.css')) {
       const c = readFileSync(file, 'utf8');
-      cssOpenclaw += (c.match(/openclaw/gi) || []).length;
+      csszero += (c.match(/zero/gi) || []).length;
       if (/--zero-css-ok\s*:\s*1/.test(c)) cssOk++;
     } else if (name.endsWith('.js')) {
       const c = readFileSync(file, 'utf8');
-      jsOpenclaw += (c.match(/openclaw/gi) || []).length;
+      jszero += (c.match(/zero/gi) || []).length;
       if (c.includes('--zero-css-ok')) jsOk++;
     }
   }
 
   log(`\n  CSS files defining --zero-css-ok:1 = ${cssOk}`);
   log(`  JS files probing  --zero-css-ok   = ${jsOk}`);
-  log(`  CSS residual "openclaw" tokens  = ${cssOpenclaw}`);
-  log(`  JS  residual "openclaw" tokens  = ${jsOpenclaw}`);
+  log(`  CSS residual "zero" tokens  = ${csszero}`);
+  log(`  JS  residual "zero" tokens  = ${jszero}`);
 
   if (cssOk === 0 || jsOk === 0) {
     throw new Error('boot-probe pairing broken after restore');
@@ -305,7 +303,7 @@ export async function restoreVendorAssets({ quiet = false } = {}) {
     throw new Error(`${broken.length} JS bundle(s) failed to parse`);
   }
   log('  All JS bundles parse as ES modules.');
-  return { cssOk, jsOk, cssOpenclaw, jsOpenclaw, stale };
+  return { cssOk, jsOk, csszero, jszero, stale };
 }
 
 // Executed directly.

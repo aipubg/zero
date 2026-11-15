@@ -33,7 +33,7 @@ const audit = await page.evaluate(() => {
   const legacyNav = [...document.querySelectorAll('.sidebar-nav a, .sidebar-nav button, nav.sidebar-nav')].map(desc);
   const topButtons = [...document.querySelectorAll('.topnav-shell button, .topnav-shell a, header button, header a')].map(desc).slice(0, 40);
   const paletteInputs = [...document.querySelectorAll('input[placeholder]')].map(el => ({ placeholder: el.placeholder, visible: visible(el) })).filter(x => x.visible || /search or start|where would/i.test(x.placeholder));
-  const openclaw = all.filter(el => visible(el) && /openclaw/i.test(text(el)) && el.children.length === 0).map(desc).slice(0, 20);
+  const zero = all.filter(el => visible(el) && /zero/i.test(text(el)) && el.children.length === 0).map(desc).slice(0, 20);
   return {
     title: document.title,
     url: location.href,
@@ -45,7 +45,7 @@ const audit = await page.evaluate(() => {
     legacyNav,
     topButtons,
     paletteInputs,
-    openclaw,
+    zero,
     hasShell: Boolean(document.querySelector('.zero-shell-header')),
     hasWelcome: Boolean(document.querySelector('.zero-command-home')),
     bodyClasses: document.body.className,

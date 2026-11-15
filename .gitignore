@@ -17,7 +17,7 @@ __pycache__/
 !.env.example
 .zero-data/
 zero-data/
-.openclaw/
+.zero/
 zero-system/state/
 zero-system/config/user-prefs.json
 zero-system/config/*.tmp*

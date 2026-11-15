@@ -3,7 +3,7 @@
  *
  * Provides TF-IDF + semantic vector embeddings for the memory subsystem.
  * Backed by SQLite persistence with cosine-similarity ranking.
- * No external OpenClaw or vendor embedding dependency.
+ * No external zero or vendor embedding dependency.
  */
 
 import fs from 'node:fs';

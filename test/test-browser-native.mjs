@@ -43,7 +43,7 @@ async function testBrowser() {
   await page.screenshot({ path: 'native-chat-zero-screenshot.png' });
   console.log('Screenshot saved to native-chat-zero-screenshot.png');
 
-  const fallbackHidden = await page.$eval('#openclaw-mount-fallback', el => el.hidden).catch(() => null);
+  const fallbackHidden = await page.$eval('#zero-mount-fallback', el => el.hidden).catch(() => null);
   console.log('Fallback hidden:', fallbackHidden);
 
   console.log('Navigating to http://127.0.0.1:18789/settings/model-providers...');

@@ -17,7 +17,7 @@ const port = reservation.address().port; await new Promise(resolve => reservatio
 const report = { classification: ['INTEGRATION', 'REAL_OS'], status: 'RUNNING', startedAt: new Date().toISOString(), port,
   scope: 'Four automation RPC acceptance leaves against isolated state; local HTTP connector probes are not third-party workflow acceptance' };
 const environment = { ...process.env, ZERO_PORT: String(port), ZERO_ACCEPTANCE_PORT: String(port), ZERO_DATA_DIR: path.join(state, 'data'),
-  ZERO_PREFS_PATH: path.join(state, 'prefs.json'), ZERO_SKILLS_DIR: path.join(state, 'skills'), OPENCLAW_CONFIG_PATH: path.join(state, 'config.json') };
+  ZERO_PREFS_PATH: path.join(state, 'prefs.json'), ZERO_SKILLS_DIR: path.join(state, 'skills'), zero: path.join(state, 'config.json') };
 let host, testChild;
 try {
   host = spawn(process.execPath, [path.join(root, 'backend/server/zero-host.mjs')], { cwd: root, env: environment, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });

@@ -4,7 +4,7 @@ import path from 'node:path';
 const ROOT = process.cwd();
 
 // ---- Backend protocol coupling ----
-console.log('=== backend references to openclaw protocol tokens ===');
+console.log('=== backend references to zero protocol tokens ===');
 const backendFiles = [];
 (function walk(dir, depth = 0) {
   if (depth > 4) return;
@@ -19,7 +19,7 @@ const backendFiles = [];
 const protocolHits = new Map();
 for (const f of backendFiles) {
   const c = fs.readFileSync(f, 'utf8');
-  for (const m of c.matchAll(/["'`]([^"'`\n]*(?:__openclaw__|x-openclaw|openclaw[./:-])[^"'`\n]*)["'`]/gi)) {
+  for (const m of c.matchAll(/["'`]([^"'`\n]*(?:__ZERO|x-zero|zero[./:-])[^"'`\n]*)["'`]/gi)) {
     const rel = path.relative(ROOT, f);
     const key = m[1];
     if (!protocolHits.has(key)) protocolHits.set(key, new Set());

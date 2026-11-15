@@ -27,7 +27,7 @@ console.log(JSON.stringify(info, null, 2));
 await page.click('button.topbar-search').catch(e => console.log('click topbar-search failed', e.message));
 await page.waitForTimeout(1200);
 const modal = await page.evaluate(() => {
-  const dialogs = [...document.querySelectorAll('dialog, [role="dialog"], wa-dialog, .modal, .overlay, openclaw-command-palette')].map(el => ({
+  const dialogs = [...document.querySelectorAll('dialog, [role="dialog"], wa-dialog, .modal, .overlay, zero-command-palette')].map(el => ({
     tag: el.tagName.toLowerCase(), cls: String(el.className || ''), open: el.open ?? null,
     text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300),
     html: el.outerHTML.slice(0, 500),

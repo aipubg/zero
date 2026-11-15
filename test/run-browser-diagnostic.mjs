@@ -18,8 +18,8 @@ async function main() {
   await page.waitForTimeout(4000);
 
   const info = await page.evaluate(() => {
-    const app = document.querySelector('openclaw-app');
-    if (!app) return { error: 'No openclaw-app' };
+    const app = document.querySelector('zero-app');
+    if (!app) return { error: 'No zero-app' };
     const sr = app.shadowRoot;
     return {
       hasShadow: !!sr,

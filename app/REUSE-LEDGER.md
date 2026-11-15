@@ -1,7 +1,7 @@
 # Reuse ledger — Zero app workspace
 
 Upstream checkouts are read-only. This file records file-level provenance.
-`upstream/openclaw` @ `013240515205573248c27ab6b8eec7303f0da1a8` (MIT);
+`upstream/zero` @ `013240515205573248c27ab6b8eec7303f0da1a8` (MIT);
 `upstream/opendots` @ `8091324942b86789ed0da7facbee855145d933b0` (MIT) was used
 by the retired prototype and is no longer part of the product.
 
@@ -12,7 +12,7 @@ by the retired prototype and is no longer part of the product.
 | `zero-control-ui/browser.js` + `src/` modules | Zero-authored | new | Plain DOM/ES modules; no React, CopilotKit, AG-UI, or OpenDots runtime |
 | `zero-control-ui/src/computer/hold.js`, `src/native-surfaces.js` | Zero-authored; pattern reference: OpenMausBot `src/components/computer-takeover.ts` (Apache-2.0) | pattern-only | Hold hand-back on `pagehide` and on leaving `/systems`; no source lines copied; see `zero-control-ui/THIRD_PARTY_NOTICES.md` |
 | `zero-control-ui/runtime-core.mjs` | Zero-authored | new | Six `zero.ui.*` Gateway metadata methods; no credentials stored |
-| `zero-control-ui/index.js` | Zero-authored | new | Plugin entry using `openclaw/plugin-sdk` |
+| `zero-control-ui/index.js` | Zero-authored | new | Plugin entry using `zero/plugin-sdk` |
 | `zero-control-ui/index.css` | Zero-authored | new | Uses the host theme tokens; no copied OpenDots design system |
 
 ## Retained bridge library

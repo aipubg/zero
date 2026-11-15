@@ -49,7 +49,7 @@ When `node app/zero-control-ui/build.mjs` executes:
    - `dist/web/plugins/control-ui/zero-control-ui/{generation}/index.js`
    - `dist/web/plugins/control-ui/zero-control-ui/{generation}/index.css`
    - `app/zero-control-ui/dist/control-ui/{generation}/`
-5. `app/zero-control-ui/openclaw.plugin.json` and `app/zero-control-ui/dist/openclaw.plugin.json` are synchronized with the active generation pointers.
+5. `app/zero-control-ui/zero.plugin.json` and `app/zero-control-ui/dist/zero.plugin.json` are synchronized with the active generation pointers.
 
 ---
 

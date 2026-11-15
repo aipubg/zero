@@ -100,19 +100,19 @@ export function injectZeroControlUiAssets() {
   }
 }
 
-export function patchOpenclawRuntime() {
-  console.log('[Zero Branding] Patching OpenClaw runtime and client bundles...');
+export function patchzeroRuntime() {
+  console.log('[Zero Branding] Patching zero runtime and client bundles...');
 
   const roots = [
-    path.join(REPO_ROOT, 'backend', 'node_modules', 'openclaw', 'dist'),
-    path.join(REPO_ROOT, 'zero-system', 'state', 'node-runtime', 'current', 'node_modules', 'openclaw', 'dist'),
-    path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state', 'node-runtime', 'releases', '2026.10.7-10ad68f0f0f519bc2ee40ec9e23435359e7ba939749fd7b4a290df3512ba49af', 'node_modules', 'openclaw', 'dist'),
+    path.join(REPO_ROOT, 'backend', 'node_modules', 'zero', 'dist'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'node-runtime', 'current', 'node_modules', 'zero', 'dist'),
+    path.join(REPO_ROOT, '.zero-data', 'fresh-workspace', 'gateway-state', 'node-runtime', 'releases', '2026.10.7-10ad68f0f0f519bc2ee40ec9e23435359e7ba939749fd7b4a290df3512ba49af', 'node_modules', 'zero', 'dist'),
   ];
 
   const releasesDir = path.join(REPO_ROOT, 'zero-system', 'state', 'node-runtime', 'releases');
   if (fs.existsSync(releasesDir)) {
     for (const r of fs.readdirSync(releasesDir)) {
-      const dist = path.join(releasesDir, r, 'node_modules', 'openclaw', 'dist');
+      const dist = path.join(releasesDir, r, 'node_modules', 'zero', 'dist');
       if (fs.existsSync(dist)) roots.push(dist);
     }
   }
@@ -237,8 +237,8 @@ export function patchOpenclawRuntime() {
       if (f.startsWith('overview-') && f.endsWith('.mjs')) {
         const oPath = path.join(root, f);
         let code = fs.readFileSync(oPath, 'utf8');
-        if (code.includes("Hi, I'm OpenClaw")) {
-          code = code.replaceAll("Hi, I'm OpenClaw — caretaker of this gateway, config, channels, and agents.", "Hi, I'm Zero — your private AI assistant.");
+        if (code.includes("Hi, I'm zero")) {
+          code = code.replaceAll("Hi, I'm zero — caretaker of this gateway, config, channels, and agents.", "Hi, I'm Zero — your private AI assistant.");
           fs.writeFileSync(oPath, code, 'utf8');
         }
       }
@@ -246,7 +246,7 @@ export function patchOpenclawRuntime() {
         const sPath = path.join(root, f);
         let code = fs.readFileSync(sPath, 'utf8');
         if (code.includes('the config was edited outside')) {
-          code = code.replaceAll('Heads up: the config was edited outside OpenClaw while I was away — open History to review it.', '');
+          code = code.replaceAll('Heads up: the config was edited outside zero while I was away — open History to review it.', '');
           code = code.replaceAll('recentExternalEdit', 'false');
           fs.writeFileSync(sPath, code, 'utf8');
         }
@@ -318,72 +318,72 @@ export function patchOpenclawRuntime() {
             code = code.replaceAll('s=t.workingIndicator??(t.mascot===void 0?Dr().workingIndicator:t.mascot===`none`?`dots`:`claw`),c=s===`dots`', 's=`dots`,c=!0');
             changed = true;
           }
-          if (code.includes('https://docs.openclaw.ai/gateway/permission-modes')) {
-            code = code.replaceAll('https://docs.openclaw.ai/gateway/permission-modes', '#/settings');
+          if (code.includes('https://docs.zero.ai/gateway/permission-modes')) {
+            code = code.replaceAll('https://docs.zero.ai/gateway/permission-modes', '#/settings');
             changed = true;
           }
-          if (code.includes('https://docs.openclaw.ai')) {
-            code = code.replaceAll('https://docs.openclaw.ai', '#/settings');
+          if (code.includes('https://docs.zero.ai')) {
+            code = code.replaceAll('https://docs.zero.ai', '#/settings');
             changed = true;
           }
-          if (code.includes('https://openclaw.ai')) {
-            code = code.replaceAll('https://openclaw.ai', '#/settings');
+          if (code.includes('https://zero.ai')) {
+            code = code.replaceAll('https://zero.ai', '#/settings');
             changed = true;
           }
-          if (code.includes('openclaw.ai')) {
-            code = code.replaceAll('openclaw.ai', 'zero.local');
+          if (code.includes('zero.ai')) {
+            code = code.replaceAll('zero.ai', 'zero.local');
             changed = true;
           }
           if (code.includes('System setup and care')) {
             code = code.replaceAll('System setup and care', 'System Settings & Diagnostics');
             changed = true;
           }
-          if (code.includes('openclaw configure')) {
-            code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+          if (code.includes('zero configure')) {
+            code = code.replaceAll('zero configure', 'in Zero Models settings');
             changed = true;
           }
-          if (code.includes('Message OpenClaw…')) {
-            code = code.replaceAll('Message OpenClaw…', 'Message Zero…');
+          if (code.includes('Message zero…')) {
+            code = code.replaceAll('Message zero…', 'Message Zero…');
             changed = true;
           }
-          if (code.includes('Message OpenClaw...')) {
-            code = code.replaceAll('Message OpenClaw...', 'Message Zero...');
+          if (code.includes('Message zero...')) {
+            code = code.replaceAll('Message zero...', 'Message Zero...');
             changed = true;
           }
-          if (code.includes('Message OpenClaw')) {
-            code = code.replaceAll('Message OpenClaw', 'Message Zero');
+          if (code.includes('Message zero')) {
+            code = code.replaceAll('Message zero', 'Message Zero');
             changed = true;
           }
-          if (code.includes('title:`OpenClaw`')) {
-            code = code.replaceAll('title:`OpenClaw`', 'title:`Zero`');
+          if (code.includes('title:`zero`')) {
+            code = code.replaceAll('title:`zero`', 'title:`Zero`');
             changed = true;
           }
-          if (code.includes('title:"OpenClaw"')) {
-            code = code.replaceAll('title:"OpenClaw"', 'title:"Zero"');
+          if (code.includes('title:"zero"')) {
+            code = code.replaceAll('title:"zero"', 'title:"Zero"');
             changed = true;
           }
-          if (code.includes('title:`OpenClaw`,subtitleCaretaker:`System setup and care.`')) {
-            code = code.replaceAll('title:`OpenClaw`,subtitleCaretaker:`System setup and care.`', 'title:`Zero`,subtitleCaretaker:`System setup and care.`');
+          if (code.includes('title:`zero`,subtitleCaretaker:`System setup and care.`')) {
+            code = code.replaceAll('title:`zero`,subtitleCaretaker:`System setup and care.`', 'title:`Zero`,subtitleCaretaker:`System setup and care.`');
             changed = true;
           }
-          if (code.includes('thinking:`OpenClaw is thinking`')) {
-            code = code.replaceAll('thinking:`OpenClaw is thinking`', 'thinking:`Zero is thinking`');
+          if (code.includes('thinking:`zero is thinking`')) {
+            code = code.replaceAll('thinking:`zero is thinking`', 'thinking:`Zero is thinking`');
             changed = true;
           }
-          if (code.includes('requestFailed:`OpenClaw could not reply.')) {
-            code = code.replaceAll('requestFailed:`OpenClaw could not reply.', 'requestFailed:`Zero could not reply.');
+          if (code.includes('requestFailed:`zero could not reply.')) {
+            code = code.replaceAll('requestFailed:`zero could not reply.', 'requestFailed:`Zero could not reply.');
             changed = true;
           }
-          if (code.includes('askOpenClaw:`Ask OpenClaw`')) {
-            code = code.replaceAll('askOpenClaw:`Ask OpenClaw`', 'askOpenClaw:`Ask Zero`');
+          if (code.includes('askzero:`Ask zero`')) {
+            code = code.replaceAll('askzero:`Ask zero`', 'askzero:`Ask Zero`');
             changed = true;
           }
-          if (code.includes('askOpenClaw:"Ask OpenClaw"')) {
-            code = code.replaceAll('askOpenClaw:"Ask OpenClaw"', 'askOpenClaw:"Ask Zero"');
+          if (code.includes('askzero:"Ask zero"')) {
+            code = code.replaceAll('askzero:"Ask zero"', 'askzero:"Ask Zero"');
             changed = true;
           }
           if (code.includes('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`')) {
-            code = code.replaceAll('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`', 'render(){return L`<span class="openclaw-mascot--neutral" style="display:inline-grid;place-items:center;width:100%;height:100%;"><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg></span>`');
+            code = code.replaceAll('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`', 'render(){return L`<span class="zero-mascot--neutral" style="display:inline-grid;place-items:center;width:100%;height:100%;"><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg></span>`');
             changed = true;
           }
           if (changed) {
@@ -393,15 +393,15 @@ export function patchOpenclawRuntime() {
       }
     }
 
-    // 8. Purge all occurrences of `openclaw configure`
+    // 8. Purge all occurrences of `zero configure`
     for (const f of fs.readdirSync(root)) {
       if (f.endsWith('.mjs') || f.endsWith('.js')) {
         const fPath = path.join(root, f);
         try {
           let code = fs.readFileSync(fPath, 'utf8');
-          if (code.includes('`openclaw configure`') || code.includes('openclaw configure')) {
-            code = code.replaceAll('`openclaw configure`', 'in Zero Models settings');
-            code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+          if (code.includes('`zero configure`') || code.includes('zero configure')) {
+            code = code.replaceAll('`zero configure`', 'in Zero Models settings');
+            code = code.replaceAll('zero configure', 'in Zero Models settings');
             fs.writeFileSync(fPath, code, 'utf8');
           }
         } catch {}
@@ -424,48 +424,48 @@ export function patchOpenclawRuntime() {
             code = code.replaceAll('System setup and care', 'System Settings & Diagnostics');
             changed = true;
           }
-          if (code.includes('openclaw configure')) {
-            code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+          if (code.includes('zero configure')) {
+            code = code.replaceAll('zero configure', 'in Zero Models settings');
             changed = true;
           }
-          if (code.includes('Message OpenClaw…')) {
-            code = code.replaceAll('Message OpenClaw…', 'Message Zero…');
+          if (code.includes('Message zero…')) {
+            code = code.replaceAll('Message zero…', 'Message Zero…');
             changed = true;
           }
-          if (code.includes('Message OpenClaw...')) {
-            code = code.replaceAll('Message OpenClaw...', 'Message Zero...');
+          if (code.includes('Message zero...')) {
+            code = code.replaceAll('Message zero...', 'Message Zero...');
             changed = true;
           }
-          if (code.includes('Message OpenClaw')) {
-            code = code.replaceAll('Message OpenClaw', 'Message Zero');
+          if (code.includes('Message zero')) {
+            code = code.replaceAll('Message zero', 'Message Zero');
             changed = true;
           }
-          if (code.includes('title:`OpenClaw`')) {
-            code = code.replaceAll('title:`OpenClaw`', 'title:`Zero`');
+          if (code.includes('title:`zero`')) {
+            code = code.replaceAll('title:`zero`', 'title:`Zero`');
             changed = true;
           }
-          if (code.includes('title:"OpenClaw"')) {
-            code = code.replaceAll('title:"OpenClaw"', 'title:"Zero"');
+          if (code.includes('title:"zero"')) {
+            code = code.replaceAll('title:"zero"', 'title:"Zero"');
             changed = true;
           }
-          if (code.includes('thinking:`OpenClaw is thinking`')) {
-            code = code.replaceAll('thinking:`OpenClaw is thinking`', 'thinking:`Zero is thinking`');
+          if (code.includes('thinking:`zero is thinking`')) {
+            code = code.replaceAll('thinking:`zero is thinking`', 'thinking:`Zero is thinking`');
             changed = true;
           }
-          if (code.includes('requestFailed:`OpenClaw could not reply.')) {
-            code = code.replaceAll('requestFailed:`OpenClaw could not reply.', 'requestFailed:`Zero could not reply.');
+          if (code.includes('requestFailed:`zero could not reply.')) {
+            code = code.replaceAll('requestFailed:`zero could not reply.', 'requestFailed:`Zero could not reply.');
             changed = true;
           }
-          if (code.includes('askOpenClaw:`Ask OpenClaw`')) {
-            code = code.replaceAll('askOpenClaw:`Ask OpenClaw`', 'askOpenClaw:`Ask Zero`');
+          if (code.includes('askzero:`Ask zero`')) {
+            code = code.replaceAll('askzero:`Ask zero`', 'askzero:`Ask Zero`');
             changed = true;
           }
-          if (code.includes('askOpenClaw:"Ask OpenClaw"')) {
-            code = code.replaceAll('askOpenClaw:"Ask OpenClaw"', 'askOpenClaw:"Ask Zero"');
+          if (code.includes('askzero:"Ask zero"')) {
+            code = code.replaceAll('askzero:"Ask zero"', 'askzero:"Ask Zero"');
             changed = true;
           }
           if (code.includes('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`')) {
-            code = code.replaceAll('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`', 'render(){return L`<span class="openclaw-mascot--neutral" style="display:inline-grid;place-items:center;width:100%;height:100%;"><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg></span>`');
+            code = code.replaceAll('render(){return br().brandIcon===`claw`?L`<canvas></canvas>`', 'render(){return L`<span class="zero-mascot--neutral" style="display:inline-grid;place-items:center;width:100%;height:100%;"><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg></span>`');
             changed = true;
           }
           if (changed) {
@@ -479,12 +479,12 @@ export function patchOpenclawRuntime() {
 
 export function purgeStaleDatabaseSessions() {
   const dbs = [
-    path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'openclaw.sqlite'),
     path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'zero.sqlite'),
-    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'zero.sqlite'),
     path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
-    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'operator', 'agent', 'openclaw-agent.sqlite'),
-    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'researcher', 'agent', 'openclaw-agent.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'operator', 'agent', 'zero-agent.sqlite'),
+    path.join(REPO_ROOT, 'zero-system', 'state', 'agents', 'researcher', 'agent', 'zero-agent.sqlite'),
   ];
 
   for (const dbPath of dbs) {
@@ -500,16 +500,16 @@ export function purgeStaleDatabaseSessions() {
         db.prepare("DELETE FROM official_external_plugin_catalog_snapshots").run();
       } catch(e) {}
       try {
-        db.prepare("DELETE FROM workspace_setup_state WHERE workspace_path LIKE '%.openclaw%'").run();
-        db.prepare("DELETE FROM workspace_path_aliases WHERE alias_path LIKE '%.openclaw%'").run();
-        db.prepare("DELETE FROM config_health_entries WHERE config_path LIKE '%openclaw%'").run();
+        db.prepare("DELETE FROM workspace_setup_state WHERE workspace_path LIKE '%.zero%'").run();
+        db.prepare("DELETE FROM workspace_path_aliases WHERE alias_path LIKE '%.zero%'").run();
+        db.prepare("DELETE FROM config_health_entries WHERE config_path LIKE '%zero%'").run();
         db.prepare("DELETE FROM session_state_heads WHERE agent_id != 'zero'").run();
         db.prepare("DELETE FROM session_state_events WHERE agent_id != 'zero'").run();
       } catch(e) {}
       try {
         // Update branding in transcript_events without deleting rows (deleting rows breaks sequence continuity)
-        db.prepare("UPDATE transcript_events SET event_json = REPLACE(REPLACE(REPLACE(event_json, 'openclaw:', 'zero:'), 'openclaw', 'zero'), 'OpenClaw', 'Zero') WHERE event_json LIKE '%openclaw%'").run();
-        db.prepare("UPDATE session_nodes SET entry_json = REPLACE(REPLACE(REPLACE(entry_json, 'openclaw:', 'zero:'), 'openclaw', 'zero'), 'OpenClaw', 'Zero') WHERE entry_json LIKE '%openclaw%'").run();
+        db.prepare("UPDATE transcript_events SET event_json = REPLACE(REPLACE(REPLACE(event_json, 'zero:', 'zero:'), 'zero', 'zero'), 'zero', 'Zero') WHERE event_json LIKE '%zero%'").run();
+        db.prepare("UPDATE session_nodes SET entry_json = REPLACE(REPLACE(REPLACE(entry_json, 'zero:', 'zero:'), 'zero', 'zero'), 'zero', 'Zero') WHERE entry_json LIKE '%zero%'").run();
       } catch(e) {}
       // Repair any sequence gaps in transcript_events to prevent 'session history window changed'
       try {
@@ -533,11 +533,11 @@ export function purgeStaleDatabaseSessions() {
       } catch(e) {}
       // Clean diagnostic_events
       try {
-        db.prepare("DELETE FROM diagnostic_events WHERE payload_json LIKE '%tool-live-exec%' OR payload_json LIKE '%openclaw%'").run();
+        db.prepare("DELETE FROM diagnostic_events WHERE payload_json LIKE '%tool-live-exec%' OR payload_json LIKE '%zero%'").run();
       } catch(e) {}
       // Clean config_machine_state stale keys
       try {
-        db.prepare("DELETE FROM config_machine_state WHERE state_key LIKE '%webhookListeners%openclaw.json%' OR state_key LIKE '%.zero-data%'").run();
+        db.prepare("DELETE FROM config_machine_state WHERE state_key LIKE '%webhookListeners%zero.json%' OR state_key LIKE '%.zero-data%'").run();
       } catch(e) {}
       // Clean session_windows rows that point at removed test/synthetic models.
       // The model identifier is intentionally left unset; Default mode resolves
@@ -569,7 +569,7 @@ export function purgeStaleDatabaseSessions() {
           const cols = db.prepare(`PRAGMA table_info("${name}")`).all().map(c => c.name);
           for (const col of cols) {
             try {
-              db.prepare(`DELETE FROM "${name}" WHERE CAST("${col}" AS TEXT) LIKE '%tool-live-exec%' OR CAST("${col}" AS TEXT) LIKE '%be02-acceptance%' OR CAST("${col}" AS TEXT) LIKE '%openclaw doctor%' OR CAST("${col}" AS TEXT) LIKE '%openclaw config%' OR CAST("${col}" AS TEXT) LIKE '%pnpm/openclaw%' OR CAST("${col}" AS TEXT) LIKE '%This model was not found%' OR CAST("${col}" AS TEXT) LIKE '%Tool browser not found%'`).run();
+              db.prepare(`DELETE FROM "${name}" WHERE CAST("${col}" AS TEXT) LIKE '%tool-live-exec%' OR CAST("${col}" AS TEXT) LIKE '%be02-acceptance%' OR CAST("${col}" AS TEXT) LIKE '%zero doctor%' OR CAST("${col}" AS TEXT) LIKE '%zero config%' OR CAST("${col}" AS TEXT) LIKE '%pnpm/zero%' OR CAST("${col}" AS TEXT) LIKE '%This model was not found%' OR CAST("${col}" AS TEXT) LIKE '%Tool browser not found%'`).run();
             } catch(e) {}
           }
         } catch(e) {}
@@ -596,7 +596,7 @@ export function applyZeroBranding() {
       if (fs.existsSync(indexPath)) {
         let idxContent = fs.readFileSync(indexPath, 'utf8');
         idxContent = idxContent.replace(/<title>.*?<\/title>/i, '<title>Zero Control</title>');
-        idxContent = idxContent.replaceAll('OpenClaw', 'Zero');
+        idxContent = idxContent.replaceAll('zero', 'Zero');
         idxContent = idxContent.replaceAll('Gateway unreachable', 'Zero Gateway Connecting');
         fs.writeFileSync(indexPath, idxContent, 'utf8');
       }
@@ -610,8 +610,8 @@ export function applyZeroBranding() {
             let code = fs.readFileSync(fPath, 'utf8');
             let changed = false;
 
-            if (code.includes('Ask OpenClaw')) {
-              code = code.replaceAll('Ask OpenClaw', 'Ask Zero');
+            if (code.includes('Ask zero')) {
+              code = code.replaceAll('Ask zero', 'Ask Zero');
               changed = true;
             }
             if (code.includes('/custodian')) {
@@ -627,17 +627,17 @@ export function applyZeroBranding() {
               code = code.replaceAll('Gateway unreachable', 'Zero Gateway Connecting');
               changed = true;
             }
-            if (code.includes('Connect to OpenClaw')) {
-              code = code.replaceAll('Connect to OpenClaw', 'Connect to Zero');
+            if (code.includes('Connect to zero')) {
+              code = code.replaceAll('Connect to zero', 'Connect to Zero');
               changed = true;
             }
-            if (code.includes('Message OpenClaw')) {
-              code = code.replaceAll('Message OpenClaw', 'Message Zero');
+            if (code.includes('Message zero')) {
+              code = code.replaceAll('Message zero', 'Message Zero');
               changed = true;
             }
-            if (code.includes('OpenClaw â€” System setup and care') || code.includes('OpenClaw — System setup and care')) {
-              code = code.replaceAll('OpenClaw â€” System setup and care', 'Zero Assistant');
-              code = code.replaceAll('OpenClaw — System setup and care', 'Zero Assistant');
+            if (code.includes('zero â€” System setup and care') || code.includes('zero — System setup and care')) {
+              code = code.replaceAll('zero â€” System setup and care', 'Zero Assistant');
+              code = code.replaceAll('zero — System setup and care', 'Zero Assistant');
               changed = true;
             }
             if (code.includes('System setup and care')) {
@@ -648,21 +648,21 @@ export function applyZeroBranding() {
               code = code.replace(/the config was edited outside[^\."']+/g, '');
               changed = true;
             }
-            if (code.includes('OpenClaw requires working inference')) {
-              code = code.replaceAll('OpenClaw requires working inference', 'Zero ready');
+            if (code.includes('zero requires working inference')) {
+              code = code.replaceAll('zero requires working inference', 'Zero ready');
               changed = true;
             }
-            if (code.includes('`openclaw configure`')) {
-              code = code.replaceAll('`openclaw configure`', 'in Zero Models settings');
+            if (code.includes('`zero configure`')) {
+              code = code.replaceAll('`zero configure`', 'in Zero Models settings');
               changed = true;
             }
-            if (code.includes('openclaw configure')) {
-              code = code.replaceAll('openclaw configure', 'in Zero Models settings');
+            if (code.includes('zero configure')) {
+              code = code.replaceAll('zero configure', 'in Zero Models settings');
               changed = true;
             }
             if (code.includes('This model was not found')) {
               code = code.replaceAll(
-                'This model was not found. Choose another model in the Control UI or run openclaw configure.',
+                'This model was not found. Choose another model in the Control UI or run zero configure.',
                 'This model is ready. Select an active model in Zero Models settings.'
               );
               changed = true;
@@ -687,10 +687,10 @@ export function applyZeroBranding() {
               changed = true;
             }
 
-            if (code.includes('openclaw.ai')) {
-              code = code.replaceAll('https://openclaw.ai', 'http://127.0.0.1:18789');
-              code = code.replaceAll('https://docs.openclaw.ai', 'http://127.0.0.1:18789');
-              code = code.replaceAll('openclaw.ai', '127.0.0.1');
+            if (code.includes('zero.ai')) {
+              code = code.replaceAll('https://zero.ai', 'http://127.0.0.1:18789');
+              code = code.replaceAll('https://docs.zero.ai', 'http://127.0.0.1:18789');
+              code = code.replaceAll('zero.ai', '127.0.0.1');
               changed = true;
             }
             if (file.startsWith('sidebar-update-') && code.includes('this.updateAvailable')) {
@@ -702,44 +702,44 @@ export function applyZeroBranding() {
               code = code.replaceAll('Learn more', '');
               changed = true;
             }
-            if (code.includes('brandName:`OpenClaw`')) {
-              code = code.replaceAll('brandName:`OpenClaw`', 'brandName:`Zero`');
+            if (code.includes('brandName:`zero`')) {
+              code = code.replaceAll('brandName:`zero`', 'brandName:`Zero`');
               changed = true;
             }
-            if (code.includes('· OpenClaw')) {
-              code = code.replaceAll('· OpenClaw', '· Zero');
+            if (code.includes('· zero')) {
+              code = code.replaceAll('· zero', '· Zero');
               changed = true;
             }
-            if (code.includes('— OpenClaw')) {
-              code = code.replaceAll('— OpenClaw', '— Zero');
+            if (code.includes('— zero')) {
+              code = code.replaceAll('— zero', '— Zero');
               changed = true;
             }
-            if (code.includes('e.brandName??`OpenClaw`')) {
-              code = code.replaceAll('e.brandName??`OpenClaw`', '`Zero`');
+            if (code.includes('e.brandName??`zero`')) {
+              code = code.replaceAll('e.brandName??`zero`', '`Zero`');
               changed = true;
             }
             if (code.includes('let t=e?.mascot??`claw`')) {
               code = code.replaceAll('let t=e?.mascot??`claw`', 'let t=`zero`');
               changed = true;
             }
-            if (code.includes('brandName:e?.brandName??`OpenClaw`')) {
-              code = code.replaceAll('brandName:e?.brandName??`OpenClaw`', 'brandName:`Zero`');
+            if (code.includes('brandName:e?.brandName??`zero`')) {
+              code = code.replaceAll('brandName:e?.brandName??`zero`', 'brandName:`Zero`');
               changed = true;
             }
             if (code.includes('brandIcon:e?.brandIcon??(t===`claw`?`claw`:`mark`)')) {
               code = code.replaceAll('brandIcon:e?.brandIcon??(t===`claw`?`claw`:`mark`)', 'brandIcon:`zero`');
               changed = true;
             }
-            if (code.includes('API · OpenClaw')) {
-              code = code.replaceAll('API · OpenClaw', 'API · Zero');
+            if (code.includes('API · zero')) {
+              code = code.replaceAll('API · zero', 'API · Zero');
               changed = true;
             }
-            if (code.includes('OpenClaw Chat')) {
-              code = code.replaceAll('OpenClaw Chat', 'Zero Chat');
+            if (code.includes('zero Chat')) {
+              code = code.replaceAll('zero Chat', 'Zero Chat');
               changed = true;
             }
-            if (code.includes("Hi, I'm OpenClaw")) {
-              code = code.replaceAll("Hi, I'm OpenClaw", "Hi, I'm Zero");
+            if (code.includes("Hi, I'm zero")) {
+              code = code.replaceAll("Hi, I'm zero", "Hi, I'm Zero");
               changed = true;
             }
             if (code.includes('M60 10C30 10 15 35 15 55c0 20 15 40 30 45v10h10v-10h10v10h10v-10c15-5 30-25 30-45 0-20-15-45-45-45Z')) {
@@ -764,47 +764,47 @@ export function applyZeroBranding() {
             }
 
             const USER_STRING_REPLACEMENTS = [
-              ['Official OpenClaw mobile apps connect automatically after scanning.', 'Official Zero mobile apps connect automatically after scanning.'],
-              ['OpenClaw mobile apps', 'Zero mobile apps'],
-              ['OpenClaw mobile pairing', 'Zero mobile pairing'],
-              ['openclaw node run --pair', 'zero node run --pair'],
-              ['openclaw node run', 'zero node run'],
+              ['Official zero mobile apps connect automatically after scanning.', 'Official Zero mobile apps connect automatically after scanning.'],
+              ['zero mobile apps', 'Zero mobile apps'],
+              ['zero mobile pairing', 'Zero mobile pairing'],
+              ['zero node run --pair', 'zero node run --pair'],
+              ['zero node run', 'zero node run'],
               ['oc-pair://', 'zero-pair://'],
-              ['openclaw backup enable', 'zero backup enable'],
-              ['openclaw triage', 'zero triage'],
-              ['openclaw doctor', 'zero doctor'],
-              ['openclaw crabbox', 'zero crabbox'],
-              ['openclaw.app', 'zero.app'],
-              ['Take OpenClaw everywhere', 'Take Zero everywhere'],
-              ['full OpenClaw device', 'full Zero device'],
-              ['an OpenClaw device', 'a Zero device'],
-              ['Let OpenClaw drive', 'Let Zero drive'],
-              ['Extend OpenClaw with channels', 'Extend Zero with channels'],
-              ['OpenClaw documentation', 'Zero documentation'],
-              ['Saved in OpenClaw', 'Saved in Zero'],
-              ['into OpenClaw', 'into Zero'],
-              ['from OpenClaw', 'from Zero'],
-              ['Installing OpenClaw', 'Installing Zero'],
-              ['Building OpenClaw', 'Building Zero'],
-              ['OpenClaw Mac app', 'Zero Mac app'],
-              ['OpenClaw creates a verified', 'Zero creates a verified'],
-              ['OpenClaw will use', 'Zero will use'],
-              ['OpenClaw waits for provider', 'Zero waits for provider'],
-              ['OpenClaw is installed', 'Zero is installed'],
-              ['OpenClaw is replaced', 'Zero is replaced'],
-              ['OpenClaw web search', 'Zero web search'],
-              ['OpenClaw companion', 'Zero companion'],
-              ['OpenClaw device', 'Zero device'],
-              ['OpenClaw Device', 'Zero Device'],
-              ['OpenClaw Root', 'Zero Root'],
-              ['OpenClaw', 'Zero'],
+              ['zero backup enable', 'zero backup enable'],
+              ['zero triage', 'zero triage'],
+              ['zero doctor', 'zero doctor'],
+              ['zero zero', 'zero zero'],
+              ['zero.app', 'zero.app'],
+              ['Take zero everywhere', 'Take Zero everywhere'],
+              ['full zero device', 'full Zero device'],
+              ['an zero device', 'a Zero device'],
+              ['Let zero drive', 'Let Zero drive'],
+              ['Extend zero with channels', 'Extend Zero with channels'],
+              ['zero documentation', 'Zero documentation'],
+              ['Saved in zero', 'Saved in Zero'],
+              ['into zero', 'into Zero'],
+              ['from zero', 'from Zero'],
+              ['Installing zero', 'Installing Zero'],
+              ['Building zero', 'Building Zero'],
+              ['zero Mac app', 'Zero Mac app'],
+              ['zero creates a verified', 'Zero creates a verified'],
+              ['zero will use', 'Zero will use'],
+              ['zero waits for provider', 'Zero waits for provider'],
+              ['zero is installed', 'Zero is installed'],
+              ['zero is replaced', 'Zero is replaced'],
+              ['zero web search', 'Zero web search'],
+              ['zero companion', 'Zero companion'],
+              ['zero device', 'Zero device'],
+              ['zero Device', 'Zero Device'],
+              ['zero Root', 'Zero Root'],
+              ['zero', 'Zero'],
             ];
 
             for (const [targetStr, repStr] of USER_STRING_REPLACEMENTS) {
               if (code.includes(targetStr)) {
-                // Avoid replacing DOM component tags like <openclaw- or openclaw_internal
-                if (targetStr === 'OpenClaw') {
-                  code = code.replaceAll('OpenClaw', 'Zero');
+                // Avoid replacing DOM component tags like <zero- or zero
+                if (targetStr === 'zero') {
+                  code = code.replaceAll('zero', 'Zero');
                 } else {
                   code = code.replaceAll(targetStr, repStr);
                 }
@@ -849,7 +849,7 @@ export function applyZeroBranding() {
   }
 
   // 5. Runtime & Client Patches
-  patchOpenclawRuntime();
+  patchzeroRuntime();
 
   // 6. Database Cleanup
   purgeStaleDatabaseSessions();

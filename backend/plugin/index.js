@@ -527,7 +527,7 @@ function defaultReadManifest() {
 
 // Runtime config schema. The manifest carries an identical copy (it is required there for
 // pre-runtime discovery); the selftest asserts the two stay equal so they cannot drift.
-// Built with the host's own JSON-schema helper (openclaw/plugin-sdk/plugin-entry), which is
+// Built with the host's own JSON-schema helper (zero/plugin-sdk/plugin-entry), which is
 // what buildJsonPluginConfigSchema exists for.
 const CONFIG_JSON_SCHEMA = {
   type: "object",

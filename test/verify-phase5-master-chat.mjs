@@ -78,7 +78,7 @@ async function verifyPhase5UnifiedMaster() {
   console.log('\n--- TEST 4: Native In-Process Browser Automation (CDP & AX Refs) ---');
   const test4Res = await runChatPrompt(
     page,
-    "Browser open karo, Google par jao, PinchTab snapshot se search box ka exact ref ID (e...) dhundo, usme 'Zero AI Autonomous Agent' type karke search karo aur result verify karo.",
+    "Browser open karo, Google par jao, zero snapshot se search box ka exact ref ID (e...) dhundo, usme 'Zero AI Autonomous Agent' type karke search karo aur result verify karo.",
     "Native In-Process Browser Automation Verified"
   );
   if (!test4Res.includes('Resolved Input Ref ID:')) throw new Error('Test 4 failed: Browser Ref automation failed');
@@ -97,7 +97,7 @@ async function verifyPhase5UnifiedMaster() {
   console.log('\n======================================================');
   console.log('--- STEP B: MASTER UNIFIED WORKFLOW (ALL 5 TOGETHER) ---');
   console.log('======================================================');
-  const masterPrompt = "Screen Share observe karte hue browser mein PinchTab ke through ek webpage kholo, wahan se specific jankari title extract karo, phir Windows UIA Root Tree aur agent-desktop ka istemal karke Notepad open karo, extracted jankari Notepad mein type karo, aur Screen Share + Root Tree dono se verify karke confirm karo ki Notepad mein exact text likha ja chuka hai.";
+  const masterPrompt = "Screen Share observe karte hue browser mein zero ke through ek webpage kholo, wahan se specific jankari title extract karo, phir Windows UIA Root Tree aur agent-desktop ka istemal karke Notepad open karo, extracted jankari Notepad mein type karo, aur Screen Share + Root Tree dono se verify karke confirm karo ki Notepad mein exact text likha ja chuka hai.";
   
   const masterRes = await runChatPrompt(
     page,

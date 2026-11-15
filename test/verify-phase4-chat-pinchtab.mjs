@@ -1,7 +1,7 @@
 import { chromium } from '../backend/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/index.mjs';
 
-async function verifyPhase4PinchTab() {
-  console.log('=== STARTING PHASE 4 CHAT SECTION PINCHTAB TEST ===');
+async function verifyPhase4zero() {
+  console.log('=== STARTING PHASE 4 CHAT SECTION zero TEST ===');
   const browser = await chromium.launch({
     headless: true,
     executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -19,18 +19,18 @@ async function verifyPhase4PinchTab() {
   console.log('2. Found Chat Composer.');
 
   // User instruction as required in Phase 4:
-  // "Browser open karo, GitHub ya Google par jao, PinchTab snapshot se search box ka exact ref ID (e...) dhundo, usme 'Zero AI Autonomous Agent' type karke search karo aur result verify karo."
-  const prompt = "Browser open karo, Google par jao, PinchTab snapshot se search box ka exact ref ID (e...) dhundo, usme 'Zero AI Autonomous Agent' type karke search karo aur result verify karo.";
+  // "Browser open karo, GitHub ya Google par jao, zero snapshot se search box ka exact ref ID (e...) dhundo, usme 'Zero AI Autonomous Agent' type karke search karo aur result verify karo."
+  const prompt = "Browser open karo, Google par jao, zero snapshot se search box ka exact ref ID (e...) dhundo, usme 'Zero AI Autonomous Agent' type karke search karo aur result verify karo.";
   console.log('3. Typing prompt into Chat Section:', prompt);
   await composer.fill(prompt);
   await page.keyboard.press('Enter');
 
   // Wait for the workflow to complete and response to contain the verification header
-  console.log('4. Waiting for agent to execute PinchTab workflow, extract snapshot refs, and report...');
+  console.log('4. Waiting for agent to execute zero workflow, extract snapshot refs, and report...');
   await page.waitForFunction(() => {
     const text = document.body.innerText;
-    return text.includes('PinchTab Deterministic Browser Automation Verified') ||
-           text.includes('PinchTab Verification Complete');
+    return text.includes('zero Deterministic Browser Automation Verified') ||
+           text.includes('zero Verification Complete');
   }, { timeout: 45000 });
   await page.waitForTimeout(2000);
 
@@ -41,24 +41,24 @@ async function verifyPhase4PinchTab() {
   });
 
   // Find the bubble that contains the verification report
-  const reportBubble = recentText.reverse().find(t => t.includes('PinchTab Deterministic Browser Automation Verified')) || '';
+  const reportBubble = recentText.reverse().find(t => t.includes('zero Deterministic Browser Automation Verified')) || '';
   console.log('5. Agent Response in Chat Section:\n----------------------------------------\n' + reportBubble + '\n----------------------------------------');
 
-  const containsPinchTabReport = reportBubble.includes('PinchTab Deterministic Browser Automation Verified') && reportBubble.includes('Resolved Input Ref ID');
-  console.log('6. Verified PinchTab Ref-based Response:', containsPinchTabReport ? 'PASSED ✅' : 'FAILED ❌');
-  if (!containsPinchTabReport) {
-    throw new Error('Response did not contain expected PinchTab verification output!');
+  const containszeroReport = reportBubble.includes('zero Deterministic Browser Automation Verified') && reportBubble.includes('Resolved Input Ref ID');
+  console.log('6. Verified zero Ref-based Response:', containszeroReport ? 'PASSED ✅' : 'FAILED ❌');
+  if (!containszeroReport) {
+    throw new Error('Response did not contain expected zero verification output!');
   }
 
   // Take screenshot of the live chat with verification
-  await page.screenshot({ path: 'E:/zero/phase4-chat-pinchtab-verified.png', fullPage: true });
-  console.log('7. Saved screenshot to E:/zero/phase4-chat-pinchtab-verified.png');
+  await page.screenshot({ path: 'E:/zero/phase4-chat-zero-verified.png', fullPage: true });
+  console.log('7. Saved screenshot to E:/zero/phase4-chat-zero-verified.png');
 
   await browser.close();
   console.log('=== PHASE 4 CHAT VERIFICATION COMPLETED SUCCESSFULLY ===');
 }
 
-verifyPhase4PinchTab().catch(err => {
+verifyPhase4zero().catch(err => {
   console.error('Phase 4 verification error:', err);
   process.exit(1);
 });

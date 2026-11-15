@@ -25,7 +25,7 @@
     "status": "BLOCKED",
     "observedStatus": "PARTIAL",
     "source": "Latest user report during this audit; not independently rerun here",
-    "detail": "After canonical __openclaw__/ asset path fix, native UI plugin activates: chat has no trim crash, model picker displayed, Voice PARTIAL, Workforce 1 configured, Screen Stopped; Settings Skills lists 9 actual skills; Search form and Memory real status render.",
+    "detail": "After canonical __ZERO/ asset path fix, native UI plugin activates: chat has no trim crash, model picker displayed, Voice PARTIAL, Workforce 1 configured, Screen Stopped; Settings Skills lists 9 actual skills; Search form and Memory real status render.",
     "repairStatus": "Reported smoke improvement only. Persisted interaction and reconnect have not passed; full browser acceptance remains BLOCKED.",
     "previouslyMissingRpcs": [
       "skills.status",
@@ -1987,7 +1987,7 @@
         },
         {
           "id": "phase17:02",
-          "title": "2. Vacuum backup test & integrity check on openclaw.sqlite",
+          "title": "2. Vacuum backup test & integrity check on zero.sqlite",
           "line": 38,
           "labels": [
             "INTEGRATION"
@@ -1996,7 +1996,7 @@
             "INTEGRATION",
             "REAL_OS"
           ],
-          "claim": "2. Vacuum backup test & integrity check on openclaw.sqlite",
+          "claim": "2. Vacuum backup test & integrity check on zero.sqlite",
           "proves": "Copies owner SQLite with VACUUM INTO and integrity-checks backup.",
           "gaps": [
             "No restore, migration, rollback or logical before/after comparison; reads owner DB."
@@ -2980,7 +2980,7 @@
       "id": "native-ui-smoke",
       "source": "Latest user report during this audit",
       "status": "REPORTED_PASS",
-      "scope": "After canonical __openclaw__/ asset path fix, native UI plugin activates: chat has no trim crash, model picker displayed, Voice PARTIAL, Workforce 1 configured, Screen Stopped; Settings Skills lists 9 actual skills; Search form and Memory real status render.",
+      "scope": "After canonical __ZERO/ asset path fix, native UI plugin activates: chat has no trim crash, model picker displayed, Voice PARTIAL, Workforce 1 configured, Screen Stopped; Settings Skills lists 9 actual skills; Search form and Memory real status render.",
       "gap": "Persisted interactions, reconnect and full workflow outcomes remain unverified."
     }
   ],

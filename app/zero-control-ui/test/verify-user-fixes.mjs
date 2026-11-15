@@ -90,8 +90,8 @@ async function runLiveVerification() {
       }
     }
     const html = document.body.innerHTML;
-    const hasOpenclawDocs = /docs\.zero\.ai|zero\.ai\/gateway/i.test(html);
-    return { results, hasOpenclawDocs };
+    const hasLegacyDocs = /docs\.zero\.ai|zero\.ai\/gateway/i.test(html);
+    return { results, hasLegacyDocs };
   });
   console.log("   Settings Sidebar Audit:", sidebarAudit);
 
@@ -99,7 +99,7 @@ async function runLiveVerification() {
   for (const [sel, disp] of Object.entries(sidebarAudit.results)) {
     assert.equal(disp, "flex", `Feature ${sel} must be visible with display: flex, got: ${disp}`);
   }
-  assert.equal(sidebarAudit.hasOpenclawDocs, false, "Must not contain external Zero docs links");
+  assert.equal(sidebarAudit.hasLegacyDocs, false, "Must not contain external Zero docs links");
 
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, "verified-settings-connections-visible.png"), fullPage: false });
   console.log("✔ PASSED: CONNECTIONS and all built-in Settings sections are 100% visible and restored!");

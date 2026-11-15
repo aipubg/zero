@@ -622,8 +622,8 @@ test('Zero AI — 48 Mandatory Real-World Acceptance Requirements Suite', async 
 
   // 42. No unintended data loss
   await suite.test('42. No unintended data loss', async () => {
-    const dbFile = path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'openclaw.sqlite');
-    assert.ok(fs.existsSync(dbFile), 'openclaw.sqlite is preserved intact');
+    const dbFile = path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'zero.sqlite');
+    assert.ok(fs.existsSync(dbFile), 'zero.sqlite is preserved intact');
     assert.ok(fs.statSync(dbFile).size > 1000000, 'User state database contains full history');
   });
 

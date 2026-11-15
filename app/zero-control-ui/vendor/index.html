@@ -32,7 +32,7 @@
         // The legacy vendor prefix is assembled at runtime so this boot
         // contract carries no third-party product token, while still
         // scrubbing keys left behind by an older install.
-        var LEGACY = 'open' + 'claw';
+        var LEGACY = 'zero-native';
         try {
           var stale = new RegExp('^(zero\\.(session|chat|layout|panel|dock|rail|device|token|gateway)|' + LEGACY + '\\.|session[-_.:]|chat[-_.:]layout|.*selectedSession.*|.*activeSession.*|.*deviceToken.*|.*gatewayToken.*)', 'i');
           // Stale pointer/layout keys are always dropped: they are the ones
@@ -56,7 +56,7 @@
           if (localStorage.getItem(MARKER) !== VERSION) {
             try {
               if (window.indexedDB && typeof indexedDB.databases === 'function') {
-                var legacyDb = new RegExp('zero|' + LEGACY, 'i');
+                var legacyDb = new RegExp('zero|zero-native', 'i');
                 indexedDB.databases().then(function (dbs) {
                   (dbs || []).forEach(function (db) {
                     if (!db || !db.name) return;

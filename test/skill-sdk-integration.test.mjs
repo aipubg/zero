@@ -313,7 +313,7 @@ test('cancellation and task cancellation stop the loop and never mark work compl
 test('direct Skills UI handlers persist loader state and guard bundle revisions', async t => {
   const root = temporary(t);
   const loader = new SkillLoader({ skillsDir: path.join(root, 'library') });
-  const source = sourceAt(root, manifest('external-report', 'Produce the report.', `metadata:\n  openclaw:\n    emoji: '📋'\n    primaryEnv: SDK_FIXTURE_TOKEN\n    requires:\n      env: [SDK_FIXTURE_TOKEN]\n`));
+  const source = sourceAt(root, manifest('external-report', 'Produce the report.', `metadata:\n  zero:\n    emoji: '📋'\n    primaryEnv: SDK_FIXTURE_TOKEN\n    requires:\n      env: [SDK_FIXTURE_TOKEN]\n`));
   const installed = await handleSkillsUi('skills.install', { source: 'local', path: source }, loader);
   assert.equal(installed.code, 0);
   const before = await handleSkillsUi('skills.status', { agentId: 'zero' }, loader);
@@ -323,7 +323,7 @@ test('direct Skills UI handlers persist loader state and guard bundle revisions'
   assert.deepEqual(before.skills[0].missing.env, ['SDK_FIXTURE_TOKEN']);
   const update = await handleSkillsUi('skills.update', { skillKey: 'external-report', enabled: false, apiKey: 'private-fixture-key', env: { EXAMPLE: 'private-env' } }, loader);
   assert.equal(update.config.enabled, false);
-  assert.equal(update.config.apiKey, '__OPENCLAW_REDACTED__');
+  assert.equal(update.config.apiKey, '__ZERO');
   assert.ok(!JSON.stringify(update).includes('private-'));
   const restarted = new SkillLoader({ skillsDir: loader.skillsDir });
   assert.equal(restarted.getSkillConfig('external-report').apiKey, 'private-fixture-key');

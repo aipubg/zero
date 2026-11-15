@@ -44,7 +44,7 @@ import {
 
 /**
  * All custom elements are native Zero elements using the "zero-" prefix.
- * No external openclaw tags or wrapper chains remain.
+ * No external zero tags or wrapper chains remain.
  */
 const vendorTag = (name) => `zero-${name}`;
 const vendorTagSelector = (name) => `zero-${name}`;

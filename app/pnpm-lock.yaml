@@ -8,10 +8,10 @@ importers:
 
   .:
     dependencies:
-      '@openclaw/gateway-client':
+      '@zero/gateway-client':
         specifier: 2026.10.6
         version: 2026.10.6
-      '@openclaw/gateway-protocol':
+      '@zero/gateway-protocol':
         specifier: 2026.10.6
         version: 2026.10.6
       zod:
@@ -27,11 +27,11 @@ importers:
 
 packages:
 
-  '@openclaw/gateway-client@2026.10.6':
+  '@zero/gateway-client@2026.10.6':
     resolution: {integrity: sha512-9CEcDipfyMelNnCeviiIzHpZqi78zI0IhOsgwlml040ev5j2FxtfhCOisrRzlsK3jfLKWtD5i9IZ5p11Qz8ZHg==}
     engines: {node: '>=22.19.0'}
 
-  '@openclaw/gateway-protocol@2026.10.6':
+  '@zero/gateway-protocol@2026.10.6':
     resolution: {integrity: sha512-U7/rN80eVEAEkJIFjRCwntfSHrxE9mRH+zy9Bira9nkdbNsklq3C0SfN+WaDM8wPeh9GqYKKWksxGC1AljWy2w==}
     engines: {node: '>=22.19.0'}
 
@@ -70,16 +70,16 @@ packages:
 
 snapshots:
 
-  '@openclaw/gateway-client@2026.10.6':
+  '@zero/gateway-client@2026.10.6':
     dependencies:
-      '@openclaw/gateway-protocol': 2026.10.6
+      '@zero/gateway-protocol': 2026.10.6
       ipaddr.js: 2.5.0
       ws: 8.22.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@openclaw/gateway-protocol@2026.10.6':
+  '@zero/gateway-protocol@2026.10.6':
     dependencies:
       typebox: 1.3.34
 

@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const V = 'E:\\zero\\backend\\node_modules\\openclaw\\dist\\control-ui';
+const V = 'E:\\zero\\backend\\node_modules\\zero\\dist\\control-ui';
 
-// 1. What follows the bare "openclaw." literal?
-console.log('=== context of the bare "openclaw." literal ===');
+// 1. What follows the bare "zero." literal?
+console.log('=== context of the bare "zero." literal ===');
 let shown = 0;
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -12,11 +12,11 @@ let shown = 0;
     if (e.isDirectory()) { walk(f); continue; }
     if (!/\.js$/.test(e.name)) continue;
     const c = fs.readFileSync(f, 'utf8');
-    let i = c.indexOf('"openclaw."');
+    let i = c.indexOf('"zero."');
     while (i > -1 && shown < 6) {
       console.log(`  ${e.name}: ${JSON.stringify(c.slice(Math.max(0, i - 110), i + 110))}`);
       shown++;
-      i = c.indexOf('"openclaw."', i + 1);
+      i = c.indexOf('"zero."', i + 1);
     }
   }
 })(V);
@@ -42,6 +42,6 @@ const methods = new Map();
     for (const m of c.matchAll(/request\(\s*"([^"]+)"/g)) methods.set(m[1], (methods.get(m[1]) || 0) + 1);
   }
 })(V);
-const openclawMethods = [...methods.keys()].filter(m => /openclaw/i.test(m));
+const zero = [...methods.keys()].filter(m => /zero/i.test(m));
 console.log(`  total distinct: ${methods.size}`);
-console.log(`  openclaw-prefixed: ${openclawMethods.length ? openclawMethods.join(', ') : '(none)'}`);
+console.log(`  zero-prefixed: ${zero.length ? zero.join(', ') : '(none)'}`);

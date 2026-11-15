@@ -162,13 +162,13 @@ export function createGatewayConfigMiddleware() {
           } catch {}
         }
 
-        // Sync with openclaw.json & zero.json configs
-        const openclawConfigs = [
+        // Sync with zero.json & zero.json configs
+        const zero = [
           path.resolve(root, 'zero-system', 'config', 'zero.json'),
           path.resolve(root, 'zero-system', 'config', 'zero.template.json'),
         ];
 
-        for (const cfgPath of openclawConfigs) {
+        for (const cfgPath of zero) {
           if (fs.existsSync(cfgPath)) {
             try {
               const cfgRaw = await fs.promises.readFile(cfgPath, 'utf-8');
@@ -271,7 +271,7 @@ export function createGatewayConfigMiddleware() {
 
               await fs.promises.writeFile(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8');
             } catch (cfgErr: any) {
-              console.warn('[GatewayConfig] Failed syncing openclaw config:', cfgErr?.message);
+              console.warn('[GatewayConfig] Failed syncing zero config:', cfgErr?.message);
             }
           }
         }
@@ -280,7 +280,7 @@ export function createGatewayConfigMiddleware() {
         try {
           const { DatabaseSync } = await import('node:sqlite');
           const agentDbs = [
-            path.resolve(root, 'zero-system', 'state', 'agents', 'zero', 'agent', 'openclaw-agent.sqlite'),
+            path.resolve(root, 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
             path.resolve(root, 'zero-system', 'state', 'agents', 'zero', 'agent', 'zero-agent.sqlite'),
           ];
           for (const adbPath of agentDbs) {

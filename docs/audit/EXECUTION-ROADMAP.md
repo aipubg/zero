@@ -36,7 +36,7 @@ flowchart LR
    - Remove `node E:\zero\backend\scripts\purge-all-test-sessions.mjs` from `start-all.ps1`.
    - Ensure production database tables (`session_state_events`, `session_state_heads`) are never dropped on startup.
 2. **Fix Broken Unit Tests:**
-   - Fix `backend/scripts/test/migrate-zero-only-agents.test.mjs` by updating the template path from `openclaw.template.json` to `zero.template.json`.
+   - Fix `backend/scripts/test/migrate-zero-only-agents.test.mjs` by updating the template path from `zero.template.json` to `zero.template.json`.
    - Fix `app/test/bridge.test.mjs` by aligning bridge test expectations with the native `zero-control-ui` architecture or isolating obsolete bridge specs.
    - Fix `backend/gateway/registry.ts` to guard `localStorage` with `typeof window !== 'undefined'` so server-side imports do not throw `ReferenceError`.
 3. **Eliminate Code Duplication:**
@@ -77,7 +77,7 @@ flowchart LR
 ## Phase 2 — Runtime Independence
 
 ### Objectives
-- Replace reliance on `openclaw.cmd gateway` with a native Zero Host runner.
+- Replace reliance on `zero.cmd gateway` with a native Zero Host runner.
 - Replace startup-time source patching (`apply-zero-branding.mjs`) with build-time compilation and clean extension seams.
 
 ### Detailed Engineering Tasks
@@ -93,7 +93,7 @@ flowchart LR
    - Standardize table naming (`zero_sessions`, `zero_audit_log`, `zero_state_leases`).
 
 ### Acceptance Criteria
-- `zero-host.ps1` boots Zero Host without calling `openclaw.cmd`.
+- `zero-host.ps1` boots Zero Host without calling `zero.cmd`.
 - No files inside `node_modules` are read or modified at startup.
 - Full startup cycle completes in under 1.5 seconds.
 

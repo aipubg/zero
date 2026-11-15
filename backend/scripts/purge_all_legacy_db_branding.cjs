@@ -2,10 +2,10 @@ const { DatabaseSync } = require('node:sqlite');
 const fs = require('fs');
 
 function sanitizeDatabases() {
-  console.log('=== Purging legacy OpenClaw / lobster branding from SQLite databases ===');
+  console.log('=== Purging legacy zero / lobster branding from SQLite databases ===');
 
-  // 1. Clean openclaw.sqlite
-  const sysDbPath = 'E:/zero/zero-system/state/state/openclaw.sqlite';
+  // 1. Clean zero.sqlite
+  const sysDbPath = 'E:/zero/zero-system/state/state/zero.sqlite';
   if (fs.existsSync(sysDbPath)) {
     const db = new DatabaseSync(sysDbPath);
     try {
@@ -18,10 +18,10 @@ function sanitizeDatabases() {
       console.log('✔ Purged official_external_plugin_catalog_snapshots');
 
       // Clean workspace paths
-      db.prepare("DELETE FROM workspace_setup_state WHERE workspace_path LIKE '%.openclaw%'").run();
-      db.prepare("DELETE FROM workspace_path_aliases WHERE alias_path LIKE '%.openclaw%'").run();
-      db.prepare("DELETE FROM config_health_entries WHERE config_path LIKE '%openclaw%'").run();
-      console.log('✔ Purged openclaw workspace and config health paths');
+      db.prepare("DELETE FROM workspace_setup_state WHERE workspace_path LIKE '%.zero%'").run();
+      db.prepare("DELETE FROM workspace_path_aliases WHERE alias_path LIKE '%.zero%'").run();
+      db.prepare("DELETE FROM config_health_entries WHERE config_path LIKE '%zero%'").run();
+      console.log('✔ Purged zero workspace and config health paths');
 
       // Clean stale session state heads / events for non-zero agents
       db.prepare("DELETE FROM session_state_heads WHERE agent_id != 'zero'").run();
@@ -33,16 +33,16 @@ function sanitizeDatabases() {
     db.close();
   }
 
-  // 2. Clean openclaw-agent.sqlite for agent zero
-  const agentDbPath = 'E:/zero/zero-system/state/agents/zero/agent/openclaw-agent.sqlite';
+  // 2. Clean zero-agent.sqlite for agent zero
+  const agentDbPath = 'E:/zero/zero-system/state/agents/zero/agent/zero-agent.sqlite';
   if (fs.existsSync(agentDbPath)) {
     const db = new DatabaseSync(agentDbPath);
     try {
       // Sanitize session_nodes entry_json
       const nodes = db.prepare("SELECT session_key, entry_json FROM session_nodes").all();
       for (const node of nodes) {
-        if (node.entry_json && (node.entry_json.includes('openclaw') || node.entry_json.includes('activeWriterRunId'))) {
-          let cleaned = node.entry_json.replaceAll('openclaw', 'zero');
+        if (node.entry_json && (node.entry_json.includes('zero') || node.entry_json.includes('activeWriterRunId'))) {
+          let cleaned = node.entry_json.replaceAll('zero', 'zero');
           try {
             const parsed = JSON.parse(cleaned);
             parsed.activeWriterRunId = null;
@@ -55,14 +55,14 @@ function sanitizeDatabases() {
       console.log('✔ Cleaned session_nodes in agent db');
 
       // Remove heartbeat poll events and test sessions
-      db.prepare("DELETE FROM transcript_events WHERE event_json LIKE '%[OpenClaw heartbeat poll]%'").run();
+      db.prepare("DELETE FROM transcript_events WHERE event_json LIKE '%[zero heartbeat poll]%'").run();
       db.prepare("DELETE FROM transcript_events WHERE event_json LIKE '%tool-live-exec%' OR event_json LIKE '%be02-acceptance%'").run();
-      console.log('✔ Purged OpenClaw heartbeat polls and test session events');
+      console.log('✔ Purged zero heartbeat polls and test session events');
 
-      // Sanitize remaining events to replace openclaw with zero
-      const events = db.prepare("SELECT session_id, seq, event_json FROM transcript_events WHERE event_json LIKE '%openclaw%'").all();
+      // Sanitize remaining events to replace zero with zero
+      const events = db.prepare("SELECT session_id, seq, event_json FROM transcript_events WHERE event_json LIKE '%zero%'").all();
       for (const ev of events) {
-        const cleaned = ev.event_json.replaceAll('openclaw:', 'zero:').replaceAll('openclaw', 'zero').replaceAll('OpenClaw', 'Zero');
+        const cleaned = ev.event_json.replaceAll('zero:', 'zero:').replaceAll('zero', 'zero').replaceAll('zero', 'Zero');
         db.prepare("UPDATE transcript_events SET event_json = ? WHERE session_id = ? AND seq = ?").run(cleaned, ev.session_id, ev.seq);
       }
       console.log(`✔ Sanitized ${events.length} remaining transcript events`);

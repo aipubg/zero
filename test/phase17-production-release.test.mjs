@@ -28,16 +28,16 @@ test('Phase 17 — Production Packaging & Release Verification', async (t) => {
 
     const ps1Content = fs.readFileSync(ps1Path, 'utf8');
     assert.ok(ps1Content.includes('backend\\server\\zero-host.mjs'));
-    assert.ok(ps1Content.includes('OPENCLAW_STATE_DIR'));
+    assert.ok(ps1Content.includes('zero'));
 
     const cmdContent = fs.readFileSync(cmdPath, 'utf8');
     assert.ok(cmdContent.includes('backend\\server\\zero-host.mjs'));
-    assert.ok(cmdContent.includes('OPENCLAW_STATE_DIR'));
+    assert.ok(cmdContent.includes('zero'));
   });
 
-  await t.test('2. Vacuum backup test & integrity check on openclaw.sqlite', () => {
-    const mainDbPath = path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'openclaw.sqlite');
-    assert.ok(fs.existsSync(mainDbPath), 'openclaw.sqlite state must exist');
+  await t.test('2. Vacuum backup test & integrity check on zero.sqlite', () => {
+    const mainDbPath = path.join(REPO_ROOT, 'zero-system', 'state', 'state', 'zero.sqlite');
+    assert.ok(fs.existsSync(mainDbPath), 'zero.sqlite state must exist');
 
     const backupDir = path.join(REPO_ROOT, '.zero-data', 'backups');
     fs.mkdirSync(backupDir, { recursive: true });

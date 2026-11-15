@@ -10,7 +10,7 @@ Launch `zero-host.cmd` afterward. The default native host uses18789; an already 
 
 `zero-setup.cmd -WithOfflineSpeech` additionally downloads pinned Whisper CPU assets. It preserves the selected voice engine. Explicit host selection uses `ZERO_VOICE_RECOGNITION_BACKEND=whisper`; see [speech evidence and remaining gates](WHISPER-STT-PREPARATION.md). Optional local chat/vision models have separate pinned installers under `scripts/`; setup does not overwrite model assignments, credentials, preferences or existing user state.
 
-The standalone UI workspace intentionally does not auto-install its OpenClaw peer. Building the browser contribution does not require the host package; using its legacy OpenClaw plugin entry still requires a compatible peer supplied by that environment. The native host has its own declared/pinned OpenClaw dependency in backend.
+The standalone UI workspace intentionally does not auto-install its zero peer. Building the browser contribution does not require the host package; using its legacy zero plugin entry still requires a compatible peer supplied by that environment. The native host has its own declared/pinned zero dependency in backend.
 
 The child workspace boundary follows [pnpm workspace settings](https://pnpm.io/settings#packages); the actual11.25.0 install/build was verified separately from the parent app workspace.
 

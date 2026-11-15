@@ -34,8 +34,8 @@ async function runLivePlaywrightVerification() {
   // 1.1 Verify Page Title
   const title = await page.title();
   console.log('   Page Title:', title);
-  if (title.toLowerCase().includes('openclaw')) {
-    throw new Error(`FAIL: Page title contains OpenClaw: ${title}`);
+  if (title.toLowerCase().includes('zero')) {
+    throw new Error(`FAIL: Page title contains zero: ${title}`);
   }
   console.log('✔ PASSED: Title is cleanly branded as Zero!');
 
@@ -48,16 +48,16 @@ async function runLivePlaywrightVerification() {
   }
   console.log('✔ PASSED: No login gate detected!');
 
-  // 1.3 Shadow DOM & DOM audit for crab SVGs or OpenClaw text
+  // 1.3 Shadow DOM & DOM audit for crab SVGs or zero text
   const audit = await page.evaluate(() => {
     let crabSvgs = 0;
-    const openclawTexts = [];
+    const zero = [];
 
     function inspect(node) {
       if (!node) return;
       if (node.nodeType === Node.TEXT_NODE) {
         const val = node.nodeValue?.trim() || '';
-        if (/openclaw/i.test(val)) openclawTexts.push(val);
+        if (/zero/i.test(val)) zero.push(val);
       }
       if (node.nodeType === Node.ELEMENT_NODE) {
         if (node.tagName.toLowerCase() === 'svg') {
@@ -75,10 +75,10 @@ async function runLivePlaywrightVerification() {
       }
     }
     inspect(document.body);
-    return { crabSvgs, openclawTexts };
+    return { crabSvgs, zero };
   });
 
-  console.log('   Audit Results: Crabs =', audit.crabSvgs, 'OpenClaw Texts =', audit.openclawTexts.length);
+  console.log('   Audit Results: Crabs =', audit.crabSvgs, 'zero Texts =', audit.zero.length);
   if (audit.crabSvgs > 0) {
     throw new Error(`FAIL: Found ${audit.crabSvgs} crab SVGs!`);
   }

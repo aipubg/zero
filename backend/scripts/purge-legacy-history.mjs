@@ -2,8 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 
 const dbs = [
-  "E:/zero/zero-system/state/state/openclaw.sqlite",
-  "E:/zero/zero-system/state/agents/zero/agent/openclaw-agent.sqlite",
+  "E:/zero/zero-system/state/state/zero.sqlite",
+  "E:/zero/zero-system/state/agents/zero/agent/zero-agent.sqlite",
   "",
   "",
 ];
@@ -19,9 +19,9 @@ for (const dbPath of dbs) {
       const res = db.prepare(`
         DELETE FROM audit_events 
         WHERE source_id LIKE '%doctor%' 
-           OR source_id LIKE '%openclaw%' 
-           OR action LIKE '%openclaw%' 
-           OR tool_name LIKE '%openclaw%'
+           OR source_id LIKE '%zero%' 
+           OR action LIKE '%zero%' 
+           OR tool_name LIKE '%zero%'
       `).run();
       console.log(`  audit_events rows deleted:`, res.changes);
     }
@@ -39,13 +39,13 @@ for (const dbPath of dbs) {
     if (tables.includes("session_transcript_fts")) {
       const res = db.prepare(`
         DELETE FROM session_transcript_fts 
-        WHERE text LIKE '%Hi, I%m OpenClaw%'
+        WHERE text LIKE '%Hi, I%m zero%'
            OR text LIKE '%caretaker of this gateway%'
-           OR text LIKE '%OpenClaw 2026%'
-           OR text LIKE '%OpenClaw requires working inference%'
-           OR text LIKE '%OpenClaw heartbeat poll%'
+           OR text LIKE '%zero 2026%'
+           OR text LIKE '%zero requires working inference%'
+           OR text LIKE '%zero heartbeat poll%'
            OR text LIKE '%zero-gateway/default%'
-           OR text LIKE '%the config was edited outside OpenClaw%'
+           OR text LIKE '%the config was edited outside zero%'
       `).run();
       console.log(`  session_transcript_fts greetings deleted:`, res.changes);
     }
@@ -63,7 +63,7 @@ for (const dbPath of dbs) {
     if (tables.includes("diagnostic_events")) {
       const res = db.prepare(`
         DELETE FROM diagnostic_events 
-        WHERE payload_json LIKE '%openclaw%' 
+        WHERE payload_json LIKE '%zero%' 
            OR payload_json LIKE '%node_modules%'
       `).run();
       console.log(`  diagnostic_events cleaned:`, res.changes);
@@ -72,7 +72,7 @@ for (const dbPath of dbs) {
     if (tables.includes("task_runs")) {
       const res = db.prepare(`
         DELETE FROM task_runs 
-        WHERE source_id LIKE '%openclaw%' 
+        WHERE source_id LIKE '%zero%' 
            OR source_id LIKE '%doctor%'
       `).run();
       console.log(`  task_runs cleaned:`, res.changes);

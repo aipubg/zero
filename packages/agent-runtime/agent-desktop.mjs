@@ -62,27 +62,8 @@ export class ZeroDesktop {
         try {
           const result = JSON.parse(stdout.trim());
           if (!result.ok && (command === 'list-windows' || command === 'list-apps')) {
-            try {
-              const Driver = await import('../../app/zero-control-ui/src/computer/windows-driver.js');
-              const fallback = command === 'list-windows' ? await Driver.listWindows(signal) : await Driver.listApps(signal);
-              if (fallback && fallback.ok !== false) {
-                resolve({
-                  version: '2.6',
-                  ok: true,
-                  command,
-                  data: fallback,
-                  backend: 'windows-driver-fallback',
-                  runtimeVersion: ZERO_DESKTOP_VERSION,
-                  verified: true,
-                  completed: true,
-                  outcome: 'COMPLETED',
-                  requiresObservation: false,
-                  observed: true,
-                  evidence: { disposition: { delivery: 'observed_verified', command } }
-                });
-                return;
-              }
-            } catch {}
+            // Single-Room: windows-driver fallback removed; driver consolidated into packages/capability-engine/
+            // No external fallback available; proceed with protocol validation below.
           }
           if (typeof result.ok !== 'boolean' || result.command !== command || (code !== 0 && result.ok)) throw new Error('Invalid desktop protocol response');
           const disposition = result.data?.disposition || result.error?.disposition;

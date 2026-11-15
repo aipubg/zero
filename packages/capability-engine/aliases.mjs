@@ -1,5 +1,5 @@
 ﻿/**
- * Zero AI â€” Canonical Capability Alias Registry
+ * Zero AI — Canonical Capability Alias Registry
  *
  * Every tool name the model may emit resolves to exactly one first-party Zero
  * capability. Aliases exist only at the edge: the engine, audit log and result

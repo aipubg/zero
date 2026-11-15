@@ -69,7 +69,7 @@ Additional client-side routes handled by the SPA router include:
 | `/avatar/*` | Builtin SVG generator | Dynamic Zero avatar icon | `image/svg+xml` | `public, max-age=86400` |
 | `/control-ui-config.json` | Synthetic JSON | Control UI client bootstrap config | `application/json; charset=utf-8` | `no-cache, must-revalidate` |
 | `/plugins/control-ui/*` | `dist/web/plugins/control-ui` | Zero Control UI plugin bundle | `application/javascript`, `text/css` | `public, max-age=31536000, immutable` |
-| `/__openclaw__/plugins/control-ui/*` | `dist/web/__openclaw__/plugins/control-ui` | Legacy plugin bundle namespace | `application/javascript`, `text/css` | `public, max-age=31536000, immutable` |
+| `/__ZERO/plugins/control-ui/*` | `dist/web/__ZERO/plugins/control-ui` | Legacy plugin bundle namespace | `application/javascript`, `text/css` | `public, max-age=31536000, immutable` |
 
 ---
 

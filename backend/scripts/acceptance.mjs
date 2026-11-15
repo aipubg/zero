@@ -32,8 +32,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BACKEND = join(dirname(fileURLToPath(import.meta.url)), "..");
-const CLI = join(BACKEND, "node_modules", "openclaw", "dist", "index.js");
-const STATE_DIR = join(BACKEND, ".openclaw");
+const CLI = join(BACKEND, "node_modules", "zero", "dist", "index.js");
+const STATE_DIR = join(BACKEND, ".zero");
 const CONFIG_PATH = join(BACKEND, "config", "zero.json");
 const DEFAULT_URL = "http://127.0.0.1:18789";
 const EXPECTED_AGENTS = ["zero"];
@@ -62,7 +62,7 @@ function cli(argv, timeoutMs = 30000) {
     encoding: "utf8",
     timeout: timeoutMs,
     maxBuffer: 16 * 1024 * 1024,
-    env: { ...process.env, OPENCLAW_STATE_DIR: STATE_DIR, OPENCLAW_CONFIG_PATH: CONFIG_PATH },
+    env: { ...process.env, zero: STATE_DIR, zero: CONFIG_PATH },
   });
   const stdout = res.stdout ?? "";
   const stderr = res.stderr ?? "";
@@ -207,7 +207,7 @@ async function runHttp() {
     : Array.isArray(models.json?.models)
       ? models.json.models.map((m) => m?.id).filter(Boolean)
       : [];
-  const agents = ids.filter((id) => typeof id === "string" && (id.startsWith("openclaw/") || id === "zero" || id.includes("/")));
+  const agents = ids.filter((id) => typeof id === "string" && (id.startsWith("zero/") || id === "zero" || id.includes("/")));
   const missing = ids.length === 0 ? ["zero"] : [];
   record(
     "A3 agents.present",

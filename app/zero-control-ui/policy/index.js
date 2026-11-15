@@ -38,7 +38,7 @@
 // is taken. Run interruption and gateway.nodes.commands.deny remain the separate emergency layers.
 
 import { readFileSync } from "node:fs";
-import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { buildJsonPluginConfigSchema, definePluginEntry } from "zero/plugin-sdk/plugin-entry";
 
 const PLUGIN_ID = "zero-policy";
 // The exact id passed to registerTrustedToolPolicy. The manifest must declare THIS string.

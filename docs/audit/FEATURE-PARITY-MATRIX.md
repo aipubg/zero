@@ -1,7 +1,7 @@
 # Zero AI — Feature Parity Matrix
 
 **Audit Date:** 2026-11-01  
-**Reference Platform:** OpenClaw (`openclaw/openclaw@2026.10.6`)  
+**Reference Platform:** zero (`zero/zero@2026.10.6`)  
 **Target Platform:** Zero AI Platform  
 **Standard:** 9-column authoritative verification matrix. A capability is marked `COMPLETE` or `WORKING` strictly on functional acceptance tests and verified runtime evidence.
 

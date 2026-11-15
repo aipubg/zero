@@ -4,9 +4,9 @@
 // content outside the managed block is preserved verbatim.
 //
 // Run:
-//   node backend/scripts/sync-zero-instructions.mjs --config <openclaw.json>
+//   node backend/scripts/sync-zero-instructions.mjs --config <zero.json>
 //   node backend/scripts/sync-zero-instructions.mjs --workspace <dir> [--check]
-//   OPENCLAW_CONFIG_PATH=<openclaw.json> node backend/scripts/sync-zero-instructions.mjs
+//   zero=<zero.json> node backend/scripts/sync-zero-instructions.mjs
 
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -65,7 +65,7 @@ export function mergeManagedBlock(existingText, policyText) {
 
 export function resolveWorkspace({ workspace, configPath }) {
   if (workspace) return resolve(workspace);
-  if (!configPath) throw new Error("provide --workspace or --config (or OPENCLAW_CONFIG_PATH)");
+  if (!configPath) throw new Error("provide --workspace or --config (or zero)");
   const full = JSON.parse(readFileSync(resolve(configPath), "utf8"));
   const configured = full?.agents?.entries?.zero?.workspace;
   if (typeof configured !== "string" || configured.trim().length === 0) {
@@ -100,7 +100,7 @@ function main() {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
     console.log(
-      "Usage: node backend/scripts/sync-zero-instructions.mjs --config <openclaw.json> | --workspace <dir> [--check] [--policy <file>] [--json]",
+      "Usage: node backend/scripts/sync-zero-instructions.mjs --config <zero.json> | --workspace <dir> [--check] [--policy <file>] [--json]",
     );
     return;
   }
@@ -111,7 +111,7 @@ function main() {
   try {
     const result = syncZeroInstructions({
       workspace: take("--workspace"),
-      configPath: take("--config") ?? process.env.OPENCLAW_CONFIG_PATH,
+      configPath: take("--config") ?? process.env.zero,
       policyPath: take("--policy") ?? DEFAULT_POLICY,
       check: args.includes("--check"),
     });

@@ -96,7 +96,7 @@ Every task—from opening a browser to multi-step software development—flows t
 
 | Subsystem | Canonical Module Path | Authority & Responsibilities | Prohibited Competing Logic |
 |---|---|---|---|
-| **Host Control Plane** | `services/host/native-gateway.mjs` | Single listener on `18789`; HTTP routes, WebSocket upgrades, lifecycle | No competing gateways on same port; no openclaw daemon wrapper |
+| **Host Control Plane** | `services/host/native-gateway.mjs` | Single listener on `18789`; HTTP routes, WebSocket upgrades, lifecycle | No competing gateways on same port; no zero daemon wrapper |
 | **Security Boundary** | `services/host/security.mjs` | Loopback CORS, DNS rebinding `Host` check, `zero_session` HttpOnly cookie | No wildcard CORS (`*`); no public token exposure in config |
 | **Model Fabric** | `packages/model-fabric/index.mjs` | Multi-model resolution, single-pass streaming, token accounting, retries | No double-inference; no synthetic fake responses |
 | **Agent Runtime** | `packages/agent-runtime/index.mjs` | Agent state, parent-child delegation, dependency graphs, turn execution | No dummy child tasks returning static mock objects |

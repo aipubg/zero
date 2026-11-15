@@ -1352,7 +1352,7 @@
     {
       "id": "phase17:02",
       "file": "test/phase17-production-release.test.mjs",
-      "title": "2. Vacuum backup test & integrity check on openclaw.sqlite",
+      "title": "2. Vacuum backup test & integrity check on zero.sqlite",
       "labels": [
         "INTEGRATION"
       ],

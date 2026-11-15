@@ -3,8 +3,8 @@
  * Zero Host full audit gate.
  *
  * Covers:
- *  1. 100% native DOM: <zero-app> mounted, zero <openclaw-*> tags, zero
- *     OpenClaw/PinchTab/Crabbox strings or external store/community links,
+ *  1. 100% native DOM: <zero-app> mounted, zero <zero-*> tags, zero
+ *     zero/zero/zero strings or external store/community links,
  *     and no "Styles failed to load" banner.
  *  2. Single-room architecture: every tool resolves through
  *     packages/capability-engine, no duplicate RPC switch cases.
@@ -32,7 +32,7 @@ const ROUTES = [
 ];
 
 const FORBIDDEN_VISIBLE = [
-  'OpenClaw', 'openclaw', 'PinchTab', 'pinchtab', 'Crabbox', 'crabbox',
+  'zero', 'zero', 'zero', 'zero', 'zero', 'zero',
   'apps.apple.com', 'play.google.com', 'discord.gg', 'discordapp.com',
   'Styles failed to load',
   'Couldn\'t finish this reply', 'Missing API key',
@@ -68,8 +68,8 @@ function staticChecks() {
     if (!fs.existsSync(manifestPath)) continue;
     const pkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
-    if (deps.openclaw) bad(`${manifest} has no openclaw dependency`, 'openclaw present');
-    else ok(`${manifest} has no openclaw dependency`);
+    if (deps.zero) bad(`${manifest} has no zero dependency`, 'zero present');
+    else ok(`${manifest} has no zero dependency`);
   }
 
   // The vendored UI must exist and be free of upstream tokens.
@@ -86,7 +86,7 @@ function staticChecks() {
         if (!/\.(js|css|html|json|webmanifest|txt|md|svg)$/.test(e.name)) continue;
         const src = fs.readFileSync(f, 'utf8');
         checked++;
-        const hits = src.match(/openclaw|crabbox/i);
+        const hits = src.match(/zero|zero/i);
         if (hits) residual += hits.length;
       }
     };
@@ -200,13 +200,13 @@ async function main() {
             || /rgba?\(\s*(1[0-9][0-9]|2[0-5][0-9])\s*,\s*([0-9]{1,2})\s*,\s*([0-9]{1,2})/.test(cs.color || '');
           if (hit) red.push(t.slice(0, 140));
         }
-        const fallback = document.querySelector('#openclaw-mount-fallback, #zero-mount-fallback, #mount-fallback');
+        const fallback = document.querySelector('#zero-mount-fallback, #zero-mount-fallback, #mount-fallback');
         return {
           text,
           red,
           fallbackVisible: fallback ? fallback.getBoundingClientRect().height > 0 : false,
           overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-          openclawTags: [...document.querySelectorAll('*')].filter(e => e.tagName.toLowerCase().startsWith('openclaw-')).length,
+          zero: [...document.querySelectorAll('*')].filter(e => e.tagName.toLowerCase().startsWith('zero-')).length,
           zeroApp: !!document.querySelector('zero-app'),
           zeroAppVisible: (() => {
             const el = document.querySelector('zero-app');
@@ -237,8 +237,8 @@ async function main() {
       if (state.overflow) bad(`${route} horizontal overflow`);
       else ok(`${route} no horizontal overflow`);
 
-      if (state.openclawTags > 0) bad(`${route} openclaw custom elements`, String(state.openclawTags));
-      else ok(`${route} 0 openclaw custom elements`);
+      if (state.zero > 0) bad(`${route} zero custom elements`, String(state.zero));
+      else ok(`${route} 0 zero custom elements`);
     }
 
     // ---- Native DOM + chat ----

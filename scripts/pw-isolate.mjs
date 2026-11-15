@@ -22,7 +22,7 @@ async function run(label, blockPlugin) {
     const stats = await page.evaluate(() => ({
       nodes: document.querySelectorAll('*').length,
       shell: Boolean(document.querySelector('.zero-shell-header')),
-      app: Boolean(document.querySelector('openclaw-app-shell')),
+      app: Boolean(document.querySelector('zero-app-shell')),
     }));
     console.log(label, 'OK', JSON.stringify(stats));
   } catch (error) {

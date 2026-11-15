@@ -9,8 +9,8 @@
 ## 1. Upstream Runtime Dependency (Directive §3.1)
 
 ### Root Cause
-- `backend/package.json` depends directly on `openclaw@2026.10.6`.
-- `zero-host.ps1` boots the system by invoking `backend/node_modules/.bin/openclaw.cmd gateway --port 18789`.
+- `backend/package.json` depends directly on `zero@2026.10.6`.
+- `zero-host.ps1` boots the system by invoking `backend/node_modules/.bin/zero.cmd gateway --port 18789`.
 - The system is architecturally dependent on the upstream binary for HTTP routing, WebSocket protocol negotiation, session state synchronization, and agent turn loops.
 
 ### Technical & Architectural Impact
@@ -20,7 +20,7 @@
 ### Remediation Path
 1. Establish a native Zero Host service (`services/zero-host/` or `backend/server/`) that directly instantiates the HTTP/WebSocket gateway.
 2. Abstract the Gateway protocol behind Zero-owned service contracts (`packages/gateway-protocol/`).
-3. Transition `zero-host.ps1` to launch `node backend/server/index.mjs` directly without wrapping `openclaw.cmd`.
+3. Transition `zero-host.ps1` to launch `node backend/server/index.mjs` directly without wrapping `zero.cmd`.
 
 ---
 
@@ -48,7 +48,7 @@
 
 ### Root Cause
 - The repository previously ran two conflicting servers:
-  1. Port `18789`: OpenClaw Gateway (served UI, WebSocket RPC, agent transcripts).
+  1. Port `18789`: zero Gateway (served UI, WebSocket RPC, agent transcripts).
   2. Port `18790`: Custom Node HTTP server (`backend/gateway/server.mjs`) serving `/v1/chat/completions` and `/api/gateway/*`.
 - When requests from port 18789 attempted to communicate with port 18790 or vice versa, cross-origin blocks, port mismatch errors, or connection refused errors occurred whenever one service crashed or was restarted separately.
 
@@ -167,8 +167,8 @@
 - `app/src` was deleted during earlier refactorings, but tests were not updated to reflect the new architecture.
 - **Action:** Fix or remove obsolete bridge test references.
 
-### 7.3 Broken Test Fixtures (`openclaw.template.json`)
-- `backend/scripts/test/migrate-zero-only-agents.test.mjs` fails looking for `openclaw.template.json` which was renamed to `zero.template.json`.
+### 7.3 Broken Test Fixtures (`zero.template.json`)
+- `backend/scripts/test/migrate-zero-only-agents.test.mjs` fails looking for `zero.template.json` which was renamed to `zero.template.json`.
 - **Action:** Update test fixture path to point to `zero.template.json`.
 
 ### 7.4 Node.js vs Browser Environment Mismatch (`registry.ts`)

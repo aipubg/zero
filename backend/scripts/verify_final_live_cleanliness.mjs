@@ -16,8 +16,8 @@ async function verifyAll() {
 
   const homeTitle = await page.title();
   console.log('   Page Title:', homeTitle);
-  if (homeTitle.includes('OpenClaw')) {
-    throw new Error(`FAIL: Page title still contains OpenClaw: ${homeTitle}`);
+  if (homeTitle.includes('zero')) {
+    throw new Error(`FAIL: Page title still contains zero: ${homeTitle}`);
   }
   console.log('✔ PASSED: Title is cleanly branded as Zero!');
 

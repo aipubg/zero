@@ -145,7 +145,7 @@ export class MediaController {
 
       // Ensure Chrome window is immediately brought to foreground of Windows desktop
       try {
-        const { bringToFront } = await import('../../app/zero-control-ui/src/computer/windows-driver.js');
+        const { bringToFront } = await import('../capability-engine/windows-driver.mjs');
         await bringToFront('chrome');
       } catch {}
       if (search) {

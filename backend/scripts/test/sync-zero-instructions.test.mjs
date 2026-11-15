@@ -116,7 +116,7 @@ test("malformed or duplicate markers are refused without writing", () => {
 
 test("configured workspace resolves from a temp config and check mode writes nothing", () => {
   const root = workspace();
-  const configPath = join(tempRoot, "openclaw.json");
+  const configPath = join(tempRoot, "zero.json");
   writeFileSync(
     configPath,
     JSON.stringify({ agents: { entries: { zero: { workspace: root } } } }),

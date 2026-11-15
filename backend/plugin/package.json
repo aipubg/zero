@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Zero-owned Gateway plugin: computer hold gate, action budgets, zero.computer.control Gateway method.",
   "main": "index.js",
-  "openclaw": {
+  "zero": {
     "extensions": [
       "./index.js"
     ],

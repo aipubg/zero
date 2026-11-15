@@ -15,8 +15,8 @@ Zero AI maintains durable local-first state within `zero-system/state/`. This pl
 
 | Storage Path | Engine | Purpose | Size / Activity | Preservation Category |
 |---|---|---|---|---|
-| `zero-system/state/state/openclaw.sqlite` | SQLite3 (WAL mode) | Primary operational store (sessions, tasks, cron, preferences, plugins, skills, audit) | ~4.5 MB | **Class E (Crucial User State)** |
-| `zero-system/state/state/openclaw-quarantine.sqlite` | SQLite3 | Isolation store for quarantined jobs/plugins | ~20 KB | **Class E** |
+| `zero-system/state/state/zero.sqlite` | SQLite3 (WAL mode) | Primary operational store (sessions, tasks, cron, preferences, plugins, skills, audit) | ~4.5 MB | **Class E (Crucial User State)** |
+| `zero-system/state/state/zero-quarantine.sqlite` | SQLite3 | Isolation store for quarantined jobs/plugins | ~20 KB | **Class E** |
 | `zero-system/config/zero.json` | JSON | Active system configuration, provider endpoints, keys references | ~4 KB | **Class E** |
 | `zero-system/config/zero.template.json` | JSON | Default bootstrap template | ~4 KB | **Class A** |
 | `models/gateway-providers.json` | JSON | Cloud and local model provider registry | ~12 KB | **Class A** |
@@ -57,8 +57,8 @@ New-Item -ItemType Directory -Path $backupDir -Force
 # Execute SQLite vacuum copy (preserves WAL integrity)
 node -e "
 import { DatabaseSync } from 'node:sqlite';
-const db = new DatabaseSync('zero-system/state/state/openclaw.sqlite');
-db.exec(\`VACUUM INTO '${backupDir.Replace('\\', '/')}/openclaw.backup.sqlite'\`);
+const db = new DatabaseSync('zero-system/state/state/zero.sqlite');
+db.exec(\`VACUUM INTO '${backupDir.Replace('\\', '/')}/zero.backup.sqlite'\`);
 console.log('Safe snapshot created at ${backupDir}');
 "
 ```

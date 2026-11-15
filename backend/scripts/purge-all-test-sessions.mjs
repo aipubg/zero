@@ -2,12 +2,12 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 
 const dbs = [
-  'E:/zero/zero-system/state/state/openclaw.sqlite',
-  'E:/zero/zero-system/state/agents/zero/agent/openclaw-agent.sqlite',
+  'E:/zero/zero-system/state/state/zero.sqlite',
+  'E:/zero/zero-system/state/agents/zero/agent/zero-agent.sqlite',
   "",
   "",
   "",
-  'E:/zero/backend/.openclaw/state/openclaw.sqlite'
+  'E:/zero/backend/.zero/state/zero.sqlite'
 ];
 
 for (const dbPath of dbs) {

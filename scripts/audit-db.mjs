@@ -2,9 +2,9 @@ import fs from 'fs';
 import { DatabaseSync } from 'node:sqlite';
 
 const dbs = [
-  'E:/zero/.zero-data/fresh-workspace/gateway-state/agents/zero/agent/openclaw-agent.sqlite',
-  'E:/zero/.zero-data/fresh-workspace/gateway-state/agents/operator/agent/openclaw-agent.sqlite',
-  'E:/zero/.zero-data/fresh-workspace/gateway-state/agents/researcher/agent/openclaw-agent.sqlite'
+  'E:/zero/.zero-data/fresh-workspace/gateway-state/agents/zero/agent/zero-agent.sqlite',
+  'E:/zero/.zero-data/fresh-workspace/gateway-state/agents/operator/agent/zero-agent.sqlite',
+  'E:/zero/.zero-data/fresh-workspace/gateway-state/agents/researcher/agent/zero-agent.sqlite'
 ];
 
 const uniqueDbs = dbs.filter(p => fs.existsSync(p));

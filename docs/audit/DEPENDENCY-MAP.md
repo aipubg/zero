@@ -23,10 +23,10 @@ flowchart TD
     Root --> Backend
     Root --> Plugin
     
-    App -.->|"depends on"| UpstreamProt["@openclaw/gateway-protocol"]
-    App -.->|"depends on"| UpstreamClient["@openclaw/gateway-client"]
+    App -.->|"depends on"| UpstreamProt["@zero/gateway-protocol"]
+    App -.->|"depends on"| UpstreamClient["@zero/gateway-client"]
     UI -.->|"builds with"| esbuild["esbuild (0.28.2)"]
-    Backend -->|"runtime binary"| UpstreamHost["openclaw (2026.10.6)"]
+    Backend -->|"runtime binary"| UpstreamHost["zero (2026.10.6)"]
     Plugin -.->|"pluginSDK"| UpstreamHost
 ```
 
@@ -34,36 +34,36 @@ flowchart TD
 
 | Package Name | Path | Version | Private | Type | Key Dependencies | Key DevDependencies |
 |---|---|---|---|---|---|---|
-| `zero-app` | `app/package.json` | `0.2.0` | `true` | `module` | `@openclaw/gateway-client@2026.10.6`<br/>`@openclaw/gateway-protocol@2026.10.6`<br/>`zod@3.25.76` | `@types/node@^26.6.3`<br/>`typescript@^6.0.3` |
-| `zero-control-ui` | `app/zero-control-ui/package.json` | `0.1.0` | `true` | `module` | *None (peer: `openclaw@>=2026.10.6`)* | `esbuild@0.28.2` |
-| `zero-backend-runtime` | `backend/package.json` | `0.1.0` | `true` | `module` | `openclaw@2026.10.6` | *None* |
-| `zero-policy` | `backend/plugin/package.json` | `0.1.3` | `true` | `module` | *None (peer: `openclaw@>=2026.10.6`)* | *None* |
+| `zero-app` | `app/package.json` | `0.2.0` | `true` | `module` | `@zero/gateway-client@2026.10.6`<br/>`@zero/gateway-protocol@2026.10.6`<br/>`zod@3.25.76` | `@types/node@^26.6.3`<br/>`typescript@^6.0.3` |
+| `zero-control-ui` | `app/zero-control-ui/package.json` | `0.1.0` | `true` | `module` | *None (peer: `zero@>=2026.10.6`)* | `esbuild@0.28.2` |
+| `zero-backend-runtime` | `backend/package.json` | `0.1.0` | `true` | `module` | `zero@2026.10.6` | *None* |
+| `zero-policy` | `backend/plugin/package.json` | `0.1.3` | `true` | `module` | *None (peer: `zero@>=2026.10.6`)* | *None* |
 
 ---
 
 ## 2. Upstream Runtime Dependency Analysis
 
-### 2.1 The `openclaw` Upstream Dependency Chain
-The platform currently relies on `openclaw@2026.10.6` for its core process execution:
+### 2.1 The `zero` Upstream Dependency Chain
+The platform currently relies on `zero@2026.10.6` for its core process execution:
 1. **Host Execution:** `zero-host.ps1` runs:
    ```powershell
-   & 'E:\zero\backend\node_modules\.bin\openclaw.cmd' gateway --port 18789
+   & 'E:\zero\backend\node_modules\.bin\zero.cmd' gateway --port 18789
    ```
 2. **Plugin SDK Seams:** `backend/plugin/index.js` and `app/zero-control-ui/index.js` import:
    ```javascript
-   import { buildJsonPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+   import { buildJsonPluginConfigSchema, definePluginEntry } from "zero/plugin-sdk/plugin-entry";
    ```
 3. **Internal Dist Patching:** Because the upstream binary contains hardcoded branding and model filters, `backend/scripts/apply-zero-branding.mjs` directly mutates files in:
-   - `backend/node_modules/openclaw/dist/server-start-*.mjs`
-   - `backend/node_modules/openclaw/dist/models-*.mjs`
-   - `zero-system/state/node-runtime/current/node_modules/openclaw/dist/*`
+   - `backend/node_modules/zero/dist/server-start-*.mjs`
+   - `backend/node_modules/zero/dist/models-*.mjs`
+   - `zero-system/state/node-runtime/current/node_modules/zero/dist/*`
 
 ### 2.2 Critical Vulnerabilities of Upstream Coupling
 - **Brittleness:** Any reinstall (`pnpm install`) or package cache eviction completely wipes the runtime patches, causing legacy branding, logos, and broken model listings to instantly reappear.
 - **Node.js Engine Lock:** Upstream requires `node: >=24.22.1 <25 || >=26.12.1`.
 - **Telemetry & Updates:** Requires explicit environment variable suppression:
   ```powershell
-  $env:OPENCLAW_NO_AUTO_UPDATE = '1'
+  $env:zero = '1'
   $env:DO_NOT_TRACK = '1'
   ```
 
@@ -87,7 +87,7 @@ The desktop automation engine relies directly on Windows OS subsystems:
 ### 3.2 Database & Persistence Layer
 - **SQLite Engine (`node:sqlite`):**
   - Node.js 24 native `DatabaseSync` interface.
-  - Used for storing session events, heads, audit records, leases, and device configurations in `zero-system/state/state/openclaw.sqlite`.
+  - Used for storing session events, heads, audit records, leases, and device configurations in `zero-system/state/state/zero.sqlite`.
 - **Local JSON Data Stores:**
   - `models/gateway-providers.json`: Dynamic provider definitions and API credentials.
   - `models/gateway-defaults.json`: Primary model bindings and default agent associations.

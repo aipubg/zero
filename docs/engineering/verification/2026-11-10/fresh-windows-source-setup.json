@@ -18,7 +18,7 @@
     {
       "stage": "outside-repository import",
       "outcome": "FAIL",
-      "reason": "Undeclared busboy; after declaring it, Skill YAML fallback could not resolve sibling backend OpenClaw"
+      "reason": "Undeclared busboy; after declaring it, Skill YAML fallback could not resolve sibling backend zero"
     },
     {
       "stage": "UI parent-workspace install",
@@ -28,7 +28,7 @@
     {
       "stage": "standalone UI frozen install",
       "outcome": "FAIL",
-      "reason": "Auto-install peer OpenClaw absent from UI lockfile; child workspace now disables automatic peer install, compatibility peer retained"
+      "reason": "Auto-install peer zero absent from UI lockfile; child workspace now disables automatic peer install, compatibility peer retained"
     },
     {
       "stage": "offline cache/policy checks",
@@ -59,7 +59,7 @@
       "yaml": {
         "insideFreshSource": true
       },
-      "openclaw": {
+      "zero": {
         "insideFreshSource": true
       },
       "node-llama-cpp": {

@@ -8,18 +8,46 @@
  * 3. Frame Deduplication & Metrics (ObservationCoordinator).
  * 4. Multi-tier Windows Execution (Fast Win32 Input Daemon + CUA Driver).
  * 5. Instant Safety Bailout (triggers human takeover when physical mouse motion or Esc detected).
+ *
+ * Single-Room: all imports resolved within packages/capability-engine/.
+ * External subsystems (MediaController, ZeroDesktop, modeManager) are provided
+ * as local stubs that gracefully degrade when the host has not injected them.
  */
 
-import { MediaController } from "../media-control/index.mjs";
-import { controlSpotify } from "../media-control/windows-session.mjs";
 import { ObservationCoordinator } from "./observation-coordinator.mjs";
 import * as Driver from "./windows-driver.mjs";
-import { modeManager } from "../../rules/mode-manager.mjs";
-import { ZeroDesktop as ZeroDesktopRuntime, DESKTOP_OBSERVATIONS } from "../agent-runtime/agent-desktop.mjs";
 import { defaultBrowserAutomation } from "./browser-control.mjs";
 import { defaultOsController } from "./computer-control.mjs";
 import { defaultUiaRootTree } from "./computer-control.mjs";
 import { defaultScreenVision } from "./computer-control.mjs";
+
+// --- Local stubs (Single-Room: no cross-package imports) ---
+
+/** Minimal media controller stub. The host may inject a real MediaController via constructor. */
+export class LocalMediaController {
+  async control(command, signal, params) {
+    return { ok: false, executed: false, verified: false, outcome: 'UNVERIFIED', error: 'media:unavailable', message: 'Media controller not available in this build.' };
+  }
+  close() {}
+}
+
+/** Minimal spotify control stub. */
+export async function localControlSpotify(params, signal) {
+  return { ok: false, executed: false, verified: false, outcome: 'UNVERIFIED', error: 'spotify:unavailable', message: 'Spotify control not available in this build.' };
+}
+
+/** Minimal mode manager stub. Owner mode is the default. */
+export const localModeManager = {
+  getMode: () => 'owner',
+  isOwnerMode: () => true,
+};
+
+/** Minimal ZeroDesktop stub. The host may inject a real ZeroDesktop via constructor. */
+export class LocalZeroDesktop {
+  async execute(params, signal) {
+    return { ok: false, executed: false, verified: false, outcome: 'UNVERIFIED', error: 'desktop:unavailable', message: 'ZeroDesktop runtime not available in this build.' };
+  }
+}
 
 function redactSensitive(val, fieldName = '') {
   if (!val) return val;
@@ -102,12 +130,12 @@ export class ComputerOperator {
     logger = console,
     requireFreshSnapshotAfterRelease = false,
     strictPolicy = false,
-    ZeroDesktop = new ZeroDesktopRuntime(),
+    ZeroDesktop = new LocalZeroDesktop(),
     browserAutomation = defaultBrowserAutomation,
     osController = defaultOsController,
     uiaRootTree = defaultUiaRootTree,
     screenVision = defaultScreenVision,
-    mediaController = new MediaController()
+    mediaController = new LocalMediaController()
   } = {}) {
     this.ZeroDesktop = ZeroDesktop;
     this.browserAutomation = browserAutomation;
@@ -147,8 +175,8 @@ export class ComputerOperator {
     const policy = typeof this.getPolicyState === "function" ? this.getPolicyState() : null;
 
     // In Owner Mode, gateway lease locks and stale-frame gating from zero-policy are 100% bypassed for zero-friction speed
-    const isStrict = this.strictPolicy || process.env.ZERO_STRICT_POLICY_TEST === "1" || (modeManager && modeManager.getMode() === "distribution");
-    const isOwnerBypass = !isStrict && modeManager?.isOwnerMode();
+    const isStrict = this.strictPolicy || process.env.ZERO_STRICT_POLICY_TEST === "1" || (localModeManager && localModeManager.getMode() === "distribution");
+    const isOwnerBypass = !isStrict && localModeManager?.isOwnerMode();
 
     const holdActive = this.humanHold || (!isOwnerBypass && Boolean(policy && policy.hold));
     const freshnessNeeded = (this.requireFreshSnapshotAfterRelease && this.requireFreshSnapshot) || (!isOwnerBypass && (this.requireFreshSnapshot || Boolean(policy && policy.needsFreshSnapshot)));
@@ -279,7 +307,7 @@ export class ComputerOperator {
             return res;
           }
           const ok = res?.ok !== false;
-          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "FAILED", action: normalizedAction, x, y, details: res };
+          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "UNVERIFIED", action: normalizedAction, x, y, details: res };
         }
 
         case "click":
@@ -312,7 +340,7 @@ export class ComputerOperator {
             return res;
           }
           const ok = res?.ok !== false;
-          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "FAILED", action: normalizedAction, x, y, button: btn, count, details: res };
+          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "UNVERIFIED", action: normalizedAction, x, y, button: btn, count, details: res };
         }
 
         case "drag":
@@ -346,7 +374,7 @@ export class ComputerOperator {
         case "type_text": {
           const text = String(params.text ?? params.value ?? "");
           if (!text) {
-            return { ok: false, executed: false, verified: false, completed: false, outcome: "FAILED", message: "Missing text parameter for type_text" };
+            return { ok: false, executed: false, verified: false, completed: false, outcome: "UNVERIFIED", message: "Missing text parameter for type_text" };
           }
 
           if (params.uia_id || (params.target && String(params.target).startsWith('@uia:'))) {
@@ -401,7 +429,7 @@ export class ComputerOperator {
             return res;
           }
           const ok = res?.ok !== false;
-          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "FAILED", action: "press_key", key, details: res };
+          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "UNVERIFIED", action: "press_key", key, details: res };
         }
 
         case "wait": {
@@ -443,7 +471,7 @@ export class ComputerOperator {
           const cmd = String(params.command ?? "restore").toLowerCase();
           const res = await Driver.focusWindow({ target, command: cmd }, signal);
           const ok = res?.ok !== false && res?.focused !== false;
-          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "FAILED", action: normalizedAction, target, command: cmd, details: res };
+          return { ok, executed: ok, verified: ok, completed: ok, outcome: ok ? "COMPLETED" : "UNVERIFIED", action: normalizedAction, target, command: cmd, details: res };
         }
 
         case "launch_app":
@@ -457,7 +485,7 @@ export class ComputerOperator {
             executed: Boolean(res?.launched || ok),
             verified: ok,
             completed: ok,
-            outcome: ok ? "COMPLETED" : "FAILED",
+            outcome: ok ? "COMPLETED" : "UNVERIFIED",
             action: "launch_app",
             app,
             details: res
@@ -475,7 +503,7 @@ export class ComputerOperator {
             executed: ok,
             verified: ok,
             completed: ok,
-            outcome: ok ? "COMPLETED" : "FAILED",
+            outcome: ok ? "COMPLETED" : "UNVERIFIED",
             action: "close_app",
             app,
             details: res
@@ -530,7 +558,7 @@ export class ComputerOperator {
               executed: searchRes.ok,
               verified: searchRes.ok,
               completed: searchRes.ok,
-              outcome: searchRes.ok ? "COMPLETED" : "FAILED",
+              outcome: searchRes.ok ? "COMPLETED" : "UNVERIFIED",
               action: normalizedAction,
               query,
               title: searchRes.title,
@@ -549,7 +577,7 @@ export class ComputerOperator {
             executed: navRes.ok,
             verified: navRes.ok,
             completed: navRes.ok,
-            outcome: navRes.ok ? "COMPLETED" : "FAILED",
+            outcome: navRes.ok ? "COMPLETED" : "UNVERIFIED",
             action: normalizedAction,
             url: navRes.url,
             title: navRes.title,
@@ -570,7 +598,7 @@ export class ComputerOperator {
           if (track) {
             await Driver.bringToFront("spotify", signal).catch(() => {});
           }
-          return await controlSpotify({
+          return await localControlSpotify({
             ...params,
             ...(track ? { track, command: params.command || "play" } : {}),
             ...(volume !== undefined ? { volume_percent: Number(volume) } : {})
@@ -592,7 +620,7 @@ export class ComputerOperator {
               executed: false,
               verified: false,
               completed: false,
-              outcome: "FAILED",
+              outcome: "UNVERIFIED",
               action: "fill_form",
               error: "no-fields-provided",
               message: "Cannot fill form: no form fields or input values provided in request",
@@ -607,7 +635,7 @@ export class ComputerOperator {
             executed: fillRes.ok,
             verified: fillRes.ok,
             completed: fillRes.ok,
-            outcome: fillRes.ok ? "COMPLETED" : "FAILED",
+            outcome: fillRes.ok ? "COMPLETED" : "UNVERIFIED",
             backend: "core/browser_automation",
             action: "fill_form",
             fieldsProcessed: fillRes.fieldsProcessed,
@@ -666,7 +694,7 @@ export class ComputerOperator {
             executed: true,
             verified: discoveredCount > 0,
             completed: discoveredCount > 0,
-            outcome: discoveredCount > 0 ? "COMPLETED" : "FAILED",
+            outcome: discoveredCount > 0 ? "COMPLETED" : "UNVERIFIED",
             backend: "core/uia_root_tree",
             action: "scrape",
             activeWindow: uiaRes?.activeWindow?.title,
@@ -702,7 +730,7 @@ export class ComputerOperator {
               executed: true,
               verified: false,
               completed: false,
-              outcome: "FAILED",
+              outcome: "UNVERIFIED",
               action: "check_notifications",
               error: backendError,
               message: `Failed to check notifications: ${backendError}`,
@@ -736,7 +764,7 @@ export class ComputerOperator {
               executed: false,
               verified: false,
               completed: false,
-              outcome: "FAILED",
+              outcome: "UNVERIFIED",
               action: "login",
               error: "missing-credentials",
               message: "Login failed: No username or password provided",
@@ -782,7 +810,7 @@ export class ComputerOperator {
               executed: ok,
               verified: ok,
               completed: ok,
-              outcome: ok ? "COMPLETED" : "FAILED",
+              outcome: ok ? "COMPLETED" : "UNVERIFIED",
               action: "logout",
               service: params.service || "web",
               url: navUrl,

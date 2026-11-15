@@ -21,9 +21,9 @@ const TEMPLATE = join(BACKEND, "config", "zero.template.json");
 const PLUGIN_DIR = join(BACKEND, "plugin");
 const GATEWAY_PORT = 18789;
 
-const OPENCLAW_ENGINES = ">=24.22.1 <25 || >=26.12.1"; // upstream/openclaw/package.json:2478-2479 at pin 0132405
+const zero = ">=24.22.1 <25 || >=26.12.1"; // upstream/zero/package.json:2478-2479 at pin 0132405
 const MIN_FREE_GB = 4;
-const ENV_KEYS = ["OPENCLAW_GATEWAY_TOKEN"];
+const ENV_KEYS = ["zero"];
 
 const results = [];
 function record(id, status, detail, hint) {
@@ -84,7 +84,7 @@ async function main() {
   record(
     "node.version",
     nodeOk ? "pass" : "fail",
-    `${process.version} (Zero requires ${OPENCLAW_ENGINES})`,
+    `${process.version} (Zero requires ${zero})`,
     nodeOk ? undefined : "install a supported Node before the GO",
   );
 
@@ -110,8 +110,8 @@ async function main() {
   record("gateway.port", freePort ? "pass" : "warn", `tcp ${GATEWAY_PORT} ${freePort ? "free" : "IN USE"}`, freePort ? undefined : "another process owns the port; stop it or change gateway.port");
 
   // 7. install state
-  const installed = existsSync(join(BACKEND, "node_modules", "openclaw"));
-  record("runtime.installed", installed ? "pass" : "warn", installed ? "node_modules/openclaw present" : "not installed (expected before the GO)");
+  const installed = existsSync(join(BACKEND, "node_modules", "zero"));
+  record("runtime.installed", installed ? "pass" : "warn", installed ? "node_modules/zero present" : "not installed (expected before the GO)");
 
   // 8. template
   let template = null;
@@ -272,11 +272,11 @@ async function main() {
 
   try {
     const pkg = JSON.parse(readFileSync(join(PLUGIN_DIR, "package.json"), "utf8"));
-    const floor = pkg?.openclaw?.compat?.pluginApi;
+    const floor = pkg?.zero?.compat?.pluginApi;
     record(
       "plugin.compatFloor",
       typeof floor === "string" && floor.startsWith(">=") ? "pass" : "warn",
-      floor ? `openclaw.compat.pluginApi=${floor}` : "not declared",
+      floor ? `zero.compat.pluginApi=${floor}` : "not declared",
       floor ? undefined : "declare the plugin API floor so a future host cannot load this plugin silently",
     );
   } catch (err) {
@@ -288,7 +288,7 @@ async function main() {
     const v = process.env[k];
     return `${k}:${v ? `set(${v.length})` : "unset"}`;
   });
-  const haveGatewayToken = Boolean(process.env.OPENCLAW_GATEWAY_TOKEN);
+  const haveGatewayToken = Boolean(process.env.zero);
   record(
     "env.gatewayToken",
     haveGatewayToken ? "pass" : "warn",

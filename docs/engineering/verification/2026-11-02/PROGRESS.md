@@ -511,7 +511,7 @@ newer combined local-vision pipeline or all subprocess resource accounting.
 
 External executable plugin remains OPEN. The current SDK requires a Zero
 manifest and executable named handlers; bundled System Tools lifecycle evidence
-does not demonstrate compatibility with arbitrary OpenClaw community packages.
+does not demonstrate compatibility with arbitrary zero community packages.
 
 Browser acceptance reporting now classifies every selected workflow separately.
 An unknown workflow name fails before execution rather than inheriting a broad
@@ -865,7 +865,7 @@ independent filesystem content verification including Hindi/Unicode, and owned
 process shutdown. Package version/tarball integrity are recorded from the actual
 installed package/lockfile. No new fixture package substitutes for the external
 executable. Plugin adapter registration, enable/disable, persisted restart,
-uninstall and current-UI lifecycle remain OPEN. OpenClaw plugin-format coverage
+uninstall and current-UI lifecycle remain OPEN. zero plugin-format coverage
 is not claimed by this MCP transport result.
 
 Executable MCP packages now integrate with the real PluginManager. Installation
@@ -876,7 +876,7 @@ handlers and closes the owned process; enable starts its real executable. Restor
 copies the installed source and respects disabled state without launching a
 disabled server. Invalid/missing tool results fail explicitly; returned successful
 tool output remains verified:false until independently checked. This adapter is
-for executable MCP packages, not arbitrary OpenClaw extension compatibility.
+for executable MCP packages, not arbitrary zero extension compatibility.
 
 [external-mcp-plugin-manager.json](external-mcp-plugin-manager.json) passes real
 official filesystem package registration, handler file effect, manager reopen,
@@ -1526,7 +1526,7 @@ is still live; this source change is not hot-loaded or a 24-hour sign-off.
 Backend now pins node-llama-cpp 3.22.2 with its optional Windows x64 CPU binary,
 and explicitly pins the existing CUA SDK 0.32.0/Windows platform binary so native
 feature dependencies are declared instead of relying solely on transitive hoisting.
-OpenClaw remains pinned 2026.10.6. GPU probing uses installed prebuilt binaries;
+zero remains pinned 2026.10.6. GPU probing uses installed prebuilt binaries;
 CPU fallback has a two-thread budget and missing runtime never triggers an
 unbounded source compilation inside a user task. GPU execution is not certified.
 
@@ -1741,7 +1741,7 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Started instrumented same strict real UI recall run; ongoing process handle to inspect next, not a PASS claim. Need diagnose receipt/lifecycle matching before changing product behavior. Earlier failure screenshot and exact tool effect retained.
 
 ### Stable transcript identity unblocks second real UI send; strict recall still FAIL
-- Prior run1793678289221 confirmed statusok/active-idle fields alone did not clear queue; failure preserved. Actual frontend transcript identity parser treats messages without __openclaw identity as pending placeholders.
+- Prior run1793678289221 confirmed statusok/active-idle fields alone did not clear queue; failure preserved. Actual frontend transcript identity parser treats messages without __zero identity as pending placeholders.
 - Added nullable run_id column by additive session migration, persist user/final assistant run IDs, expose stable id/seq/runId/idempotencyKey in history and final event. Existing rows retain content and IDs; no deleted/rewritten user records. Completed successful RPC explicitly statusok; history reports actual activeTurns state.
 - Six session/migration leaves PASS including actual preexisting SQLite schema -> migration -> old Hindi content preservation -> saved run identity -> close/reopen persistence.
 - Actual browser1793693146417: TWO chat.send requests and TWO final/ok RPC receipts observed, proving queue now advances to second model turn. Correct tool-result SHA recalled, but model emitted extra prose and repeated write_file, so strict entire suite FAIL retained. No semantic/no-replay acceptance claimed.
@@ -1749,7 +1749,7 @@ Original endurance PID 16744 remains live with matching start identity at about
 - Runner integrity VALID. Remaining strict local recall/tool replay behavior, full voice and external/endurance/master acceptance stay open.
 
 ### Consecutive real cloud UI sends and durable transcript identity verified
-- Extended --external workflow to send TWO exact-answer messages on same page, require actual second gateway response, match user/final assistant __openclaw.runId to receipt, assert inactive history and preserve both after reload. Existing restart/replay checks still run.
+- Extended --external workflow to send TWO exact-answer messages on same page, require actual second gateway response, match user/final assistant __zero.runId to receipt, assert inactive history and preserve both after reload. Existing restart/replay checks still run.
 - First run1793693309266 FAIL atsecond60s test deadline. Trace shows TWO actual chat.send requests but onlyfirst response before test teardown: UI queue delivered second request, external model completion remained unobserved. This is not reclassified as queue failure or successful provider execution.
 - Increased second-response observation window90s to cover backend60s idle deadline/transport cleanup, no relaxed reply assertions. Rerun1793693423410 PASS including exact first/second reply, durable IDs, reload and actual process restart/replay without original execution duplication. Requests completed quickly in rerun; first failed artifact retained.
 - Five session/receipt/tool continuity integration-contract leaves PASS. Runner SHA/scope updated; integrity VALID. No claim of provider endurance or local exact-hash/no-tool recall acceptance.
