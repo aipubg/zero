@@ -29,15 +29,15 @@ export class UnifiedAgentLoop {
    */
   async getCoreDiagnostic() {
     const [screenStatus, uiaStatus, osStatus, browserStatus] = await Promise.all([
-      this.screenVision.getStatus().catch(err => ({ healthy: false, module: 'core/perception/screen_vision', error: err.message })),
-      this.uiaTree.getStatus().catch(err => ({ healthy: false, module: 'core/perception/uia_root_tree', error: err.message })),
-      this.osController.getStatus().catch(err => ({ healthy: false, module: 'core/execution/os_controller', error: err.message })),
-      this.browserAutomation.getStatus().catch(err => ({ healthy: false, module: 'core/execution/browser_automation', error: err.message })),
+      this.screenVision.getStatus().catch(err => ({ healthy: false, module: 'packages/capability-engine/screen-vision', error: err.message })),
+      this.uiaTree.getStatus().catch(err => ({ healthy: false, module: 'packages/capability-engine/uia-root-tree', error: err.message })),
+      this.osController.getStatus().catch(err => ({ healthy: false, module: 'packages/capability-engine/os-controller', error: err.message })),
+      this.browserAutomation.getStatus().catch(err => ({ healthy: false, module: 'packages/capability-engine/browser-automation', error: err.message })),
     ]);
 
     const loopStatus = {
       healthy: true,
-      module: 'core/agent/unified_loop',
+      module: 'packages/capability-engine/unified-loop',
       status: 'online',
       architecture: 'Microsoft Agent Framework (Observe -> Plan -> Act -> Verify)',
       maxSteps: this.maxSteps,

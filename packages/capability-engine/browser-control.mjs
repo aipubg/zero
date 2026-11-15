@@ -58,7 +58,7 @@ export class BrowserAutomationEngine {
 
       return {
         healthy: true,
-        module: 'core/execution/browser_automation',
+        module: 'packages/capability-engine/browser-control',
         status: isAlive ? 'online' : 'standby',
         engine: 'native-cdp-ax',
         inProcess: true,
@@ -77,7 +77,7 @@ export class BrowserAutomationEngine {
     } catch (err) {
       return {
         healthy: false,
-        module: 'core/execution/browser_automation',
+        module: 'packages/capability-engine/browser-control',
         status: 'degraded',
         error: err.message,
       };

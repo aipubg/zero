@@ -122,12 +122,15 @@ function staticChecks() {
     else bad(`packages/capability-engine/${file} exists`, 'missing');
   }
 
-  // The legacy tool folders must be gone.
+  // The legacy tool folders must be gone (core/ was migrated to packages/capability-engine/).
   for (const dir of ['core/execution', 'core/perception', 'core/agent']) {
     const p = path.join(ROOT, dir);
-    const leftovers = fs.existsSync(p) ? fs.readdirSync(p) : [];
-    if (!leftovers.length) ok(`${dir} is empty`);
-    else bad(`${dir} is empty`, leftovers.join(', '));
+    if (!fs.existsSync(p)) ok(`${dir} does not exist (migrated)`);
+    else {
+      const leftovers = fs.readdirSync(p);
+      if (!leftovers.length) ok(`${dir} is empty`);
+      else bad(`${dir} has leftovers`, leftovers.join(', '));
+    }
   }
 }
 

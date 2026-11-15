@@ -41,6 +41,10 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Launch an application on Windows desktop (e.g. notepad, calc, chrome).',
     allowedActions: ['open_app', 'launch_app'],
   },
+  'spotify_control': {
+    description: 'Control Spotify on Windows: search and play songs, pause, resume, change tracks, or set volume.',
+    allowedActions: ['play', 'pause', 'next', 'previous', 'set_volume', 'status', 'search', 'play_track'],
+  },
 });
 
 export class CapabilityEngine {

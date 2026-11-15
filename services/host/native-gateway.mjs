@@ -332,10 +332,12 @@ export class ZeroNativeHost {
     tool('memory_remember', 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.', { type: 'object', properties: { content: { type: 'string' }, layer: { type: 'string', enum: Object.values(MEMORY_LAYERS), default: 'semantic' } }, required: ['content'] }, args => ({ memory: this.unifiedMemory.remember({ layer: 'semantic', ...args }) }));
     tool('screen_context', 'Retrieve real local screen observations; may be empty when observation is stopped.', { type: 'object', properties: { query: { type: 'string' } } }, args => this.screenObserver.queryContext(args.query));
     tool('see_screen', 'Inspect what is currently displayed on the user desktop or browser screen. Returns active window title, on-screen text via OCR, interactive UI elements, and screen dimensions.', { type: 'object', properties: { query: { type: 'string', description: 'Optional text query to find specific elements or text on screen' } } }, async (args, signal) => {
+      const agentId = 'zero';
       let windowState = null;
       let windowError = null;
       try {
-        windowState = await canonicalCapabilityEngine.operator.execute('get_window_state', {}, signal);
+        const ws = await canonicalCapabilityEngine.execute({ agentId, toolName: 'zero_computer_action', args: { action: 'get_window_state' }, signal });
+        windowState = ws?.result ?? null;
       } catch (err) {
         windowError = err.message;
       }
@@ -349,17 +351,19 @@ export class ZeroNativeHost {
         captureError = err.message;
       }
 
-      const screenSizeRes = await canonicalCapabilityEngine.operator.execute('get_screen_size', {}, signal).catch(() => null);
-      const screenWidth = screenSizeRes?.width || screenSizeRes?.screen?.width || null;
-      const screenHeight = screenSizeRes?.height || screenSizeRes?.screen?.height || null;
-      const screenDpi = screenSizeRes?.dpi || null;
+      const screenSizeRes = await canonicalCapabilityEngine.execute({ agentId, toolName: 'zero_computer_action', args: { action: 'get_screen_size' }, signal }).catch(() => null);
+      const screenSizeResult = screenSizeRes?.result ?? null;
+      const screenWidth = screenSizeResult?.width || screenSizeResult?.screen?.width || null;
+      const screenHeight = screenSizeResult?.height || screenSizeResult?.screen?.height || null;
+      const screenDpi = screenSizeResult?.dpi || null;
 
       const context = this.screenObserver.queryContext(args.query || '');
       let elements = [];
       try {
-        const uiaRes = await canonicalCapabilityEngine.operator.execute('get_elements', {}, signal);
-        if (uiaRes?.ok && Array.isArray(uiaRes.elements)) {
-          elements = uiaRes.elements
+        const uiaRes = await canonicalCapabilityEngine.execute({ agentId, toolName: 'zero_computer_action', args: { action: 'get_elements' }, signal });
+        const uiaResult = uiaRes?.result ?? null;
+        if (uiaResult?.ok && Array.isArray(uiaResult.elements)) {
+          elements = uiaResult.elements
             .filter(e => Number.isFinite(e.centerX) && Number.isFinite(e.centerY) && e.centerX >= 0 && e.centerY >= 0)
             .slice(0, 40)
             .map(e => ({ name: e.name, type: e.controlType, x: e.centerX, y: e.centerY }));
@@ -2017,10 +2021,11 @@ export class ZeroNativeHost {
         if (params?.probe === true) {
           try {
             windowState = await withTimeout(
-              canonicalCapabilityEngine.operator.execute('get_window_state', {}),
+              canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action: 'get_window_state' } }),
               OBSERVATION_STATE_TIMEOUT_MS,
               null,
             );
+            windowState = windowState?.result ?? null;
           } catch {}
         }
         const observerTelemetry = this.screenObserver.getStatus();

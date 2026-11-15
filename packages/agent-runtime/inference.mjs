@@ -30,62 +30,7 @@ export function requireCompletedChoice(choice, label, { allowTools = false } = {
   return choice.message;
 }
 
-const CANONICAL_TOOL_SCHEMAS = {
-  zero_computer_action: {
-    type: 'object',
-    required: ['action'],
-    properties: {
-      action: { type: 'string', enum: ['open_app', 'close_app', 'type_text', 'press_key', 'mouse_move', 'left_click', 'right_click', 'double_click', 'scroll', 'get_elements', 'focus_window', 'list_windows', 'list_apps', 'get_window_state', 'get_screen_size', 'fill_form', 'scrape', 'get_content', 'play', 'browser', 'open_url', 'spotify_control', 'login', 'logout', 'submit', 'submit_form'] },
-      app: { type: 'string' },
-      text: { type: 'string' },
-      key: { type: 'string' },
-      x: { type: 'number' },
-      y: { type: 'number' },
-      target: { type: 'string' },
-      url: { type: 'string' },
-      query: { type: 'string' },
-      fields: { type: 'object' },
-      username: { type: 'string' },
-      password: { type: 'string' },
-      volume_percent: { type: 'number' },
-      playback_rate: { type: 'number' },
-    },
-  },
-  browser: {
-    type: 'object',
-    properties: {
-      action: { type: 'string', enum: ['open_url', 'navigate', 'search', 'play', 'fill_form', 'scrape', 'get_content', 'check_notifications', 'login', 'logout', 'submit', 'submit_form'] },
-      url: { type: 'string' },
-      query: { type: 'string' },
-      fields: { type: 'object' },
-      username: { type: 'string' },
-      password: { type: 'string' },
-      volume_percent: { type: 'number' },
-      playback_rate: { type: 'number' },
-    },
-  },
-  open_app: {
-    type: 'object',
-    required: ['app'],
-    properties: {
-      app: { type: 'string' },
-    },
-  },
-  web_search: {
-    type: 'object',
-    required: ['query'],
-    properties: {
-      query: { type: 'string' },
-    },
-  },
-  read_file: {
-    type: 'object',
-    required: ['path'],
-    properties: {
-      path: { type: 'string' },
-    },
-  },
-};
+import { CAPABILITY_DEFINITIONS } from '../capability-engine/index.mjs';
 
 export async function executeSpecialist(orchestrator, subtask, context) {
   const { modelFabric, capabilityEngine, researchEngine, sm } = orchestrator;
@@ -104,14 +49,14 @@ export async function executeSpecialist(orchestrator, subtask, context) {
   for (const name of subtask.tools || []) {
     const custom = capabilityEngine?.customCapabilities?.get(name);
     let handler;
-    let parameters = custom?.parameters || CANONICAL_TOOL_SCHEMAS[name] || { type: 'object' };
+    let parameters = custom?.parameters || CAPABILITY_DEFINITIONS[name] || { type: 'object' };
     if (capabilityEngine && (custom || ['zero_computer_action', 'browser', 'open_app'].includes(name))) {
       handler = (args) => capabilityEngine.execute({ agentId: subtask.agentId, toolName: name, args, signal });
     } else if (name === 'web_search' && researchEngine?.searchEngine) {
-      parameters = CANONICAL_TOOL_SCHEMAS.web_search;
+      parameters = { type: 'object', required: ['query'], properties: { query: { type: 'string' } } };
       handler = (args) => researchEngine.searchEngine.search(args.query, { ...args, signal });
     } else if (name === 'read_file' && researchEngine?.fileOps) {
-      parameters = CANONICAL_TOOL_SCHEMAS.read_file;
+      parameters = { type: 'object', required: ['path'], properties: { path: { type: 'string' } } };
       handler = (args) => researchEngine.fileOps.readFile(args.path, { ...args, signal });
     }
     if (handler && !handlers.has(name)) {
