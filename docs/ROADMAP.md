@@ -46,11 +46,21 @@ Status values: `done`, `partial`, `todo`.
   control whose name loosely matched and type into it.
 - `done` A screen frame goes to a vision model once, as an image, instead of
   also being pasted into the text of the tool result.
-- `todo` Retire `backend/gateway/server.mjs` (1710 lines). It still serves
-  `/v1/chat/completions`, `/v1/models`, `/api/gateway/*` and
-  `/api/zero/{media,computer,tasks,memory,automation}`, and it creates its
-  own task, memory and automation stores next to the host's. Move each route
-  onto the host's stores, then delete the file.
+- `done` `backend/gateway/server.mjs` retired. The routes still in use
+  (`/health`, `/v1/models`, `/v1/chat/completions`, `/api/gateway/proxy`,
+  `/api/gateway/local-gguf/*`) moved to `services/host/model-http-api.mjs`.
+  Removed with it: a third agent loop inside `/v1/chat/completions` that ran
+  computer actions for any local caller, the unauthenticated
+  `/api/zero/computer` and `/api/zero/media` control routes, and a second
+  set of task, memory and automation stores on the same database files.
+  `/v1/chat/completions` is now a plain model proxy and uses the same API
+  key resolution as the assistant.
+- `todo` `/health/readiness` and `/health/features` return fixed text, not
+  measured state.
+- `todo` Unknown `GET /api/...` paths fall through to the UI page instead of
+  a 404.
+- `todo` The remaining `backend/gateway/*.ts` files (client, sdk, registry,
+  hooks, cache, telemetry) are only used by each other; confirm and remove.
 - `todo` The keyboard-destination rule lives in the gateway loop; move it
   into the engine so RPC callers get it too.
 

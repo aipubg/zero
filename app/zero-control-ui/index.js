@@ -1,7 +1,7 @@
 import { buildJsonPluginConfigSchema, definePluginEntry } from "zero/plugin-sdk/plugin-entry";
 import { OBSERVATION_CONFIG_SCHEMA } from "./observation/config.mjs";
 import { registerZeroUiRuntime } from "./runtime-core.mjs";
-import { handleZeroGatewayRequest } from "../../backend/gateway/server.mjs";
+import { handleModelHttpRequest } from "../../services/host/model-http-api.mjs";
 import {
   POLICY_ID,
   CONFIG_JSON_SCHEMA as POLICY_JSON_SCHEMA,
@@ -72,7 +72,6 @@ export default definePluginEntry({
         { path: "/v1/chat/completions", match: "prefix" },
         { path: "/v1/models", match: "prefix" },
         { path: "/api/gateway", match: "prefix" },
-        { path: "/api/zero", match: "prefix" },
       ];
       for (const r of routes) {
         try {
@@ -81,7 +80,7 @@ export default definePluginEntry({
             match: r.match,
             auth: "plugin",
             handler: async (req, res) => {
-              const handled = await handleZeroGatewayRequest(req, res);
+              const handled = await handleModelHttpRequest(req, res);
               return Boolean(handled);
             },
           });

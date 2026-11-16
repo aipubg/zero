@@ -71,7 +71,7 @@ import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/capabilit
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
 import { createScreenObserver } from '../../packages/screen-intelligence/index.mjs';
-import { handleZeroGatewayRequest } from '../../backend/gateway/server.mjs';
+import { handleModelHttpRequest } from './model-http-api.mjs';
 import os from 'node:os';
 import {
   isValidLoopbackHost,
@@ -540,8 +540,8 @@ export class ZeroNativeHost {
         } else { res.statusCode = 405; res.end(JSON.stringify({ ok: false, error: 'Method not allowed' })); }
         return;
       }
-      // 1. Dispatch Zero Gateway API routes
-      const handled = await handleZeroGatewayRequest(req, res);
+      // 1. Model HTTP routes (/health, /v1/*, /api/gateway/proxy, /api/gateway/local-gguf)
+      const handled = await handleModelHttpRequest(req, res);
       if (handled) return;
 
       const urlRaw = req.url || '/';
