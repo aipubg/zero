@@ -3,8 +3,8 @@
  * Controls browser-based media playback (YouTube, HTML5 media elements).
  */
 
-import fs from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
+import { defaultBrowserAutomation } from './browser-control.mjs';
 
 export const MEDIA_COMMANDS = Object.freeze(['play','pause','play_pause','volume_up','volume_down','set_volume','set_speed','mute','unmute','next','next_track','skip','prev','previous','fullscreen','focus']);
 const commands = new Set(MEDIA_COMMANDS);
@@ -17,33 +17,21 @@ function settings(options) {
   return { volume, speed };
 }
 
-/** Controls only the visible browser page created by this instance. */
+/**
+ * Controls media on the page of Zero's own browser — the same window and
+ * signed-in profile the browser tool uses, so a video opened there can be
+ * played, paused, sped up or made full screen.
+ */
 export class MediaController {
-  constructor({ executablePath } = {}) {
-    this.executablePath = executablePath;
-    this.browser = null; this.page = null; this.busy = false;
+  constructor({ browser = defaultBrowserAutomation } = {}) {
+    this.automation = browser;
+    this.page = null; this.busy = false;
   }
 
+  /** Attach to the page Zero's browser currently shows (starting it if needed). */
   async _launch() {
-    if (this.browser?.isConnected()) return;
-    const { chromium } = await import('../../backend/node_modules/playwright-core/index.mjs');
-    const executablePath = this.executablePath || [
-      'C:/Program Files/Google/Chrome/Application/chrome.exe',
-      'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-    ].find(candidate => fs.existsSync(candidate));
-    if (!executablePath) throw new Error('A supported installed Chrome or Edge browser is required for media playback');
-    this.browser = await chromium.launch({
-      executablePath,
-      headless: false,
-      timeout: 15000,
-      args: [
-        '--start-maximized',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-blink-features=AutomationControlled',
-      ],
-    });
-    this.browser.on('disconnected', () => { this.browser = null; this.page = null; });
+    const { page } = await this.automation.ensureConnected();
+    this.page = page;
   }
 
   async _run(action, signal, operation) {
@@ -51,7 +39,7 @@ export class MediaController {
     this.busy = true;
     this.effectStarted = false;
     const combined = AbortSignal.any([AbortSignal.timeout(45000), ...(signal ? [signal] : [])]);
-    const abort = () => { void this.page?.close().catch(() => {}); };
+    const abort = () => {};
     combined.addEventListener('abort', abort, { once: true });
     try { combined.throwIfAborted(); return await operation(combined); }
     catch (error) {
@@ -59,13 +47,13 @@ export class MediaController {
         error: 'media:execution-failed', message: error.message, audioAudible: 'UNVERIFIED' };
     } finally {
       combined.removeEventListener('abort', abort);
-      if (combined.aborted) await this.close();
       this.busy = false;
     }
   }
 
   async _media() {
-    if (!this.page || this.page.isClosed()) throw new Error('No ZERO-owned media page is open; start playback through ZERO first');
+    if (this.automation.isAlive()) this.page = this.automation.page;
+    if (!this.page || this.page.isClosed()) throw new Error("Zero's browser has no page open; open the video with the browser tool first");
     await this.page.locator('video, audio').first().waitFor({ state: 'attached', timeout: 15000 });
     const main = this.page.locator('#movie_player video.html5-main-video');
     if (await main.count() === 1) return main;
@@ -128,28 +116,28 @@ export class MediaController {
     return this._run('play', signal, async combined => {
       let { url = '', query = '' } = options;
       const requested = settings(options);
-      if (!url && !query.trim()) throw new Error('A media URL or search query is required');
+      const notifications = options.notifications === true || options.notification === true;
+      if (!url && !query.trim() && !notifications) throw new Error('A media URL or search query is required');
       let target = new URL(url || `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`);
       if (!['http:','https:'].includes(target.protocol) || target.username || target.password) throw new Error('Media URL must be HTTP or HTTPS without embedded credentials');
       const youtube = /^(www\.|m\.|music\.)?youtube\.com$/.test(target.hostname);
-      const search = youtube && !(/^\/(watch|shorts\/|embed\/)/.test(target.pathname));
+      if (notifications && !youtube) throw new Error('YouTube notification playback requires a YouTube URL or query');
+      const search = youtube && !notifications && !(/^\/(watch|shorts\/|embed\/)/.test(target.pathname));
       if (search) target = new URL(`https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim() || target.searchParams.get('search_query') || 'latest official music video')}`);
-      await this._launch(); combined.throwIfAborted();
-      if (!this.page || this.page.isClosed()) {
-        const contexts = this.browser.contexts();
-        const context = contexts.length ? contexts[0] : await this.browser.newContext({ viewport: null });
-        this.page = await context.newPage();
-      }
+      await this._launch();
       combined.throwIfAborted(); this.effectStarted = true;
-      await this.page.bringToFront();
-      await this.page.goto(target.href, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      let notificationSelection = null;
+      if (notifications) {
+        notificationSelection = await this.automation.openYouTubeNotificationVideo({ query });
+        this.page = this.automation.page;
+      } else {
+        await this.page.bringToFront();
+        await this.page.goto(target.href, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      }
       combined.throwIfAborted();
 
       // Ensure Chrome window is immediately brought to foreground of Windows desktop
-      try {
-        const { bringToFront } = await import('./windows-driver.mjs');
-        await bringToFront('chrome');
-      } catch {}
+      await this.automation.bringToForeground();
       if (search) {
         const result = this.page.locator('ytd-video-renderer a#video-title[href*="watch?v="]').first();
         await result.waitFor({ state: 'visible', timeout: 15000 });
@@ -188,7 +176,12 @@ export class MediaController {
           if (values.speed !== undefined) element.playbackRate = values.speed;
         }, requested);
       }
-      return this._result('play', 'play', media, before, 'play', combined, requested);
+      const result = await this._result('play', 'play', media, before, 'play', combined, requested);
+      return notificationSelection ? {
+        ...result,
+        notificationSelection: notificationSelection.source,
+        ...(notificationSelection.fallbackReason ? { notificationFallbackReason: notificationSelection.fallbackReason } : {}),
+      } : result;
     });
   }
 
@@ -224,14 +217,23 @@ export class MediaController {
           if (desired === 'volume_down') element.volume = Math.max(0, Math.round((element.volume - 0.1) * 100) / 100);
           if (desired === 'set_volume') element.volume = values.volume / 100;
           if (desired === 'set_speed') element.playbackRate = values.speed;
-          if (desired === 'fullscreen') await element.requestFullscreen();
+          if (desired === 'fullscreen') await element.requestFullscreen().catch(() => {});
         }, { desired: expected, values: requested });
+        if (command === 'fullscreen' && !await media.evaluate(element => Boolean(document.fullscreenElement && document.fullscreenElement.contains(element)))) {
+          const fullscreenButton = this.page.locator('.ytp-fullscreen-button').first();
+          if (await fullscreenButton.isVisible().catch(() => false)) {
+            await fullscreenButton.click({ timeout: 5000 });
+          } else {
+            await this.page.keyboard.press('f');
+          }
+        }
       }
       return this._result('media_control', command, await this._media(), before, expected, combined, requested);
     });
   }
 
-  async close() { const browser = this.browser; this.browser = null; this.page = null; await browser?.close(); }
+  /** The browser belongs to the browser tool; only detach from it. */
+  async close() { this.page = null; }
 }
 
 export const defaultMediaController = new MediaController();

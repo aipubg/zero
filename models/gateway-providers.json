@@ -1,23 +1,5 @@
 [
   {
-    "id": "google",
-    "name": "google",
-    "api": "openai-completions",
-    "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/",
-    "models": [
-      {
-        "id": "models/gemini-flash-lite-latest",
-        "name": "Gemini Flash Lite Latest",
-        "reasoning": false,
-        "image": true
-      }
-    ],
-    "apiKey": "env:GEMINI_API_KEY",
-    "apiKeys": [
-      "env:GEMINI_API_KEY"
-    ]
-  },
-  {
     "id": "nv",
     "name": "nv",
     "api": "openai-completions",
@@ -26,24 +8,6 @@
       {
         "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
         "name": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-        "reasoning": false,
-        "image": false
-      },
-      {
-        "id": "minimaxai/minimax-m3.1-flash",
-        "name": "minimaxai/minimax-m3.1-flash",
-        "reasoning": false,
-        "image": false
-      },
-      {
-        "id": "openai/gpt-oss-20b",
-        "name": "openai/gpt-oss-20b",
-        "reasoning": false,
-        "image": false
-      },
-      {
-        "id": "deepseek-ai/deepseek-v4.1-flash",
-        "name": "deepseek-ai/deepseek-v4.1-flash",
         "reasoning": false,
         "image": false
       }

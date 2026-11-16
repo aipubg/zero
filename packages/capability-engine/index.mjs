@@ -11,6 +11,7 @@
 
 import { ComputerOperator } from './computer-operator.mjs';
 import { CAPABILITY_ALIASES, resolveCapabilityAlias } from './aliases.mjs';
+import os from 'node:os';
 
 export const DESKTOP_OBSERVATIONS = new Set([
   'status', 'version', 'snapshot', 'find', 'get', 'is', 'list-apps', 'list-windows',
@@ -28,7 +29,7 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Execute native Windows OS actions: open_app, type_text, press_key, mouse_move, left_click, scroll, wait, screenshot, list_windows, list_apps, get_window_state, get_screen_size, play, open_url, fill_form, scrape, get_content, check_notifications, login, logout.',
     allowedActions: [
       'desktop',
-      'open_app', 'launch_app', 'type_text', 'type', 'press_key', 'press', 'hotkey',
+      'open_app', 'launch_app', 'type_text', 'type', 'press_key', 'press', 'key', 'hotkey',
       'mouse_move', 'move', 'left_click', 'click', 'right_click', 'double_click',
       'mouse_drag', 'drag', 'scroll', 'wait', 'screenshot', 'list_windows', 'list_apps',
       'get_window_state', 'get_screen_size', 'get_cursor_position', 'get_cursor',
@@ -136,7 +137,7 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     allowedActions: ['extract'],
   },
   'system_info': {
-    description: 'Get Windows OS environment, memory status, and running process info.',
+    description: 'Get the computer hostname, OS environment, memory status, and running process info.',
     allowedActions: ['info'],
   },
   'zero_skill_learn': {
@@ -192,22 +193,30 @@ export const CAPABILITY_PARAMETERS = Object.freeze({
   // which actions use it, so the model does not have to guess names.
   open_app: params({ app: str('App to launch, e.g. "notepad", "calc", "chrome", or a full path. The result says whether its window is in front.') }, ['app']),
   zero_computer_action: params({
-    action: { type: 'string', enum: CAPABILITY_DEFINITIONS.zero_computer_action.allowedActions, description: 'What to do. Windows: list_windows, focus_window, get_window_state, open_app, close_app. Mouse: left_click, right_click, double_click, mouse_move, mouse_drag, scroll. Keyboard: type_text, press_key, hotkey. Looking: screenshot, get_elements. Other: wait, clipboard_get, clipboard_set.' },
-    target: str('focus_window / close_app / type_text: window title or app name (or hwnd from list_windows) to act on. Give it to type_text so the text goes to the right window.'),
-    command: str('focus_window only: "restore" (default, bring to front), "maximize", "minimize" or "close".'),
+    action: { type: 'string', enum: CAPABILITY_DEFINITIONS.zero_computer_action.allowedActions, description: 'What to do. Windows: list_windows, focus_window, get_window_state, open_app, close_app. Mouse: left_click, right_click, double_click, mouse_move, mouse_drag, scroll. Keyboard: type_text, press_key / key, hotkey. Looking: screenshot, get_elements. Other: wait, clipboard_get, clipboard_set.' },
+    target: str('focus_window / close_app: window title, app name, or hwnd. type_text / press_key / hotkey: optional target; when omitted, keyboard input goes to the current foreground window.'),
+    command: { type: 'string', enum: ['restore', 'maximize', 'minimize', 'close', 'play', 'pause', 'set_volume', 'set_speed', 'mute', 'unmute', 'fullscreen', 'next', 'previous'], description: 'focus_window: restore, maximize, minimize, or close. media_control: play, pause, set_volume, set_speed, mute, unmute, fullscreen, next, or previous.' },
     app: str('open_app / close_app: app name, e.g. "notepad".'),
     x: { type: 'integer', description: 'Mouse actions: screen X in pixels. Take coordinates from get_elements (centerX) or see_screen.' },
     y: { type: 'integer', description: 'Mouse actions: screen Y in pixels (centerY from get_elements).' },
     to_x: { type: 'integer', description: 'mouse_drag: destination X.' },
     to_y: { type: 'integer', description: 'mouse_drag: destination Y.' },
     text: str('type_text / clipboard_set: the exact text. Typing inserts at the caret; it never replaces existing content.'),
-    key: str('press_key / hotkey: one key or a combination, e.g. "enter", "tab", "escape", "f5", "ctrl+s", "ctrl+shift+n", "alt+f4".'),
+    key: str('press_key / key / hotkey: one key or a combination, e.g. "enter", "tab", "escape", "f5", "ctrl+s", "ctrl+shift+n", "alt+f4".'),
+    keys: { type: 'array', items: { type: 'string' }, description: 'hotkey: key sequence such as ["Control", "L"].' },
+    notifications: { type: 'boolean', description: 'play: open the first YouTube notification video, falling back to the first playable home/search video when unavailable.' },
+    volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'play / media_control set_volume: player volume 0-100.' },
+    playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'play / media_control set_speed: playback speed, e.g. 1.5.' },
     direction: str('scroll: "up" or "down".'),
     amount: { type: 'integer', description: 'scroll: number of notches (default 3).' },
     ms: { type: 'integer', description: 'wait: milliseconds, at most 8000.' },
   }, ['action']),
   browser: params({
-    action: { type: 'string', enum: CAPABILITY_DEFINITIONS.browser.allowedActions, description: 'open_url (go to a page), search (web search in the browser), play (find and play media on YouTube), get_content (read the current page), click / type / fill_form (interact with the page), press_key, screenshot.' },
+    action: { type: 'string', enum: [...CAPABILITY_DEFINITIONS.browser.allowedActions, 'media_control'], description: 'open_url (go to a page), search (web search in the browser), play (find a video by query or url and start it), media_control (control the video on the current page), get_content (read the current page), click / type / fill_form (interact with the page by element ref), press_key, screenshot.' },
+    command: str('media_control: play, pause, set_volume, set_speed, mute, unmute, fullscreen, next, previous.'),
+    volume_percent: { type: 'number', minimum: 0, maximum: 100, description: 'play / media_control set_volume: player volume 0-100.' },
+    playback_rate: { type: 'number', minimum: 0.25, maximum: 4, description: 'play / media_control set_speed: playback speed, e.g. 1.5.' },
+    notifications: { type: 'boolean', description: 'play: open the first YouTube notification video, falling back to the first playable home/search video when unavailable.' },
     url: str('open_url: full address including https://.'),
     query: str('search / play: what to search for.'),
     ref: str('click / type: element ref from the interactive elements of the last page result.'),
@@ -550,7 +559,7 @@ export class CapabilityEngine {
 
 
     // 3. Desktop Lease Coordination
-    const isDesktopAction = (action === 'desktop' && !desktopObservation) || ['type_text', 'type', 'press_key', 'press', 'hotkey', 'mouse_move', 'move', 'left_click', 'click', 'right_click', 'double_click', 'mouse_drag', 'drag', 'focus_window', 'control_window'].includes(action);
+    const isDesktopAction = (action === 'desktop' && !desktopObservation) || ['type_text', 'type', 'press_key', 'press', 'key', 'hotkey', 'mouse_move', 'move', 'left_click', 'click', 'right_click', 'double_click', 'mouse_drag', 'drag', 'focus_window', 'control_window'].includes(action);
     let leaseAcquiredLocally = false;
     if (this.leaseManager && isDesktopAction) {
       const leaseRes = await this.leaseManager.acquireLease(agentId, {
@@ -706,7 +715,7 @@ export class CapabilityEngine {
     const clickActions = new Set(['left_click', 'click', 'right_click', 'double_click']);
     if (!clickActions.has(String(action || '').toLowerCase())) return false;
     if (execResult?.outcome === 'BLOCKED' || execResult?.outcome === 'CANCELLED') return false;
-    if (['missing-target', 'focus-failed', 'keyboard-target-required', 'missing-text'].includes(execResult?.error)) return false;
+    if (['missing-target', 'focus-failed', 'missing-text'].includes(execResult?.error)) return false;
     if (Number.isFinite(params?.x) && Number.isFinite(params?.y)) return false; // same point again would not help
     return this._reflexHints(params).length > 0;
   }
@@ -916,7 +925,7 @@ canonicalCapabilityEngine.registerHandler('web_extract', async ({ url }) => {
 
 // system_info
 canonicalCapabilityEngine.registerHandler('system_info', async () => {
-  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, platform: process.platform, arch: process.arch, uptime: process.uptime(), memoryUsage: process.memoryUsage() };
+  return { ok: true, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, hostname: os.hostname(), platform: process.platform, arch: process.arch, uptime: process.uptime(), memoryUsage: process.memoryUsage() };
 });
 
 // zero_skill_learn

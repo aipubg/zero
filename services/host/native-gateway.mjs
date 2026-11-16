@@ -22,6 +22,9 @@ import { recoverModelImport } from '../../packages/model-fabric/config-transacti
 import { prepareToolBatch } from './tool-batch.mjs';
 import { MEDIA_COMMANDS } from '../../packages/capability-engine/media-control.mjs';
 import { createAutomationDispatcher } from './automation-dispatcher.mjs';
+import { GatewayEventBus } from './gateway-event-bus.mjs';
+import { RequestOrchestrator } from './request-orchestrator.mjs';
+import { isStaleProbeSessionTitle } from './session-cleanup.mjs';
 import { LocalGgufEngineService } from '../../backend/gateway/server/local-gguf-service.ts';
 import { LocalChatTransport } from '../../packages/model-fabric/local-chat-transport.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -63,10 +66,12 @@ import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS, CAPABILITY_PARAMETERS } from '../../packages/capability-engine/index.mjs';
-import { defaultUnifiedLoop } from '../../packages/capability-engine/memory-planner.mjs';
+import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../packages/capability-engine/memory-planner.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
 import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
+import { decomposeMultiAppRequest, routeSimpleRequest } from '../../packages/capability-engine/director-routing.mjs';
+import { executeMissionPlan, MissionStateStore } from '../../packages/capability-engine/mission-state.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/capability-engine/zero-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
 import { LocalInferenceRuntime } from '../../packages/model-fabric/local-runtime.mjs';
@@ -189,6 +194,8 @@ export class ZeroNativeHost {
   constructor(options = {}) {
     this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 12);
     if (!Number.isInteger(this.maxAssistantTurns) || this.maxAssistantTurns < 1 || this.maxAssistantTurns > 128) throw new Error('maxAssistantTurns must be an integer between 1 and 128');
+    this.maxActions = options.maxActions ?? Number(process.env.ZERO_MAX_ACTIONS ?? 25);
+    if (!Number.isInteger(this.maxActions) || this.maxActions < 1 || this.maxActions > 128) throw new Error('maxActions must be an integer between 1 and 128');
     this.voiceRecognitionBackend = options.voiceRecognitionBackend ?? process.env.ZERO_VOICE_RECOGNITION_BACKEND;
     if (this.voiceRecognitionBackend !== undefined && !['windows', 'whisper'].includes(this.voiceRecognitionBackend)) throw new Error('Unknown voice recognition backend');
     this.port = options.port || Number(process.env.ZERO_PORT || process.env.PORT || 18789);
@@ -200,6 +207,8 @@ export class ZeroNativeHost {
     this.activeTurns = new Map();
     this.pendingRequests = new Set();
     this.clients = new Set();
+    this.eventBus = new GatewayEventBus();
+    this.eventBus.subscribe((event, metadata) => this._dispatchGatewayEvent(event, metadata));
 
     // Resolve expectedToken respecting gateway.auth.mode from config
     let resolvedToken = '';
@@ -262,11 +271,23 @@ export class ZeroNativeHost {
     });
     this.sessions = new SessionManager({ dbPath: sessionDb });
     this._purgeMachineSessions();
+    this.missionState = new MissionStateStore({ dbPath: path.join(dataDir, 'zero-missions.sqlite') });
+    this.missionState.on('stateChange', mission => {
+      this.eventBus.publish('mission.state', mission, { sessionKey: mission.sessionId });
+    });
     // sessionId -> owning socket, used to route voice events without
     // serialising the socket into the event frame.
     this.voiceOwners = new Map();
     this.executeAssistantOnce = createAssistantReceipts(this.sessions.db);
     this.tasks = new TaskStateMachine({ dbPath: path.join(dataDir, 'zero-tasks.sqlite') });
+    this.tasks.events.on('stateChange', task => {
+      this.eventBus.publish('task.state', task, { sessionKey: task.sessionId });
+    });
+    this.requestOrchestrator = new RequestOrchestrator({
+      eventBus: this.eventBus,
+      executeAssistant: options => this.executeAssistantOnce(options, request => this._executeAssistantRequest(request)),
+      capabilityEngine: canonicalCapabilityEngine,
+    });
     this.messageBus = new AgentMessageBus({ db: this.tasks.db });
     this.leaseManager = new DesktopLeaseManager();
     canonicalCapabilityEngine.leaseManager = this.leaseManager;
@@ -315,13 +336,9 @@ export class ZeroNativeHost {
         // serialised into the event frame that reaches the browser.
         const owner = this.voiceOwners.get(payload.sessionId) || null;
         const { ownerId, ...safePayload } = payload;
-        const frame = JSON.stringify({ type: 'event', event: `voice.${event}`, payload: safePayload });
-        for (const client of this.clients) {
-          if (client.readyState !== 1) continue;
-          // Deliver to the conversation owner first, then to any subscriber.
-          if (client !== owner && !client.subscribedSessions?.has(payload.sessionId)) continue;
-          client.send(frame);
-        }
+        this.eventBus.publish(`voice.${event}`, safePayload, {
+          sessionKey: payload.sessionId, ownerSocket: owner, legacyNotification: `zero.voice.${event}`,
+        });
       });
     }
 
@@ -368,11 +385,21 @@ export class ZeroNativeHost {
     const automationExecutor = createAutomationDispatcher({
       memoryEngine: this.unifiedMemory, researchEngine: this.researchEngine,
       capabilityEngine: canonicalCapabilityEngine,
+      requestOrchestrator: this.requestOrchestrator,
       goalRunner: params => this._advanceGoal(params),
     });
     this.automation = new AutomationScheduler({
       dbPath: path.join(dataDir, 'zero-automation.sqlite'),
       executor: automationExecutor,
+    });
+    this.automation.events.on('job:executed', record => {
+      this.eventBus.publish('automation.job.executed', {
+        id: record.id, jobId: record.jobId, status: record.status,
+        startedAt: record.startedAt, finishedAt: record.finishedAt, error: record.error,
+      }, {
+        ...(record.sessionId ? { sessionKey: record.sessionId } : {}),
+        broadcast: true,
+      });
     });
     this.eventAutomation = new EventAutomationEngine({
       dbPath: path.join(dataDir, 'zero-event-automation.sqlite'),
@@ -392,6 +419,26 @@ export class ZeroNativeHost {
     this.server = null;
     this.wss = null;
     this.cronInterval = null;
+  }
+
+  _dispatchGatewayEvent(event, metadata = {}) {
+    for (const client of this.clients) {
+      if (client.readyState !== 1) continue;
+      if (metadata.referenceOnly && !client.isReferenceWire) continue;
+      if (metadata.ownerOnly && client !== metadata.ownerSocket) continue;
+      if (metadata.excludeSocket && client === metadata.excludeSocket) continue;
+      if (metadata.sessionKey && client !== metadata.ownerSocket && !client.subscribedSessions?.has(metadata.sessionKey)) continue;
+      if (!metadata.sessionKey && !metadata.ownerSocket && !metadata.broadcast) continue;
+
+      const frame = client.isReferenceWire
+        ? { type: 'event', event: event.event, payload: event.payload }
+        : createNotification(metadata.legacyNotification || `zero.${event.event}`, event.payload);
+      try {
+        client.send(JSON.stringify(frame));
+      } catch (error) {
+        console.warn(`[Zero Host] Event delivery failed for ${event.event}:`, error.message);
+      }
+    }
   }
 
   
@@ -1959,10 +2006,11 @@ export class ZeroNativeHost {
           return { ok: false, error: 'Action refused: Human takeover hold is currently active.' };
         }
         const toolName = params.toolName || (canonicalCapabilityEngine.customCapabilities.has(requestedAction) ? requestedAction : 'zero_computer_action');
-        return await canonicalCapabilityEngine.execute({
+        return await this.requestOrchestrator.executeCapability({
           agentId: clientSession?.clientId || 'zero',
           toolName,
           args: params,
+          context: { sessionKey: params.sessionKey || params.sessionId, ws, source: 'computer-control' },
         });
       }
 
@@ -1978,7 +2026,12 @@ export class ZeroNativeHost {
         if (params?.probe === true) {
           try {
             windowState = await withTimeout(
-              canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { action: 'get_window_state' } }),
+              this.requestOrchestrator.executeCapability({
+                agentId: 'zero',
+                toolName: 'zero_computer_action',
+                args: { action: 'get_window_state' },
+                context: { sessionKey: params.sessionKey || params.sessionId, ws, source: 'observation' },
+              }),
               OBSERVATION_STATE_TIMEOUT_MS,
               null,
             );
@@ -2083,10 +2136,11 @@ export class ZeroNativeHost {
         const definitions = this._assistantToolDefinitions();
         const definition = definitions.find(d => d.function.name === toolName);
         if (!definition) throw new Error(`Unknown tool: ${toolName}`);
-        const result = await canonicalCapabilityEngine.execute({
+        const result = await this.requestOrchestrator.executeCapability({
           agentId: clientSession?.clientId || 'zero',
           toolName,
           args: params?.arguments ?? params?.input ?? params?.params ?? {},
+          context: { sessionKey: params.sessionKey || params.sessionId, ws, source: 'tools.call' },
         });
         return { ok: true, name: toolName, result: result ?? null };
       }
@@ -2237,10 +2291,11 @@ export class ZeroNativeHost {
 
       case 'desktop.launch': {
         const app = params.app || 'chrome';
-        await canonicalCapabilityEngine.execute({
+        await this.requestOrchestrator.executeCapability({
           agentId: clientSession?.clientId || 'zero',
           toolName: 'zero_computer_action',
           args: { action: 'open_app', app },
+          context: { sessionKey: params.sessionKey || params.sessionId, ws, source: 'desktop.launch' },
         });
         return { ok: true, app };
       }
@@ -3356,6 +3411,7 @@ export class ZeroNativeHost {
   _isMachineSessionKey(key) {
     const text = String(key || '').trim();
     if (!text) return true;
+    if (/^agent:[^:]+:perf(?:-test)?-\d{10,}$/i.test(text)) return true;
     if (/^agent:[^:]+:\d{10,}$/i.test(text)) return true;
     if (/^session_\d{10,}_[a-z0-9]{4,}$/i.test(text)) return true;
     if (/^[0-9a-f]{8,}$/i.test(text)) return true;
@@ -3373,12 +3429,17 @@ export class ZeroNativeHost {
       let removed = 0;
       for (const session of all) {
         const key = session?.key || session?.id || session?.sessionId || '';
-        if (!this._isMachineSessionKey(key)) continue;
-        try { if (this.sessions.deleteSession(key)) removed++; } catch {}
+        if (!this._isMachineSessionKey(key) && !isStaleProbeSessionTitle(session?.title)) continue;
+        try {
+          if (this.sessions.deleteSession(key)) removed++;
+        } catch (error) {
+          console.error(`[Zero] Failed to purge session ${key}:`, error.message);
+        }
       }
-      if (removed > 0) this.logger?.info?.(`[Zero] purged ${removed} machine-generated session(s)`);
+      if (removed > 0) this.logger?.info?.(`[Zero] purged ${removed} stale or machine-generated session(s)`);
       return removed;
-    } catch {
+    } catch (error) {
+      console.error('[Zero] Failed to purge stale or machine-generated sessions:', error.message);
       return 0;
     }
   }
@@ -3738,7 +3799,7 @@ export class ZeroNativeHost {
   }
 
   _runAssistantRequest(options) {
-    return this.executeAssistantOnce(options, request => this._executeAssistantRequest(request));
+    return this.requestOrchestrator.runAssistantRequest(options);
   }
 
   async _resumeAssistantTask(taskId, context, retry = false) {
@@ -3794,6 +3855,7 @@ export class ZeroNativeHost {
     const request = (async () => {
       const { sessionKey, userContent, signal, source = 'chat' } = options;
       if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
+      const missionPlan = options.resumeTaskId ? [] : decomposeMultiAppRequest(userContent);
       const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
       options.model ||= this._resolveUsableModel(parkedModel, sessionKey);
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
@@ -3805,18 +3867,100 @@ export class ZeroNativeHost {
       const combinedSignal = AbortSignal.any([this.tasks.getSignal(task.id), ...(signal ? [signal] : [])]);
       try {
         combinedSignal.throwIfAborted();
+        const mission = missionPlan.length > 1
+          ? this.missionState.createMission({ sessionId: sessionKey, runId: options.runId, goal: userContent, subMissions: missionPlan })
+          : null;
         this.sessions.appendMessage(sessionKey, options.resumeTaskId ? { role: 'system', runId: options.runId, content: `Resume interrupted task ${task.id}. Original goal: ${userContent}. Existing effects may already have happened. Inspect prior tool results and actual files/state before repeating any action. Continue remaining work and report unresolved effects honestly.` } : { role: 'user', runId: options.runId, content: userContent });
         this.tasks.recordStep(task.id, { stepNumber: this.tasks.getTaskSteps(task.id).length + 1, toolName: options.resumeTaskId ? 'assistant_resume' : 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
-        const result = await this._executeAgentTurn({ ...options, taskId: task.id, signal: combinedSignal });
+        let result;
+        const directRoute = !mission && routeSimpleRequest(userContent);
+        if (directRoute) {
+          const execution = await this.requestOrchestrator.executeCapability({
+            agentId: options.clientSession?.clientId || 'zero',
+            toolName: directRoute.toolName,
+            args: directRoute.args,
+            signal: combinedSignal,
+            context: { source, sessionKey, ws: options.ws },
+          });
+          if (execution?.ok === false) throw new Error(execution.error || `Direct ${directRoute.toolName} execution failed`);
+          const content = directRoute.response === 'stdout'
+            ? `Hostname: ${String(execution.stdout || '').trim() || '(no output)'}`
+            : directRoute.response === 'hostname'
+              ? `Computer name: ${execution.hostname}`
+              : `Computer name: ${execution.hostname}\nPlatform: ${execution.platform} (${execution.arch})`;
+          this.sessions.appendMessage(sessionKey, { role: 'assistant', runId: options.runId, content });
+          this.tasks.recordStep(task.id, {
+            stepNumber: this.tasks.getTaskSteps(task.id).length + 1,
+            toolName: directRoute.toolName,
+            toolArgs: directRoute.args,
+            toolResult: execution,
+            status: 'completed',
+          });
+          const eventMetadata = { sessionKey, ownerSocket: options.ws, ownerOnly: true };
+          this.eventBus.publish('chat.delta', { runId: options.runId, sessionKey, delta: content, timestamp: Date.now() }, { ...eventMetadata, legacyNotification: 'zero.stream.delta' });
+          this.eventBus.publish('chat.complete', { runId: options.runId, sessionKey, content }, { ...eventMetadata, legacyNotification: 'zero.stream.complete' });
+          result = { ok: true, role: 'assistant', content, execution: { outcome: 'COMPLETED', completedActions: 1 } };
+        } else if (mission) {
+          const workflowBudget = { actionsUsed: 0, turnsUsed: 0 };
+          const missionRun = await executeMissionPlan({
+            store: this.missionState,
+            missionId: mission.id,
+            executeSubMission: async subMission => {
+              combinedSignal.throwIfAborted();
+              const subPrompt = `MISSION ${subMission.position}/${missionPlan.length} — ${subMission.app}\nExecute ONLY this sub-mission: ${subMission.goal}\nOther apps and sub-missions are tracked independently and will run after this one. If this sub-mission is blocked, report the blocker accurately; do not skip or claim completion for any other mission.`;
+              this.sessions.appendMessage(sessionKey, { role: 'user', runId: options.runId, content: subPrompt });
+              this.tasks.recordStep(task.id, {
+                stepNumber: this.tasks.getTaskSteps(task.id).length + 1,
+                toolName: 'mission.start',
+                toolArgs: { missionId: mission.id, subMissionId: subMission.id, app: subMission.app },
+                toolResult: subPrompt,
+                status: 'completed',
+              });
+              return this._executeAgentTurn({
+                ...options,
+                ws: null,
+                isReferenceWire: false,
+                taskId: task.id,
+                userContent: subPrompt,
+                signal: combinedSignal,
+                workflowBudget,
+                source: 'mission',
+              });
+            },
+          });
+          const missionSummary = [
+            `Multi-app mission ${missionRun.mission.status.toLowerCase()}:`,
+            ...missionRun.results.map(item => `- ${item.app}: ${item.status}${item.error ? ` — ${item.error}` : item.summary ? ` — ${item.summary}` : ''}`),
+          ].join('\n');
+          this.sessions.appendMessage(sessionKey, { role: 'assistant', runId: options.runId, content: missionSummary });
+          const eventMetadata = { sessionKey, ownerSocket: options.ws, ownerOnly: true };
+          this.eventBus.publish('chat.delta', { runId: options.runId, sessionKey, delta: missionSummary, timestamp: Date.now() }, { ...eventMetadata, legacyNotification: 'zero.stream.delta' });
+          this.eventBus.publish('chat.complete', { runId: options.runId, sessionKey, content: missionSummary }, { ...eventMetadata, legacyNotification: 'zero.stream.complete' });
+          result = {
+            ok: true,
+            role: 'assistant',
+            content: missionSummary,
+            execution: {
+              outcome: missionRun.mission.status === 'COMPLETED' ? 'COMPLETED' : missionRun.mission.status === 'PARTIAL' ? 'PARTIAL' : 'FAILED',
+              completedActions: missionRun.results.reduce((total, item) => total + item.completedActions, 0),
+              missionId: mission.id,
+              subMissions: missionRun.mission.subMissions,
+            },
+          };
+        } else {
+          result = await this._executeAgentTurn({ ...options, taskId: task.id, signal: combinedSignal });
+        }
         combinedSignal.throwIfAborted();
         if (!result?.ok) throw new Error(result?.error || 'Assistant turn failed');
         const complete = { ...result, status: 'ok', taskId: task.id, sessionKey, runId: options.runId };
         this.tasks.completeTask(task.id, { content: result.content, source, sessionKey, verified: false });
         return complete;
       } catch (error) {
-        if (options.isReferenceWire && options.ws?.readyState === 1) options.ws.send(JSON.stringify({ type: 'event', event: 'chat', payload: {
-          runId: options.runId, sessionKey, state: combinedSignal.aborted || error.name === 'AbortError' ? 'aborted' : 'error', errorMessage: error.message,
-        } }));
+        this.eventBus.publish('chat', {
+          runId: options.runId, sessionKey,
+          state: combinedSignal.aborted || error.name === 'AbortError' ? 'aborted' : 'error',
+          errorMessage: error.message,
+        }, { sessionKey, ownerSocket: options.ws, ownerOnly: true, referenceOnly: true });
         if (!['CANCELLED', 'COMPLETED', 'FAILED'].includes(this.tasks.getTask(task.id)?.status)) {
           if (combinedSignal.aborted || error.name === 'AbortError') this.tasks.cancelTask(task.id, error.message);
           else this.tasks.failTask(task.id, error.message);
@@ -3854,7 +3998,7 @@ export class ZeroNativeHost {
     }
   }
 
-  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId, source = 'chat' }) {
+  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId, source = 'chat', workflowBudget }) {
     // A human takeover hold pauses physical computer control, not the
     // conversation. The computer operator refuses input actions while the
     // hold is active and still allows observation, so the turn continues and
@@ -3897,7 +4041,8 @@ YOUR FULL CONTROL CAPABILITIES:
    - Launch and close any software installed on Windows (Chrome, Spotify, Calculator, Notepad, etc.).
 3. Physical Mouse, Keyboard & UI Automation (zero_computer_action, desktop_control):
    - Move cursor, click (left, right, double-click), drag, scroll.
-   - Type text into any field, press hotkeys (Enter, Tab, Escape, shortcuts).
+   - Type text into the current foreground window when no target is provided; use a named target when the task requires a specific window.
+   - Press hotkeys (Enter, Tab, Escape, shortcuts) in the current foreground window when no target is provided.
    - Discover clickable controls with exact screen coordinates (get_elements) or accessibility refs (desktop_control snapshot).
 4. Real-time Desktop Seeing & Screen Share (see_screen):
    - Inspect what is currently on screen in real time: active window, on-screen OCR text, screen dimensions, and interactive UI elements.
@@ -3907,6 +4052,7 @@ YOUR FULL CONTROL CAPABILITIES:
 
 TOOL SELECTION (choose the most direct tool, in this order):
 1. Backend first. Anything a command or file operation can do (system info, hostname, network, git, scripts, reading or writing files, installing, searching files) uses run_process, read_file, write_file or system_info. Never open a terminal window and type a command into it.
+   - Simple hostname/system-info questions are deterministically routed before model planning; do not replace them with app launches or UI inspection.
 2. Web facts use web_search / web_extract. Use the browser tool only when the task needs a real page: logging in, clicking, filling forms, playing media, or reading a page that needs the owner's session.
 3. Use mouse, keyboard and see_screen only when the task is about an application on screen that has no command-line or browser path.
 4. One call per step. After a tool reports ok, move to the next step; do not repeat a call that already succeeded.
@@ -3916,6 +4062,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 - ALWAYS EXECUTE DIRECTLY VIA TOOL CALLS: When the user asks you to do something (open software, search YouTube, fill a form, click something, type a note), IMMEDIATELY emit native function tool calls (open_app, zero_computer_action, browser, see_screen).
 - NEVER ROLEPLAY ACTIONS IN PLAIN TEXT: NEVER output text like "Action: open_app", "⏳ Loading...", "Pending / Queued Actions", or "I'll wait for results". If an action needs to happen, YOU MUST CALL THE TOOL. You will only receive real tool results by executing tool calls. Outputting text pretending to execute actions is strictly prohibited.
 - MULTI-STEP AUTOMATION: If a task requires several steps (e.g. open browser -> navigate to form -> fill fields -> submit), carry them out sequentially to completion.
+- MULTI-APP TASKS: ${MULTI_GOAL_EXECUTION_GUIDANCE}
+- MISSION STATE: When the request is split into app-specific missions, execute only the currently assigned mission, report its real outcome, and then continue to every later mission. A failure or fallback in one mission must never cancel unrelated missions.
+- YOUTUBE NOTIFICATION PLAYBACK: Start from https://www.youtube.com, click the Notifications bell, and play the first notification video. If notifications are empty or the account is signed out, immediately play the first available video from YouTube home or search instead. Use browser play with notifications=true and pass requested volume_percent / playback_rate in the same call when possible; use media_control for fullscreen.
+- SPOTIFY AND WHATSAPP: For explicitly requested compound tasks, continue to Spotify after YouTube and use spotify_control to search/play the named track and set its requested volume. Then open WhatsApp or WhatsApp Web, find the requested contact, compose the exact message, and send it. A blocker in another app is not a reason to skip either task.
+- COMPOUND WORKFLOWS: You have up to 25 tool actions and 12 assistant turns. Complete independent app goals even when another goal is blocked; do not spend consecutive calls inspecting after each scroll.
 - STRICT NO UNREQUESTED CLOSE_APP: NEVER close, exit, or terminate an application (like Notepad, Chrome, Calculator, etc.) unless the user explicitly asks to close or exit it. Keep opened applications open so the user can see the work.
 - CREDENTIAL PRIVACY & STATE HONESTY: Never echo or output plain-text passwords or secret credentials in your text responses. Always redact passwords as '[REDACTED]'. When logging into a service, report that credentials were submitted and authentication state is unverified until explicitly confirmed.
 - CONCISE JARVIS CONFIRMATION: Once completed, report the outcome clearly and concisely.\n- HUMAN-REFLEX EXECUTION: Never stop at "tool not found" or a failed fast path. The canonical registry resolves every alias. If a DOM/UIA action fails, Zero automatically observes a fresh frame and finishes with the physical pointer. Do not ask the user which tool to use.\n- LEARN ONCE, REMEMBER FOREVER: After a multi-step success (especially one that used a fallback), call procedure_learn with the trigger and working steps so future runs reuse it. Call procedure_recall before re-planning a familiar task.\n- LONG-HORIZON JARVIS MODE: For a macro-goal spanning days or weeks, call goal_plan to store milestones and register the recurring job, then goal_status to report progress. Do not wait to be reminded.`;
@@ -3955,16 +4106,21 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         let turns = 0;
         let completedModelTurn = false;
       const maxTurns = this.maxAssistantTurns;
+      const maxActions = this.maxActions;
       let finalContent = '';
+      const budgetState = workflowBudget || { actionsUsed: 0, turnsUsed: 0 };
+      if (workflowBudget && (budgetState.turnsUsed >= maxTurns || budgetState.actionsUsed >= maxActions)) {
+        finalContent = 'This mission was attempted but could not start because the shared workflow budget was exhausted.';
+        completedModelTurn = true;
+      }
       let observedProviderModel = null;
       let mediaResult = null;
       const executedActions = [];
       const completedCalls = new Map();
-      // The window Zero itself opened or focused during this request. Keyboard
-      // input is only sent to a window that was named, never to "whatever
-      // happens to be in front".
+      // Reuse a window opened or focused during this request; otherwise native
+      // keyboard input targets the current foreground window.
       let turnFocusedWindow = null;
-      const KEYBOARD_ACTIONS = new Set(['type_text', 'type', 'press_key', 'press', 'hotkey']);
+      const KEYBOARD_ACTIONS = new Set(['type_text', 'type', 'press_key', 'press', 'key', 'hotkey']);
       const IDEMPOTENT_TOOLS = new Set(['open_app', 'launch_app', 'play', 'write_file', 'memory_remember', 'schedule_task', 'goal_plan', 'procedure_learn', 'zero_skill_learn']);
       const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
       const recordTool = (name, args, result) => this.tasks.recordStep(taskId, {
@@ -3977,8 +4133,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       let sequence = 0;
       const publishChat = payload => {
         if (!isReferenceWire) return;
-        const frame = JSON.stringify({ type: 'event', event: 'chat', payload: { runId: runId || turnId, sessionKey, seq: ++sequence, ...payload } });
-        for (const client of this.clients) if (client.readyState === 1 && (client === ws || client.subscribedSessions?.has(sessionKey))) client.send(frame);
+        this.eventBus.publish('chat', { runId: runId || turnId, sessionKey, seq: ++sequence, ...payload }, {
+          sessionKey, ownerSocket: ws, referenceOnly: true,
+        });
       };
 
       // Check for diagnostic /status command
@@ -4005,7 +4162,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           timestamp: Date.now(),
         };
         if (isReferenceWire) {
-          ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: earlyProgressPayload }));
+          this.eventBus.publish('chat.delta', earlyProgressPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.delta' });
         }
       }
 
@@ -4017,8 +4174,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         ? model.trim()
         : this._resolveUsableModel(this.sessions.getSession(sessionKey)?.metadata?.model, sessionKey));
 
-      while (turns < maxTurns && !completedModelTurn) {
+      while (turns < maxTurns && budgetState.turnsUsed < maxTurns && budgetState.actionsUsed < maxActions && !completedModelTurn) {
         turns++;
+        budgetState.turnsUsed++;
         if (abortController.signal.aborted) {
           throw abortController.signal.reason;
         }
@@ -4055,9 +4213,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
                   timestamp: Date.now(),
                 };
                 if (isReferenceWire) {
-                  ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: deltaPayload }));
+                  this.eventBus.publish('chat.delta', deltaPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.delta' });
                 } else {
-                  ws.send(JSON.stringify(createNotification('zero.stream.delta', deltaPayload)));
+                  this.eventBus.publish('chat.delta', deltaPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.delta' });
                 }
               }
             }
@@ -4105,9 +4263,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
             }
             const interruptedPayload = { sessionKey, turnId, messageId, status: 'interrupted', partialContent: accumulatedContent };
             if (ws && ws.readyState === 1) {
-              ws.send(JSON.stringify(isReferenceWire
-                ? { type: 'event', event: 'chat.interrupted', payload: interruptedPayload }
-                : createNotification('zero.stream.interrupted', interruptedPayload)));
+              this.eventBus.publish('chat.interrupted', interruptedPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.interrupted' });
             }
             throw abortController.signal.reason;
           }
@@ -4125,9 +4281,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
               timestamp: Date.now(),
             };
             if (isReferenceWire) {
-              ws.send(JSON.stringify({ type: 'event', event: 'chat.delta', payload: errPayload }));
+              this.eventBus.publish('chat.delta', errPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.delta' });
             } else {
-              ws.send(JSON.stringify(createNotification('zero.stream.delta', errPayload)));
+              this.eventBus.publish('chat.delta', errPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.delta' });
             }
           }
           completedModelTurn = true;
@@ -4192,6 +4348,29 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         this.sessions.appendMessage(sessionKey, { ...assistantMsg, runId });
 
         for (const { call, callId, fnName, args, errors, warnings } of prepared) {
+          if (budgetState.actionsUsed >= maxActions) {
+            const budgetResult = {
+              ok: false,
+              executed: false,
+              verified: false,
+              completed: false,
+              outcome: 'BLOCKED',
+              error: 'action-budget-exhausted',
+              message: `The ${maxActions}-action budget for this request is exhausted. Continue any remaining goals in a later request.`,
+            };
+            executedActions.push({ action: fnName, args: args || {}, execRes: budgetResult });
+            recordTool(fnName, args || {}, budgetResult);
+            const toolMsg = {
+              role: 'tool',
+              tool_call_id: callId || call.id,
+              content: JSON.stringify(budgetResult),
+            };
+            currentMessages.push(toolMsg);
+            this.sessions.appendMessage(sessionKey, { ...toolMsg, runId });
+            continue;
+          }
+          budgetState.actionsUsed++;
+
           // Skip calls that had fatal errors
           if (errors.length > 0) {
             const rejectedResult = {
@@ -4282,9 +4461,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           if (ws && ws.readyState === 1) {
             const toolEventPayload = { sessionKey, tool: fnName, action, args };
             if (isReferenceWire) {
-              ws.send(JSON.stringify({ type: 'event', event: 'chat.tool', payload: toolEventPayload }));
+                this.eventBus.publish('chat.tool', toolEventPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.tool.start' });
             } else {
-              ws.send(JSON.stringify(createNotification('zero.tool.start', toolEventPayload)));
+                this.eventBus.publish('chat.tool', toolEventPayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.tool.start' });
             }
           }
 
@@ -4305,17 +4484,12 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           let execRes = null;
 
-          // 0. Keyboard input needs a known destination window.
+          // Use an explicitly selected or recently focused window when present.
+          // With no target, Windows input is sent to the active foreground window.
           if (!hasOwnHandler && targetCapability !== 'browser' && KEYBOARD_ACTIONS.has(action)) {
             const namedWindow = args.target || args.app || args.window || args.window_title || null;
             const hasPoint = args.x !== undefined && args.y !== undefined;
-            if (!namedWindow && !hasPoint && !turnFocusedWindow) {
-              execRes = {
-                ok: false, executed: false, verified: false, completed: false, outcome: 'FAILED', action,
-                error: 'keyboard-target-required',
-                message: action + ' was not sent: no destination window. Pass `target` (window title or app name), or call open_app / focus_window first. Keystrokes are never sent to an unknown window.',
-              };
-            } else if (!namedWindow && !hasPoint && turnFocusedWindow) {
+            if (!namedWindow && !hasPoint && turnFocusedWindow) {
               args.target = turnFocusedWindow;
             }
             if (!execRes && !['type_text', 'type'].includes(action) && (args.target || args.app)) {
@@ -4329,12 +4503,12 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           // Every tool runs in the capability engine; the gateway only routes.
           if (!execRes) {
-            execRes = await canonicalCapabilityEngine.execute({
+            execRes = await this.requestOrchestrator.executeCapability({
               agentId: clientSession?.clientId || 'zero',
               toolName: targetCapability,
               args: hasOwnHandler ? args : { ...args, action },
               signal: abortController.signal,
-              context: { userText: userContent },
+              context: { userText: userContent, sessionKey, ws, source },
             });
           }
 
@@ -4393,27 +4567,31 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       }
 
       if (!completedModelTurn) {
-        console.warn('[Zero Host] Assistant tool-turn limit reached before a final response; asking the model for a closing report');
-        // The step budget is spent, but the owner still needs an answer: one
-        // last request without tools, so the model can only report.
-        let closingReport = '';
-        try {
-          const closingModel = resolveTurnModel();
-          const closingMessages = [...currentMessages, {
-            role: 'user',
-            content: 'The step budget for this request is used up. Do not call any tools. Reply to the owner now: what you did, what you found, and what is still not done.',
-          }];
-          for await (const chunk of this.modelFabric.streamChat({ ...(closingModel ? { model: closingModel } : {}), messages: closingMessages }, { signal: abortController.signal })) {
-            if (chunk.delta) {
-              closingReport += chunk.delta;
-              publishChat({ state: 'delta', message: { role: 'assistant', content: [{ type: 'text', text: closingReport }] } });
+        if (workflowBudget) {
+          finalContent = accumulatedContent || 'The shared workflow budget was exhausted before this mission could produce a final report.';
+        } else {
+          console.warn('[Zero Host] Assistant tool-turn limit reached before a final response; asking the model for a closing report');
+          // The step budget is spent, but the owner still needs an answer: one
+          // last request without tools, so the model can only report.
+          let closingReport = '';
+          try {
+            const closingModel = resolveTurnModel();
+            const closingMessages = [...currentMessages, {
+              role: 'user',
+              content: 'The step budget for this request is used up. Do not call any tools. Reply to the owner now: what you did, what you found, and what is still not done.',
+            }];
+            for await (const chunk of this.modelFabric.streamChat({ ...(closingModel ? { model: closingModel } : {}), messages: closingMessages }, { signal: abortController.signal })) {
+              if (chunk.delta) {
+                closingReport += chunk.delta;
+                publishChat({ state: 'delta', message: { role: 'assistant', content: [{ type: 'text', text: closingReport }] } });
+              }
             }
+          } catch (closingError) {
+            if (abortController.signal.aborted) throw abortController.signal.reason;
+            console.warn('[Zero Host] Closing report failed:', closingError.message);
           }
-        } catch (closingError) {
-          if (abortController.signal.aborted) throw abortController.signal.reason;
-          console.warn('[Zero Host] Closing report failed:', closingError.message);
+          finalContent = closingReport.trim() || accumulatedContent || `Stopped after ${executedActions.length} step(s) without finishing; the step budget ran out.`;
         }
-        finalContent = closingReport.trim() || accumulatedContent || `Stopped after ${executedActions.length} step(s) without finishing; the step budget ran out.`;
         completedModelTurn = true;
       }
 
@@ -4544,13 +4722,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         };
 
         if (isReferenceWire) {
-          ws.send(JSON.stringify({
-            type: 'event',
-            event: 'chat.complete',
-            payload: completePayload,
-          }));
+          this.eventBus.publish('chat.complete', completePayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.complete' });
         } else {
-          ws.send(JSON.stringify(createNotification('zero.stream.complete', completePayload)));
+          this.eventBus.publish('chat.complete', completePayload, { sessionKey, ownerSocket: ws, ownerOnly: true, legacyNotification: 'zero.stream.complete' });
         }
       }
 
@@ -4558,11 +4732,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       for (const client of this.clients) {
         if (client !== ws && client.readyState === 1 && client.subscribedSessions?.has(sessionKey)) {
           const subPayload = { sessionKey, turnId, role: 'assistant', content: finalContent };
-          client.send(JSON.stringify(isReferenceWire ? {
-            type: 'event',
-            event: 'chat.message',
-            payload: subPayload,
-          } : createNotification('zero.session.message', subPayload)));
+          this.eventBus.publish('chat.message', subPayload, { sessionKey, excludeSocket: ws, legacyNotification: 'zero.session.message' });
+          break;
         }
       }
 
@@ -4570,6 +4741,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         ok: true,
         role: 'assistant',
         content: finalContent,
+        execution: {
+          outcome: overallOutcome,
+          completedActions: executedActions.filter(action => !isActionFailed(action) && (action.execRes?.verified === true || action.execRes?.outcome === 'COMPLETED')).length,
+          totalActions: executedActions.length,
+        },
         requestedModel: model || null,
         modelContent,
         providerModel: observedProviderModel,
@@ -4614,6 +4790,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
     this.voiceEngine?.close();
     this.sessions.close();
     this.tasks.close();
+    this.missionState?.close();
+    this.eventBus?.close();
     this.memory.close();
     this.unifiedMemory?.close();
     this.researchEngine?.close();

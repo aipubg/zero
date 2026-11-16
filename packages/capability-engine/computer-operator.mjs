@@ -54,6 +54,7 @@ export const COMPUTER_ACTIONS = Object.freeze([
   "type_text",
   "press",
   "press_key",
+  "key",
   "hotkey",
   "wait",
   "get_window_state",
@@ -111,7 +112,9 @@ export class ComputerOperator {
     osController = defaultOsController,
     uiaRootTree = defaultUiaRootTree,
     screenVision = defaultScreenVision,
-    mediaController = defaultMediaController
+    mediaController = defaultMediaController,
+    keyboardDriver = Driver,
+    typeIntoWindowAction = typeIntoWindow
   } = {}) {
     this.ZeroDesktop = ZeroDesktop;
     this.browserAutomation = browserAutomation;
@@ -119,6 +122,8 @@ export class ComputerOperator {
     this.uiaRootTree = uiaRootTree;
     this.screenVision = screenVision;
     this.mediaController = mediaController;
+    this.keyboardDriver = keyboardDriver;
+    this.typeIntoWindowAction = typeIntoWindowAction;
     this.modeManager = modeManager;
     this.getPolicyState = getPolicyState;
     this.logger = logger;
@@ -349,7 +354,7 @@ export class ComputerOperator {
 
         case "type":
         case "type_text": {
-          const result = await typeIntoWindow({
+          const result = await this.typeIntoWindowAction({
             text: params.text ?? params.value,
             target: params.target ?? params.app ?? params.window ?? params.window_title ?? null,
             x: params.x,
@@ -361,10 +366,12 @@ export class ComputerOperator {
 
         case "press":
         case "press_key":
+        case "key":
         case "hotkey": {
-          const key = String(params.key ?? "");
+          const rawKey = params.key ?? params.keys;
+          const key = Array.isArray(rawKey) ? rawKey.map(String).join("+") : String(rawKey ?? "");
           if (!key) return { ok: false, message: "Missing key parameter for press_key" };
-          const res = await Driver.pressKey(key, signal);
+          const res = await this.keyboardDriver.pressKey(key, signal);
           if (res?.error === "computer-hold:human-bailout") {
             this.handleHumanBailout(res.message);
             return res;
@@ -503,35 +510,21 @@ export class ComputerOperator {
           const query = String(params.query ?? params.search ?? params.text ?? params.prompt ?? "");
 
           if (normalizedAction === "play") {
-            const isLocalTest = url && (url.includes("127.0.0.1") || url.includes("localhost"));
-            if (isLocalTest) {
-              return await this.mediaController.play({ ...params, url, query }, signal);
-            }
-
-            if (query) {
-              const ytRes = await this.browserAutomation.searchYouTube(query, { timeout: 25000 }).catch(() => null);
-              if (ytRes?.ok && ytRes.videos?.length > 0) {
-                const firstVideo = ytRes.videos[0];
-                return {
-                  ok: true,
-                  executed: true,
-                  verified: true,
-                  completed: true,
-                  outcome: "COMPLETED",
-                  action: "play",
-                  url: firstVideo.href,
-                  videoTitle: firstVideo.title,
-                  channel: firstVideo.channel,
-                  browserOpened: true,
-                  pageLoaded: true,
-                  audioActive: true,
-                  playbackState: "PLAYING",
-                  audioAudible: "VERIFIED",
-                  message: `YouTube video '${firstVideo.title}' opened and playing in foreground browser: ${firstVideo.href}`,
-                  details: ytRes,
-                };
-              }
-            }
+            return await this.mediaController.play({
+              ...params,
+              url,
+              query,
+              notifications: params.notifications === true || params.notification === true,
+            }, signal);
+          }
+          if (/youtube\.com\/feed\/notifications/i.test(url)) {
+            return await this.mediaController.play({
+              url: 'https://www.youtube.com',
+              notifications: true,
+              query,
+              volume_percent: params.volume_percent,
+              playback_rate: params.playback_rate,
+            }, signal);
           }
 
           if (query && !url) {

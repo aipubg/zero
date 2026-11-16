@@ -9,6 +9,7 @@
 
 import { defaultScreenVision, defaultUiaRootTree, defaultOsController } from './computer-control.mjs';
 import { defaultBrowserAutomation } from './browser-control.mjs';
+import { defaultMediaController } from './media-control.mjs';
 
 const done = fields => ({ ok: true, executed: true, verified: true, completed: true, outcome: 'COMPLETED', observed: true, ...fields });
 const failed = (action, error) => ({ ok: false, executed: true, verified: false, completed: false, outcome: 'FAILED', action, error: error.message, message: error.message });
@@ -65,11 +66,30 @@ export async function browserAction(action, args = {}, { signal = null, userText
 
   if (action === 'open_url' || action === 'navigate') {
     const targetUrl = args.url || 'https://www.google.com';
+    if (/youtube\.com\/feed\/notifications/i.test(targetUrl)) {
+      return defaultMediaController.play({
+        url: 'https://www.youtube.com',
+        notifications: true,
+        query: args.query || '',
+        ...(args.volume_percent !== undefined ? { volume_percent: Number(args.volume_percent) } : {}),
+        ...(args.playback_rate !== undefined ? { playback_rate: Number(args.playback_rate) } : {}),
+      }, signal);
+    }
     await browser.navigate(targetUrl);
     const snap = await browser.snapshot({ interactiveOnly: true });
     const page = await readPage();
+    const finalUrl = browser.page?.url?.() || targetUrl;
+    const signInControl = (snap.nodes || []).find(n => /^(sign in|log in|login|sign in to .*)$/i.test(String(n.name || '').trim()));
+    const onSignInPage = /accounts\.google\.com|\/login\b|\/signin\b|login\.live\.com|login\.microsoftonline\.com/i.test(finalUrl);
+    const signInRequired = Boolean(signInControl || onSignInPage);
     return done({
       action: 'open_url',
+      finalUrl,
+      browserProfile: browser.profile,
+      ...(signInRequired ? {
+        signInRequired: true,
+        message: 'This page is asking to sign in: the owner is not signed in to this site in Zero\'s browser. Do not treat the page as empty. Tell the owner to sign in once in the Zero browser window (it is remembered), then continue with the other parts of the request.',
+      } : {}),
       url: targetUrl,
       title: snap.title,
       heading: page.heading,
@@ -127,9 +147,22 @@ export async function browserAction(action, args = {}, { signal = null, userText
   }
 
   if (action === 'play') {
-    const query = args.query || args.text || '';
-    const yt = await browser.searchYouTube(query);
-    return done({ action: 'play', platform: 'YouTube', query, videos: yt.videos, results: yt.videos.map(v => ({ title: `${v.title} (${v.channel || 'Channel'})`, href: v.href })) });
+    // Find the video and start it in Zero's browser, with volume and speed
+    // applied when given.
+    return defaultMediaController.play({
+      url: args.url || '',
+      query: args.query || args.text || '',
+      notifications: args.notifications === true || args.notification === true || /youtube.{0,30}notif|notif.{0,30}youtube/i.test(userText),
+      ...(args.volume_percent !== undefined ? { volume_percent: Number(args.volume_percent) } : {}),
+      ...(args.playback_rate !== undefined ? { playback_rate: Number(args.playback_rate) } : {}),
+    }, signal);
+  }
+
+  if (action === 'media_control') {
+    return defaultMediaController.control(args.command, signal, {
+      ...(args.volume_percent !== undefined ? { volume_percent: Number(args.volume_percent) } : {}),
+      ...(args.playback_rate !== undefined ? { playback_rate: Number(args.playback_rate) } : {}),
+    });
   }
 
   if (['type', 'fill', 'click', 'press'].includes(action)) {

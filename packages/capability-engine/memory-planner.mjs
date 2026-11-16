@@ -15,13 +15,15 @@ import { defaultUiaRootTree } from './computer-control.mjs';
 import { defaultOsController } from './computer-control.mjs';
 import { defaultBrowserAutomation } from './browser-control.mjs';
 
+export const MULTI_GOAL_EXECUTION_GUIDANCE = `For a request with independent sub-tasks or multiple apps, keep a checklist and attempt every sub-task in order. A partial failure in one app must not cancel unrelated later tasks; use a reasonable fallback, then continue and report any remaining blocker. Do not mark the overall task complete until every sub-task has been attempted. Avoid repeated inspect/scroll loops: inspect only when needed to choose a target or verify a meaningful change, and do not inspect automatically after each scroll.`;
+
 export class UnifiedAgentLoop {
   constructor(options = {}) {
     this.screenVision = options.screenVision || defaultScreenVision;
     this.uiaTree = options.uiaTree || defaultUiaRootTree;
     this.osController = options.osController || defaultOsController;
     this.browserAutomation = options.browserAutomation || defaultBrowserAutomation;
-    this.maxSteps = options.maxSteps || 25;
+    this.maxSteps = options.maxSteps ?? 25;
   }
 
   /**

@@ -14,6 +14,18 @@
  */
 
 import { chromium } from 'playwright-core';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const BROWSER_CANDIDATES = [
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+];
 
 const INTERACTIVE_ROLES = new Set([
   'button',
@@ -32,8 +44,15 @@ const INTERACTIVE_ROLES = new Set([
 
 export class BrowserAutomationEngine {
   constructor(options = {}) {
-    this.executablePath = options.executablePath || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    this.executablePath = options.executablePath || BROWSER_CANDIDATES.find(candidate => fs.existsSync(candidate)) || BROWSER_CANDIDATES[0];
     this.headless = options.headless !== undefined ? options.headless : false;
+    // Zero's browser keeps its own profile on disk. The owner signs in to a
+    // site once in this window and stays signed in across restarts, so tasks
+    // that need an account (YouTube, mail, WhatsApp Web) can work.
+    this.profileDir = options.profileDir
+      || process.env.ZERO_BROWSER_PROFILE_DIR
+      || path.join(process.env.ZERO_DATA_DIR || path.join(REPO_ROOT, '.zero-data'), 'browser-profile');
+    this.profile = 'none';
     this.browser = null;
     this.context = null;
     this.page = null;
@@ -48,7 +67,7 @@ export class BrowserAutomationEngine {
    */
   async getStatus() {
     try {
-      const isAlive = this.browser && this.browser.isConnected();
+      const isAlive = this.isAlive();
       let activeUrl = 'about:blank';
       let title = '';
       if (isAlive && this.page) {
@@ -64,6 +83,8 @@ export class BrowserAutomationEngine {
         inProcess: true,
         zeroMiddleware: true,
         requiresToken: false,
+        profile: this.profile,
+        profileDir: this.profile === 'persistent' ? this.profileDir : null,
         activeUrl,
         pageTitle: title,
         capabilities: [
@@ -87,8 +108,12 @@ export class BrowserAutomationEngine {
   /**
    * Ensure browser instance and CDP session are connected in-process
    */
+  isAlive() {
+    return Boolean(this.context && this.page && !this.page.isClosed());
+  }
+
   async ensureConnected() {
-    if (this.browser && this.browser.isConnected() && this.page && !this.page.isClosed()) {
+    if (this.isAlive()) {
       if (!this.cdpSession) {
         this.cdpSession = await this.context.newCDPSession(this.page);
         await this.cdpSession.send('DOM.enable');
@@ -106,21 +131,24 @@ export class BrowserAutomationEngine {
 
     this.isConnecting = true;
     try {
-      this.browser = await chromium.launch({
-        headless: this.headless,
-        executablePath: this.executablePath,
-        args: [
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--disable-blink-features=AutomationControlled',
-        ],
-      });
+      const args = ['--no-first-run', '--no-default-browser-check', '--disable-blink-features=AutomationControlled'];
+      const launchOptions = { headless: this.headless, executablePath: this.executablePath, args, viewport: { width: 1280, height: 800 } };
+      try {
+        fs.mkdirSync(this.profileDir, { recursive: true });
+        this.context = await chromium.launchPersistentContext(this.profileDir, launchOptions);
+        this.browser = this.context.browser();
+        this.profile = 'persistent';
+      } catch (profileError) {
+        // The profile is in use by another Zero process (or unreadable):
+        // work in a throwaway profile rather than not at all, and say so.
+        console.warn(`[Zero] Browser profile unavailable (${String(profileError.message).split('\n')[0]}); using a temporary profile without saved sign-ins.`);
+        this.browser = await chromium.launch({ headless: this.headless, executablePath: this.executablePath, args });
+        this.context = await this.browser.newContext({ viewport: { width: 1280, height: 800 } });
+        this.profile = 'temporary';
+      }
+      this.context.on('close', () => { this.context = null; this.browser = null; this.page = null; this.cdpSession = null; this.nodeMap.clear(); });
 
-      this.context = await this.browser.newContext({
-        viewport: { width: 1280, height: 800 },
-      });
-
-      this.page = await this.context.newPage();
+      this.page = this.context.pages()[0] || await this.context.newPage();
       this.cdpSession = await this.context.newCDPSession(this.page);
       await this.cdpSession.send('DOM.enable');
       await this.cdpSession.send('Accessibility.enable');
@@ -132,19 +160,16 @@ export class BrowserAutomationEngine {
   }
 
   /**
-   * Find and bring the automation browser window physically to the foreground on top of all windows
+   * Bring Zero's browser window to the front, found by the title of its page.
    */
   async bringToForeground() {
     try {
-      if (!this.browser) return;
-      const browserSession = await this.browser.newBrowserCDPSession();
-      const info = await browserSession.send('SystemInfo.getProcessInfo').catch(() => null);
-      const bPid = info?.processInfo?.find(p => p.type === 'browser')?.id;
-      if (!bPid) return;
-
-      // Use topmost positioning at (x: 80, y: 60, w: 1280, h: 820)
+      if (!this.isAlive()) return;
+      await this.page.bringToFront().catch(() => {});
+      const title = (await this.page.title().catch(() => '')) || this.page.url();
+      if (!title) return;
       const { focusWindow } = await import('./windows-driver.mjs');
-      await focusWindow({ target: String(bPid), command: 'topmost' });
+      await focusWindow({ target: title, command: 'restore' });
     } catch {}
   }
 
@@ -489,6 +514,48 @@ export class BrowserAutomationEngine {
   }
 
   /**
+   * Open the first notification video, falling back to the first playable
+   * video on YouTube home or search when notifications are unavailable.
+   */
+  async openYouTubeNotificationVideo({ query = '', timeout = 5000 } = {}) {
+    await this.navigate('https://www.youtube.com');
+    const bell = this.page.locator('button[aria-label*="Notifications" i]').first();
+    const bellAvailable = await bell.waitFor({ state: 'visible', timeout }).then(() => true).catch(() => false);
+    let fallbackReason = bellAvailable ? 'no-visible-notification-video' : 'notifications-bell-unavailable';
+    if (bellAvailable) {
+      try {
+        await bell.click({ timeout });
+        const notificationVideo = this.page.locator('ytd-notification-renderer a[href*="/watch"]').first();
+        const notificationAvailable = await notificationVideo.waitFor({ state: 'visible', timeout }).then(() => true).catch(() => false);
+        if (notificationAvailable) {
+          await notificationVideo.click({ timeout });
+          await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+          return { ok: true, source: 'notification', url: this.page.url(), title: await this.page.title() };
+        }
+      } catch (error) {
+        fallbackReason = `notification-navigation-failed: ${error.message}`;
+      }
+    }
+
+    if (query.trim()) {
+      await this.navigate(`https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`);
+    }
+    const firstVideo = this.page.locator(
+      'ytd-rich-item-renderer a#thumbnail[href*="/watch"], ytd-video-renderer a#thumbnail[href*="/watch"]',
+    ).first();
+    await firstVideo.waitFor({ state: 'visible', timeout: Math.max(timeout, 10000) });
+    await firstVideo.click({ timeout });
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    return {
+      ok: true,
+      source: query.trim() ? 'search-fallback' : 'home-fallback',
+      fallbackReason,
+      url: this.page.url(),
+      title: await this.page.title(),
+    };
+  }
+
+  /**
    * Extract title / text from current DOM
    */
   async extractText(ref = null) {
@@ -663,14 +730,15 @@ export class BrowserAutomationEngine {
    * Close in-process browser session
    */
   async close() {
-    if (this.browser) {
-      await this.browser.close().catch(() => {});
-      this.browser = null;
-      this.context = null;
-      this.page = null;
-      this.cdpSession = null;
-      this.nodeMap.clear();
-    }
+    const context = this.context;
+    const browser = this.browser;
+    this.context = null;
+    this.browser = null;
+    this.page = null;
+    this.cdpSession = null;
+    this.nodeMap.clear();
+    if (context) await context.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
   }
 }
 

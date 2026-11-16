@@ -35,6 +35,7 @@ export const CAPABILITY_ALIASES = Object.freeze({
   type_text: { name: 'zero_computer_action', action: 'type_text' },
   type: { name: 'zero_computer_action', action: 'type_text' },
   press_key: { name: 'zero_computer_action', action: 'press_key' },
+  key: { name: 'zero_computer_action', action: 'press_key' },
   press: { name: 'zero_computer_action', action: 'press_key' },
   hotkey: { name: 'zero_computer_action', action: 'hotkey' },
   scroll: { name: 'zero_computer_action', action: 'scroll' },

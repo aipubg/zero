@@ -1,5 +1,5 @@
 // Service workflows are not desktop operator commands.
-export function createAutomationDispatcher({ memoryEngine, researchEngine, capabilityEngine, goalRunner }) {
+export function createAutomationDispatcher({ memoryEngine, researchEngine, capabilityEngine, requestOrchestrator, goalRunner }) {
   return async (action, params = {}) => {
     if (action === 'memory.consolidate') return memoryEngine.consolidateMemories(params);
     if (action === 'goal.tick') {
@@ -14,7 +14,8 @@ export function createAutomationDispatcher({ memoryEngine, researchEngine, capab
         memoryEngine,
       });
     }
-    return capabilityEngine.execute({
+    const executor = requestOrchestrator || capabilityEngine;
+    return executor.execute({
       agentId: 'zero', toolName: 'zero_computer_action', args: { ...params, action },
     });
   };
