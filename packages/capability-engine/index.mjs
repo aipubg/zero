@@ -390,6 +390,7 @@ export class CapabilityEngine {
     args = {},
     signal = null,
     timeoutMs = 30000,
+    context = {},
   } = {}) {
     const startedAt = Date.now();
     const auditId = `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -476,7 +477,7 @@ export class CapabilityEngine {
     const handler = this.handlers.get(capabilityName) || this.handlers.get(toolName);
     if (handler) {
       try {
-        const handlerRes = await handler(params, signal, { agentId, capability: toolName, action, auditId });
+        const handlerRes = await handler(params, signal, { agentId, capability: toolName, action, auditId, context });
         const durationMs = Date.now() - startedAt;
         const returned = typeof handlerRes === 'object' && handlerRes !== null ? handlerRes : {};
         const ok = returned.ok !== false;
@@ -609,7 +610,7 @@ export class CapabilityEngine {
 
     // 5b. Human-reflex escalation. A failure of the fast DOM/UIA path is not a
     // dead end: look at a fresh frame and finish with the physical pointer.
-    if (execResult?.ok === false && this._shouldReflex(action, params)) {
+    if (execResult?.ok === false && this._shouldReflex(action, params, execResult)) {
       const reflex = await this._reflexEscalate(action, params, combinedSignal).catch(() => null);
       if (reflex) {
         execResult = {
@@ -694,64 +695,52 @@ export class CapabilityEngine {
   }
 
   /**
-   * A reflex is only attempted for actions that have a concrete target or
-   * coordinate. Blind keyboard automation is never used.
+   * The reflex is a second attempt at a CLICK on a named control: when the
+   * fast path could not click it, find the control by name in the UI tree and
+   * click its centre. It is deliberately narrow:
+   *  - clicks only; it never types or presses keys,
+   *  - only when the control was named with at least three characters,
+   *  - never after a refusal (missing argument, blocked, window not found).
    */
-  _shouldReflex(action, params) {
-    const reflexActions = new Set([
-      'left_click', 'click', 'right_click', 'double_click',
-      'type_text', 'type', 'fill', 'fill_form', 'press_key', 'press',
-      'open_url', 'navigate', 'submit', 'submit_form',
-    ]);
-    if (!reflexActions.has(String(action || '').toLowerCase())) return false;
-    return ['text', 'target', 'query', 'selector', 'ref', 'label', 'x', 'y', 'url']
-      .some(key => params?.[key] !== undefined && params?.[key] !== '');
+  _shouldReflex(action, params, execResult = null) {
+    const clickActions = new Set(['left_click', 'click', 'right_click', 'double_click']);
+    if (!clickActions.has(String(action || '').toLowerCase())) return false;
+    if (execResult?.outcome === 'BLOCKED' || execResult?.outcome === 'CANCELLED') return false;
+    if (['missing-target', 'focus-failed', 'keyboard-target-required', 'missing-text'].includes(execResult?.error)) return false;
+    if (Number.isFinite(params?.x) && Number.isFinite(params?.y)) return false; // same point again would not help
+    return this._reflexHints(params).length > 0;
   }
 
-  /**
-   * Step B of the human reflex chain: capture a fresh compressed frame, locate
-   * the best matching UIA element (or use supplied coordinates), focus, click
-   * and type. Step C compares frame hashes before reporting completion.
-   */
-  async _reflexEscalate(action, params, signal) {
-    const before = await this.operator.execute('screenshot', {}, signal).catch(() => null);
-    if (!before?.ok) return null;
-
-    const hints = [params.text, params.target, params.query, params.selector, params.ref, params.label]
-      .filter(value => typeof value === 'string' && value.trim())
+  _reflexHints(params) {
+    return [params?.target, params?.label, params?.text, params?.selector, params?.ref]
+      .filter(value => typeof value === 'string' && value.trim().length >= 3)
       .map(value => value.trim().toLowerCase());
+  }
 
-    let x = Number.isFinite(params.x) ? Number(params.x) : null;
-    let y = Number.isFinite(params.y) ? Number(params.y) : null;
-    let matched = null;
-
-    if (x === null || y === null) {
-      const tree = await this.operator.execute('get_elements', {}, signal).catch(() => null);
-      const elements = Array.isArray(tree?.elements)
-        ? tree.elements
-        : Array.isArray(tree?.data?.elements) ? tree.data.elements : [];
-      matched = elements.find(element => {
-        const name = String(element.name || element.label || element.helperText || '').toLowerCase();
-        if (!name) return false;
-        return hints.some(hint => name.includes(hint) || hint.includes(name));
-      }) || null;
-      if (matched) {
-        x = Number(matched.centerX ?? matched.cx);
-        y = Number(matched.centerY ?? matched.cy);
-      }
-    }
-
+  async _reflexEscalate(action, params, signal) {
+    const hints = this._reflexHints(params);
+    if (!hints.length) return null;
+    const before = await this.operator.execute('screenshot', {}, signal).catch(() => null);
+    const tree = await this.operator.execute('get_elements', {}, signal).catch(() => null);
+    const elements = Array.isArray(tree?.elements)
+      ? tree.elements
+      : Array.isArray(tree?.data?.elements) ? tree.data.elements : [];
+    const nameOf = element => String(element.name || element.label || '').trim().toLowerCase();
+    // An exact name wins; otherwise the control's name must contain the hint.
+    const matched = elements.find(element => hints.includes(nameOf(element)))
+      || elements.find(element => { const name = nameOf(element); return name && hints.some(hint => name.includes(hint)); })
+      || null;
+    if (!matched) return null;
+    const x = Number(matched.centerX ?? matched.cx);
+    const y = Number(matched.centerY ?? matched.cy);
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-    const click = await this.operator.execute('left_click', { x, y }, signal).catch(() => null);
+    const clickAction = ['right_click', 'double_click'].includes(action) ? action : 'left_click';
+    const click = await this.operator.execute(clickAction, { x, y }, signal).catch(() => null);
     if (!click?.ok) return null;
 
-    if (['type_text', 'type', 'fill', 'fill_form'].includes(action) && typeof params.text === 'string' && params.text) {
-      await this.operator.execute('type_text', { text: params.text }, signal).catch(() => null);
-    }
-
     const after = await this.operator.execute('screenshot', {}, null).catch(() => null);
-    const changed = Boolean(before.hash && after?.hash && before.hash !== after.hash);
+    const changed = Boolean(before?.hash && after?.hash && before.hash !== after.hash);
     return {
       ok: true,
       executed: true,
@@ -760,10 +749,10 @@ export class CapabilityEngine {
       outcome: changed ? 'COMPLETED' : 'UNVERIFIED',
       action,
       backend: 'zero-reflex',
-      reflex: 'vision-uia-coordinate',
+      reflex: 'uia-name-click',
       coordinates: { x, y },
-      matchedElement: matched ? { name: matched.name, type: matched.controlType } : null,
-      message: 'Primary path failed; Zero observed a fresh frame and completed the action with the physical pointer.',
+      matchedElement: { name: matched.name, type: matched.type || matched.controlType },
+      message: `The fast path could not click it; Zero found the control "${matched.name}" on screen and clicked it.`,
     };
   }
 
@@ -797,6 +786,25 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { defaultEmbedEngine } from './embed-engine.mjs';
+import { seeScreen, browserAction } from './desktop-actions.mjs';
+
+// see_screen: one fresh look at the desktop (frame, text, window, controls).
+canonicalCapabilityEngine.registerHandler('see_screen', async (_params, signal) => seeScreen({ signal }));
+
+// browser: Zero's own visible browser session. An action it does not cover,
+// or one that fails there, goes to the computer operator instead.
+canonicalCapabilityEngine.registerHandler('browser', async (params, signal, { action, context }) => {
+  let primaryFailure = null;
+  try {
+    const result = await browserAction(action, params, { signal, userText: context?.userText || '' });
+    if (result) return result;
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    primaryFailure = error.message;
+  }
+  const fallback = await canonicalCapabilityEngine.operator.execute(action, params, signal);
+  return primaryFailure ? { ...fallback, primaryFailure } : fallback;
+});
 import { defaultVoiceStatus } from './voice-status.mjs';
 
 // read_file / write_file / run_process (moved from terminal-ops.mjs)

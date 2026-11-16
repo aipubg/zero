@@ -35,12 +35,24 @@ Status values: `done`, `partial`, `todo`.
 
 - `done` Duplicate copies of media control, mode manager and desktop driver
   removed; one copy in the engine.
-- `todo` Move the inline `see_screen`, browser and `type_text` code out of
-  `services/host/native-gateway.mjs` into engine handlers.
-- `todo` Retire `backend/gateway/server.mjs` (still imported for
-  `handleZeroGatewayRequest`).
-- `todo` Give every action-dispatch capability (`zero_computer_action`,
-  `browser`) a real per-action argument schema.
+- `done` `see_screen`, browser actions and typing moved out of
+  `services/host/native-gateway.mjs` into
+  `packages/capability-engine/desktop-actions.mjs`. The gateway's chat loop
+  now only routes (the file went from 5010 to 4626 lines). Chat, RPC and
+  automations get the same behaviour.
+- `done` The model is shown real arguments for every capability.
+- `done` The engine's click "reflex" is limited to a named control (three or
+  more characters) and never types. Before, a failed typing could click any
+  control whose name loosely matched and type into it.
+- `done` A screen frame goes to a vision model once, as an image, instead of
+  also being pasted into the text of the tool result.
+- `todo` Retire `backend/gateway/server.mjs` (1710 lines). It still serves
+  `/v1/chat/completions`, `/v1/models`, `/api/gateway/*` and
+  `/api/zero/{media,computer,tasks,memory,automation}`, and it creates its
+  own task, memory and automation stores next to the host's. Move each route
+  onto the host's stores, then delete the file.
+- `todo` The keyboard-destination rule lives in the gateway loop; move it
+  into the engine so RPC callers get it too.
 
 ## Phase 3 — Eyes and hands  (`partial`)
 

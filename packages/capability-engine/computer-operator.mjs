@@ -17,6 +17,7 @@ import { ObservationCoordinator } from "./observation-coordinator.mjs";
 import * as Driver from "./windows-driver.mjs";
 import { defaultBrowserAutomation } from "./browser-control.mjs";
 import { defaultOsController } from "./computer-control.mjs";
+import { typeIntoWindow } from "./desktop-actions.mjs";
 import { defaultUiaRootTree } from "./computer-control.mjs";
 import { defaultScreenVision } from "./computer-control.mjs";
 import { MediaController, defaultMediaController } from "./media-control.mjs";
@@ -348,50 +349,14 @@ export class ComputerOperator {
 
         case "type":
         case "type_text": {
-          const text = String(params.text ?? params.value ?? "");
-          if (!text) {
-            return { ok: false, executed: false, verified: false, completed: false, outcome: "UNVERIFIED", message: "Missing text parameter for type_text" };
-          }
-
-          if (params.uia_id || (params.target && String(params.target).startsWith('@uia:'))) {
-            const uiaId = params.uia_id || params.target;
-            const res = await this.osController.typeIntoElement(uiaId, text, signal).catch(() => null);
-            if (res && res.ok !== false) {
-              return {
-                ok: true,
-                executed: true,
-                verified: true,
-                completed: true,
-                outcome: "COMPLETED",
-                action: "type_text",
-                uiaId,
-                length: text.length,
-                verifiedText: text,
-                expectedText: text,
-                details: res,
-              };
-            }
-          }
-
-          const res = await Driver.typeText(text, signal);
-          if (res?.error === "computer-hold:human-bailout") {
-            this.handleHumanBailout(res.message);
-            return { ok: false, executed: false, verified: false, completed: false, outcome: "BLOCKED", error: res.error, message: res.message };
-          }
-          const executed = Boolean(res?.ok !== false && (res?.ok || res?.typedChars !== undefined || res?.typed !== false));
-          const verifiedText = res?.verifiedText !== undefined ? res.verifiedText : null;
-          return {
-            ok: executed,
-            executed,
-            verified: true,
-            completed: true,
-            outcome: "COMPLETED",
-            action: "type_text",
-            length: text.length,
-            verifiedText: verifiedText || text,
-            expectedText: text,
-            details: res
-          };
+          const result = await typeIntoWindow({
+            text: params.text ?? params.value,
+            target: params.target ?? params.app ?? params.window ?? params.window_title ?? null,
+            x: params.x,
+            y: params.y,
+          }, signal);
+          if (result.error === "computer-hold:human-bailout") this.handleHumanBailout(result.message);
+          return result;
         }
 
         case "press":
