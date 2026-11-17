@@ -3,26 +3,23 @@ import { call, on, connection } from './rpc.js';
 import { h, icon, toast } from './ui.js';
 import { look, saveLook, loadSharedLook } from './theme.js';
 
-// Seven places, each with one job. Rooms and Settings have their own sections.
-const room = name => () => import('./pages/rooms.js').then(m => m.roomRenderer(name));
 const PAGES = [
   { path: '/', id: 'home', title: 'Home', icon: 'home', group: 'Zero', load: () => import('./pages/home.js') },
   { path: '/chat', id: 'chat', title: 'Chat', icon: 'chat', group: 'Zero', load: () => import('./pages/chat.js') },
-  { path: '/computer', id: 'computer', title: 'Computer', icon: 'computer', group: 'Control', load: room('computer') },
-  { path: '/terminal', id: 'terminal', title: 'Terminal', icon: 'terminal', group: 'Control', load: () => import('./pages/terminal.js') },
-  { path: '/voice', id: 'voice', title: 'Voice', icon: 'voice', group: 'Control', load: () => import('./pages/voice.js') },
-  { path: '/work', id: 'work', title: 'Work', icon: 'tasks', group: 'Workspace', load: room('work') },
-  { path: '/knowledge', id: 'knowledge', title: 'Knowledge', icon: 'memory', group: 'Workspace', load: room('knowledge') },
-  { path: '/settings', id: 'settings', title: 'Settings', icon: 'settings', group: 'System', load: () => import('./pages/settings.js') },
+  { path: '/computer', id: 'computer', title: 'Computer', icon: 'computer', group: 'Zero', load: () => import('./pages/computer.js') },
+  { path: '/terminal', id: 'terminal', title: 'Terminal', icon: 'terminal', group: 'Zero', load: () => import('./pages/terminal.js') },
+  { path: '/tasks', id: 'tasks', title: 'Tasks', icon: 'tasks', group: 'Work', load: () => import('./pages/tasks.js') },
+  { path: '/automations', id: 'automations', title: 'Automations', icon: 'clock', group: 'Work', load: () => import('./pages/automations.js') },
+  { path: '/agents', id: 'agents', title: 'Agents', icon: 'agents', group: 'Work', load: () => import('./pages/agents.js') },
+  { path: '/research', id: 'research', title: 'Research', icon: 'search', group: 'Work', load: () => import('./pages/research.js') },
+  { path: '/memory', id: 'memory', title: 'Memory', icon: 'memory', group: 'Knowledge', load: () => import('./pages/memory.js') },
+  { path: '/skills', id: 'skills', title: 'Skills & Plugins', icon: 'skills', group: 'Knowledge', load: () => import('./pages/skills.js') },
+  { path: '/models', id: 'models', title: 'Models', icon: 'model', group: 'Setup', load: () => import('./pages/models.js') },
+  { path: '/screen', id: 'screen', title: 'Screen share', icon: 'screen', group: 'Setup', load: () => import('./pages/screen.js') },
+  { path: '/appearance', id: 'appearance', title: 'Appearance', icon: 'palette', group: 'Setup', load: () => import('./pages/appearance.js') },
+  { path: '/settings', id: 'settings', title: 'Settings', icon: 'settings', group: 'Setup', load: () => import('./pages/settings.js') },
+  { path: '/status', id: 'status', title: 'Status', icon: 'status', group: 'Setup', load: () => import('./pages/status.js') },
 ];
-
-// Earlier addresses keep working.
-const REDIRECTS = {
-  '/tasks': '/work/tasks', '/automations': '/work/automations', '/agents': '/work/agents',
-  '/memory': '/knowledge/memory', '/skills': '/knowledge/skills', '/research': '/knowledge/research',
-  '/screen': '/computer/screen', '/models': '/settings/models', '/appearance': '/settings/appearance',
-  '/status': '/settings/status', '/chat/zero': '/chat', '/new': '/chat?new=1', '/systems': '/computer',
-};
 
 // ---- shared live status (top bar, home page, status page) -------------------
 export const live = { models: null, auth: null, screen: null, voice: null, observation: null, hold: null, gateway: null };
@@ -89,16 +86,12 @@ function paintPills() {
   const screenOn = screen?.mode === 'online' && !screen.paused;
   const held = live.hold?.held;
   pills.replaceChildren(
-    h('button.pill' + (ready ? '.ok' : '.warn'), { type: 'button', title: ready ? 'A model is ready' : 'No model has an API key — open Models', onclick: () => go('/settings/models') },
+    h('button.pill' + (ready ? '.ok' : '.warn'), { type: 'button', title: ready ? 'A model is ready' : 'No model has an API key — open Models', onclick: () => go('/models') },
       icon('model', 14), h('span', ready ? (live.models?.defaultModel || 'Model ready').split('/').pop().slice(0, 22) : 'Model: add key')),
-    h('button.pill' + (screenOn ? '.ok' : ''), { type: 'button', title: screen?.reason || 'Screen share', onclick: () => go('/computer/screen') },
+    h('button.pill' + (screenOn ? '.ok' : ''), { type: 'button', title: screen?.reason || 'Screen share', onclick: () => go('/screen') },
       icon('screen', 14), h('span', screenOn ? 'Screen: online' : screen?.mode === 'connecting' ? 'Screen: connecting' : 'Screen: offline')),
-    h('button.pill' + (held ? '.warn' : '.ok'), { type: 'button', title: held ? 'Standby: you hold the computer, Zero will not act. Click to let Zero act.' : 'Active: Zero may use mouse and keyboard. Click to stop it.', onclick: async () => {
-      try { await call(held ? 'zero-policy.computer-hold.release' : 'zero-policy.computer-hold.take', {}); toast(held ? 'Computer control: Zero may act' : 'Computer control: standby — Zero will not act', 'ok'); refreshLive(); }
-      catch (e) { toast(e.message, 'error'); }
-    } }, icon('hand', 14), h('span', held ? 'Control: standby' : 'Control: active')),
-    h('button.pill' + (live.voice?.ready ? '.ok' : ''), { type: 'button', title: 'Voice — talk to Zero', onclick: () => go('/voice') },
-      icon('voice', 14), h('span', live.voice?.ready ? 'Voice: ready' : 'Voice')),
+    h('button.pill' + (held ? '.warn' : ''), { type: 'button', title: held ? 'You hold the computer; Zero will not act' : 'Zero may use the computer', onclick: () => go('/computer') },
+      icon('hand', 14), h('span', held ? 'Hands: you' : 'Hands: Zero')),
   );
 }
 
@@ -118,53 +111,29 @@ export function go(path, { replace = false } = {}) {
   route();
 }
 
-let routeSeq = 0;
 async function route() {
-  const redirect = REDIRECTS[location.pathname];
-  if (redirect) { history.replaceState(null, '', redirect + (redirect.includes('?') ? '' : location.search)); }
-  const path = location.pathname;
-  const page = path === '/' ? PAGES[0] : PAGES.find(p => p.path !== '/' && (path === p.path || path.startsWith(p.path + '/'))) || PAGES[0];
+  const page = PAGES.find(p => p.path === location.pathname) || (location.pathname.startsWith('/chat') ? PAGES[1] : PAGES[0]);
   document.body.classList.remove('nav-open');
   for (const a of sidebar.querySelectorAll('.nav')) a.classList.toggle('active', a.dataset.id === page.id);
   crumb.replaceChildren(icon(page.icon, 16), h('span', page.title));
   document.title = `${page.title} · Zero`;
-  const seq = ++routeSeq;
+  if (typeof cleanup === 'function') { try { cleanup(); } catch {} }
+  cleanup = null;
+  current = page.id;
   const holder = h('div.page.page-' + page.id);
-  let mod;
-  try { mod = await page.load(); }
-  catch (error) { console.error(error); mod = { render: root => root.append(h('div.callout.danger', 'This page could not load: ' + error.message)) }; }
-  if (seq !== routeSeq) return;
-  const mount = () => {
-    if (typeof cleanup === 'function') { try { cleanup(); } catch {} }
-    cleanup = null;
-    current = page.id;
-    content.replaceChildren(holder);
-    content.scrollTop = 0;
-  };
-  // Smooth cross-fade between pages where the browser supports it. Only the
-  // swap happens inside the transition; data loads afterwards.
-  if (document.startViewTransition && look.motion && current !== null && document.visibilityState === 'visible') {
-    await document.startViewTransition(mount).updateCallbackDone.catch(() => {});
-  } else mount();
+  content.replaceChildren(holder);
   try {
-    const result = await mod.render(holder, { go, path, params: new URLSearchParams(location.search) });
-    if (seq === routeSeq) cleanup = result; else if (typeof result === 'function') result();
+    const mod = await page.load();
+    if (current !== page.id) return;
+    cleanup = await mod.render(holder, { go, params: new URLSearchParams(location.search) });
   } catch (error) {
     console.error(error);
-    holder.append(h('div.callout.danger', 'This page could not load: ' + error.message));
+    holder.replaceChildren(h('div.callout.danger', 'This page could not load: ' + error.message));
   }
 }
 
 // ---- command palette ---------------------------------------------------------
 async function openPalette() {
-  // Every place you can jump to: the main pages, each room's tabs and every
-  // settings section.
-  const [{ ROOMS }, { SECTIONS }] = await Promise.all([import('./pages/rooms.js'), import('./pages/settings.js')]);
-  const destinations = [
-    ...PAGES.map(p => ({ label: p.title, hint: 'Page', icon: p.icon, path: p.path })),
-    ...Object.values(ROOMS).flatMap(r => r.tabs.map(t => ({ label: t.label, hint: r.title, icon: t.icon, path: `${r.base}/${t.id}` }))),
-    ...SECTIONS.map(s => ({ label: s.label, hint: 'Settings', icon: s.icon, path: '/settings/' + s.id })),
-  ];
   if (document.querySelector('dialog.palette')) return;
   const input = h('input', { placeholder: 'Type a page, a chat or a question for Zero…', autocomplete: 'off' });
   const list = h('div.palette-list');
@@ -179,7 +148,7 @@ async function openPalette() {
   let selected = 0;
   const items = () => {
     const q = input.value.trim().toLowerCase();
-    const out = destinations.filter(d => !q || d.label.toLowerCase().includes(q) || d.hint.toLowerCase().includes(q)).map(d => ({ ...d, run: () => go(d.path) }));
+    const out = PAGES.filter(p => !q || p.title.toLowerCase().includes(q)).map(p => ({ label: p.title, hint: 'Page', icon: p.icon, run: () => go(p.path) }));
     for (const s of sessions) {
       const name = s.label || s.displayName || s.name || s.key;
       if (q && String(name).toLowerCase().includes(q)) out.push({ label: name, hint: 'Chat', icon: 'chat', run: () => go('/chat?session=' + encodeURIComponent(s.key)) });
@@ -216,13 +185,6 @@ on('connection', state => {
   if (state === 'offline') toast('Lost connection to Zero — reconnecting…', 'warn');
 });
 paintConnection(connection.state);
-// Desktop notification when Zero finishes while this tab is in the background.
-on('zero.request', p => {
-  if (p.status !== 'completed' && p.status !== 'failed') return;
-  if (!document.hidden || look.notifyDone === false || !('Notification' in window) || Notification.permission !== 'granted') return;
-  const n = new Notification('Zero', { body: p.status === 'failed' ? 'A task failed — open Zero to see why.' : 'Zero finished your request.', icon: '/favicon.svg', tag: p.runId || undefined, silent: look.notifySound !== true });
-  n.onclick = () => { window.focus(); if (p.sessionKey) go('/chat?session=' + encodeURIComponent(p.sessionKey)); n.close(); };
-});
 onLive(paintPills);
 setInterval(() => { if (connection.state === 'online' && document.visibilityState === 'visible') refreshLive(); }, 15000);
 route();

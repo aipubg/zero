@@ -28,7 +28,7 @@ export async function render(root, { go }) {
       h('div.row', h('strong', 'Mode'), seg),
       online ? h('dl.kv', { style: { marginTop: '12px' } }, h('dt', 'Live model'), h('dd', s.liveModel || '—'), h('dt', 'Frames sent'), h('dd', String(s.framesSent ?? 0)),
         h('dt', 'Minutes this hour'), h('dd', `${s.minutesUsedThisHour ?? 0} / ${s.maxMinutesPerHour ?? '—'}`)) : null,
-      !s.provider ? h('div.callout', { style: { marginTop: '12px' } }, 'Online screen share is not set up.', h('button.btn.small', { type: 'button', onclick: () => go('/settings/models') }, 'Set up Gemini')) : null,
+      !s.provider ? h('div.callout', { style: { marginTop: '12px' } }, 'Online screen share is not set up.', h('button.btn.small', { type: 'button', onclick: () => go('/models') }, 'Set up Gemini')) : null,
     );
   }
 

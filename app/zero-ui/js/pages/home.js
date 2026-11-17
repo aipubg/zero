@@ -28,8 +28,8 @@ export async function render(root, { go }) {
   const statusCard = h('div.card', h('h2', icon('status'), 'System'), h('div.stack#sys'));
   const quick = h('div.quick',
     [['chat', 'New chat', 'Talk to Zero', '/chat?new=1'], ['computer', 'Computer', 'Apps & windows', '/computer'], ['terminal', 'Terminal', 'Run commands', '/terminal'],
-      ['tasks', 'Tasks', 'What Zero did', '/work/tasks'], ['clock', 'Automations', 'Scheduled jobs', '/work/automations'], ['memory', 'Memory', 'What Zero knows', '/knowledge/memory'],
-      ['screen', 'Screen share', 'Online / offline', '/computer/screen'], ['palette', 'Appearance', 'Make it yours', '/settings/appearance']]
+      ['tasks', 'Tasks', 'What Zero did', '/tasks'], ['clock', 'Automations', 'Scheduled jobs', '/automations'], ['memory', 'Memory', 'What Zero knows', '/memory'],
+      ['screen', 'Screen share', 'Online / offline', '/screen'], ['palette', 'Appearance', 'Make it yours', '/appearance']]
       .map(([ic, title, sub, path]) => h('button', { type: 'button', onclick: () => go(path) }, icon(ic, 20), h('strong', title), h('small', sub)))
   );
 
@@ -40,7 +40,7 @@ export async function render(root, { go }) {
     h('div.hero', heroMain, statusCard),
     h('div.card', { style: { marginBottom: 'var(--gap)' } }, h('h2', icon('spark'), 'Quick actions'), quick),
     h('div.grid.g2', h('div.card', h('div.card-head', h('h2', icon('chat'), 'Recent chats'), h('span.spacer'), h('button.btn.small.ghost', { type: 'button', onclick: () => go('/chat') }, 'All')), recentChats),
-      h('div.card', h('div.card-head', h('h2', icon('tasks'), 'Recent tasks'), h('span.spacer'), h('button.btn.small.ghost', { type: 'button', onclick: () => go('/work/tasks') }, 'All')), recentTasks)),
+      h('div.card', h('div.card-head', h('h2', icon('tasks'), 'Recent tasks'), h('span.spacer'), h('button.btn.small.ghost', { type: 'button', onclick: () => go('/tasks') }, 'All')), recentTasks)),
   );
 
   const row = (ic, label, value, kind) => h('div.item', icon(ic, 18), h('div.grow', h('div.title', label)), badge(value, kind));
@@ -55,7 +55,7 @@ export async function render(root, { go }) {
       row('hand', 'Hands on computer', live.hold?.held ? 'You' : 'Zero', live.hold?.held ? 'warn' : 'ok'),
       row('status', 'Zero host', gw ? `Up ${Math.round((gw.uptimeSeconds || 0) / 60)} min` : 'Unknown', gw ? 'ok' : 'warn'),
     ));
-    if (!modelReady() && live.auth) sys.append(h('div.callout.warn', { style: { marginTop: '10px' } }, 'Chat needs a model API key.', h('button.btn.small', { type: 'button', onclick: () => go('/settings/models') }, 'Add key')));
+    if (!modelReady() && live.auth) sys.append(h('div.callout.warn', { style: { marginTop: '10px' } }, 'Chat needs a model API key.', h('button.btn.small', { type: 'button', onclick: () => go('/models') }, 'Add key')));
   }));
   refreshLive();
 
@@ -67,7 +67,7 @@ export async function render(root, { go }) {
 
   call('tasks.list', { limit: 6 }).then(r => {
     const tasks = (Array.isArray(r) ? r : r?.tasks || []).slice(0, 6);
-    recentTasks.replaceChildren(...(tasks.length ? tasks.map(t => h('div.item.clickable', { onclick: () => go('/work/tasks?id=' + encodeURIComponent(t.id)) },
+    recentTasks.replaceChildren(...(tasks.length ? tasks.map(t => h('div.item.clickable', { onclick: () => go('/tasks?id=' + encodeURIComponent(t.id)) },
       icon('tasks', 16), h('div.grow', h('div.title', t.goal || t.title || t.id), h('div.sub', timeAgo(t.updatedAt || t.createdAt))), statusBadge(t.status))) : [h('div.empty', 'No tasks yet.')]));
   }).catch(e => recentTasks.replaceChildren(h('div.faint', e.message)));
 

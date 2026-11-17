@@ -92,10 +92,21 @@ export async function render(root) {
   }
   stops.push(onLive(paintHold));
 
+  // quick controls
+  const quick = h('div.row',
+    // System media keys: they act on Windows itself, not on a window, so no
+    // keyboard destination is needed.
+    ...[['Volume up', { action: 'press_key', key: 'volumeup' }], ['Volume down', { action: 'press_key', key: 'volumedown' }], ['Mute', { action: 'press_key', key: 'volumemute' }],
+      ['Play / pause', { action: 'press_key', key: 'playpause' }], ['Next track', { action: 'press_key', key: 'nexttrack' }], ['Previous track', { action: 'press_key', key: 'prevtrack' }]]
+      .map(([label, args]) => button(label, async () => {
+        try { const r = await tool('zero_computer_action', args, { timeoutMs: 30000 }); toast(r?.ok === false ? (r.error || 'Failed') : label + ' — done', r?.ok === false ? 'error' : 'ok'); }
+        catch (error) { toast(error.message, 'error'); }
+      }, { kind: 'small' })));
+
   root.append(
     h('div.head', h('div', h('div.eyebrow', 'Computer'), h('h1', 'Your desktop'), h('p', 'See the screen, open apps, manage windows and decide who has the mouse and keyboard.'))),
     h('div.grid', { style: { gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', alignItems: 'start' } },
-      h('div.stack', h('div.card', h('h2', icon('screen'), 'Live screen'), view)),
+      h('div.stack', h('div.card', h('h2', icon('screen'), 'Live screen'), view), h('div.card', h('h2', icon('settings'), 'Quick controls'), quick)),
       h('div.stack',
         h('div.card', h('h2', icon('play'), 'Open an app'), h('div.row', { style: { flexWrap: 'nowrap' } }, appInput, openBtn), openResult),
         holdCard,

@@ -9,13 +9,10 @@ const KNOWN_OFFLINE = [
   ['Fast input daemon', 'Windows Defender blocks it, so Zero uses the slower one-off path for mouse and keys.', 'Add a Defender exclusion (your decision)'],
   ['Realtime talk provider', 'None configured. Voice uses the browser microphone and Windows speech.', '—'],
   ['Gemini Live spoken replies', 'The setting exists; audio playback is not built yet.', '—'],
-  ['Secrets store, approval decisions, exec grants', 'The host only pretends to save these (stubs), so the UI does not offer them.', 'Needs a real backend'],
-  ['Updates, Logs (logbook)', 'The host answers with empty placeholders; there is no updater or log timeline yet.', 'Needs a real backend'],
-  ['Execution permission (Guarded / Workspace / Full)', 'Stored on a chat but never enforced by the host, so the UI does not offer a switch that would mislead.', 'Needs enforcement in the host'],
-  ['Messaging channels (WhatsApp, Telegram, …)', 'No channel connector exists in this Zero.', '—'],
+  ['Secrets store, approval decisions', 'The host only pretends to save these (stubs), so the new UI does not offer them.', 'Needs a real backend'],
   ['Skill registry, Skill workshop, Memory import, GitHub identity', 'Features of the old vendored UI; Zero never had a backend for them.', 'Removed'],
   ['Backups', 'No backup target is set.', '—'],
-  ['Cloud workers', 'Not configured.', '—'],
+  ['Channels, MCP servers, cloud workers', 'Not configured.', '—'],
 ];
 
 export async function render(root, { go }) {
@@ -30,9 +27,9 @@ export async function render(root, { go }) {
     const s = live.screen, desktopEnv = (env?.environments || []).find(e => e.id === 'gateway');
     const rows = [
       ['Connection to Zero host', live.gateway ? 'ok' : 'off', live.gateway ? `Running ${Math.round((live.gateway.uptimeSeconds || 0) / 60)} min` : 'Not reachable', null],
-      ['Chat model', modelReady() ? 'ok' : 'off', modelReady() ? (live.models?.defaultModel || 'ready') : 'No provider has an API key — chat cannot reply', modelReady() ? null : ['Add key', '/settings/models']],
-      ['Online screen share (Gemini Live)', s?.mode === 'online' ? 'ok' : 'off', s?.mode === 'online' ? `Online · ${s.liveModel}` : (s?.reason || 'Off'), s?.mode === 'online' ? null : ['Set up', '/settings/models']],
-      ['Local screen watching', live.observation?.running ? 'ok' : 'off', live.observation?.running ? (live.observation.privateMode ? 'Private mode' : 'On') : 'Stopped', live.observation?.running ? null : ['Open', '/computer/screen']],
+      ['Chat model', modelReady() ? 'ok' : 'off', modelReady() ? (live.models?.defaultModel || 'ready') : 'No provider has an API key — chat cannot reply', modelReady() ? null : ['Add key', '/models']],
+      ['Online screen share (Gemini Live)', s?.mode === 'online' ? 'ok' : 'off', s?.mode === 'online' ? `Online · ${s.liveModel}` : (s?.reason || 'Off'), s?.mode === 'online' ? null : ['Set up', '/models']],
+      ['Local screen watching', live.observation?.running ? 'ok' : 'off', live.observation?.running ? (live.observation.privateMode ? 'Private mode' : 'On') : 'Stopped', live.observation?.running ? null : ['Open', '/screen']],
       ['Voice (speech & listening)', live.voice?.ready ? 'ok' : 'off', live.voice?.ready ? `${live.voice.tts} / ${live.voice.asr}` : 'Not ready', null],
       ['Computer control (Windows hands)', live.hold?.held ? 'warn' : 'ok', live.hold?.held ? 'You are holding the computer' : 'Ready', null],
       ['Web search', web?.enabled ? 'ok' : 'off', web?.enabled ? web.provider || 'on' : 'Off', null],

@@ -66,7 +66,6 @@ import { createNativeObservationLifecycle } from './screen-observation.mjs';
 import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS, CAPABILITY_PARAMETERS } from '../../packages/capability-engine/index.mjs';
-import { terminalManager } from '../../packages/capability-engine/terminal-sessions.mjs';
 import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../packages/capability-engine/memory-planner.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
@@ -215,10 +214,6 @@ export class ZeroNativeHost {
     this.clients = new Set();
     this.eventBus = new GatewayEventBus();
     this.eventBus.subscribe((event, metadata) => this._dispatchGatewayEvent(event, metadata));
-    // Zero's own terminal: every open UI sees the same sessions live.
-    for (const name of ['open', 'output', 'exit', 'close']) {
-      terminalManager.on(name, payload => this.eventBus.publish(`terminal.${name}`, payload, { broadcast: true, legacyNotification: `zero.terminal.${name}` }));
-    }
 
     // Resolve expectedToken respecting gateway.auth.mode from config
     let resolvedToken = '';
@@ -1235,7 +1230,7 @@ export class ZeroNativeHost {
       'device.pair.list': ['operator.read', 'operator.pairing', 'operator.admin'],
     };
 
-    if (!METHOD_SCOPES[method] && /^(skills\.(install|import|update|uninstall|enable|disable|config|create|execute|library\.(save|mutate|import))|plugins\.(install|update|enable|disable|uninstall|execute|setEnabled|restart|remove)|voice\.(session\.|microphone\.|turn|chunk|transcribe|synthesize)|zero\.observation\.control|terminal\.(open|write|run|close|external))/.test(method)) METHOD_SCOPES[method] = ['operator.admin', 'operator.write'];
+    if (!METHOD_SCOPES[method] && /^(skills\.(install|import|update|uninstall|enable|disable|config|create|execute|library\.(save|mutate|import))|plugins\.(install|update|enable|disable|uninstall|execute|setEnabled|restart|remove)|voice\.(session\.|microphone\.|turn|chunk|transcribe|synthesize)|zero\.observation\.control)/.test(method)) METHOD_SCOPES[method] = ['operator.admin', 'operator.write'];
     if (METHOD_SCOPES[method]) {
       const required = METHOD_SCOPES[method];
       const hasScope = Boolean(
@@ -1499,7 +1494,7 @@ export class ZeroNativeHost {
         const key = params.key || params.id || params.sessionKey;
         const entryId = params.entryId;
         const parent = this.sessions.getSession(key);
-        const newSession = this.sessions.createSession(`chat-fork-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, parent ? `Fork of ${parent.title}` : 'Forked Conversation', { ...parent?.metadata, parentKey: key, entryId });
+        const newSession = this.sessions.createSession(null, parent ? `Fork of ${parent.title}` : 'Forked Conversation', { ...parent?.metadata, parentKey: key, entryId });
         if (parent && this.sessions.getTranscript) {
           try {
             const messages = this.sessions.getTranscript(key);
@@ -2551,22 +2546,6 @@ export class ZeroNativeHost {
 
       // Pages of the vendored UI that Zero has no backend for get answers in
       // the shape they read (an empty list, "not connected"), not an error.
-      // Zero's own terminal sessions (shared with the 'terminal' tool).
-      case 'terminal.list':
-        return { ok: true, terminals: terminalManager.list() };
-      case 'terminal.open':
-        return { ok: true, terminal: terminalManager.open({ shell: params.shell, cwd: params.cwd, title: params.title, owner: 'owner' }) };
-      case 'terminal.read':
-        return { ok: true, ...terminalManager.read(params.id, { tail: Number(params.tail) || 200000 }) };
-      case 'terminal.write':
-        return terminalManager.write(params.id, String(params.text ?? ''), { by: 'owner' });
-      case 'terminal.run':
-        return await terminalManager.run(params.id, String(params.command || ''), { timeoutMs: Number(params.timeoutMs) || 120000, by: 'owner' });
-      case 'terminal.close':
-        return terminalManager.close(params.id);
-      case 'terminal.external':
-        return terminalManager.openExternal({ command: params.command, cwd: params.cwd, shell: params.shell });
-
       case 'last-heartbeat':
         return { ok: true, ts: Date.now(), status: 'ok', uptimeMs: Math.round(process.uptime() * 1000) };
 
@@ -4758,7 +4737,6 @@ AUTONOMOUS EXECUTION PRINCIPLES:
   }
 
   async close(options = {}) {
-    try { terminalManager.closeAll(); } catch {}
     this.screenShare?.stop();
     const skillSourceDrain = this.skillLoader?.closeSources();
     await this.localGguf?.unloadModel(true);
