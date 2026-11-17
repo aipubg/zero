@@ -7,6 +7,7 @@ import { installLegacyRouteInterceptor } from "./src/legacy-routes.js";
 import { installNativeSurfaces } from "./src/native-surfaces.js";
 import { installGuaranteedChatComposer } from "./src/zero-chat-dock.js";
 import { installDesktopSessionKeepAlive } from "./src/desktop-session.js";
+import { mountHomeScreen } from "./src/home-screen.js";
 
 /**
  * Native Zero Control UI.
@@ -36,11 +37,14 @@ export default {
     const disposeSurfaces = zoff.has("surfaces") ? null : installNativeSurfaces(host);
     const disposeShell = zoff.has("shell") ? null : installZeroShell(host);
     const disposeSession = zoff.has("session") ? null : installDesktopSessionKeepAlive();
+    // The Home screen (sidebar Home button): status buttons and voice companion.
+    const disposeHome = zoff.has("home") ? null : mountHomeScreen(host);
     // The composer watchdog is never disabled: a chat route must always have
     // a usable input, even when the vendor chat surface fails to mount.
     const disposeDock = installGuaranteedChatComposer(host);
     const disposeAll = () => {
       disposeSession?.();
+      disposeHome?.();
       disposeShell?.();
       disposeDock?.();
       disposeSurfaces?.();

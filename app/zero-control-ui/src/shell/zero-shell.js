@@ -361,7 +361,8 @@ export function installZeroShell(host) {
     for (const main of document.querySelectorAll("main.content")) mountHeader(main);
     const controls = document.getElementById("zero-permanent-top-actions");
     const tray = document.querySelector(".zero-shell-control-tray");
-    if (controls && tray && controls.parentElement !== tray) tray.append(controls);
+    // On the Home screen the status buttons belong to it, not to the top bar.
+    if (controls && tray && !document.querySelector(".zero-home-status-slot") && controls.parentElement !== tray) tray.append(controls);
     for (const welcome of document.querySelectorAll(".agent-chat__welcome")) mountWelcome(welcome);
     renderStatus();
     // Discard the records produced by this pass. Without this, our own DOM

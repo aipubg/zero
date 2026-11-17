@@ -30,6 +30,52 @@ function speakableText(value) {
     .trim();
 }
 
+const DEVANAGARI = /[ऀ-ॿ]/;
+
+/**
+ * What Zero says out loud: only the useful lead of the reply, not the whole
+ * text. Code, tables, links and lists stay on screen; one or two short
+ * sentences are spoken, and a long reply ends with "the rest is on screen".
+ */
+export function voiceSummary(value) {
+  const full = String(value || '');
+  const text = full
+    .replace(/```[\s\S]*?```/g, ' ')                       // code and cards
+    .replace(/^\s*\|.*\|\s*$/gm, ' ')                      // table rows
+    .replace(/^\s*#{1,6}\s+/gm, '')                         // heading marks
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')                  // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')                // links -> their text
+    .replace(/https?:\/\/\S+/g, ' ')                        // bare URLs
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[*_~>#]/g, ' ')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, ' ') // emoji
+    .replace(/^\s*(\d+[.)]|[-•])\s+.*$/gm, ' ')             // list items stay on screen
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return '';
+  const sentences = text.split(/(?<=[.!?।])\s+/).map(s => s.trim()).filter(Boolean);
+  let spoken = '';
+  for (const sentence of sentences) {
+    if (spoken && (spoken.length + sentence.length > 220 || spoken.split(/(?<=[.!?।])\s+/).length >= 2)) break;
+    spoken = spoken ? `${spoken} ${sentence}` : sentence;
+  }
+  if (spoken.length > 260) spoken = spoken.slice(0, 260).replace(/\s+\S*$/, '') + '…';
+  const leftOver = text.length - spoken.length > 80 || /```|^\s*\|/m.test(full) || /^\s*(\d+[.)]|[-•*])\s+/m.test(full);
+  if (leftOver) spoken += DEVANAGARI.test(spoken) ? ' बाकी जानकारी स्क्रीन पर है।' : ' The rest is on screen.';
+  return spoken;
+}
+
+/** Words that mean "stop talking" (English, Hinglish and Hindi). */
+const STOP_WORDS = /\b(stop|wait|enough|quiet|shut up|ruko|ruk jao|bas|chup|chup raho|thehro|ek minute)\b|रुको|रुक जाओ|बस|चुप|ठहरो|एक मिनट/i;
+
+/** True when what the microphone heard is Zero's own voice coming back. */
+function isEcho(heard, spokenText) {
+  const words = String(heard || '').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) || [];
+  if (!words.length || !spokenText) return false;
+  const said = new Set(String(spokenText).toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) || []);
+  return words.filter(word => said.has(word)).length / words.length >= 0.6;
+}
+
 export function mountVoiceControl(button, host) {
   let disposed = false;
   let timer;
@@ -43,6 +89,12 @@ export function mountVoiceControl(button, host) {
   let silenceTimer = null;
   let recognition = null;
   let browserAsr = false;
+  let muted = false;             // mic switched off by the owner
+  let currentProse = '';         // what Zero is saying right now (echo filter)
+  let cancelSpeech = null;       // ends the current utterance early
+  let lang = 'en-IN';
+  try { lang = localStorage.getItem('zero-voice-lang') || 'en-IN'; } catch {}
+  const emit = (name, detail = {}) => { try { button.dispatchEvent(new CustomEvent(`zero-voice:${name}`, { detail })); } catch {} };
 
   button.classList.add('zero-voice-control');
   const meter = document.createElement('span');
@@ -83,7 +135,10 @@ export function mountVoiceControl(button, host) {
       voiceState = fresh ? 'listening' : 'waiting';
     }
 
+    if (muted && voiceState !== 'speaking' && voiceState !== 'error' && voiceState !== 'disconnected') voiceState = 'mic-off';
+    if (button.dataset.voiceState !== voiceState) emit('state', { state: voiceState });
     button.dataset.voiceState = voiceState;
+    if (voiceState === 'mic-off') { label.textContent = 'Voice: Mic off'; button.setAttribute('aria-pressed', 'false'); return; }
 
     if (voiceState === 'speaking') {
       label.textContent = 'Voice: Speaking...';
@@ -124,24 +179,32 @@ export function mountVoiceControl(button, host) {
 
   // ---------------------------------------------------------------- speech out
   const speak = async (text) => {
-    const prose = speakableText(text);
+    // Only the useful lead of the reply is spoken; the full reply is in chat.
+    const prose = voiceSummary(text);
     if (!prose) return;
     speaking = true;
+    currentProse = prose;
+    emit('speak', { text: prose, full: String(text || '') });
     render('Voice: Speaking...', active, null, null);
     try {
       const synth = window.speechSynthesis;
       if (synth && typeof window.SpeechSynthesisUtterance === 'function') {
         await new Promise((resolve) => {
           let settled = false;
-          const done = () => { if (settled) return; settled = true; resolve(); };
+          const done = () => { if (settled) return; settled = true; cancelSpeech = null; resolve(); };
           const utterance = new window.SpeechSynthesisUtterance(prose);
-          utterance.lang = 'en-US';
-          utterance.rate = 1.02;
+          utterance.lang = DEVANAGARI.test(prose) ? 'hi-IN' : lang;
+          const voice = synth.getVoices?.().find(v => v.lang === utterance.lang) || synth.getVoices?.().find(v => v.lang?.startsWith(utterance.lang.slice(0, 2)));
+          if (voice) utterance.voice = voice;
+          utterance.rate = 1.05;
           utterance.onend = done;
           utterance.onerror = done;
-          try { synth.speak(utterance); } catch { done(); }
+          // Each word drives the character's mouth and the sound wave.
+          utterance.onboundary = event => emit('word', { index: event.charIndex, length: event.charLength || 4 });
+          cancelSpeech = () => { try { synth.cancel(); } catch {} done(); };
+          try { synth.cancel(); synth.speak(utterance); } catch { done(); }
           // Never let a stuck synthesizer block the conversation loop.
-          setTimeout(done, Math.min(180000, 2500 + prose.length * 90));
+          setTimeout(done, Math.min(60000, 2500 + prose.length * 90));
         });
       } else {
         await request('voice.speak', { text: prose, sessionId: sessionKey() });
@@ -150,6 +213,8 @@ export function mountVoiceControl(button, host) {
       failure = error.message;
     } finally {
       speaking = false;
+      currentProse = '';
+      emit('quiet');
       // Re-render immediately so the badge leaves "Speaking..." without
       // waiting for the next status poll.
       if (!disposed && button.isConnected) render('Voice: READY', active, null, null);
@@ -171,17 +236,35 @@ export function mountVoiceControl(button, host) {
     }
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    recognition.lang = lang;
     recognition.onresult = (event) => {
+      if (muted) return;
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         const chunk = (result?.[0]?.transcript || '').trim();
         if (!chunk) continue;
+        if (speaking) {
+          // Basic manners: when the owner talks, Zero stops talking.
+          if (STOP_WORDS.test(chunk)) {
+            cancelSpeech?.();
+            finalBuffer = '';
+            interimText = '';
+            emit('interrupted', { by: 'stop-word', text: chunk });
+            render('Voice: Listening', active, null, null);
+            return;
+          }
+          if (isEcho(chunk, currentProse)) continue;   // Zero hearing itself
+          if ((chunk.match(/[\p{L}\p{N}]+/gu) || []).length >= 2) {
+            cancelSpeech?.();
+            emit('interrupted', { by: 'speech', text: chunk });
+          } else continue;
+        }
         if (result.isFinal) finalBuffer = `${finalBuffer} ${chunk}`.trim();
         else interim += `${chunk} `;
       }
       interimText = interim.trim();
+      if (interimText || finalBuffer) emit('heard', { text: `${finalBuffer} ${interimText}`.trim() });
       if (finalBuffer.trim()) scheduleSend();
       render('Voice: READY', active, null, null);
     };
@@ -193,9 +276,10 @@ export function mountVoiceControl(button, host) {
     };
     recognition.onend = () => {
       recognition = null;
-      // Chrome ends the recognizer periodically; restart it while active.
-      if (!disposed && active && browserAsr) {
-        setTimeout(() => { if (!disposed && active && browserAsr) startRecognition(); }, 250);
+      // Chrome ends the recognizer periodically; restart it while active
+      // (but never while the owner has switched the mic off).
+      if (!disposed && active && browserAsr && !muted) {
+        setTimeout(() => { if (!disposed && active && browserAsr && !muted) startRecognition(); }, 250);
       }
     };
     try {
@@ -228,13 +312,17 @@ export function mountVoiceControl(button, host) {
     const text = finalBuffer.trim();
     finalBuffer = '';
     interimText = '';
-    if (!text || disposed) return;
+    if (!text || disposed || muted) return;
+    // A bare "stop" is a request to be quiet, not a message for the model.
+    if (STOP_WORDS.test(text) && text.split(/\s+/).length <= 3) { emit('interrupted', { by: 'stop-word', text }); return; }
     try {
       label.textContent = 'Voice: Thinking...';
       button.dataset.voiceState = 'thinking';
+      emit('state', { state: 'thinking' });
+      emit('sent', { text });
       const reply = await request('chat.send', { sessionKey: sessionKey(), message: text });
-      const spoken = speakableText(reply?.content || reply?.text || reply?.message || '');
-      if (spoken) await speak(spoken);
+      const content = reply?.content || reply?.text || reply?.message || '';
+      if (speakableText(content)) await speak(content);
     } catch (error) {
       failure = error.message;
       render(`Voice: ${error.message}`, active, null, null);
@@ -332,6 +420,37 @@ export function mountVoiceControl(button, host) {
   };
 
   button.addEventListener('click', click);
+
+  // Used by the Home screen: mic switch, start/stop, language, live state.
+  button.zeroVoice = {
+    get active() { return active; },
+    get muted() { return muted; },
+    get speaking() { return speaking; },
+    get lang() { return lang; },
+    get state() { return button.dataset.voiceState || 'idle'; },
+    start: async () => { if (!active) await click(); },
+    stop: async () => { if (active) await click(); },
+    mute() {
+      muted = true;
+      cancelSpeech?.();
+      speaking = false;
+      stopRecognition();
+      window.clearTimeout(silenceTimer);
+      finalBuffer = ''; interimText = '';
+      render('Voice: Mic off', active, null, null);
+    },
+    unmute() {
+      muted = false;
+      if (active) startRecognition();
+      render('Voice: Listening', active, null, null);
+    },
+    stopSpeaking() { cancelSpeech?.(); },
+    setLang(next) {
+      lang = next || 'en-IN';
+      try { localStorage.setItem('zero-voice-lang', lang); } catch {}
+      if (recognition) { stopRecognition(); if (active && !muted) startRecognition(); }
+    },
+  };
   void refresh();
 
   return () => {

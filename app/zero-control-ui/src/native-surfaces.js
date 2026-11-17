@@ -687,6 +687,8 @@ function installNativeSurfaces(host) {
       }
       const canvases = root.querySelectorAll ? root.querySelectorAll("canvas") : [];
       for (const c of canvases) {
+        // Zero's own Home screen draws its voice companion on canvases.
+        if (c.closest(".zero-home-screen")) continue;
         c.style.setProperty("display", "none", "important");
       }
       const mascots = root.querySelectorAll ? root.querySelectorAll("zero-mascot, .zero-mascot") : [];
