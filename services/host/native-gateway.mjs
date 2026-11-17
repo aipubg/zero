@@ -70,7 +70,7 @@ import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../package
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
 import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
-import { decomposeMultiAppRequest, routeSimpleRequest } from '../../packages/capability-engine/director-routing.mjs';
+import { decomposeMultiAppRequest } from '../../packages/capability-engine/director-routing.mjs';
 import { executeMissionPlan, MissionStateStore } from '../../packages/capability-engine/mission-state.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/capability-engine/zero-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
@@ -3873,35 +3873,7 @@ export class ZeroNativeHost {
         this.sessions.appendMessage(sessionKey, options.resumeTaskId ? { role: 'system', runId: options.runId, content: `Resume interrupted task ${task.id}. Original goal: ${userContent}. Existing effects may already have happened. Inspect prior tool results and actual files/state before repeating any action. Continue remaining work and report unresolved effects honestly.` } : { role: 'user', runId: options.runId, content: userContent });
         this.tasks.recordStep(task.id, { stepNumber: this.tasks.getTaskSteps(task.id).length + 1, toolName: options.resumeTaskId ? 'assistant_resume' : 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
         let result;
-        const directRoute = !mission && routeSimpleRequest(userContent);
-        if (directRoute) {
-          const execution = await this.requestOrchestrator.executeCapability({
-            agentId: options.clientSession?.clientId || 'zero',
-            toolName: directRoute.toolName,
-            args: directRoute.args,
-            signal: combinedSignal,
-            context: { source, sessionKey, ws: options.ws },
-          });
-          if (execution?.ok === false) throw new Error(execution.error || `Direct ${directRoute.toolName} execution failed`);
-          const content = directRoute.response === 'stdout'
-            ? `Hostname: ${String(execution.stdout || '').trim() || '(no output)'}`
-            : directRoute.response === 'hostname'
-              ? `Computer name: ${execution.hostname}`
-              : `Computer name: ${execution.hostname}\nPlatform: ${execution.platform} (${execution.arch})`;
-          this.sessions.appendMessage(sessionKey, { role: 'assistant', runId: options.runId, content });
-          this.tasks.recordStep(task.id, {
-            stepNumber: this.tasks.getTaskSteps(task.id).length + 1,
-            toolName: directRoute.toolName,
-            toolArgs: directRoute.args,
-            toolResult: execution,
-            status: 'completed',
-          });
-          const eventMetadata = { sessionKey, ownerSocket: options.ws, ownerOnly: true };
-          this.eventBus.publish('chat.delta', { runId: options.runId, sessionKey, delta: content, timestamp: Date.now() }, { ...eventMetadata, legacyNotification: 'zero.stream.delta' });
-          this.eventBus.publish('chat.complete', { runId: options.runId, sessionKey, content }, { ...eventMetadata, legacyNotification: 'zero.stream.complete' });
-          result = { ok: true, role: 'assistant', content, execution: { outcome: 'COMPLETED', completedActions: 1 } };
-        } else if (mission) {
-          const workflowBudget = { actionsUsed: 0, turnsUsed: 0 };
+        if (mission) {
           const missionRun = await executeMissionPlan({
             store: this.missionState,
             missionId: mission.id,
@@ -3923,7 +3895,9 @@ export class ZeroNativeHost {
                 taskId: task.id,
                 userContent: subPrompt,
                 signal: combinedSignal,
-                workflowBudget,
+                // Each part gets its own budget: one hard part must not
+                // use up the steps of the parts after it.
+                workflowBudget: { actionsUsed: 0, turnsUsed: 0 },
                 source: 'mission',
               });
             },
@@ -4110,7 +4084,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       let finalContent = '';
       const budgetState = workflowBudget || { actionsUsed: 0, turnsUsed: 0 };
       if (workflowBudget && (budgetState.turnsUsed >= maxTurns || budgetState.actionsUsed >= maxActions)) {
-        finalContent = 'This mission was attempted but could not start because the shared workflow budget was exhausted.';
+        finalContent = 'This part could not start because its step budget was already used.';
         completedModelTurn = true;
       }
       let observedProviderModel = null;
@@ -4484,12 +4458,20 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           let execRes = null;
 
-          // Use an explicitly selected or recently focused window when present.
-          // With no target, Windows input is sent to the active foreground window.
+          // Keyboard input needs a known destination: a window named in the call,
+          // or one Zero opened, focused or drove in its browser during this
+          // request. It is never sent to "whatever is in front" — that window is
+          // the owner's, and a stray Alt+F4 or text there cannot be taken back.
           if (!hasOwnHandler && targetCapability !== 'browser' && KEYBOARD_ACTIONS.has(action)) {
             const namedWindow = args.target || args.app || args.window || args.window_title || null;
             const hasPoint = args.x !== undefined && args.y !== undefined;
-            if (!namedWindow && !hasPoint && turnFocusedWindow) {
+            if (!namedWindow && !hasPoint && !turnFocusedWindow) {
+              execRes = {
+                ok: false, executed: false, verified: false, completed: false, outcome: 'FAILED', action,
+                error: 'keyboard-target-required',
+                message: action + ' was not sent: no destination window. Pass `target` (window title or app name), or call open_app / focus_window / browser first. Keystrokes are never sent to an unknown window.',
+              };
+            } else if (!namedWindow && !hasPoint && turnFocusedWindow) {
               args.target = turnFocusedWindow;
             }
             if (!execRes && !['type_text', 'type'].includes(action) && (args.target || args.app)) {
@@ -4516,6 +4498,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           executedActions.push({ stepId, action, args, execRes });
           recordTool(fnName, args, execRes);
 
+          // A page Zero opened in its own browser is a window Zero put in front.
+          if (execRes?.ok === true && targetCapability === 'browser') {
+            const pageTitle = execRes.title || execRes.pageTitle || execRes.videoTitle || null;
+            if (pageTitle) turnFocusedWindow = String(pageTitle);
+          }
           // Track the window Zero opened or focused, for later keyboard input.
           if (execRes?.ok === true && ['open_app', 'launch_app', 'focus_window', 'control_window', 'bring_to_front'].includes(action)) {
             const focusedTitle = (typeof execRes.window === 'string' ? execRes.window : execRes.window?.title) || execRes.data?.window?.title || execRes.details?.title || null;
@@ -4568,7 +4555,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
       if (!completedModelTurn) {
         if (workflowBudget) {
-          finalContent = accumulatedContent || 'The shared workflow budget was exhausted before this mission could produce a final report.';
+          finalContent = accumulatedContent || 'The step budget for this part ran out before it could report.';
         } else {
           console.warn('[Zero Host] Assistant tool-turn limit reached before a final response; asking the model for a closing report');
           // The step budget is spent, but the owner still needs an answer: one

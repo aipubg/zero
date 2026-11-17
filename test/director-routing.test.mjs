@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decomposeMultiAppRequest, routeSimpleRequest } from '../packages/capability-engine/director-routing.mjs';
+import { decomposeMultiAppRequest } from '../packages/capability-engine/director-routing.mjs';
 
 test('multi-app prompts are decomposed into ordered app missions', () => {
   const missions = decomposeMultiAppRequest(
@@ -13,12 +13,6 @@ test('multi-app prompts are decomposed into ordered app missions', () => {
   assert.match(missions[2].goal, /Hello Mummy/);
 });
 
-test('simple hostname and system-info requests route directly', () => {
-  assert.deepEqual(routeSimpleRequest('Run hostname and tell me my PC name.'), {
-    toolName: 'run_process',
-    args: { command: 'hostname', args: [] },
-    response: 'stdout',
-  });
-  assert.equal(routeSimpleRequest('What is my computer name?').toolName, 'system_info');
-  assert.equal(routeSimpleRequest('Open Spotify and play a song.'), null);
+test('a single-app request is not split', () => {
+  assert.deepEqual(decomposeMultiAppRequest('Open Spotify and play a song.'), []);
 });

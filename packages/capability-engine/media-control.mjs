@@ -177,11 +177,25 @@ export class MediaController {
         }, requested);
       }
       const result = await this._result('play', 'play', media, before, 'play', combined, requested);
-      return notificationSelection ? {
+      if (!notificationSelection) return result;
+      const fromNotification = notificationSelection.source === 'notification';
+      // A video picked from the home page or a search is not a notification
+      // video. The result must say so, so the owner is told what really played.
+      const notSignedIn = notificationSelection.fallbackReason === 'notifications-bell-unavailable';
+      return {
         ...result,
         notificationSelection: notificationSelection.source,
-        ...(notificationSelection.fallbackReason ? { notificationFallbackReason: notificationSelection.fallbackReason } : {}),
-      } : result;
+        fromNotification,
+        ...(fromNotification ? {} : {
+          notificationFallbackReason: notificationSelection.fallbackReason,
+          ...(notSignedIn ? { signInRequired: true } : {}),
+          message: (notSignedIn
+            ? "No notification video could be opened: YouTube shows no notifications bell, so the owner is not signed in to YouTube in Zero's browser. "
+            : 'No notification video could be opened: the notifications list had no video. ')
+            + `A video from ${notificationSelection.source === 'search-fallback' ? 'a search' : 'the YouTube home page'} was played instead ("${result.videoTitle}"). Tell the owner this was not a notification video`
+            + (notSignedIn ? ', and that signing in once in the Zero browser window fixes it.' : '.'),
+        }),
+      };
     });
   }
 

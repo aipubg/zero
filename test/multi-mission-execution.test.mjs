@@ -55,13 +55,4 @@ test('chat requests attempt every app mission after an earlier mission fails', {
   assert.match(result.content, /Spotify: COMPLETED/);
   assert.match(result.content, /WhatsApp: COMPLETED/);
   assert.equal(host.missionState.getMission(result.execution.missionId).status, 'PARTIAL');
-
-  host.sessions.createSession('hostname-chat', 'New Conversation');
-  const hostnameResult = await host._runAssistantRequest({
-    sessionKey: 'hostname-chat',
-    source: 'chat',
-    userContent: 'Run hostname and tell me my PC name.',
-  });
-  assert.match(hostnameResult.content, /^Hostname: .+/);
-  assert.equal(host.tasks.getTaskSteps(hostnameResult.taskId).some(step => step.toolName === 'run_process'), true);
 });

@@ -119,6 +119,22 @@ Status values: `done`, `partial`, `todo`.
 - `todo` Replace the always-pass style check, the 250 ms composer watchdog and the
   scroll-reset script with a real fix in the UI source.
 
+## Multi-app requests  (`partial`)
+
+- `done` A request that names several apps (YouTube, then Spotify, then
+  WhatsApp) is split into parts that run one after another; a failed part
+  no longer stops the parts after it, and each part has its own step budget.
+- `done` Zero's browser keeps a signed-in profile in `.zero-data/browser-profile`.
+  The owner signs in to a site once in the Zero browser window.
+- `done` "Play a video from YouTube notifications" says plainly when it had to
+  play a home-page or search video instead, and whether that was because the
+  owner is not signed in.
+- `done` Keyboard input still needs a named window or one Zero opened in the
+  same request (`test/keyboard-destination-rule.test.mjs`). Zero's own browser
+  page counts as such a window.
+- `todo` Verify a full YouTube → Spotify → WhatsApp request live, after the owner
+  has signed in to YouTube and WhatsApp Web in the Zero browser.
+
 ## Phase 6 — Long-running Jarvis  (`todo`)
 
 - Prove `goal_plan` → scheduled job → milestone progress across a restart.

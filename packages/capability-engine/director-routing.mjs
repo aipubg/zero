@@ -8,22 +8,6 @@ const APP_MARKERS = [
   { app: 'Browser', pattern: /\b(?:browser|chrome|edge)\b/i },
 ];
 
-export function routeSimpleRequest(text) {
-  const prompt = String(text || '').trim();
-  if (!prompt) return null;
-
-  if (/^(?:please\s+)?(?:run|execute)\s+(?:the\s+)?hostname(?:\s+command)?(?:\s+and\s+(?:tell|report|show)\b.*)?[.!?]*$/i.test(prompt)) {
-    return { toolName: 'run_process', args: { command: 'hostname', args: [] }, response: 'stdout' };
-  }
-  if (/^(?:what(?:'s| is)\s+(?:my\s+)?(?:pc|computer|machine)\s+name|(?:show|tell)\s+me\s+(?:my\s+)?(?:pc|computer|machine)\s+name)[.!?]*$/i.test(prompt)) {
-    return { toolName: 'system_info', args: {}, response: 'hostname' };
-  }
-  if (/^(?:show|get|tell me)\s+(?:the\s+)?(?:system|computer)\s+info(?:rmation)?[.!?]*$/i.test(prompt)) {
-    return { toolName: 'system_info', args: {}, response: 'summary' };
-  }
-  return null;
-}
-
 export function decomposeMultiAppRequest(text) {
   const prompt = String(text || '').trim();
   if (!prompt) return [];
