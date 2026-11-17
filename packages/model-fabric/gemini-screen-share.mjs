@@ -127,12 +127,12 @@ const CHECK_IMAGE = new URL('./assets/screen-check-dialog.png', import.meta.url)
  * screenshot (about one request in three) and 503 "high demand". Both are
  * retried; anything else is returned as is.
  */
-export async function postInteraction(apiKey, body, { timeoutMs = 60000, retries = 2, signal = null } = {}) {
+export async function postInteraction(apiKey, body, { timeoutMs = 60000, retries = 2, signal = null, url = INTERACTIONS_URL, retryDelaysMs = [1500, 4000] } = {}) {
   let last = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
-    if (attempt) await new Promise(resolve => setTimeout(resolve, attempt === 1 ? 1500 : 4000));
+    if (attempt) await new Promise(resolve => setTimeout(resolve, retryDelaysMs[Math.min(attempt, retryDelaysMs.length) - 1] ?? 4000));
     signal?.throwIfAborted?.();
-    const res = await fetch(INTERACTIONS_URL, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),

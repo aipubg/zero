@@ -73,6 +73,8 @@ import { defaultVoiceStatus } from '../../packages/capability-engine/voice-statu
 import { decomposeMultiAppRequest } from '../../packages/capability-engine/director-routing.mjs';
 import { KeyboardTargetScope } from '../../packages/capability-engine/keyboard-rule.mjs';
 import { checkGeminiScreenShare, findScreenShareProvider } from '../../packages/model-fabric/gemini-screen-share.mjs';
+import { createScreenAct } from '../../packages/capability-engine/screen-act.mjs';
+import { captureDriverDesktop } from '../../packages/screen-intelligence/windows-capture.mjs';
 import { executeMissionPlan, MissionStateStore } from '../../packages/capability-engine/mission-state.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/capability-engine/zero-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
@@ -382,6 +384,19 @@ export class ZeroNativeHost {
     canonicalCapabilityEngine.registerHandler('procedure_recall', async ({ query, limit }) => {
       return { procedures: this._recallProcedures(query, limit) };
     });
+    // Online screen share: Gemini Computer Use decides, Zero's own hands act.
+    const screenHand = (action, args, signal) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { ...args, action }, signal });
+    canonicalCapabilityEngine.registerHandler('screen_act', createScreenAct({
+      getSettings: () => findScreenShareProvider(this.modelFabric),
+      act: screenHand,
+      openApp: (app, signal) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'open_app', args: { app }, signal }),
+      capture: async signal => {
+        const frame = await captureDriverDesktop({ signal, compressed: true, format: 'jpeg', maxWidth: 1440, quality: 80 });
+        return { base64: String(frame.base64 || frame.data).replace(/^data:[^;]+;base64,/u, ''), mimeType: frame.mimeType || 'image/jpeg' };
+      },
+      screenSize: async signal => { const r = await screenHand('get_screen_size', {}, signal); return { width: Number(r.width) || 1920, height: Number(r.height) || 1080 }; },
+      foreground: async signal => { const r = await screenHand('get_window_state', {}, signal); const w = r.window || r.data?.window || {}; return { title: w.title || '', process: w.process || w.processName || '' }; },
+    }));
 
 
     const automationExecutor = createAutomationDispatcher({
@@ -3587,7 +3602,10 @@ export class ZeroNativeHost {
     // in packages/capability-engine/index.mjs) plus any dynamically registered
     // custom capabilities. No inline duplicate tool schemas are maintained here.
     const tools = [];
+    const onlineScreenShare = Boolean(findScreenShareProvider(this.modelFabric));
     for (const [name, def] of Object.entries(CAPABILITY_DEFINITIONS)) {
+      // screen_act needs online screen share; do not offer it otherwise.
+      if (name === 'screen_act' && !onlineScreenShare) continue;
       tools.push({
         type: 'function',
         function: {
