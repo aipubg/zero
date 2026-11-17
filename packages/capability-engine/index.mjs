@@ -152,6 +152,10 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Voice TTS/ASR availability.',
     allowedActions: ['status'],
   },
+  'ask_screen': {
+    description: 'Online screen share only: ask Gemini Live, which is watching the owner screen, what is on the screen or what the owner is doing (fast, about 1-2 s). Use it to understand the current work of the owner before helping. Read-only.',
+    allowedActions: ['ask'],
+  },
   'screen_act': {
     description: 'Online screen share only: do a goal on screen with Gemini Computer Use, which looks at screenshots and decides where to click, drag and type (slow: ~10 s per step). Use it when a control cannot be found by name with zero_computer_action / get_elements, or for visual tasks. If it returns needsConfirmation, ask the owner and call again with confirm_token.',
     allowedActions: ['act'],
@@ -193,6 +197,7 @@ export const CAPABILITY_PARAMETERS = Object.freeze({
   system_info: params({}),
   doctor_memory_status: params({}),
   voice_status: params({}),
+  ask_screen: params({ question: str('What you want to know about the screen, e.g. "Which app and file is the owner working in?", "What does the error dialog say?"') }, ['question']),
   screen_act: params({
     goal: str('What to do on screen, in plain words, e.g. "click the Subscribe button", "drag the report.pdf icon into the Documents folder"'),
     confirm_token: str('Only after the owner confirmed an action screen_act asked about: the token it returned'),

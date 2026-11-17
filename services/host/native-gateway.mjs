@@ -74,6 +74,7 @@ import { decomposeMultiAppRequest } from '../../packages/capability-engine/direc
 import { KeyboardTargetScope } from '../../packages/capability-engine/keyboard-rule.mjs';
 import { checkGeminiScreenShare, findScreenShareProvider } from '../../packages/model-fabric/gemini-screen-share.mjs';
 import { createScreenAct } from '../../packages/capability-engine/screen-act.mjs';
+import { ScreenShareService } from '../../packages/capability-engine/screen-share.mjs';
 import { captureDriverDesktop } from '../../packages/screen-intelligence/windows-capture.mjs';
 import { executeMissionPlan, MissionStateStore } from '../../packages/capability-engine/mission-state.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/capability-engine/zero-desktop.mjs';
@@ -268,6 +269,13 @@ export class ZeroNativeHost {
       localVisionMinIntervalMs: visionConfig.minIntervalMs ?? 30000,
     });
     this.observationLifecycle = createNativeObservationLifecycle({ observer: this.screenObserver, prefsPath: this.prefsPath });
+    // Online screen share (Gemini Live) next to the offline observer above.
+    this.screenShare = new ScreenShareService({
+      getProvider: () => findScreenShareProvider(this.modelFabric),
+      latestFrame: () => this.screenObserver?.buffer?.getLatestFrame() || null,
+      isHumanHold: () => Boolean(canonicalCapabilityEngine.operator?.humanHold),
+      prefsPath: path.join(dataDir, 'screen-share.json'),
+    });
     this.modelFabric = new ModelFabric({
       localChat: new LocalChatTransport(this.localGguf),
       configPath: options.providersPath || process.env.ZERO_PROVIDERS_PATH || path.join(REPO_ROOT, 'models', 'gateway-providers.json'),
@@ -384,6 +392,8 @@ export class ZeroNativeHost {
     canonicalCapabilityEngine.registerHandler('procedure_recall', async ({ query, limit }) => {
       return { procedures: this._recallProcedures(query, limit) };
     });
+    // Online screen share: Gemini Live answers questions about the screen.
+    canonicalCapabilityEngine.registerHandler('ask_screen', async ({ question }) => this.screenShare.ask(String(question || 'What is on the screen and what is the owner doing?')));
     // Online screen share: Gemini Computer Use decides, Zero's own hands act.
     const screenHand = (action, args, signal) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { ...args, action }, signal });
     canonicalCapabilityEngine.registerHandler('screen_act', createScreenAct({
@@ -506,6 +516,9 @@ export class ZeroNativeHost {
         console.warn('[Zero Host] Screen Intelligence start warning:', obsErr.message);
       }
     }
+    // Online screen share starts by itself when a Gemini provider has it on.
+    this.screenShare.on('state', state => this.eventBus.publish('screenShare.state', state, { broadcast: true }));
+    void this.screenShare.refresh().then(state => console.log(`[Zero Host] Screen share: ${state.mode}${state.reason ? ` (${state.reason})` : ''}`)).catch(error => console.warn('[Zero Host] Screen share start warning:', error.message));
     const wsModule = await loadWs();
     const WebSocketServer = wsModule.WebSocketServer;
 
@@ -1051,7 +1064,7 @@ export class ZeroNativeHost {
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
           'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
-          'zero.screenShare.check', 'zero.screenShare.status',
+          'zero.screenShare.check', 'zero.screenShare.status', 'zero.screenShare.setMode', 'zero.screenShare.ask',
           'zero.gateway.config.get', 'zero.gateway.config.save',
           'zero.gateway.localGguf',
           'zero.gateway.status', 'zero.gateway.restart',
@@ -1241,6 +1254,8 @@ export class ZeroNativeHost {
       'zero.providers.setActive': ['admin', 'operator.admin'],
       'zero.providers.save': ['admin', 'operator.admin'],
       'zero.screenShare.check': ['admin', 'operator.admin'],
+      'zero.screenShare.setMode': ['admin', 'operator.admin'],
+      'zero.screenShare.ask': ['operator.write', 'operator.admin'],
       'zero.providers.delete': ['admin', 'operator.admin'],
       'zero.gateway.config.save': ['admin', 'operator.admin'],
       'zero.gateway.localGguf': ['admin', 'operator.admin'],
@@ -1963,8 +1978,11 @@ export class ZeroNativeHost {
 
       case 'zero.providers.configure':
         return saveConfiguredProvider(this.modelFabric, params.provider);
-      case 'zero.providers.save':
-        return saveConfiguredProvider(this.modelFabric, params);
+      case 'zero.providers.save': {
+        const saved = saveConfiguredProvider(this.modelFabric, params);
+        void this.screenShare.refresh().catch(() => {});
+        return saved;
+      }
       case 'zero.providers.delete':
         return params.modelId
           ? deleteConfiguredModel(this.modelFabric, params.id, params.modelId)
@@ -1985,17 +2003,15 @@ export class ZeroNativeHost {
         return result;
       }
 
-      case 'zero.screenShare.status': {
-        const selected = findScreenShareProvider(this.modelFabric);
-        return {
-          ok: true,
-          // Online needs an enabled Gemini provider with a working Live check.
-          mode: selected && this.screenShareLastCheck?.providerId === selected.provider.id && this.screenShareLastCheck.ok ? 'online-ready' : 'offline',
-          provider: selected ? { id: selected.provider.id, name: selected.provider.name || selected.provider.id } : null,
-          config: selected?.config || null,
-          lastCheck: this.screenShareLastCheck || null,
-          offline: { running: Boolean(this.screenObserver?.running) },
-        };
+      case 'zero.screenShare.status':
+        return { ok: true, ...this.screenShare.status(), lastCheck: this.screenShareLastCheck || null, offline: { running: Boolean(this.screenObserver?.running) } };
+
+      case 'zero.screenShare.setMode':
+        return { ok: true, ...await this.screenShare.setPreference(params.preference) };
+
+      case 'zero.screenShare.ask': {
+        const answer = await this.screenShare.ask(String(params.question || 'What is on the screen right now?'));
+        return answer;
       }
 
       case 'zero.gateway.status': {
@@ -3606,6 +3622,7 @@ export class ZeroNativeHost {
     for (const [name, def] of Object.entries(CAPABILITY_DEFINITIONS)) {
       // screen_act needs online screen share; do not offer it otherwise.
       if (name === 'screen_act' && !onlineScreenShare) continue;
+      if (name === 'ask_screen' && this.screenShare?.mode !== 'online') continue;
       tools.push({
         type: 'function',
         function: {
@@ -4763,6 +4780,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
   }
 
   async close(options = {}) {
+    this.screenShare?.stop();
     const skillSourceDrain = this.skillLoader?.closeSources();
     await this.localGguf?.unloadModel(true);
     await this.screenAutomation.close();
