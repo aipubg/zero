@@ -24,9 +24,9 @@ const SETTINGS_DESTINATIONS = [
   { label: "Devices", path: "/settings/devices", icon: "monitor", detail: "Connected devices and companions" },
   { label: "Cloud workers", path: "/settings/cloud-workers", icon: "agents", detail: "Background and remote workers" },
   { label: "MCP connections", path: "/settings/mcp", icon: "plug", detail: "Connected tools and services" },
-  { label: "Privacy & security", path: "/settings/privacy", icon: "memory", detail: "Privacy and data controls" },
+  { label: "Privacy & security", path: "/settings/security", icon: "memory", detail: "Privacy and data controls" },
   { label: "Appearance", path: "/settings/appearance", icon: "grid", detail: "Visual preferences" },
-  { label: "Gateway", path: "/settings/gateway", icon: "orbit", detail: "Connection settings" },
+  { label: "Gateway", path: "/settings/connection", icon: "orbit", detail: "Connection settings" },
   { label: "Notifications", path: "/settings/notifications", icon: "bolt", detail: "Notification preferences" },
 ];
 
