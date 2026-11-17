@@ -91,3 +91,32 @@ test('keyboard scope refuses keystrokes without a destination and remembers wind
   const browserTyping = await scope.before({ action: 'type', capability: 'browser', args: { text: 'x' } });
   assert.equal(browserTyping.refusal, undefined, 'typing inside Zero\'s own browser page is the browser tool\'s job');
 });
+
+test('one-click setup picks models, saves nothing on a bad key, and needs Live to connect', async () => {
+  const { chooseScreenShareModels, prepareScreenShareSetup } = await import('../packages/model-fabric/gemini-screen-share.mjs');
+  assert.deepEqual(
+    chooseScreenShareModels({ live: ['gemini-3.1-flash-live-preview', 'gemini-3.8-live'], computerUse: ['gemini-4-hydrogen', 'gemini-3.5-flash-lite'] }),
+    { liveModel: 'gemini-3.8-live', computerUseModel: 'gemini-3.5-flash-lite' },
+  );
+  assert.deepEqual(chooseScreenShareModels({ live: ['some-new-live'], computerUse: [] }), { liveModel: 'some-new-live', computerUseModel: null });
+
+  const rejected = await prepareScreenShareSetup({ apiKey: 'bad', list: async () => { throw new Error('API key not valid'); } });
+  assert.equal(rejected.ok, false);
+  assert.match(rejected.error, /did not accept this key: API key not valid/);
+
+  const noLive = await prepareScreenShareSetup({ apiKey: 'k', list: async () => ({ live: [], computerUse: [] }) });
+  assert.match(noLive.error, /no Gemini Live model/);
+
+  const liveDown = await prepareScreenShareSetup({ apiKey: 'k', list: async () => ({ live: ['gemini-3.8-live'], computerUse: [] }), check: async () => ({ live: { ok: false, error: 'quota' } }) });
+  assert.match(liveDown.error, /Gemini Live did not connect: quota/);
+
+  let checkedWith = null;
+  const good = await prepareScreenShareSetup({
+    apiKey: 'k',
+    list: async () => ({ live: ['gemini-3.8-live'], computerUse: ['gemini-3.5-flash-lite'] }),
+    check: async ({ config }) => { checkedWith = config; return { ok: true, live: { ok: true }, computerUse: { ok: false, error: 'busy' } }; },
+  });
+  assert.equal(good.ok, true, 'Computer Use being unreachable does not block screen share');
+  assert.deepEqual(good.screenShare, { enabled: true, liveModel: 'gemini-3.8-live', computerUseModel: 'gemini-3.5-flash-lite', computerUseEnvironment: 'browser' });
+  assert.equal(checkedWith.computerUseEnvironment, 'browser');
+});

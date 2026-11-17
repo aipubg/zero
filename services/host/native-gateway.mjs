@@ -72,7 +72,7 @@ import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engin
 import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
 import { decomposeMultiAppRequest } from '../../packages/capability-engine/director-routing.mjs';
 import { KeyboardTargetScope } from '../../packages/capability-engine/keyboard-rule.mjs';
-import { checkGeminiScreenShare, findScreenShareProvider } from '../../packages/model-fabric/gemini-screen-share.mjs';
+import { checkGeminiScreenShare, findScreenShareProvider, prepareScreenShareSetup, SCREEN_SHARE_PROVIDER_ID, SCREEN_SHARE_PROVIDER_NAME } from '../../packages/model-fabric/gemini-screen-share.mjs';
 import { createScreenAct } from '../../packages/capability-engine/screen-act.mjs';
 import { ScreenShareService } from '../../packages/capability-engine/screen-share.mjs';
 import { captureDriverDesktop } from '../../packages/screen-intelligence/windows-capture.mjs';
@@ -1064,7 +1064,7 @@ export class ZeroNativeHost {
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
           'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
-          'zero.screenShare.check', 'zero.screenShare.status', 'zero.screenShare.setMode', 'zero.screenShare.ask',
+          'zero.screenShare.check', 'zero.screenShare.status', 'zero.screenShare.setMode', 'zero.screenShare.ask', 'zero.screenShare.setup',
           'zero.gateway.config.get', 'zero.gateway.config.save',
           'zero.gateway.localGguf',
           'zero.gateway.status', 'zero.gateway.restart',
@@ -1255,6 +1255,7 @@ export class ZeroNativeHost {
       'zero.providers.save': ['admin', 'operator.admin'],
       'zero.screenShare.check': ['admin', 'operator.admin'],
       'zero.screenShare.setMode': ['admin', 'operator.admin'],
+      'zero.screenShare.setup': ['admin', 'operator.admin'],
       'zero.screenShare.ask': ['operator.write', 'operator.admin'],
       'zero.providers.delete': ['admin', 'operator.admin'],
       'zero.gateway.config.save': ['admin', 'operator.admin'],
@@ -2004,7 +2005,34 @@ export class ZeroNativeHost {
       }
 
       case 'zero.screenShare.status':
-        return { ok: true, ...this.screenShare.status(), lastCheck: this.screenShareLastCheck || null, offline: { running: Boolean(this.screenObserver?.running) } };
+        return { ok: true, ...this.screenShare.status(), configured: this.modelFabric.providers.has(SCREEN_SHARE_PROVIDER_ID) || Boolean(findScreenShareProvider(this.modelFabric)), lastCheck: this.screenShareLastCheck || null, offline: { running: Boolean(this.screenObserver?.running) } };
+
+      case 'zero.screenShare.setup': {
+        // One-click "Gemini Live Screen Share": a provider of its own (only for
+        // screen share, no chat models), so its key never mixes with other keys.
+        const providerId = SCREEN_SHARE_PROVIDER_ID;
+        const existing = this.modelFabric.providers.get(providerId) || null;
+        if (params.enabled === false) {
+          if (existing) saveConfiguredProvider(this.modelFabric, { id: providerId, screenShare: { enabled: false } });
+          return { ok: true, ...await this.screenShare.refresh(), configured: Boolean(existing) };
+        }
+        const typedKey = typeof params.apiKey === 'string' && params.apiKey.trim() && params.apiKey !== '[REDACTED]' && !params.apiKey.startsWith('env:') ? params.apiKey.trim() : null;
+        const apiKey = typedKey || (existing ? this.modelFabric.resolveApiKey(existing) : null);
+        if (!apiKey) return { ok: false, error: 'Paste your Gemini API key.' };
+        const prepared = await prepareScreenShareSetup({ apiKey });
+        if (!prepared.ok) return prepared;
+        saveConfiguredProvider(this.modelFabric, {
+          id: providerId,
+          ...(existing ? {} : { name: SCREEN_SHARE_PROVIDER_NAME, api: 'openai-completions', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', models: [] }),
+          ...(typedKey ? { apiKey: typedKey, apiKeys: [typedKey] } : {}),
+          screenShare: prepared.screenShare,
+        });
+        this.screenShareLastCheck = { providerId, ...prepared.check };
+        // Turning it on here means the owner wants it on.
+        if (this.screenShare.preference === 'offline') await this.screenShare.setPreference('auto');
+        const status = await this.screenShare.refresh();
+        return { ok: true, providerId, liveModel: prepared.screenShare.liveModel, computerUseModel: prepared.screenShare.computerUseModel, check: prepared.check, status };
+      }
 
       case 'zero.screenShare.setMode':
         return { ok: true, ...await this.screenShare.setPreference(params.preference) };

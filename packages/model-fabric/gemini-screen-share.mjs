@@ -187,3 +187,49 @@ export async function checkGeminiScreenShare({ apiKey, config }) {
   result.ok = live.ok;
   return result;
 }
+
+/** Id of the provider created by the one-click "Gemini Live Screen Share" setup. */
+export const SCREEN_SHARE_PROVIDER_ID = 'gemini-live-screen';
+export const SCREEN_SHARE_PROVIDER_NAME = 'Gemini Live Screen Share';
+
+// Preference order. Live: the default Live model first. Computer Use: the
+// model that worked on a Free Tier key in Phase A first.
+const LIVE_PREFERENCE = ['gemini-3.8-live', 'gemini-2.5-flash-native-audio-latest', 'gemini-3.1-flash-live-preview'];
+const COMPUTER_USE_PREFERENCE = ['gemini-3.5-flash-lite', 'gemini-4-hydrogen', 'gemini-3.8-flash', 'gemini-3-flash-preview'];
+
+/** Pick the models to use from what this key can see. */
+export function chooseScreenShareModels(models) {
+  const pick = (preferred, available) => preferred.find(id => available.includes(id)) || available[0] || null;
+  return {
+    liveModel: pick(LIVE_PREFERENCE, models.live || []),
+    computerUseModel: pick(COMPUTER_USE_PREFERENCE, models.computerUse || []),
+  };
+}
+
+/**
+ * One-click setup: validate the key, choose models, check Live (and
+ * Computer Use), and return the provider row to save. Nothing is saved when
+ * the key is rejected or Live does not connect.
+ */
+export async function prepareScreenShareSetup({ apiKey, check = checkGeminiScreenShare, list = listScreenShareModels }) {
+  let models;
+  try {
+    models = await list(apiKey);
+  } catch (error) {
+    return { ok: false, error: `Google did not accept this key: ${error.message}` };
+  }
+  const chosen = chooseScreenShareModels(models);
+  if (!chosen.liveModel) return { ok: false, error: 'This key has no Gemini Live model available.', models };
+  const result = await check({ apiKey, config: { liveModel: chosen.liveModel, computerUseModel: chosen.computerUseModel || SCREEN_SHARE_DEFAULTS.computerUseModel, computerUseEnvironment: 'browser' } });
+  if (!result.live?.ok) return { ok: false, error: `Gemini Live did not connect: ${result.live?.error || result.error || 'unknown error'}`, check: result };
+  return {
+    ok: true,
+    check: result,
+    screenShare: {
+      enabled: true,
+      liveModel: chosen.liveModel,
+      computerUseModel: chosen.computerUseModel || SCREEN_SHARE_DEFAULTS.computerUseModel,
+      computerUseEnvironment: 'browser',
+    },
+  };
+}

@@ -1,6 +1,7 @@
 import { element } from "../shared/dom.js";
 import { markModelCatalogDirty } from "../state/model-catalog.js";
 import { createScreenShareSection } from "./screen-share-settings.js";
+import { createGeminiScreenShareButton } from "./gemini-screen-share-button.js";
 
 /**
  * Enterprise Zero Model Gateway & Providers Management Surface
@@ -321,6 +322,8 @@ export function mountModelsPage(container, context = {}) {
   const agentsNavBtn = element("button", "zero-models-btn zero-models-btn--agents", "Agents ->");
 
   headerActions.append(addProviderBtn, importGgufBtn, exportConfigBtn, importConfigBtn, agentsNavBtn);
+  // One-click online screen share (only needs a Gemini API key).
+  let geminiScreenShare = null;
   header.append(headerLeft, headerActions);
   root.append(header);
 
@@ -591,6 +594,13 @@ export function mountModelsPage(container, context = {}) {
   // --- Modals Overlay ---
   const modalOverlay = element("div", "zero-modal-overlay");
   modalOverlay.style.display = "none";
+  geminiScreenShare = createGeminiScreenShareButton({
+    element,
+    call: (method, params) => callGateway(host, method, params),
+    modalOverlay,
+    onChange: () => { void loadAllData(); },
+  });
+  headerActions.append(geminiScreenShare.button);
   if (typeof document !== "undefined" && document.body) {
     document.body.append(modalOverlay);
   } else {
