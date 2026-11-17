@@ -599,6 +599,7 @@ export function mountModelsPage(container, context = {}) {
     call: (method, params) => callGateway(host, method, params),
     modalOverlay,
     onChange: () => { void loadAllData(); },
+    notify: (message, isError = false) => showNotice(message, isError),
   });
   headerActions.append(geminiScreenShare.button);
   if (typeof document !== "undefined" && document.body) {

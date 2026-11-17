@@ -36,8 +36,9 @@ const unwrap = response => response?.result ?? response;
  * @param {(method: string, params?: object) => Promise<any>} options.call
  * @param {HTMLElement} options.modalOverlay  the page's shared modal overlay
  * @param {() => void} [options.onChange]   reload the page data after a change
+ * @param {(message: string, isError?: boolean) => void} [options.notify]  page-level notice
  */
-export function createGeminiScreenShareButton({ element, call, modalOverlay, onChange }) {
+export function createGeminiScreenShareButton({ element, call, modalOverlay, onChange, notify }) {
   if (!document.getElementById(STYLE_ID)) {
     const style = document.createElement("style");
     style.id = STYLE_ID;
@@ -119,6 +120,14 @@ export function createGeminiScreenShareButton({ element, call, modalOverlay, onC
 
     const busy = (text) => { status.className = "zero-gss-box__status zero-gss-box__status--busy"; status.textContent = text; };
     const fail = (text) => { status.className = "zero-gss-box__status zero-gss-box__status--err"; status.textContent = `✖ ${text}`; };
+    // A confirmed save or turn-off closes the box (after a short tick) and
+    // says so on the page. A failure keeps the box open with the reason.
+    let closing = false;
+    const closeSoon = () => {
+      closing = true;
+      save.disabled = true; off.disabled = true; cancel.disabled = true;
+      setTimeout(close, 700);
+    };
 
     save.onclick = async () => {
       const key = input.value.trim();
@@ -131,18 +140,17 @@ export function createGeminiScreenShareButton({ element, call, modalOverlay, onC
         input.value = "";
         const cu = result.check?.computerUse;
         status.className = "zero-gss-box__status zero-gss-box__status--ok";
-        status.textContent = [
-          "✔ Screen share is on.",
-          `Sees and talks: ${result.liveModel}`,
-          cu?.ok ? `Finds where to click: ${result.computerUseModel}` : `Finds where to click: ${result.computerUseModel} (not reachable right now — Zero uses its own hands meanwhile)`,
-        ].join("\n");
+        status.textContent = "✔ Saved — screen share is on.";
         paint(result.status ? { ...result.status, configured: true } : current);
-        off.style.display = "";
         onChange?.();
+        notify?.(cu?.ok
+          ? `Gemini Live Screen Share is on (sees and talks: ${result.liveModel}; finds where to click: ${result.computerUseModel}).`
+          : `Gemini Live Screen Share is on (${result.liveModel}). Click-finding (${result.computerUseModel}) is not reachable right now; Zero uses its own hands meanwhile.`);
+        closeSoon();
       } catch (error) {
         fail(error.message);
       } finally {
-        save.disabled = false; off.disabled = false;
+        if (!closing) { save.disabled = false; off.disabled = false; }
       }
     };
 
@@ -153,17 +161,18 @@ export function createGeminiScreenShareButton({ element, call, modalOverlay, onC
         const result = unwrap(await call("zero.screenShare.setup", { enabled: false }));
         paint({ ...result, configured: true });
         status.className = "zero-gss-box__status";
-        status.textContent = "Off. Zero uses its local (offline) screen share.";
-        off.style.display = "none";
+        status.textContent = "✔ Turned off.";
         onChange?.();
+        notify?.("Gemini Live Screen Share is off. Zero uses its local (offline) screen share.");
+        closeSoon();
       } catch (error) {
         fail(error.message);
       } finally {
-        off.disabled = false; save.disabled = false;
+        if (!closing) { off.disabled = false; save.disabled = false; }
       }
     };
 
-    input.addEventListener("keydown", event => { if (event.key === "Enter") save.click(); });
+    input.addEventListener("keydown", event => { if (event.key === "Enter" && !save.disabled) save.click(); });
     actions.append(cancel, off, save);
     modal.append(head, body, actions);
     modalOverlay.append(modal);
