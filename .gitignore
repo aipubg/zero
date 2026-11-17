@@ -42,6 +42,7 @@ playwright-report/
 blob-report/
 .backup/
 *.png
+!packages/model-fabric/assets/*.png
 /artifacts/
 /workspaces/
 /temp/

@@ -1,5 +1,6 @@
 import { element } from "../shared/dom.js";
 import { markModelCatalogDirty } from "../state/model-catalog.js";
+import { createScreenShareSection } from "./screen-share-settings.js";
 
 /**
  * Enterprise Zero Model Gateway & Providers Management Surface
@@ -1025,7 +1026,7 @@ export function mountModelsPage(container, context = {}) {
 
     const head = element("div", "zero-modal__header");
     const titleEl = element("h2", "zero-modal__title", isEdit ? `Edit Provider: ${existingProvider.name || existingProvider.id}` : "+ Add Model Provider");
-    const closeBtn = element("button", "zero-modal__close", "Ã—");
+    const closeBtn = element("button", "zero-modal__close", "×");
     closeBtn.onclick = () => {
       modalOverlay.classList.remove("active");
       modalOverlay.style.display = "none";
@@ -1117,7 +1118,7 @@ export function mountModelsPage(container, context = {}) {
       row.append(input, showBtn);
 
       if (canDelete) {
-        const delKeyBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Ã—");
+        const delKeyBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "×");
         delKeyBtn.type = "button";
         delKeyBtn.onclick = () => {
           const idx = keyInputs.indexOf(input);
@@ -1282,7 +1283,7 @@ export function mountModelsPage(container, context = {}) {
           }
         };
 
-        const delRowBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "Ã—");
+        const delRowBtn = element("button", "zero-providers-btn zero-providers-btn--danger", "×");
         delRowBtn.type = "button";
         delRowBtn.title = "Delete model";
         delRowBtn.style.padding = "3px 8px";
@@ -1498,6 +1499,17 @@ export function mountModelsPage(container, context = {}) {
     footerOptions.append(fbField);
 
     body.append(footerOptions);
+
+    // Online screen share (Gemini providers only)
+    const screenShareSection = createScreenShareSection({
+      element,
+      call: (method, params) => callGateway(host, method, params),
+      baseUrl: () => urlInput.value.trim(),
+      typedKey: () => (keyInputs[0]?.value || "").trim(),
+      provider: existingProvider || null,
+    });
+    urlInput.addEventListener("input", () => screenShareSection.refresh());
+    body.append(screenShareSection.root);
     modal.append(body);
 
     // Modal Footer
@@ -1536,6 +1548,7 @@ export function mountModelsPage(container, context = {}) {
         apiKeys: pool,
         models: validModels,
         fallbackModel: fbSelect.value || undefined,
+        screenShare: screenShareSection.value(),
       };
 
       try {
@@ -1571,7 +1584,7 @@ export function mountModelsPage(container, context = {}) {
 
     const head = element("div", "zero-modal__header");
     const titleEl = element("h2", "zero-modal__title", "Offline GGUF Model Manager");
-    const closeBtn = element("button", "zero-modal__close", "Ã—");
+    const closeBtn = element("button", "zero-modal__close", "×");
     closeBtn.onclick = () => {
       modalOverlay.classList.remove("active");
       modalOverlay.style.display = "none";

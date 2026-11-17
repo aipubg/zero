@@ -71,6 +71,8 @@ import { defaultOsController } from '../../packages/capability-engine/computer-c
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
 import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
 import { decomposeMultiAppRequest } from '../../packages/capability-engine/director-routing.mjs';
+import { KeyboardTargetScope } from '../../packages/capability-engine/keyboard-rule.mjs';
+import { checkGeminiScreenShare, findScreenShareProvider } from '../../packages/model-fabric/gemini-screen-share.mjs';
 import { executeMissionPlan, MissionStateStore } from '../../packages/capability-engine/mission-state.mjs';
 import { DESKTOP_OBSERVATIONS, DESKTOP_COMMANDS } from '../../packages/capability-engine/zero-desktop.mjs';
 import { ModelFabric } from '../../packages/model-fabric/index.mjs';
@@ -1034,6 +1036,7 @@ export class ZeroNativeHost {
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
           'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
+          'zero.screenShare.check', 'zero.screenShare.status',
           'zero.gateway.config.get', 'zero.gateway.config.save',
           'zero.gateway.localGguf',
           'zero.gateway.status', 'zero.gateway.restart',
@@ -1222,6 +1225,7 @@ export class ZeroNativeHost {
       'zero.providers.configure': ['admin', 'operator.admin'],
       'zero.providers.setActive': ['admin', 'operator.admin'],
       'zero.providers.save': ['admin', 'operator.admin'],
+      'zero.screenShare.check': ['admin', 'operator.admin'],
       'zero.providers.delete': ['admin', 'operator.admin'],
       'zero.gateway.config.save': ['admin', 'operator.admin'],
       'zero.gateway.localGguf': ['admin', 'operator.admin'],
@@ -1953,6 +1957,31 @@ export class ZeroNativeHost {
 
       case 'zero.providers.test':
         return await probeConfiguredProvider(this.modelFabric, params);
+
+      case 'zero.screenShare.check': {
+        // Settings "Check connection": the saved provider's key, or a key typed
+        // into the form before saving (used for this check only, never stored).
+        const provider = params.providerId ? this.modelFabric.providers.get(String(params.providerId)) : null;
+        const typedKey = typeof params.apiKey === 'string' && params.apiKey && params.apiKey !== '[REDACTED]' && !params.apiKey.startsWith('env:') ? params.apiKey : null;
+        const apiKey = typedKey || (provider ? this.modelFabric.resolveApiKey(provider) : null);
+        if (!apiKey) return { ok: false, error: 'No Gemini API key: add the key to this provider first.' };
+        const result = await checkGeminiScreenShare({ apiKey, config: params.config || provider?.screenShare || {} });
+        if (provider) this.screenShareLastCheck = { providerId: provider.id, ...result };
+        return result;
+      }
+
+      case 'zero.screenShare.status': {
+        const selected = findScreenShareProvider(this.modelFabric);
+        return {
+          ok: true,
+          // Online needs an enabled Gemini provider with a working Live check.
+          mode: selected && this.screenShareLastCheck?.providerId === selected.provider.id && this.screenShareLastCheck.ok ? 'online-ready' : 'offline',
+          provider: selected ? { id: selected.provider.id, name: selected.provider.name || selected.provider.id } : null,
+          config: selected?.config || null,
+          lastCheck: this.screenShareLastCheck || null,
+          offline: { running: Boolean(this.screenObserver?.running) },
+        };
+      }
 
       case 'zero.gateway.status': {
         return {
@@ -4091,10 +4120,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       let mediaResult = null;
       const executedActions = [];
       const completedCalls = new Map();
-      // Reuse a window opened or focused during this request; otherwise native
-      // keyboard input targets the current foreground window.
-      let turnFocusedWindow = null;
-      const KEYBOARD_ACTIONS = new Set(['type_text', 'type', 'press_key', 'press', 'key', 'hotkey']);
+      // Which window keystrokes in this request may go to (keyboard-rule.mjs).
+      const keyboardScope = new KeyboardTargetScope();
       const IDEMPOTENT_TOOLS = new Set(['open_app', 'launch_app', 'play', 'write_file', 'memory_remember', 'schedule_task', 'goal_plan', 'procedure_learn', 'zero_skill_learn']);
       const actionFailed = ({ execRes }) => execRes == null || execRes.ok === false || execRes.success === false || execRes.executed === false || ['FAILED', 'ERROR', 'BLOCKED', 'CANCELLED'].includes(String(execRes.outcome || execRes.status || '').toUpperCase());
       const recordTool = (name, args, result) => this.tasks.recordStep(taskId, {
@@ -4458,29 +4485,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
 
           let execRes = null;
 
-          // Keyboard input needs a known destination: a window named in the call,
-          // or one Zero opened, focused or drove in its browser during this
-          // request. It is never sent to "whatever is in front" — that window is
-          // the owner's, and a stray Alt+F4 or text there cannot be taken back.
-          if (!hasOwnHandler && targetCapability !== 'browser' && KEYBOARD_ACTIONS.has(action)) {
-            const namedWindow = args.target || args.app || args.window || args.window_title || null;
-            const hasPoint = args.x !== undefined && args.y !== undefined;
-            if (!namedWindow && !hasPoint && !turnFocusedWindow) {
-              execRes = {
-                ok: false, executed: false, verified: false, completed: false, outcome: 'FAILED', action,
-                error: 'keyboard-target-required',
-                message: action + ' was not sent: no destination window. Pass `target` (window title or app name), or call open_app / focus_window / browser first. Keystrokes are never sent to an unknown window.',
-              };
-            } else if (!namedWindow && !hasPoint && turnFocusedWindow) {
-              args.target = turnFocusedWindow;
-            }
-            if (!execRes && !['type_text', 'type'].includes(action) && (args.target || args.app)) {
-              // press_key / hotkey: bring the destination to the front first.
-              const focusRes = await defaultOsController.focusWindow(String(args.target || args.app), 'restore', abortController.signal).catch(error => ({ ok: false, error: error.message }));
-              if (focusRes?.ok === false) {
-                execRes = { ok: false, executed: false, verified: false, completed: false, outcome: 'FAILED', action, error: 'focus-failed', message: action + ' was not sent: ' + (focusRes.error || 'the destination window could not be brought to the front') + '.' };
-              }
-            }
+          // Keyboard input needs a known destination (see keyboard-rule.mjs).
+          if (!execRes) {
+            const checked = await keyboardScope.before({ action, args, capability: targetCapability, ownHandler: hasOwnHandler, signal: abortController.signal });
+            if (checked.refusal) execRes = checked.refusal;
+            else Object.assign(args, checked.args);
           }
 
           // Every tool runs in the capability engine; the gateway only routes.
@@ -4498,16 +4507,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
           executedActions.push({ stepId, action, args, execRes });
           recordTool(fnName, args, execRes);
 
-          // A page Zero opened in its own browser is a window Zero put in front.
-          if (execRes?.ok === true && targetCapability === 'browser') {
-            const pageTitle = execRes.title || execRes.pageTitle || execRes.videoTitle || null;
-            if (pageTitle) turnFocusedWindow = String(pageTitle);
-          }
-          // Track the window Zero opened or focused, for later keyboard input.
-          if (execRes?.ok === true && ['open_app', 'launch_app', 'focus_window', 'control_window', 'bring_to_front'].includes(action)) {
-            const focusedTitle = (typeof execRes.window === 'string' ? execRes.window : execRes.window?.title) || execRes.data?.window?.title || execRes.details?.title || null;
-            if (focusedTitle && !['minimize', 'close'].includes(String(args.command || '').toLowerCase())) turnFocusedWindow = focusedTitle;
-          }
+          keyboardScope.after({ action, args, capability: targetCapability, result: execRes });
           // Remember a completed idempotent call so an identical repeat reuses it.
           if (isIdempotentCall && execRes?.ok === true && (execRes.completed === true || execRes.outcome === 'COMPLETED')) {
             completedCalls.set(intentKey, execRes);

@@ -1,3 +1,4 @@
+import { isGeminiProvider, normalizeScreenShareConfig, SCREEN_SHARE_DEFAULTS } from '../../packages/model-fabric/gemini-screen-share.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -194,7 +195,7 @@ export function modelSettings(fabric) {
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new Error('Invalid model settings file');
   let effectiveModel = null; let assignmentError = null;
   try { effectiveModel = fabric.resolveAgentModel('zero')?.canonicalModelId || null; } catch (error) { assignmentError = error.message; }
-  return { ok: true, providers: fabric.getProviders().map(provider => ({ ...provider, enabled: fabric.providers.get(provider.id)?.enabled !== false, models: (fabric.providers.get(provider.id)?.models || []).map(model => typeof model === 'string' ? model : Object.fromEntries(['id', 'name', 'image', 'reasoning', 'tools', 'contextWindow', 'maxTokens'].filter(key => Object.hasOwn(model, key)).map(key => [key, model[key]]))) })),
+  return { ok: true, providers: fabric.getProviders().map(provider => ({ ...provider, enabled: fabric.providers.get(provider.id)?.enabled !== false, screenShareAvailable: isGeminiProvider(provider), screenShare: isGeminiProvider(provider) ? normalizeScreenShareConfig(undefined, fabric.providers.get(provider.id)?.screenShare || {}) ?? { ...SCREEN_SHARE_DEFAULTS } : undefined, models: (fabric.providers.get(provider.id)?.models || []).map(model => typeof model === 'string' ? model : Object.fromEntries(['id', 'name', 'image', 'reasoning', 'tools', 'contextWindow', 'maxTokens'].filter(key => Object.hasOwn(model, key)).map(key => [key, model[key]]))) })),
     defaults: publicSettings(settings.defaults || {}), agentBindings: publicSettings(settings.agentBindings || {}), offlineModels: [],
     localModelsStatus: 'Not supplied by this configured-provider catalog', effectiveModel, assignmentError };
 }
@@ -231,6 +232,10 @@ function mergeProvider(rows, input) {
   const url = new URL(next.baseUrl);
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Provider requires an HTTP(S) URL without embedded credentials');
   if (input.enabled !== undefined) { if (typeof input.enabled !== 'boolean') throw new Error('Provider enabled must be boolean'); next.enabled = input.enabled; }
+  if (input.screenShare !== undefined) {
+    if (!isGeminiProvider(next)) throw new Error('Screen share is available only on a Gemini provider (generativelanguage.googleapis.com)');
+    next.screenShare = normalizeScreenShareConfig(input.screenShare, old.screenShare);
+  }
   if (input.models !== undefined) {
     if (!Array.isArray(input.models)) throw new Error('Provider models must declare IDs');
     const ids = input.models.map(model => typeof model === 'string' ? model : model?.id);
