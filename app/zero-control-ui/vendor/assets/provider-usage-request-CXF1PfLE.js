@@ -1,1 +1,0 @@
-import{n as e}from"./rolldown-runtime-8BhlS34s.js";import{fo as t,mo as n}from"./ui-AaV6iNVa.js";async function r(e,r){try{let t=await e.request(`usage.status`,void 0,r);return n(t)}catch(e){if(r?.signal?.aborted)throw e;return t({kind:`request-failed`})}}function i(){return(i=e((()=>{})))()}export{r as n,i as t};

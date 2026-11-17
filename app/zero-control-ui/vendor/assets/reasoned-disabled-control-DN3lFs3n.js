@@ -1,1 +1,0 @@
-import{n as e}from"./rolldown-runtime-8BhlS34s.js";import{Fi as t}from"./control-ui-core-DwX5Mpz4.js";import{J as n,W as r}from"./lit-runtime-B40xFCK_.js";function i(e,t){return e?n`<zero-tooltip open-on-click .content=${e}>${t}</zero-tooltip>`:t}function a(){return(a=e((()=>{r(),t()})))()}export{i as n,a as t};

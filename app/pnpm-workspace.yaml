@@ -1,6 +1,0 @@
-allowBuilds:
-  '@scarf/scarf': false
-  esbuild: true
-minimumReleaseAgeExclude:
-  - '@zero/gateway-client@2026.10.6'
-  - '@zero/gateway-protocol@2026.10.6'

@@ -414,6 +414,8 @@ export class ZeroNativeHost {
       capabilityEngine: canonicalCapabilityEngine,
       requestOrchestrator: this.requestOrchestrator,
       goalRunner: params => this._advanceGoal(params),
+      // "Ask Zero" jobs: run a prompt as a normal assistant turn in its own chat.
+      promptRunner: params => this._runAssistantRequest({ sessionKey: params.sessionKey || `automation:${params.jobId || 'prompt'}`, userContent: String(params.prompt || ''), source: 'automation' }),
     });
     this.automation = new AutomationScheduler({
       dbPath: path.join(dataDir, 'zero-automation.sqlite'),
@@ -625,6 +627,21 @@ export class ZeroNativeHost {
       const parsedUrl = new URL(urlRaw, `http://${this.host}:${this.port}`);
       let pathname = decodeURIComponent(parsedUrl.pathname);
 
+      // The UI registers /sw.js on every page. The vendor worker is not
+      // shipped (its cache served stale bundles after a rebuild), so answer
+      // with a worker that caches nothing and removes any old cache.
+      if (pathname === '/sw.js' || pathname.endsWith('/sw.js')) {
+        res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store', 'Service-Worker-Allowed': '/' });
+        res.end([
+          "self.addEventListener('install', () => self.skipWaiting());",
+          "self.addEventListener('activate', event => event.waitUntil(",
+          "  caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('zero-control-')).map(k => caches.delete(k))))",
+          "    .then(() => self.clients.claim())));",
+          '',
+        ].join('\n'));
+        return;
+      }
+
       // Local Desktop Authentication & Session Management
       if (pathname === '/api/auth/session/renew') {
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -773,89 +790,22 @@ export class ZeroNativeHost {
         return;
       }
 
-      // 4. Resolve static files
-      const webRoot = path.join(REPO_ROOT, 'dist', 'web');
-      const fallbackRoot = path.join(REPO_ROOT, 'backend', 'node_modules', 'zero', 'dist', 'control-ui');
-      const pluginDistRoot = path.join(REPO_ROOT, 'app', 'zero-control-ui', 'dist');
-
-      // Plugin assets route.
-      // The Control UI loader requires the "__zero__" prefix for the plugin
-      // asset protocol; "/plugins/control-ui/" is kept as an alias so the
-      // internal route can also be addressed without the prefix.
-      const pluginAssetPrefixes = ['/__zero__/plugins/control-ui/', '/plugins/control-ui/'];
-      const pluginAssetPrefix = pluginAssetPrefixes.find((prefix) => pathname.startsWith(prefix));
-      if (pluginAssetPrefix) {
-        const subpath = pathname.slice(pluginAssetPrefix.length);
-        const candidatePaths = [
-          path.join(webRoot, 'plugins', 'control-ui', subpath),
-          path.join(webRoot, '__zero__', 'plugins', 'control-ui', subpath),
-          path.join(pluginDistRoot, 'control-ui', subpath),
-          path.join(pluginDistRoot, 'control-ui', subpath.split('/').slice(1).join('/')),
-        ];
-        for (const cp of candidatePaths) {
-          if (this._isSafePath(pluginDistRoot, cp) || this._isSafePath(webRoot, cp)) {
-            if (fs.existsSync(cp) && fs.statSync(cp).isFile()) {
-              return this._serveStaticFile(req, res, cp);
-            }
-          }
+      // 4. Zero UI (app/zero-ui): static files under /ui/, every other page
+      // path gets index.html and the client-side router picks the page.
+      const uiRoot = path.join(REPO_ROOT, 'app', 'zero-ui');
+      if (pathname === '/favicon.svg' || pathname === '/favicon.ico') {
+        return this._serveStaticFile(req, res, path.join(uiRoot, 'favicon.svg'));
+      }
+      if (pathname.startsWith('/ui/')) {
+        const uiFile = path.join(uiRoot, pathname.slice('/ui/'.length));
+        if (this._isSafePath(uiRoot, uiFile) && fs.existsSync(uiFile) && fs.statSync(uiFile).isFile()) {
+          return this._serveStaticFile(req, res, uiFile);
         }
       }
 
-      // Handle relative asset requests (e.g. /chat/assets/... or /settings/assets/... or /assets/chat/...)
-      if (pathname.includes('/assets/')) {
-        const assetRel = pathname.slice(pathname.indexOf('/assets/') + 1);
-        const assetBase = path.basename(pathname);
-        const assetCandidates = [
-          path.join(webRoot, assetRel),
-          path.join(webRoot, 'assets', assetBase),
-          path.join(fallbackRoot, assetRel),
-          path.join(fallbackRoot, 'assets', assetBase),
-        ];
-        for (const cand of assetCandidates) {
-          if (cand && fs.existsSync(cand) && fs.statSync(cand).isFile()) {
-            return this._serveStaticFile(req, res, cand);
-          }
-        }
-      }
-
-      // Check direct file in webRoot
-      const targetFile = path.join(webRoot, pathname.replace(/^\/+/, ''));
-      if (this._isSafePath(webRoot, targetFile) && fs.existsSync(targetFile) && fs.statSync(targetFile).isFile()) {
-        return this._serveStaticFile(req, res, targetFile);
-      }
-
-      // Check fallback root
-      if (fs.existsSync(fallbackRoot)) {
-        const fallbackFile = path.join(fallbackRoot, pathname.replace(/^\/+/, ''));
-        if (this._isSafePath(fallbackRoot, fallbackFile) && fs.existsSync(fallbackFile) && fs.statSync(fallbackFile).isFile()) {
-          return this._serveStaticFile(req, res, fallbackFile);
-        }
-      }
-
-      // 5. SPA Fallback for client routes
-      const isSpaRoute = pathname === '/' ||
-        pathname.startsWith('/chat') ||
-        pathname.startsWith('/settings') ||
-        pathname.startsWith('/agents') ||
-        pathname.startsWith('/sessions') ||
-        pathname.startsWith('/tasks') ||
-        pathname.startsWith('/memory') ||
-        pathname.startsWith('/automation') ||
-        pathname === '/about' ||
-        pathname === '/plugins' ||
-        !path.extname(pathname);
-
-      if (isSpaRoute && (req.method === 'GET' || req.method === 'HEAD')) {
-        const indexCandidates = [
-          path.join(webRoot, 'index.html'),
-          path.join(fallbackRoot, 'index.html'),
-          path.join(REPO_ROOT, 'app', 'zero-control-ui', 'dist', 'index.html'),
-        ];
-        for (const idxPath of indexCandidates) {
-          if (fs.existsSync(idxPath)) {
-            return this._serveIndexHtml(req, res, idxPath);
-          }
-        }
+      // 5. Page routes
+      if ((req.method === 'GET' || req.method === 'HEAD') && !path.extname(pathname) && !pathname.startsWith('/api/')) {
+        return this._serveIndexHtml(req, res, path.join(uiRoot, 'index.html'));
       }
 
       // 6. 404 Fallback
@@ -873,21 +823,7 @@ export class ZeroNativeHost {
 
   _serveIndexHtml(req, res, filePath) {
     try {
-      let html = fs.readFileSync(filePath, 'utf8');
-
-      if (!html.includes('<base href="/">') && !html.includes('<base href="/" />')) {
-        html = html.replace(/<head\b[^>]*>/i, (tag) => `${tag}\n    <base href="/" />`);
-      }
-
-      html = html.replaceAll('src="./assets/', 'src="/assets/');
-      html = html.replaceAll('href="./assets/', 'href="/assets/');
-
-      if (!html.includes('zero-control-ui.js')) {
-        html = html.replace('</head>', '    <link rel="stylesheet" href="/assets/zero-control-ui.css">\n    <script type="module" src="/assets/zero-control-ui.js"></script>\n  </head>');
-      }
-
-      // Prevent aggressive SPA fallback reload loops while modules hydrate
-      html = html.replace('function retryCurrentDocument() {', 'function retryCurrentDocument() { return;');
+      const html = fs.readFileSync(filePath, 'utf8');
 
       // Secure session cookie issuance for loopback browser desktop sessions
       const cookies = parseCookies(req.headers.cookie);
@@ -1062,7 +998,6 @@ export class ZeroNativeHost {
           'chat.history', 'gateway.chat.history', 'chat.startup', 'chat.metadata',
           'chat.send', 'chat.abort', 'agent', 'gateway.agent',
           'models.list', 'gateway.models.list', 'models.status',
-          'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
           'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
           'zero.screenShare.check', 'zero.screenShare.status', 'zero.screenShare.setMode', 'zero.screenShare.ask', 'zero.screenShare.setup',
           'zero.gateway.config.get', 'zero.gateway.config.save',
@@ -1898,53 +1833,6 @@ export class ZeroNativeHost {
         };
       }
 
-      case 'plugins.controlUi.list': {
-        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json'), 'utf8'));
-        const rev = manifest.controlUi.entry.split('/').at(-2);
-        // The Control UI loader validates that entryUrl/styles start with
-        // "<basePath>/__zero__/plugins/control-ui/<pluginId>/<revision>/".
-        // That prefix is an internal asset route, not user-facing branding,
-        // so it must match the bundle's expectation exactly.
-        const assetBase = `/__zero__/plugins/control-ui/zero-control-ui/${rev}/`;
-        return {
-          revision: rev,
-          plugins: [
-            {
-              pluginId: 'zero-control-ui',
-              name: 'Zero Control UI',
-              revision: rev,
-              entryUrl: `${assetBase}index.js`,
-              styles: [`${assetBase}index.css`],
-            },
-          ],
-          diagnostics: [],
-        };
-      }
-
-      case 'plugins.controlUi.report':
-        // Fire-and-forget activation report. The payload is echoed so the
-        // gateway keeps a record of which plugin UI revision is live.
-        return {
-          ok: true,
-          pluginId: params?.pluginId ?? null,
-          revision: params?.revision ?? null,
-          status: params?.status ?? null,
-          error: params?.error ?? null,
-        };
-
-      case 'plugins.controlUi.status': {
-        const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'zero-control-ui', 'zero.plugin.json'), 'utf8'));
-        const revision = manifest.controlUi.entry.split('/').at(-2);
-        return {
-          clients: [
-            {
-              connId: clientSession?.clientId || 'operator',
-              activations: [{ pluginId: 'zero-control-ui', revision, active: true }],
-            },
-          ],
-        };
-      }
-
       case 'zero.providers.list':
         await this._refreshLocalModelCatalogue();
         return { ...modelSettings(this.modelFabric), offlineModels: this.modelFabric.localChat.models, localModelsStatus: 'Actual registered GGUF catalog; inference compatibility requires execution', health: this.modelFabric.getHealthReport() };
@@ -2447,7 +2335,10 @@ export class ZeroNativeHost {
         const allJobs = (this.automation?.listJobs?.() || []).map(j => ({
           id: j.id,
           name: j.name || j.title || j.id,
-          schedule: j.cronExpression || j.schedule || 'every 1h',
+          schedule: j.cronExpr || j.cronExpression || j.schedule || 'every 1h',
+          cronExpr: j.cronExpr || null,
+          targetAction: j.targetAction || null,
+          params: j.params || {},
           enabled: j.enabled !== false,
           lastRun: j.lastRun || null,
           nextRun: j.nextRun || null,
@@ -2482,7 +2373,10 @@ export class ZeroNativeHost {
         const allJobs = (this.automation?.listJobs?.() || []).map(j => ({
           id: j.id,
           name: j.name || j.title || j.id,
-          schedule: j.cronExpression || j.schedule || 'every 1h',
+          schedule: j.cronExpr || j.cronExpression || j.schedule || 'every 1h',
+          cronExpr: j.cronExpr || null,
+          targetAction: j.targetAction || null,
+          params: j.params || {},
           enabled: j.enabled !== false,
           lastRun: j.lastRun || null,
           nextRun: j.nextRun || null,
@@ -2523,6 +2417,8 @@ export class ZeroNativeHost {
       }
 
       case 'cron.run': {
+        // With an id: run that one job now. Without: run whatever is due.
+        if (params?.id || params?.jobId) return { ok: true, ran: true, run: await this.automation.runNow(params.id || params.jobId) };
         const result = this.automation?.triggerDueJobs ? await this.automation.triggerDueJobs() : { ok: true };
         return { ok: true, ran: true, ...result };
       }
@@ -2647,6 +2543,39 @@ export class ZeroNativeHost {
 
       case 'tasks.retry':
         return await this._resumeAssistantTask(params.taskId || params.id, { ws, isReferenceWire, clientSession }, true);
+
+      // Pages of the vendored UI that Zero has no backend for get answers in
+      // the shape they read (an empty list, "not connected"), not an error.
+      case 'last-heartbeat':
+        return { ok: true, ts: Date.now(), status: 'ok', uptimeMs: Math.round(process.uptime() * 1000) };
+
+      case 'skills.search':
+        // Searches the public skill registry, which Zero does not use; local
+        // skills are listed by skills.list.
+        return { ok: true, results: [], registryAvailable: false };
+
+      case 'skills.workshop.list':
+        return { ok: true, agentId: params.agentId || 'zero', mode: 'off', skills: [] };
+
+      case 'skills.workshop.changes':
+        return { ok: true, agentId: params.agentId || 'zero', changes: [] };
+
+      case 'migrations.memory.plan':
+        return { ok: true, agentId: params.agentId || 'zero', overwrite: Boolean(params.overwrite), providers: [] };
+
+      case 'users.github.status':
+        return { ok: true, personal: { connected: false, configured: false, account: null, pending: null }, system: null };
+
+      case 'tools.github.status': {
+        const scope = params.selectedScope || 'system';
+        return {
+          ok: true,
+          agentId: params.agentId, // echoed as sent: the UI checks it matches
+          selectedScope: scope,
+          selected: { scope, configured: false, identity: null },
+          effective: null,
+        };
+      }
 
       // Skills SDK RPCs
       case 'skills.list':

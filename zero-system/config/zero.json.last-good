@@ -117,53 +117,11 @@
   },
   "plugins": {
     "load": {
-      "paths": [
-        "E:\\zero\\app\\zero-control-ui"
-      ]
+      "paths": []
     },
     "entries": {
       "cua-computer": {
         "enabled": true
-      },
-      "zero-control-ui": {
-        "enabled": true,
-        "config": {
-          "controlMethodName": "zero.computer.control",
-          "holdToolNames": [
-            "computer",
-            "zero_computer"
-          ],
-          "codeModeToolNames": [
-            "exec"
-          ],
-          "observeActions": [
-            "screenshot",
-            "wait",
-            "list_apps",
-            "list_windows",
-            "get_accessibility_tree",
-            "get_cursor_position",
-            "get_window_state",
-            "zoom",
-            "get_browser_state",
-            "get_recording_state"
-          ],
-          "blockedActions": [
-            "escalate_scope"
-          ],
-          "highRiskActions": [
-            "kill_app",
-            "browser_navigate",
-            "browser_download",
-            "browser_set_input_files",
-            "start_recording",
-            "replay_trajectory",
-            "escalate_scope"
-          ],
-          "maxActionsPerRun": 400,
-          "maxInputActionsPerRun": 200,
-          "requireFreshSnapshotAfterRelease": true
-        }
       }
     }
   },

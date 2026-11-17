@@ -1,5 +1,0 @@
-# Standalone UI builds do not install the host's zero peer distribution.
-# The peer remains required when this package is used as an zero plugin.
-autoInstallPeers: false
-allowBuilds:
-  esbuild: true

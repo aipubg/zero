@@ -114,6 +114,22 @@ export class AutomationScheduler {
     return this.checkAndTriggerDueJobs(now);
   }
 
+  /** Run one job now (even when disabled), keeping its schedule afterwards. */
+  async runNow(jobId) {
+    const row = this.db.prepare('SELECT * FROM zero_cron_jobs WHERE id = ?').get(jobId);
+    if (!row) throw new Error(`Automation job '${jobId}' not found`);
+    if (this._dueRun) await this._dueRun;
+    const now = Date.now();
+    const wasEnabled = row.enabled === 1;
+    this.db.prepare('UPDATE zero_cron_jobs SET next_run = ?, enabled = 1 WHERE id = ?').run(now, jobId);
+    try {
+      const result = await this.checkAndTriggerDueJobs(now);
+      return result.runs.find(run => run.jobId === jobId) || null;
+    } finally {
+      if (!wasEnabled) this.db.prepare('UPDATE zero_cron_jobs SET enabled = 0 WHERE id = ?').run(jobId);
+    }
+  }
+
   checkAndTriggerDueJobs(now = Date.now()) {
     // The host timer and manual RPC may overlap while an action awaits I/O.
     if (this._dueRun) return this._dueRun;

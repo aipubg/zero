@@ -39,11 +39,9 @@ try {
   $InstallArguments = @('install', '--frozen-lockfile', '--ignore-scripts')
   if ($StoreDirectory) { $InstallArguments += @('--store-dir', $StoreDirectory) }
   Invoke-ZeroSetupPnpm -Directory (Join-Path $ZeroSetupRoot 'backend') -Arguments $InstallArguments
-  Invoke-ZeroSetupPnpm -Directory (Join-Path $ZeroSetupRoot 'app\zero-control-ui') -Arguments $InstallArguments
   $SetupReport['dependencies'] = 'FROZEN_LOCKFILE_INSTALLED'
-  & $NodeExecutable (Join-Path $ZeroSetupRoot 'app\zero-control-ui\build.mjs')
-  if ($LASTEXITCODE -ne 0) { throw "UI build failed (exit $LASTEXITCODE)" }
-  $SetupReport['ui'] = 'BUILT_FROM_SOURCE'
+  # The Zero UI (app/zero-ui) is plain HTML/JS served by the host: no build step.
+  $SetupReport['ui'] = 'STATIC_NO_BUILD'
   & $NodeExecutable (Join-Path $ZeroSetupRoot 'scripts\install-agent-desktop.mjs')
   if ($LASTEXITCODE -ne 0) { throw "Primary desktop runtime installation failed (exit $LASTEXITCODE)" }
   $SetupReport['desktop'] = 'PINNED_ASSETS_VERIFIED'
