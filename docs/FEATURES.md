@@ -1,8 +1,5 @@
 # Zero — सारी Features की सूची
 
-> **2026-11-18:** पुराना vendored UI (`app/zero-control-ui`, `dist/web`) हटा दिया गया। उसकी जगह नया UI `app/zero-ui` है।
-> नीचे की UI वाली बातें (routes, pages, duplicates) पुराने UI की हैं। अभी क्या चलता है और क्या offline है, वह [UI-STATUS.md](UI-STATUS.md) में है।
-
 बनाई: 2026-11-17, `main` @ `2e25eba83` पर।
 तरीका: चलते हुए app के हर page को खोलकर पढ़ा (60+ routes, headless Chrome, सिर्फ tabs खोले, कुछ बदला नहीं) और code से backend की चीज़ें निकालीं।
 यह "क्या है" की सूची है, "कैसे काम करता है" की नहीं।

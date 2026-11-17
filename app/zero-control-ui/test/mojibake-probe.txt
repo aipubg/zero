@@ -1,0 +1,25 @@
+Probe target files:
+- app/zero-control-ui/test/mount.test.mjs
+- app/zero-control-ui/dist/control-ui/<generation>/index.js
+
+Probe method:
+- Read each file as bytes, decode as UTF-8, then scan for non-ASCII code points
+  and the literal replacement character U+FFFD.
+
+Result for app/zero-control-ui/test/mount.test.mjs:
+- UTF-8 clean: yes
+- Non-ASCII code points present: yes (expected; contains test fixture strings and
+  Unicode punctuation used by the UI text assertions)
+- U+FFFD replacement characters: none
+- Mojibake pattern bytes (0x80-0x9F lone continuations / invalid sequences): none
+
+Result for app/zero-control-ui/dist/control-ui/<generation>/index.js:
+- UTF-8 clean: yes
+- Non-ASCII code points present: yes (expected; minified UI text literals)
+- U+FFFD replacement characters: none
+- Mojibake pattern bytes: none
+
+Conclusion:
+- No mojibake or replacement characters were found in the changed test file or the
+  rebuilt Control UI bundle in this pass.
+- Non-ASCII content is intentional test/UI text, not encoding corruption.

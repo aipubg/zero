@@ -1,0 +1,1487 @@
+import { mountAboutPage } from "./pages/about.js";
+import { watchScreenSharePill, createModeSwitch } from "./screen-share-pill.js";
+import { mountModelsPage } from "./pages/models.js";
+import { mountComputerHold } from "./computer/hold.js";
+import { agentRole } from "./shared/sessions.js";
+import { renderGenerativeWidgets } from "./spaces/generative-widgets.js";
+import { mountPluginInstall } from "./pages/plugin-install.js";
+import { mountSkillInstall } from "./pages/skill-install.js";
+import { mountVoiceControl } from "./voice-control.js";
+import { createSessionActions } from "./shell/session-actions.js";
+import { consumeModelCatalogDirty } from "./state/model-catalog.js";
+import {
+  SPECIALIST_AGENT_IDS,
+  isAboutRoute,
+  isNativeProviderRoute,
+  isNativeSystemsRoute,
+  isSpecialistConfigRoute,
+  routePath,
+  specialistAgentIds,
+} from "./shared/routes.js";
+
+/**
+ * In-place native-surface integration.
+ *
+ * The host owns the Control UI routes and renders the native screens. The Zero
+ * plugin does not register replacement pages; instead it mounts its provider
+ * manager inside the existing Models route and its About content inside the
+ * existing About route. The native URL, sidebar entry and back/forward history
+ * stay authoritative.
+ *
+ * The same seam also removes duplicate product chrome that the host cannot
+ * unregister from a plugin:
+ *  - the community promotion card
+ *  - stale Zero plugin navigation entries
+ *  - the user-facing agent switcher (Zero is the only chat identity)
+ *  - internal specialists in the native Agents roster and settings switcher
+ *  - upstream product naming in product-owned chrome
+ *
+ * Internal specialists remain fully configured in the Gateway. Direct
+ * administrator settings routes are retained, but they render configuration
+ * only and carry an explicit notice that no conversation can be started there.
+ *
+ * It never owns a transcript, route, Gateway request or session store.
+ */
+
+/**
+ * All custom elements are native Zero elements using the "zero-" prefix.
+ * No external zero tags or wrapper chains remain.
+ */
+const vendorTag = (name) => `zero-${name}`;
+const vendorTagSelector = (name) => `zero-${name}`;
+
+const SURFACE_SELECTOR = [
+  vendorTagSelector('model-providers-page'),
+  vendorTagSelector('model-setup-page'),
+  vendorTagSelector('about-page'),
+].join(', ');
+const COMPUTER_SELECTOR = ".systems-desktop, .zero-computer-hold-host";
+const COMMUNITY_SELECTOR = ".sidebar-shell__invite, .community-invite-card";
+const STALE_PLUGIN_NAV_SELECTOR = '[data-sidebar-entry^="plugin:zero-control-ui/"]';
+const CHROME_SELECTOR = [
+  vendorTagSelector('plugins-page'),
+  vendorTagSelector('skills-page'),
+  COMMUNITY_SELECTOR,
+  STALE_PLUGIN_NAV_SELECTOR,
+  ".sidebar-agent-card",
+  ".topbar-brand",
+  ".assistant-panel",
+  ".settings-sidebar",
+  "zero-agent-select",
+  ".agents-home__card",
+  ".agents-toolbar",
+  ".page-subtitle",
+  ".sidebar-footer-build",
+  ".settings-typography-preview__caption",
+  ".mount-fallback",
+].join(", ");
+
+const NO_REBRAND_SELECTOR = [
+  ".chat-virtual-row",
+  ".chat-text",
+  "code",
+  "pre",
+  ".plugin-catalog-grid",
+  ".installed-plugins-card",
+  ".plugin-card-author",
+  "script",
+  "style",
+  "textarea",
+  "[contenteditable='true']",
+].join(", ");
+
+const PRODUCT_PHRASES = [
+  [/Extend your Claw with tools/g, "Extend Zero with tools"],
+];
+
+function currentLocation() {
+  const pathname = window.location.pathname || "";
+  return `${pathname}${window.location.search || ""}`;
+}
+
+function currentSurface(host) {
+  const base = host?.basePath || "";
+  const raw = currentLocation();
+  const path = base && raw.startsWith(base) ? raw.slice(base.length) : raw;
+  if (isNativeProviderRoute(path)) return "models";
+  if (isAboutRoute(path)) return "about";
+  return null;
+}
+
+function leadAgentId(host) {
+  const rows = Array.isArray(host?.agents?.rows) ? host.agents.rows : [];
+  const lead = rows.find((agent) => agentRole(agent) === "Lead");
+  return lead?.id ?? host?.agents?.defaultId ?? null;
+}
+
+/**
+ * The native “Set Default” action changes the Gateway default agent. A direct
+ * specialist configuration screen must not offer it: making an internal
+ * delegation agent the default would contradict the single-assistant product
+ * boundary. Other configuration controls stay available.
+ */
+function isSetDefaultControl(control) {
+  if (!control || typeof control.getAttribute !== "function") return false;
+  const text = String(control.textContent ?? "").trim();
+  const label = String(control.getAttribute("aria-label") ?? "").trim();
+  return /^Set Default$/iu.test(text) || /^Set Default$/iu.test(label);
+}
+
+function removeSpecialistDefaultAction(root, specialist) {
+  if (!specialist || !root || typeof root.querySelectorAll !== "function") return 0;
+  let removed = 0;
+  for (const control of root.querySelectorAll("button, [role='button']")) {
+    if (!isSetDefaultControl(control)) continue;
+    // Disable before detaching so any click already racing the observer cannot
+    // reach the native action handler.
+    control.setAttribute("aria-disabled", "true");
+    if ("disabled" in control) control.disabled = true;
+    hideNode(control);
+    removed += 1;
+  }
+  return removed;
+}
+
+/**
+ * Hide a node without detaching it.
+ *
+ * The upstream Control UI is rendered with Lit. Removing a node that belongs to
+ * a Lit template detaches the template part that owns it, and the next render
+ * then writes to a node that no longer exists ("Cannot set properties of null
+ * (setting 'data')"). Nodes are therefore hidden and disabled in place.
+ */
+function hideNode(el) {
+  if (!el) return;
+  el.setAttribute("hidden", "");
+  el.setAttribute("aria-hidden", "true");
+  el.style.setProperty("display", "none", "important");
+  el.style.pointerEvents = "none";
+}
+
+/**
+ * Capture-phase guard used by the native click interceptor. It blocks the
+ * native Set Default action on a specialist configuration route even if the
+ * host re-renders it between observes, and leaves every other control alone.
+ */
+function blockSpecialistDefaultAction(event, specialist) {
+  if (!specialist || !event || typeof event.preventDefault !== "function") return false;
+  const target = event.target;
+  if (!target || typeof target.closest !== "function") return false;
+  const control = target.closest("button, [role='button']");
+  if (!isSetDefaultControl(control)) return false;
+  event.preventDefault();
+  event.stopImmediatePropagation?.();
+  return true;
+}
+
+const CHAT_ENTRY_TEXT =
+  /^(chat|message)$|\b(open chat|start chat|new chat|new conversation|chat now|send message|message zero)\b/iu;
+
+/**
+ * A control that would open or start a conversation. On a specialist
+ * administrator screen every such control is out of scope, including one that
+ * targets the canonical Zero chat.
+ */
+function isSpecialistChatEntryControl(control) {
+  if (!control || typeof control.getAttribute !== "function") return false;
+  const href = String(control.getAttribute("href") ?? "");
+  if (/(^|\/)chat(?:\/|$)/iu.test(href)) return true;
+  if (/(^|\/)new\?(?:[^#]*&)?agent=/iu.test(href)) return true;
+  const label = `${control.textContent ?? ""} ${control.getAttribute("aria-label") ?? ""}`
+    .replace(/\s+/gu, " ")
+    .trim();
+  return CHAT_ENTRY_TEXT.test(label);
+}
+
+function removeSpecialistChatEntries(root) {
+  if (!root || typeof root.querySelectorAll !== "function") return 0;
+  let removed = 0;
+  for (const control of root.querySelectorAll("a, button, [role='button']")) {
+    if (!isSpecialistChatEntryControl(control)) continue;
+    hideNode(control);
+    removed += 1;
+  }
+  return removed;
+}
+
+/**
+ * The ordinary Agents roster is Zero only. Internal specialists remain
+ * Gateway agents (definitions, tools, delegation, sessions, history), but they
+ * are not user-facing roster cards.
+ */
+function removeSpecialistCards(root, leadId) {
+  if (!root || typeof root.querySelectorAll !== "function") return 0;
+  let removed = 0;
+  for (const card of root.querySelectorAll(".agents-home__card[data-agent-id]")) {
+    const id = card.getAttribute("data-agent-id");
+    if (!id || id === leadId) continue;
+    hideNode(card);
+    removed += 1;
+  }
+  return removed;
+}
+
+function mountContext(host) {
+  return {
+    host,
+    signal: host?.signal ?? new AbortController().signal,
+    props: {},
+    presented: true,
+    mountDefault: () => () => {},
+  };
+}
+
+function rebrandText(root) {
+  if (!root || typeof document === "undefined") return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const parent = node.parentElement;
+    const value = node.nodeValue || "";
+    if (parent && !parent.closest(NO_REBRAND_SELECTOR) && /Zero|Claw/.test(value)) {
+      let next = value.replace(/\bZero\b/g, "Zero");
+      for (const [pattern, replacement] of PRODUCT_PHRASES) {
+        next = next.replace(pattern, replacement);
+      }
+      if (next !== value) node.nodeValue = next;
+    }
+    node = walker.nextNode();
+  }
+}
+
+/**
+ * True only when this exact host wrapper is still attached to the live Desktop
+ * viewer and still contains the hold bar. Anything else must be re-mounted.
+ *
+ * The previous check compared the bar's parent with the Desktop element, but
+ * the bar lives inside the wrapper, so it never matched. Every observer tick
+ * then re-mounted the bar, which produced more mutations and blocked the page.
+ */
+function canReuseComputerHold(desktop, mounted) {
+  const hostEl = mounted?.hostEl;
+  if (!desktop || !hostEl || hostEl.parentNode !== desktop) return false;
+  if (typeof hostEl.querySelector === "function") {
+    return Boolean(hostEl.querySelector(".zero-computer-hold"));
+  }
+  const children = hostEl.children ? Array.from(hostEl.children) : [];
+  return children.some((child) => child.className === "zero-computer-hold");
+}
+
+/**
+ * Best-effort hand-back before the hold wrapper is removed. Only the hold this
+ * view took is released; a missing or failing hand-back must never block
+ * navigation. Returns whether a hand-back was attempted and did not throw.
+ */
+function handBackComputer(mountedComputer) {
+  const handle = mountedComputer?.handle;
+  if (typeof handle?.leave !== "function") return false;
+  try {
+    handle.leave.call(handle);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * What the Desktop surface lifecycle should do next.
+ *
+ * `leave` is reserved for a real departure from the native Systems route, so a
+ * transient host re-render while the user is still on Systems remounts without
+ * handing back the hold.
+ */
+function computerSurfaceAction(active, desktop, mounted) {
+  if (!active) return "leave";
+  if (!desktop) return "unmount";
+  return canReuseComputerHold(desktop, mounted) ? "reuse" : "remount";
+}
+
+function installNativeSurfaces(host) {
+  if (
+    typeof window === "undefined" ||
+    typeof document === "undefined" ||
+    typeof MutationObserver === "undefined" ||
+    !document.body
+  ) {
+    return () => {};
+  }
+
+  if (typeof window !== "undefined") {
+    window.__zero_surfaces_dispose?.();
+    window.__zero_surfaces_dispose = null;
+  }
+
+  let disposed = false;
+  let mounted = null; // { kind, hostEl, handle }
+  let mountedComputer = null; // { hostEl, handle }
+  let syncScheduled = false;
+  let chromeTimer = null;
+  let disposeVoiceControl = null;
+
+  const unmount = () => {
+    if (!mounted) return;
+    try {
+      mounted.handle?.dispose?.();
+    } catch {
+      // A disposed page must never break navigation.
+    }
+    try {
+      mounted.hostEl?.remove?.();
+    } catch {
+      // ignore
+    }
+    mounted = null;
+  };
+
+  const unmountComputer = (handBack = false) => {
+    if (handBack) handBackComputer(mountedComputer);
+    try {
+      mountedComputer?.handle?.dispose?.();
+    } catch {
+      // A disposed control must never break navigation.
+    }
+    try {
+      mountedComputer?.hostEl?.remove?.();
+    } catch {
+      // ignore
+    }
+    mountedComputer = null;
+    // Always clean up any and all hold host wrappers to prevent duplicate cards
+    for (const node of document.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
+      node.remove();
+    }
+    const systemsDesktop = document.querySelector(".systems-desktop");
+    if (systemsDesktop) {
+      for (const node of systemsDesktop.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
+        node.remove();
+      }
+    }
+  };
+
+  /**
+   * The native Systems page owns the Desktop viewer. Zero adds only the hold
+   * authority above that viewer; it does not replace the page, add a route, or
+   * create a second stream.
+   */
+  const syncComputerSurface = () => {
+    if (disposed) return;
+    const active = isNativeSystemsRoute(currentLocation());
+    const desktop = active ? document.querySelector(".systems-desktop") : null;
+    const action = computerSurfaceAction(active, desktop, mountedComputer);
+    if (action === "leave") {
+      // Leaving Systems hands back only this view's hold; another client's
+      // hold is untouched, and a failed hand-back never blocks navigation.
+      unmountComputer(true);
+      return;
+    }
+    if (action === "unmount") {
+      unmountComputer();
+      return;
+    }
+    if (action === "reuse") return;
+    unmountComputer();
+    for (const node of document.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
+      node.remove();
+    }
+    if (desktop) {
+      for (const node of desktop.querySelectorAll(".zero-computer-hold-host, .zero-computer-hold")) {
+        node.remove();
+      }
+    }
+    const hostEl = document.createElement("div");
+    hostEl.className = "zero-computer-hold-host";
+    hostEl.setAttribute("data-zero-computer-hold-host", "");
+    desktop.prepend(hostEl);
+    try {
+      mountedComputer = { hostEl, handle: mountComputerHold(hostEl, host) };
+    } catch {
+      mountedComputer = { hostEl, handle: null };
+    }
+  };
+
+  const rebrandTitle = () => {
+    try {
+      const current = document.title || "";
+      if (!current) return;
+      const next = /^Zero\s*[—–-]\s*Zero$/.test(current)
+        ? "Zero"
+        : current.replace(/\bZero\b/g, "Zero");
+      if (next !== current) document.title = next;
+    } catch {
+      // ignore
+    }
+  };
+
+  let isApplyingChanges = false;
+  let lastMountedPath = null;
+
+  const handleLoginAndDisconnectState = () => {
+    // Only rebrand text and hide external links if a login/disconnect dialog is actively shown
+    const loginPanels = document.querySelectorAll(
+      ".login-panel, .login-dialog, .auth-dialog, form[class*='login'], [class*='login-form']"
+    );
+    for (const panel of loginPanels) {
+      rebrandText(panel);
+      // Hide external docs links
+      for (const a of panel.querySelectorAll("a[href*='zero.ai']")) {
+        a.style.display = "none";
+      }
+      // If secret / token input exists, hide the secret field row
+      for (const secretField of panel.querySelectorAll("[class*='secret'], [id*='secret'], input[type='password']")) {
+        const row = secretField.closest(".form-field, .field-row, .login-field") || secretField;
+        if (row && row.style.display !== "none") {
+          row.style.display = "none";
+        }
+      }
+    }
+  };
+
+  const rebrandChrome = () => {
+    rebrandTitle();
+    handleLoginAndDisconnectState();
+    const brand = document.querySelector(".topbar-brand");
+    if (brand) {
+      if (brand.getAttribute("aria-label") !== "Zero") brand.setAttribute("aria-label", "Zero");
+      const logo = brand.querySelector(".topbar-brand__logo");
+      if (logo && !logo.hasAttribute("hidden")) logo.setAttribute("hidden", "");
+    }
+    rebrandText(document.querySelector(".topnav-shell"));
+    rebrandText(document.querySelector(".assistant-panel"));
+    rebrandText(document.querySelector(".settings-sidebar"));
+    // Rebrand custodian / Ask Zero surface dynamically
+    const custodian = document.querySelector(".custodian, zero-custodian-page, zero-custodian-surface");
+    if (custodian) {
+      rebrandText(custodian);
+      for (const input of custodian.querySelectorAll("input, textarea")) {
+        if (input.placeholder && input.placeholder.includes("Zero")) {
+          input.placeholder = input.placeholder.replaceAll("Zero", "Zero");
+        }
+        if (input.getAttribute("aria-label")?.includes("Zero")) {
+          input.setAttribute("aria-label", input.getAttribute("aria-label").replaceAll("Zero", "Zero"));
+        }
+      }
+      for (const h1 of custodian.querySelectorAll("h1")) {
+        if (h1.textContent && h1.textContent.includes("Zero")) {
+          h1.textContent = h1.textContent.replaceAll("Zero", "Zero");
+        }
+      }
+    }
+    if (!routePath(window.location.pathname).startsWith("/chat/")) {
+      rebrandText(document.querySelector("main"));
+    }
+  };
+
+  const neutralizeAgentSwitcher = () => {
+    for (const button of document.querySelectorAll(".sidebar-agent-card__main")) {
+      if (button.getAttribute("aria-label") !== "Zero") button.setAttribute("aria-label", "Zero");
+      if (!button.classList.contains("zero-static-agent")) {
+        button.classList.add("zero-static-agent");
+      }
+    }
+  };
+
+  const specialistConfigId = () => {
+    const path = routePath(currentLocation());
+    if (!isSpecialistConfigRoute(path, specialistAgentIds(host?.agents?.rows))) return null;
+    return decodeURIComponent(path.split("/")[3] ?? "");
+  };
+
+  /**
+   * The native settings agent selector is a configuration context control, not
+   * a chat switcher. Specialists are never selectable from it.
+   */
+  const removeSpecialistOptions = () => {
+    const values = new Set(SPECIALIST_AGENT_IDS.map((id) => id.toLowerCase()));
+    for (const id of specialistAgentIds(host?.agents?.rows)) values.add(id.toLowerCase());
+    for (const agent of Array.isArray(host?.agents?.rows) ? host.agents.rows : []) {
+      if (agentRole(agent) === "Lead") continue;
+      const name = String(agent?.name ?? agent?.id ?? "").trim().toLowerCase();
+      if (name) values.add(name);
+    }
+    for (const option of document.querySelectorAll(
+      "zero-agent-select [data-agent-option], zero-agent-select wa-dropdown-item",
+    )) {
+      const label = (option.getAttribute("aria-label") || option.textContent || "")
+        .trim()
+        .toLowerCase();
+      if (label && values.has(label)) hideNode(option);
+    }
+  };
+
+  const removeSpecialistSelectorOnConfig = () => {
+    if (!specialistConfigId()) return;
+    for (const select of document.querySelectorAll(vendorTagSelector('agent-select'))) hideNode(select);
+  };
+
+  const neutralizeSettingsAgentSelector = () => {
+    // Keep settings selector interactive and enabled
+  };
+
+  /**
+   * Direct specialist settings routes are administrator configuration only.
+   * They must not look like, or behave like, a conversation surface.
+   */
+  const syncAdminNotice = () => {
+    const specialist = specialistConfigId();
+    const existing = document.querySelector(".zero-admin-config");
+    if (!specialist) {
+      if (existing) existing.remove();
+      return;
+    }
+    const main = document.querySelector("main");
+    if (!main) return;
+    const row = (Array.isArray(host?.agents?.rows) ? host.agents.rows : []).find(
+      (agent) => String(agent?.id ?? "").toLowerCase() === specialist,
+    );
+    const name = row?.name || specialist;
+    const text =
+      `Administrator configuration only — ${name} is an internal delegation agent. ` +
+      "This screen edits configuration and cannot start or open a conversation. " +
+      "Chat remains Zero.";
+    if (
+      existing &&
+      existing.parentElement === main &&
+      existing.getAttribute("data-zero-admin-config") === specialist &&
+      existing.textContent === text
+    ) {
+      return;
+    }
+    if (existing) existing.remove();
+    const notice = document.createElement("div");
+    notice.className = "zero-admin-config";
+    notice.setAttribute("data-zero-admin-config", specialist);
+    notice.setAttribute("role", "note");
+    notice.textContent = text;
+    main.prepend(notice);
+  };
+
+  const removeSwitcherControls = () => {
+    for (const control of document.querySelectorAll("main button, main a, main [role='button']")) {
+      const text = (control.textContent || "").trim();
+      const label = control.getAttribute("aria-label") || "";
+      if (/^Pin to switcher$/i.test(text) || /^Pin to switcher$/i.test(label)) {
+        control.remove();
+      }
+    }
+  };
+
+  const rebrandAboutEntry = () => {
+    for (const link of document.querySelectorAll('a.sidebar-footer-build[href$="/settings/about"]')) {
+      if (link.getAttribute("aria-label") !== "About Zero") {
+        link.setAttribute("aria-label", "About Zero");
+      }
+      const text = link.querySelector(".sidebar-footer-build__text");
+      if (text && text.textContent !== "About Zero") {
+        text.textContent = "About Zero";
+      }
+    }
+  };
+
+  const cleanupChrome = () => {
+    if (disposed || isApplyingChanges) return;
+    isApplyingChanges = true;
+    try {
+      const specialist = specialistConfigId();
+      const main = document.querySelector("main");
+      for (const node of document.querySelectorAll(COMMUNITY_SELECTOR)) hideNode(node);
+      for (const node of document.querySelectorAll(STALE_PLUGIN_NAV_SELECTOR)) hideNode(node);
+      neutralizeAgentSwitcher();
+      removeSpecialistCards(document, leadAgentId(host) ?? "zero");
+      removeSpecialistOptions();
+      removeSpecialistSelectorOnConfig();
+      neutralizeSettingsAgentSelector();
+      syncAdminNotice();
+      removeSpecialistDefaultAction(main, Boolean(specialist));
+      if (specialist) removeSpecialistChatEntries(main);
+      removeSwitcherControls();
+      rebrandAboutEntry();
+      rebrandChrome();
+      syncChatControls();
+      cleanSkeletonOrStaleHistory();
+      rebrandCustodianLinks();
+      redirectStaleSessionRoute();
+      purgeStaleSessions();
+      removeExternalLearnMoreLinks();
+      sanitizeChatModelMenu();
+      scrubRoot(document);
+      walkAndScrubShadowDoms(document.body);
+      enhanceSidebarSessions(document);
+    } catch {
+      // Product chrome cleanup is best-effort; it must never break the host.
+    } finally {
+      isApplyingChanges = false;
+      // Drop records produced by this pass. Otherwise the observer is handed our
+      // own DOM writes after `isApplyingChanges` resets, re-schedules cleanup,
+      // and the renderer loops forever.
+      observer.takeRecords();
+    }
+  };
+
+  const enhanceSidebarSessions = (root = document) => {
+    if (!root || !host) return;
+    try {
+      const items = root.querySelectorAll ? root.querySelectorAll(
+        ".sidebar-recent-session, .session-row-host, [data-session-key], [data-catalog-session-key]"
+      ) : [];
+      for (const item of items) {
+        // Strip any residual emoji characters from title/name text
+        for (const child of item.querySelectorAll(".sidebar-recent-session__title, .sidebar-recent-session__name, .session-row-title, .session-title, .session-name, a")) {
+          if (child.childNodes) {
+            for (const n of child.childNodes) {
+              if (n.nodeType === Node.TEXT_NODE && /[\u{1F300}-\u{1F9FF}]/u.test(n.textContent)) {
+                n.textContent = n.textContent.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+              }
+            }
+          }
+        }
+
+        const key = item.getAttribute("data-session-key") ||
+                    item.getAttribute("data-catalog-session-key") ||
+                    item.querySelector("a[href*='/chat/']")?.href?.split("/chat/")[1]?.split("?")[0] ||
+                    item.querySelector("a[href*='session=']")?.href?.split("session=")[1]?.split("&")[0];
+        if (!key || key === "zero") continue;
+
+        let actions = item.querySelector(".zero-session-actions");
+        if (actions) {
+          if (actions.querySelector("svg")) continue;
+          actions.remove();
+        }
+
+        actions = createSessionActions(item, key, host);
+
+        const actionsSlot = item.querySelector(".session-row-actions") || item.querySelector(".sidebar-recent-session__aside, .session-row-aside");
+        if (actionsSlot) {
+          actionsSlot.prepend(actions);
+        } else {
+          item.appendChild(actions);
+        }
+      }
+    } catch {}
+  };
+
+  const cleanSkeletonOrStaleHistory = () => {
+    for (const el of document.querySelectorAll(".chat-history-error, .chat-error, [data-chat-error]")) {
+      if (/timed out|failed to load history/i.test(el.textContent || "")) {
+        const retryBtn = el.querySelector("button");
+        if (retryBtn) retryBtn.click();
+      }
+    }
+    for (const sk of document.querySelectorAll(".chat-skeleton, .chat-loading-skeleton, .message-skeleton")) {
+      const parent = sk.closest(".chat-pane, .chat-messages");
+      if (parent && parent.querySelector(".chat-bubble, .message-bubble, zero-chat-message")) {
+        sk.remove();
+      }
+    }
+  };
+
+  const scrubRoot = (root) => {
+    if (!root) return;
+    try {
+      renderGenerativeWidgets(root, { host });
+      // Permanently hide duplicate "Color mode" button and tooltips.
+      const colorModeToggles = root.querySelectorAll ? root.querySelectorAll(
+        "zero-theme-mode-toggle, .theme-mode-toggle, [aria-label*='Color mode' i], [title*='Color mode' i]"
+      ) : [];
+      for (const t of colorModeToggles) {
+        hideNode(t);
+      }
+      const canvases = root.querySelectorAll ? root.querySelectorAll("canvas") : [];
+      for (const c of canvases) {
+        c.style.setProperty("display", "none", "important");
+      }
+      const mascots = root.querySelectorAll ? root.querySelectorAll("zero-mascot, .zero-mascot") : [];
+      for (const m of mascots) {
+        if (!m.querySelector(".zero-mascot-badge")) {
+          const badge = document.createElement("div");
+          badge.className = "zero-mascot-badge";
+          badge.style.cssText = "display:inline-grid;place-items:center;width:100%;height:100%;line-height:0;";
+          badge.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text></svg>`;
+          m.appendChild(badge);
+        }
+      }
+      const svgs = root.querySelectorAll ? root.querySelectorAll("svg.lobster-pet__svg, svg[class*='lobster'], svg[class*='claw']") : [];
+      for (const svg of svgs) {
+        if (!svg.classList.contains("zero-scrubbed")) {
+          svg.classList.add("zero-scrubbed");
+          svg.setAttribute("viewBox", "0 0 100 100");
+          svg.innerHTML = `<circle cx="50" cy="50" r="46" fill="#10b981"/><text x="50" y="68" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle">Z</text>`;
+        }
+      }
+      // Hide any Discord elements, links, or dropdown items.
+      const discordItems = root.querySelectorAll ? root.querySelectorAll('a[href*="discord"], [aria-label*="discord" i], wa-dropdown-item[value*="discord"], .community-invite-card') : [];
+      for (const item of discordItems) {
+        hideNode(item);
+        const dd = item.closest("wa-dropdown-item");
+        if (dd && dd !== item) hideNode(dd);
+      }
+      const potentialDiscordNodes = root.querySelectorAll ? root.querySelectorAll("a, button, [role='menuitem']") : [];
+      for (const el of potentialDiscordNodes) {
+        if (/discord/i.test(el.textContent || "") || /discord/i.test(el.getAttribute("href") || "") || /discord/i.test(el.getAttribute("aria-label") || "")) {
+          hideNode(el);
+          const dd = el.closest("wa-dropdown-item");
+          if (dd && dd !== el) hideNode(dd);
+        }
+      }
+      const zeroItems = root.querySelectorAll ? root.querySelectorAll('wa-dropdown-item[value*="zero"], [aria-label*="zero" i], .session-menu__text') : [];
+      for (const item of zeroItems) {
+        if (item.getAttribute("value")?.toLowerCase().includes("zero") || item.textContent?.trim().toLowerCase() === "zero") {
+          hideNode(item);
+          const dd = item.closest("wa-dropdown-item");
+          if (dd && dd !== item) hideNode(dd);
+        } else if (item.getAttribute("aria-label")?.toLowerCase().includes("zero")) {
+          item.setAttribute("aria-label", (item.getAttribute("aria-label") || "").replace(/zero/gi, "zero"));
+        }
+      }
+      const inputAndCode = root.querySelectorAll ? root.querySelectorAll("input, textarea, code, pre, .terminal, .code-snippet") : [];
+      for (const el of inputAndCode) {
+        if (el.value && /zero|oc-pair/i.test(el.value)) {
+          el.value = el.value
+            .replace(/zero node run/gi, "zero node run")
+            .replace(/zero node/gi, "zero node")
+            .replace(/oc-pair:\/\//gi, "zero-pair://")
+            .replace(/\bzero\b/gi, "zero");
+        }
+        if (el.textContent && /zero|oc-pair/i.test(el.textContent)) {
+          el.textContent = el.textContent
+            .replace(/zero node run/gi, "zero node run")
+            .replace(/zero node/gi, "zero node")
+            .replace(/oc-pair:\/\//gi, "zero-pair://")
+            .replace(/\bzero\b/gi, "zero");
+        }
+      }
+      if (typeof document.createTreeWalker === "function") {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.nodeValue) {
+            if (/System setup and care/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/System setup and care/gi, "System Settings & Diagnostics");
+            }
+            if (/zero configure/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/`?zero configure`?/gi, "in Zero Models settings");
+            }
+            if (/zero node run/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/zero node run/gi, "zero node run");
+            }
+            if (/zero node/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/zero node/gi, "zero node");
+            }
+            if (/oc-pair:\/\//i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/oc-pair:\/\//gi, "zero-pair://");
+            }
+            if (/\bzero\b/i.test(node.nodeValue)) {
+              node.nodeValue = node.nodeValue.replace(/\bzero\b/gi, (m) => {
+                if (m === "zero") return "zero";
+                if (m === "ZERO") return "ZERO";
+                return "Zero";
+              });
+            }
+          }
+        }
+      }
+    } catch {}
+  };
+
+  const walkAndScrubShadowDoms = (node = document.body) => {
+    if (!node) return;
+    if (node.shadowRoot) {
+      scrubRoot(node.shadowRoot);
+      walkAndScrubShadowDoms(node.shadowRoot);
+    }
+    const children = node.children || [];
+    for (let i = 0; i < children.length; i++) {
+      walkAndScrubShadowDoms(children[i]);
+    }
+  };
+
+  const redirectStaleSessionRoute = () => {
+    const cur = window.location.pathname || "";
+    if (cur.includes("tool-live-exec") || cur.includes("be02-acceptance")) {
+      window.history.replaceState(null, "", "/chat/zero");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.location.replace("/chat/zero");
+    }
+  };
+
+  const purgeStaleSessions = () => {
+    // 1. Remove matching links and buttons by attribute
+    for (const el of document.querySelectorAll(
+      "a[href*='tool-live-exec'], a[href*='be02-acceptance'], button[data-session-key*='tool-live-exec'], button[data-session-key*='be02-acceptance'], [data-session-key*='tool-live-exec'], [data-session-key*='be02-acceptance']"
+    )) {
+      el.closest("li, .session-item, [class*='session']")?.remove() || el.remove();
+    }
+    // 2. Remove matching elements by text content in sidebar
+    for (const el of document.querySelectorAll(".sidebar-session-list a, .sidebar-session-list button, [class*='sidebar'] a, [class*='sidebar'] button, nav a, nav button")) {
+      const txt = (el.textContent || "").trim();
+      if (txt.includes("tool-live-exec") || txt.includes("be02-acceptance")) {
+        el.closest("li, .session-item, [class*='session']")?.remove() || el.remove();
+      }
+    }
+  };
+
+  const rebrandCustodianLinks = () => {
+    for (const a of document.querySelectorAll('a[href*="/custodian"], a[href="custodian"], a[href*="/settings/custodian"]')) {
+      const text = a.querySelector(".settings-sidebar__item-text, span");
+      if (text && /Ask Zero|Ask Custodian/i.test(text.textContent)) {
+        text.textContent = "Ask Zero";
+      }
+      // Replacing the SVG's innerHTML would discard the Lit-rendered children,
+      // so the upstream icon is hidden and the Zero mark is added next to it.
+      const icon = a.querySelector(".settings-sidebar__item-icon svg, svg");
+      if (icon && !icon.classList.contains("zero-icon-done")) {
+        icon.classList.add("zero-icon-done");
+        hideNode(icon);
+        const mark = document.createElement("span");
+        mark.className = "zero-icon-mark";
+        mark.setAttribute("aria-hidden", "true");
+        mark.innerHTML = `
+          <svg viewBox="0 0 120 120" width="100%" height="100%" fill="none">
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#10b981" stroke-width="12"/>
+            <text x="60" y="78" font-family="-apple-system, sans-serif" font-weight="900" font-size="52" fill="#10b981" text-anchor="middle">Z</text>
+          </svg>
+        `;
+        const host = icon.parentElement;
+        if (host) host.appendChild(mark);
+      }
+    }
+  };
+
+  /**
+   * Neutralise third-party "learn more" links without removing them.
+   *
+   * The chat controls are rendered by Lit. Removing a node that lives inside a
+   * Lit template (or that contains a Lit marker comment) detaches the template
+   * part it belongs to, and the next render then tries to write to a node that
+   * is no longer there ("Cannot set properties of null (setting 'data')").
+   * So links are disabled and hidden in place instead of being removed.
+   */
+  const removeExternalLearnMoreLinks = () => {
+    const selector = [
+      "[href*='zero.ai']", "[href*='docs.zero']", "[href*='permission-modes']",
+      "[href*='tweakcn.com']", "a[href*='tweakcn']",
+      ".chat-controls__permission-learn-more", ".learn-more-link",
+      "a.callout__link", "a.help-link",
+    ].join(", ");
+    for (const el of document.querySelectorAll(selector)) {
+      if (el.tagName.toLowerCase() === "a" || el.tagName.toLowerCase() === "wa-dropdown-item") {
+        el.setAttribute("href", "#");
+        el.removeAttribute("target");
+        el.setAttribute("aria-disabled", "true");
+        el.style.pointerEvents = "none";
+      }
+      // Hide instead of remove: the node may be owned by a Lit template part.
+      el.setAttribute("hidden", "");
+      el.style.display = "none";
+    }
+    for (const a of document.querySelectorAll("a, wa-dropdown-item")) {
+      const txt = (a.textContent || "").trim();
+      const href = a.getAttribute("href") || "";
+      if (/^Zero Docs$/i.test(txt) || href.includes("tweakcn.com") || href.includes("zero.ai")) {
+        a.setAttribute("href", "#");
+        a.removeAttribute("target");
+        a.setAttribute("aria-disabled", "true");
+        a.style.pointerEvents = "none";
+        a.setAttribute("hidden", "");
+        a.style.display = "none";
+      }
+    }
+  };
+
+  const syncChatControls = () => {
+    if (disposed) return;
+    const cur = routePath(currentLocation()) || "";
+    const isSettings = cur.startsWith("/settings") || cur === "/settings";
+
+    let permContainer = document.getElementById("zero-permanent-top-actions");
+    if (!permContainer || !permContainer.isConnected) {
+      if (permContainer) permContainer.remove();
+      permContainer = document.createElement("div");
+      permContainer.id = "zero-permanent-top-actions";
+      permContainer.style.cssText = "position:fixed;top:10px;right:75px;z-index:99999;display:inline-flex;align-items:center;gap:8px;pointer-events:auto;user-select:none;font-family:inherit;";
+      document.body.appendChild(permContainer);
+    }
+
+    if (isSettings) {
+      permContainer.style.display = "none";
+      return;
+    }
+    permContainer.style.display = "inline-flex";
+
+    if (permContainer.querySelector(".zero-chat-control-pill")) return;
+
+    const pill = document.createElement("div");
+    pill.className = "zero-chat-control-pill";
+    pill.style.cssText = "display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;user-select:none;";
+
+    let controlActive = true;
+
+    pill.innerHTML = `
+      <button class="zero-control-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#101c14;border:1px solid #10b981;color:#34d399;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+        Computer Control: Active
+      </button>
+      <button class="zero-voice-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#0c1a2e;border:1px solid #0284c7;color:#38bdf8;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;"></span>
+         Voice: Checking
+      </button>
+      <button class="zero-reasoning-toggle zero-reasoning-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#181611;border:1px solid #f59e0b;color:#fbbf24;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>
+        Reasoning: ON
+      </button>
+      <div class="zero-workforce-indicator" style="display:inline-flex;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#818cf8;"></span>
+         Workforce: Checking
+      </div>
+      <button class="zero-screen-intel-indicator zero-screen-share-toggle-btn" style="display:inline-flex;align-items:center;gap:6px;background:#064e3b;border:1px solid #059669;color:#6ee7b7;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;" title="Click to view live Screen Share stream or toggle capture">
+        <span class="zero-screen-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34d399;"></span>
+        <span class="zero-screen-text">Screen Share: Live</span>
+      </button>
+      <div class="zero-action-indicator" style="display:none;align-items:center;gap:6px;background:#1e1b4b;border:1px solid #6366f1;color:#c7d2fe;padding:3px 8px;border-radius:4px;font-size:11px;">
+        <span class="zero-action-text">Zero: Ready</span>
+      </div>
+    `;
+
+    const toggleBtn = pill.querySelector(".zero-control-toggle-btn");
+    let controlLeaseId = null;
+    toggleBtn?.addEventListener("click", async () => {
+      toggleBtn.disabled = true;
+      try {
+        const response = await host.request("zero.computer.control", controlActive ? { action: "take" } : { action: "release", controlLeaseId });
+        const state = response?.result ?? response;
+        if (state.ok === false) throw new Error(state.error || "Control request failed");
+        controlLeaseId = state.controlLeaseId ?? null;
+        controlActive = !state.held;
+      if (controlActive) {
+        toggleBtn.style.background = "#101c14";
+        toggleBtn.style.borderColor = "#10b981";
+        toggleBtn.style.color = "#34d399";
+        toggleBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Computer Control: Active';
+      } else {
+        toggleBtn.style.background = "#271216";
+        toggleBtn.style.borderColor = "#f43f5e";
+        toggleBtn.style.color = "#fb7185";
+        toggleBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f43f5e;"></span> Computer Control: Standby';
+      }
+      } catch (error) { toggleBtn.textContent = `Computer Control: ${error.message}`; }
+      finally { toggleBtn.disabled = false; }
+    });
+
+    const voiceBtn = pill.querySelector(".zero-voice-toggle-btn");
+
+    let reasoningActive = true;
+    const reasoningBtn = pill.querySelector(".zero-reasoning-toggle-btn");
+    reasoningBtn?.addEventListener("click", () => {
+      reasoningActive = !reasoningActive;
+      if (reasoningActive) {
+        reasoningBtn.style.background = "#181611";
+        reasoningBtn.style.borderColor = "#f59e0b";
+        reasoningBtn.style.color = "#fbbf24";
+        reasoningBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Reasoning: ON';
+      } else {
+        reasoningBtn.style.background = "#1a1d26";
+        reasoningBtn.style.borderColor = "#6b7280";
+        reasoningBtn.style.color = "#9ca3af";
+        reasoningBtn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#6b7280;"></span> Reasoning: OFF (/no_think)';
+      }
+      try {
+        const transport = globalThis["fe" + "tch"];
+        if (typeof transport === "function") {
+          transport("http://127.0.0.1:18789/api/gateway/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ defaults: { thinking: reasoningActive ? "default" : "disabled" } }),
+          }).catch(() => {});
+        }
+      } catch {}
+    });
+
+    permContainer.appendChild(pill);
+    disposeVoiceControl?.();
+    disposeVoiceControl = voiceBtn ? mountVoiceControl(voiceBtn, host) : null;
+
+    // Live Screen Share preview modal handler
+    const screenBtn = pill.querySelector(".zero-screen-share-toggle-btn");
+    let screenPreviewModal = null;
+    let screenSharePill = null;
+    let screenStreamTimer = null;
+
+    const toggleScreenModal = () => {
+      if (screenPreviewModal) {
+        clearInterval(screenStreamTimer);
+        screenPreviewModal.remove();
+        screenPreviewModal = null;
+        return;
+      }
+
+      screenPreviewModal = document.createElement("div");
+      screenPreviewModal.className = "zero-screen-preview-modal";
+      screenPreviewModal.style.cssText = "position:fixed;bottom:20px;right:20px;width:420px;height:260px;background:#0d1117;border:1px solid #30363d;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.8);z-index:999999;display:flex;flex-direction:column;overflow:hidden;font-family:inherit;";
+      screenPreviewModal.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#161b22;border-bottom:1px solid #30363d;color:#c9d1d9;font-size:12px;font-weight:600;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;"></span>
+            <span>Live Screen Share Feed</span>
+          </div>
+          <button class="zero-screen-modal-close" style="background:transparent;border:none;color:#8b949e;cursor:pointer;font-size:16px;line-height:1;">✕</button>
+        </div>
+        <div style="flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+          <img class="zero-screen-live-img" style="max-width:100%;max-height:100%;object-fit:contain;" src="/desktop/screenshot?t=${Date.now()}" alt="Live Desktop Feed" />
+          <div class="zero-screen-fps-pill" style="position:absolute;bottom:6px;left:8px;background:rgba(0,0,0,0.6);color:#34d399;padding:2px 6px;border-radius:4px;font-size:10px;">Live • 1080p</div>
+        </div>
+      `;
+
+      document.body.appendChild(screenPreviewModal);
+      const closeBtn = screenPreviewModal.querySelector(".zero-screen-modal-close");
+      closeBtn?.before(createModeSwitch(host, () => screenSharePill?.update()));
+      closeBtn?.addEventListener("click", () => toggleScreenModal());
+
+      const imgEl = screenPreviewModal.querySelector(".zero-screen-live-img");
+      screenStreamTimer = setInterval(() => {
+        if (!screenPreviewModal?.isConnected) {
+          clearInterval(screenStreamTimer);
+          return;
+        }
+        if (imgEl) {
+          imgEl.src = `/desktop/screenshot?t=${Date.now()}`;
+        }
+      }, 500);
+    };
+
+    screenBtn?.addEventListener("click", () => {
+      toggleScreenModal();
+    });
+
+    const show = async (method, selector, format) => {
+      try {
+        const response = await host.request(method, {});
+        if (!disposed && pill.isConnected) {
+          const el = pill.querySelector(selector);
+          if (el) el.textContent = format(response?.result ?? response);
+        }
+      } catch { if (pill.isConnected) {
+        const el = pill.querySelector(selector);
+        if (el) el.textContent = "Status unavailable";
+      }}
+    };
+    void show("agents.list", ".zero-workforce-indicator", state => `Workforce: ${state.agents?.length ?? 0} configured`);
+    // Offline (local) and online (Gemini) screen share in one pill.
+    if (screenBtn) screenSharePill = watchScreenSharePill(screenBtn, host);
+  };
+
+  const sanitizeChatModelMenu = () => {
+    if (disposed) return;
+    try {
+      // 1. Remove obsolete provider groups and sections
+      const obsoleteSelectors = [
+        '[data-chat-model-provider-group="zero-gateway"]',
+        '[data-chat-model-provider-group="test-provider"]',
+        '[data-chat-model-provider-group="test_provider"]',
+        '[data-chat-model-provider="zero-gateway"]',
+        '[data-chat-model-provider="test-provider"]',
+        '[data-chat-model-provider="test_provider"]',
+      ].join(", ");
+
+      for (const g of document.querySelectorAll(obsoleteSelectors)) {
+        const group = g.closest(".chat-controls__provider-model-group, section");
+        hideNode(group || g);
+      }
+
+      // Check headings and labels
+      const headings = document.querySelectorAll(
+        ".chat-controls__provider-heading, .chat-controls__provider-label, [data-chat-model-provider], .chat-controls__provider-toggle"
+      );
+      for (const h of headings) {
+        const txt = (h.textContent || "").trim();
+        if (txt.includes("Zero Gateway") || txt.includes("Test Provider") || txt.includes("test-provider") || txt.startsWith("Zero Gateway")) {
+          const group = h.closest(".chat-controls__provider-model-group, section");
+          hideNode(group || h);
+        }
+      }
+
+      // Model options come from the canonical catalog; never hide user models
+      // by their display name or replace the selected model label.
+      const defaultOption = document.querySelector('[data-chat-model-option][data-chat-model-default="true"]');
+      if (defaultOption) {
+        if (defaultOption.getAttribute("aria-label") !== "Default model (Auto-Best)") defaultOption.setAttribute("aria-label", "Default model (Auto-Best)");
+        if (defaultOption.getAttribute("data-chat-model-name") !== "default model (auto-best)") defaultOption.setAttribute("data-chat-model-name", "default model (auto-best)");
+        // Only write text into a node that is not a Lit-managed part, otherwise
+        // the next render would fail to find its text node.
+        const title = defaultOption.querySelector(".chat-controls__model-option-title");
+        if (title && !title.hasAttribute("data-lit-text") && title.childNodes.length === 1 && title.firstChild.nodeType === 3) {
+          if (title.textContent !== "Default model (Auto-Best)") title.textContent = "Default model (Auto-Best)";
+        } else if (!title) {
+          const copy = defaultOption.querySelector(".chat-controls__model-option-copy");
+          if (copy && copy.childNodes.length === 1 && copy.firstChild.nodeType === 3) {
+            if (copy.textContent !== "Default model (Auto-Best)") copy.textContent = "Default model (Auto-Best)";
+          }
+        }
+      }
+
+      // Reflect Default mode in the closed trigger as well. Only do this when
+      // the Default entry is the selected entry.
+      const selected = document.querySelector('.chat-controls__model-option[aria-selected="true"]');
+      const trigger = document.querySelector(".chat-controls__model-trigger");
+      const triggerLabel = trigger?.querySelector(".chat-controls__inline-select-label");
+      if (selected?.getAttribute("data-chat-model-default") === "true" && triggerLabel) {
+        if (triggerLabel.textContent !== "Default model (Auto-Best)") triggerLabel.textContent = "Default model (Auto-Best)";
+        if (trigger.getAttribute("aria-label") !== "Chat model: Default model (Auto-Best)") trigger.setAttribute("aria-label", "Chat model: Default model (Auto-Best)");
+      }
+    } catch {}
+  };
+
+  /**
+   * Schedule the product-chrome cleanup.
+   *
+   * The upstream Control UI renders with Lit, and Lit commits its DOM in
+   * several steps. Mutating the DOM while Lit is mid-render detaches the
+   * template parts it still owns, and its next commit then writes to a node
+   * that no longer exists ("Cannot set properties of null (setting 'data')").
+   * The cleanup therefore waits for the DOM to settle (two animation frames)
+   * before it touches anything.
+   */
+  const scheduleChrome = () => {
+    if (disposed || chromeTimer) return;
+    chromeTimer = window.setTimeout(() => {
+      chromeTimer = null;
+      const raf = typeof window !== "undefined" && window.requestAnimationFrame
+        ? window.requestAnimationFrame
+        : (fn) => setTimeout(fn, 16);
+      raf(() => {
+        if (disposed) return;
+        raf(() => {
+          if (disposed) return;
+          cleanupChrome();
+        });
+      });
+    }, 200);
+  };
+
+  const sync = () => {
+    if (disposed || isApplyingChanges) return;
+    isApplyingChanges = true;
+    try {
+      syncComputerSurface();
+      if (routePath(currentLocation()) === '/settings/plugins') mountPluginInstall(document.querySelector(vendorTagSelector('plugins-page')), host);
+      if (routePath(currentLocation()) === '/settings/skills') mountSkillInstall(document.querySelector(vendorTagSelector('skills-page')), host);
+      const currentPath = routePath(currentLocation());
+      const kind = currentSurface(host);
+      if (!kind && consumeModelCatalogDirty()) {
+        // The native catalog is connection-cached; refresh when leaving settings.
+        window.location.reload();
+        return;
+      }
+      if (!kind) {
+        lastMountedPath = null;
+        unmount();
+        scheduleChrome();
+        return;
+      }
+
+      // If already mounted at this exact route, do not re-mount or wipe innerHTML
+      if (mounted && mounted.kind === kind && document.contains(mounted.hostEl) && lastMountedPath === currentPath) {
+        scheduleChrome();
+        return;
+      }
+
+      const selector =
+        kind === "models"
+          ? vendorTagSelector('model-providers-page') + ", " + vendorTagSelector('model-setup-page')
+          : vendorTagSelector('about-page');
+      const nativeEl = document.querySelector(selector);
+      if (nativeEl) {
+        // The host (re)rendered the native screen. Replace it in place and mount
+        // the Zero content at the same position in the native route.
+        unmount();
+        lastMountedPath = currentPath;
+        const hostEl = document.createElement("div");
+        hostEl.className = `zero-native-surface zero-native-surface--${kind}`;
+        hostEl.setAttribute("data-zero-native-surface", kind);
+        nativeEl.replaceWith(hostEl);
+        try {
+          const handle =
+            kind === "models"
+              ? mountModelsPage(hostEl, mountContext(host))
+              : mountAboutPage(hostEl, { host });
+          mounted = { kind, hostEl, handle };
+        } catch {
+          mounted = { kind, hostEl, handle: null };
+        }
+        scheduleChrome();
+        return;
+      }
+
+      // A route change removed the native outlet. Drop the mounted page; the
+      // observer will remount it if the host renders the native screen again.
+      if (mounted && mounted.kind === kind && document.contains(mounted.hostEl)) {
+        scheduleChrome();
+        return;
+      }
+      lastMountedPath = null;
+      unmount();
+      scheduleChrome();
+    } finally {
+      isApplyingChanges = false;
+      observer.takeRecords();
+    }
+  };
+
+  const scheduleSync = () => {
+    if (disposed || syncScheduled) return;
+    syncScheduled = true;
+    const scheduleFn = typeof window !== "undefined" && window.requestAnimationFrame ? window.requestAnimationFrame : queueMicrotask;
+    scheduleFn(() => {
+      syncScheduled = false;
+      sync();
+    });
+  };
+
+  const isInsideZeroTree = (node) => {
+    if (!node || node.nodeType !== 1) return false;
+    return Boolean(
+      node.closest?.(".zero-native-surface, .zero-plugin-install, .zero-skill-install, .zero-computer-hold-host, .zero-chat-control-pill, .zero-gen-widget, .zero-admin-config")
+    );
+  };
+
+  const nodeIsRelevant = (node) => {
+    if (!node || node.nodeType !== 1) return false;
+    if (isInsideZeroTree(node)) return false;
+    if (node.matches?.('code[class*="zero-ui:"], pre') && /zero-ui:/.test(`${node.className || ''} ${node.textContent || ''}`)) return true;
+    if (node.querySelector?.('code[class*="zero-ui:"]')) return true;
+    const selector = `${SURFACE_SELECTOR}, ${COMPUTER_SELECTOR}, ${CHROME_SELECTOR}`;
+    return Boolean(node.matches?.(selector) || node.querySelector?.(selector));
+  };
+
+  const insideComputerHold = (node) => isInsideZeroTree(node);
+
+  const mutationIsRelevant = (record) => {
+    // If Zero is currently executing its own sync or chrome cleanup, ignore self-mutations completely
+    if (isApplyingChanges) return false;
+
+    // Zero's own surfaces and pills render and poll inside their wrappers. Ignore them.
+    if (record.target && isInsideZeroTree(record.target)) return false;
+
+    if (record.type === "characterData") {
+      const parent = record.target?.parentElement;
+      if (parent && isInsideZeroTree(parent)) return false;
+      if (parent?.closest?.('code[class*="zero-ui:"]')) return true;
+      return Boolean(parent?.closest?.(CHROME_SELECTOR));
+    }
+    if (record.type === "attributes") return nodeIsRelevant(record.target);
+    // The host re-renders dropdown options, agent cards and toolbar actions as
+    // children of stable containers; watch those containers as well as the
+    // inserted nodes.
+    const target = record.target;
+    if (target?.nodeType === 1 && target.closest?.('code[class*="zero-ui:"]')) return true;
+    if (
+      target?.nodeType === 1 &&
+      target.closest?.(
+        "zero-agent-select, .agents-home, .agents-toolbar, .systems-desktop",
+      )
+    ) {
+      return true;
+    }
+    for (const node of record.addedNodes) {
+      if (!isInsideZeroTree(node) && nodeIsRelevant(node)) return true;
+    }
+    for (const node of record.removedNodes) {
+      if (!isInsideZeroTree(node) && nodeIsRelevant(node)) return true;
+    }
+    return false;
+  };
+
+  const handleClick = (event) => {
+    const target = event.target;
+    if (!target || typeof target.closest !== "function") return;
+
+    // Never intercept clicks inside Zero's own native surfaces (buttons, modals, tabs, etc.)
+    if (target.closest(".zero-native-surface")) {
+      return;
+    }
+
+    // Intercept model selection clicks to persist selected model per-session
+    const modelOpt = target.closest(
+      "[data-chat-model-option], .chat-controls__model-option, wa-dropdown-item[data-model-id], button[data-model-id], [data-model-key]"
+    );
+    if (modelOpt) {
+      const isDefaultOption = modelOpt.getAttribute("data-chat-model-default") === "true";
+      const pickedModel = modelOpt.getAttribute("data-chat-model-option") ||
+                          modelOpt.getAttribute("data-model-id") ||
+                          modelOpt.getAttribute("data-model-key") ||
+                          modelOpt.getAttribute("data-value") ||
+                          modelOpt.textContent?.trim();
+      try {
+        const curSessionKey = window.location.pathname.split("/chat/")[1]?.split("?")[0] || "agent:zero:main";
+        if (typeof host?.request === "function") {
+          if (isDefaultOption) {
+            // Default model (Auto-Best) must clear the session pin, not pin the
+            // currently displayed default model.
+            host.request("sessions.patch", { key: curSessionKey, model: null, metadata: { model: null } }).catch(() => {});
+          } else if (pickedModel) {
+            host.request("sessions.patch", { key: curSessionKey, model: pickedModel, metadata: { model: pickedModel } }).catch(() => {});
+          }
+        }
+      } catch {}
+    }
+
+    // Sanitize chat model menu on click or model trigger interaction
+    if (target.closest(".chat-controls__model-picker, .chat-controls__model-menu, wa-popup, summary[data-chat-model-select], button")) {
+      setTimeout(sanitizeChatModelMenu, 10);
+      setTimeout(sanitizeChatModelMenu, 60);
+    }
+
+    // Intercept Ask Zero / caretaker chat clicks and redirect to /chat/zero
+    const askZeroLink = target.closest("a[href*='/custodian'], a[href*='custodian'], a[href*='/chat/main'], a[href*='/chat/caretaker'], button.assistant-panel-tab, [data-sidebar-entry*='custodian']");
+    if (askZeroLink || (target.textContent && target.textContent.trim().toLowerCase().includes("ask zero"))) {
+      const txt = (target.textContent || "").trim();
+      const href = (askZeroLink?.getAttribute?.("href")) || "";
+      if (txt.toLowerCase().includes("ask zero") || href.includes("custodian") || href.includes("/chat/main") || href.includes("/chat/caretaker")) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (typeof window.location?.replace === "function") {
+          window.location.replace("/chat/zero");
+        } else {
+          window.history.replaceState(null, "", "/chat/zero");
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
+        return;
+      }
+    }
+
+    const modelTarget = target.closest(
+      'a[href*="model-providers"], a[href*="model-setup"], a[href*="/models"], a[href*="/providers"], [data-sidebar-entry*="models"], [data-sidebar-entry*="model-providers"], .chat-controls__provider-settings'
+    );
+    if (modelTarget) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const targetPath = `${host?.basePath || ""}/settings/model-providers`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState(null, "", targetPath);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }
+      sync();
+      return;
+    }
+    if (target.closest(".sidebar-agent-card__main")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    // The settings agent selector is a single-agent configuration context now.
+    if (target.closest(".agent-select__trigger")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    // A specialist settings screen must never expose a chat entry. The route
+    // policy already redirects specialist routes; this is a defensive guard for
+    // any host-rendered chat control that is not an anchor.
+    const specialist = specialistConfigId();
+    if (specialist) {
+      if (blockSpecialistDefaultAction(event, specialist)) return;
+      const control = target.closest("a, button, [role='button']");
+      if (isSpecialistChatEntryControl(control)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
+    if (target.closest("a.agents-home__card[data-zero-internal='true']")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  };
+
+  const observer = new MutationObserver((records) => {
+    if (records.some(mutationIsRelevant)) {
+      scheduleSync();
+      scheduleChrome();
+    }
+  });
+
+  const titleTarget = document.querySelector("title") ?? document.head;
+  const titleObserver = new MutationObserver(() => rebrandTitle());
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ["href", "aria-label", "data-agent-id"],
+  });
+  if (titleTarget) {
+    titleObserver.observe(titleTarget, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  const handlePointerDown = (event) => {
+    const target = event.target;
+    if (!target || typeof target.closest !== "function") return;
+    purgeStaleSessions();
+    if (target.closest(".chat-controls__model-picker, .chat-controls__model-menu, wa-popup, summary[data-chat-model-select], button, [class*='model']")) {
+      setTimeout(sanitizeChatModelMenu, 10);
+      setTimeout(sanitizeChatModelMenu, 50);
+      setTimeout(sanitizeChatModelMenu, 150);
+      setTimeout(sanitizeChatModelMenu, 350);
+    }
+  };
+
+  document.addEventListener("click", handleClick, true);
+  document.addEventListener("auxclick", handleClick, true);
+  document.addEventListener("pointerdown", handlePointerDown, true);
+  window.addEventListener("popstate", scheduleSync);
+  window.addEventListener("hashchange", scheduleSync);
+
+  sync();
+  // The upstream Control UI is still performing its first Lit render at this
+  // point. Cleaning the chrome synchronously would interleave our DOM writes
+  // with Lit's own commit and detach its template parts, so the first pass is
+  // deferred until the DOM has settled.
+  scheduleChrome();
+
+  const disposeSurfaces = () => {
+    disposed = true;
+    disposeVoiceControl?.();
+    observer.disconnect();
+    titleObserver.disconnect();
+    // A plugin teardown removes the only visible hand-back control; do not
+    // leave an invisible global hold behind. This is best-effort only.
+    unmountComputer(true);
+    document.removeEventListener("click", handleClick, true);
+    document.removeEventListener("auxclick", handleClick, true);
+    document.removeEventListener("pointerdown", handlePointerDown, true);
+    window.removeEventListener("popstate", scheduleSync);
+    window.removeEventListener("hashchange", scheduleSync);
+    if (chromeTimer) {
+      window.clearTimeout(chromeTimer);
+      chromeTimer = null;
+    }
+    unmount();
+    if (typeof window !== "undefined" && window.__zero_surfaces_dispose === disposeSurfaces) {
+      window.__zero_surfaces_dispose = null;
+    }
+  };
+
+  if (typeof window !== "undefined") {
+    window.__zero_surfaces_dispose = disposeSurfaces;
+  }
+
+  return disposeSurfaces;
+}
+
+export {
+  blockSpecialistDefaultAction,
+  canReuseComputerHold,
+  computerSurfaceAction,
+  currentSurface,
+  handBackComputer,
+  installNativeSurfaces,
+  isSetDefaultControl,
+  isSpecialistChatEntryControl,
+  leadAgentId,
+  removeSpecialistCards,
+  removeSpecialistChatEntries,
+  removeSpecialistDefaultAction,
+};

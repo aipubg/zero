@@ -72,10 +72,28 @@ function staticChecks() {
     else ok(`${manifest} has no zero dependency`);
   }
 
-  // The Zero UI must exist (plain files served by the host, no build).
-  const uiDir = path.join(ROOT, 'app', 'zero-ui');
-  if (!fs.existsSync(path.join(uiDir, 'index.html'))) bad('Zero UI exists', 'app/zero-ui/index.html missing');
-  else ok('Zero UI exists');
+  // The vendored UI must exist and be free of upstream tokens.
+  const vendorDir = path.join(ROOT, 'app', 'zero-control-ui', 'vendor');
+  if (!fs.existsSync(vendorDir)) {
+    bad('vendored UI exists', 'app/zero-control-ui/vendor missing');
+  } else {
+    let residual = 0;
+    let checked = 0;
+    const walk = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const f = path.join(dir, e.name);
+        if (e.isDirectory()) { walk(f); continue; }
+        if (!/\.(js|css|html|json|webmanifest|txt|md|svg)$/.test(e.name)) continue;
+        const src = fs.readFileSync(f, 'utf8');
+        checked++;
+        const hits = src.match(/zero|zero/i);
+        if (hits) residual += hits.length;
+      }
+    };
+    walk(vendorDir);
+    if (residual === 0) ok(`vendored UI has zero upstream tokens (${checked} files)`);
+    else bad('vendored UI has zero upstream tokens', `${residual} occurrences`);
+  }
 
   // No duplicate RPC switch cases.
   const gw = fs.readFileSync(path.join(ROOT, 'services', 'host', 'native-gateway.mjs'), 'utf8');

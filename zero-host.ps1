@@ -20,9 +20,11 @@ if (Test-Path $EnvFilePath) {
 # Ensure config paths match dynamic installation location
 $ConfigPath = Join-Path $ZeroRoot 'zero-system\config\zero.json'
 if (Test-Path $ConfigPath) {
+  $PluginEscaped = (Join-Path $ZeroRoot 'app\zero-control-ui').Replace('\', '\\')
   $WorkspaceEscaped = (Join-Path $ZeroRoot 'zero-system\state\agents\zero').Replace('\', '\\\\')
   $Content = Get-Content $ConfigPath -Raw
-  $Patched = $Content -replace '"[^"]*state\\\\agents\\\\zero"', "`"$WorkspaceEscaped`""
+  $Patched = $Content -replace '"[^"]*app\\\\zero-control-ui"', "`"$PluginEscaped`""
+  $Patched = $Patched -replace '"[^"]*state\\\\agents\\\\zero"', "`"$WorkspaceEscaped`""
   if ($Patched -ne $Content) {
     Set-Content -Path $ConfigPath -Value $Patched -NoNewline
   }

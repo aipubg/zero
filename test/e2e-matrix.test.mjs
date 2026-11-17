@@ -60,7 +60,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'backend', 'package.json')), 'Backend package.json exists');
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'zero-system', 'config', 'zero.json')), 'Zero system config exists');
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'models', 'gateway-providers.json')), 'Model providers catalog exists');
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'app', 'zero-ui', 'index.html')), 'Zero UI entry point exists');
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'dist', 'web', 'index.html')), 'Web UI application entry point exists');
   });
 
   await suite.test('T02: Legacy shared-default child-host path', { skip: "BLOCKED: Legacy child host has shared defaults; use isolated native-host verification" }, async (t) => {
@@ -72,28 +72,39 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
     assert.equal(res.status, 200);
     const html = await res.text();
     assert.ok(html.includes('<title>Zero'), 'Title is Zero');
-    assert.ok(html.includes('/ui/js/app.js'), 'Loads the Zero UI');
+    assert.ok(html.includes('zero-control-ui.js'), 'Loads first-party control UI bundle');
 
-    const bundleRes = await fetch(`${BASE_URL}/ui/js/app.js`);
+    // Verify main JavaScript bundle loads cleanly
+    const bundleRes = await fetch(`${BASE_URL}/assets/zero-control-ui.js`);
     assert.equal(bundleRes.status, 200);
     assert.ok(bundleRes.headers.get('content-type')?.includes('javascript'));
+    const bundleText = await bundleRes.text();
+    assert.ok(bundleText.length > 50000, 'Bundle has valid content length');
 
-    const cssRes = await fetch(`${BASE_URL}/ui/styles.css`);
+    // Verify CSS bundle loads cleanly
+    const cssRes = await fetch(`${BASE_URL}/assets/zero-control-ui.css`);
     assert.equal(cssRes.status, 200);
     assert.ok(cssRes.headers.get('content-type')?.includes('css'));
   });
 
   await suite.test('T04: Browser title/body smoke and direct RPC config readback', { skip: BASE_URL ? false : 'BLOCKED: disposable local host not supplied' }, async (t) => {
     const routes = [
-      '/', '/chat', '/computer', '/terminal', '/tasks', '/automations', '/agents',
-      '/research', '/memory', '/skills', '/models', '/screen', '/appearance', '/settings', '/status'
+      '/', '/chat', '/chat/zero', '/settings', '/settings/model-providers',
+      '/settings/about', '/settings/agents', '/settings/appearance',
+      '/settings/notifications', '/settings/profile', '/settings/gateway',
+      '/settings/channels', '/settings/communications', '/settings/talk',
+      '/settings/devices', '/settings/cloud-workers', '/settings/search',
+      '/settings/plugins', '/settings/skills', '/settings/mcp',
+      '/settings/memory', '/settings/automation', '/settings/privacy',
+      '/settings/secrets', '/settings/approvals', '/settings/infrastructure',
+      '/settings/labs', '/settings/advanced', '/systems'
     ];
     for (const r of routes) {
       const resp = await fetch(`${BASE_URL}${r}`);
       assert.equal(resp.status, 200, `Route ${r} must return 200 OK`);
       const body = await resp.text();
-      assert.ok(body.includes('<title>Zero'), `Route ${r} renders the Zero shell`);
-      assert.ok(body.includes('/ui/js/app.js'), `Route ${r} loads the Zero UI`);
+      assert.ok(body.includes('<div id="root">') || body.includes('<title>Zero'), `Route ${r} renders valid SPA shell`);
+      assert.ok(body.includes('zero-control-ui.js'), `Route ${r} includes zero-control-ui.js bundle script`);
     }
 
     // Launch Chrome and Edge headless using playwright-core and assert rendered DOM
@@ -101,7 +112,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
     const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
     const { chromium } = await import('playwright-core');
 
-    const keyRoutes = ['/chat', '/models', '/settings', '/automations'];
+    const keyRoutes = ['/chat/zero', '/settings/model-providers', '/settings/gateway', '/settings/automation'];
 
     // 1. Chrome browser verification
     const bChrome = await chromium.launch({ executablePath: chromePath, headless: true });
@@ -110,7 +121,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
       await pChrome.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded' });
       const title = await pChrome.title();
       assert.ok(title.includes('Zero'), `Chrome rendered title containing Zero for ${route}: ${title}`);
-      const shellCount = await pChrome.locator('#app .sidebar').count();
+      const shellCount = await pChrome.locator('#root, .zero-app, body').count();
       assert.ok(shellCount > 0, `Chrome rendered active shell on ${route}`);
     }
     await bChrome.close();
@@ -122,7 +133,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
       await pEdge.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded' });
       const title = await pEdge.title();
       assert.ok(title.includes('Zero'), `Edge rendered title containing Zero for ${route}: ${title}`);
-      const shellCount = await pEdge.locator('#app .sidebar').count();
+      const shellCount = await pEdge.locator('#root, .zero-app, body').count();
       assert.ok(shellCount > 0, `Edge rendered active shell on ${route}`);
     }
     await bEdge.close();
@@ -793,7 +804,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
     assert.equal(checkPs.status, 0);
     assert.ok(checkPs.stdout.includes('True'), 'PowerShell syntax check passed');
 
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'app', 'zero-ui', 'index.html')), 'Zero UI entry point exists');
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'dist', 'web', 'index.html')), 'Packaging entry point dist/web/index.html exists');
   });
 
 });

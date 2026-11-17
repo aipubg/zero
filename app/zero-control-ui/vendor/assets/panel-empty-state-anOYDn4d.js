@@ -1,0 +1,71 @@
+import{n as e}from"./rolldown-runtime-8BhlS34s.js";import{Mu as t,Nu as n}from"./control-ui-core-DCNBgr3X.js";import{G as r,J as i,W as a,Z as o,at as s,lt as c}from"./lit-runtime-B40xFCK_.js";import{Zr as l}from"./ui-AaV6iNVa.js";function u(e){return i`<zero-panel-empty-state
+    .heading=${e.heading}
+    .description=${e.description}
+  >
+    ${e.icon}${e.action!=null&&e.action!==r?i`<span slot="action">${e.action}</span>`:r}
+  </zero-panel-empty-state>`}var d;function f(){return(f=e((()=>{a(),o(),n(),d=class extends t{constructor(...e){super(...e),this.heading=``,this.description=``}render(){return i`<div class="empty-state" role="status">
+      <div class="empty-state__icon" aria-hidden="true"><slot></slot></div>
+      <strong class="empty-state__title">${this.heading}</strong>
+      <p class="empty-state__description">${this.description}</p>
+      <slot name="action"></slot>
+    </div>`}static{this.styles=c`
+    :host {
+      display: flex;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+
+    .empty-state {
+      display: flex;
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 0;
+      flex: 1 1 auto;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+      transform: translateY(-10px);
+    }
+
+    .empty-state__icon {
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      color: var(--muted);
+    }
+
+    ::slotted(svg) {
+      width: 32px;
+      height: 32px;
+      stroke-width: 1.5px;
+    }
+
+    .empty-state__title {
+      color: var(--text);
+      font-size: calc(16px * var(--control-ui-text-scale, 1));
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    .empty-state__description {
+      max-width: 320px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: calc(13px * var(--control-ui-text-scale, 1));
+      line-height: 1.45;
+    }
+
+    ::slotted([slot="action"]) {
+      margin-top: 16px;
+    }
+  `}},l([s()],d.prototype,`heading`,void 0),l([s()],d.prototype,`description`,void 0),customElements.get(`zero-panel-empty-state`)||customElements.define(`zero-panel-empty-state`,d)})))()}export{u as n,f as t};

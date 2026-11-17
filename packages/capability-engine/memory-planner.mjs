@@ -7,7 +7,7 @@
  * 2. Execution Layer: Direct OS Controller + Native Browser Automation (In-Process CDP)
  * 3. Planning & Loop: Microsoft Agent Framework stateful cycle with real-time streaming to Chat Section
  *
- * Provides real-time event streaming directly over WebSocket into the Zero UI chat.
+ * Provides real-time event streaming directly over WebSocket into zero-control-ui Chat Section.
  */
 
 import { defaultScreenVision } from './computer-control.mjs';
@@ -107,7 +107,7 @@ export class UnifiedAgentLoop {
 - **Module:** \`${m.unified_loop.module}\`
 - **State:** \`${m.unified_loop.status.toUpperCase()}\`
 - **Loop Pipeline:** \`Observe (Vision + UIA) -> Plan (Model Fabric) -> Act (OS/Browser) -> Verify\`
-- **Chat Section Route:** \`Direct WebSocket Event Stream (Zero UI chat)\`
+- **Chat Section Route:** \`Direct WebSocket Event Stream (zero-control-ui)\`
 
 ---
 *All 5 core modules are verified and wired directly into Project Zero core execution pipeline with zero external middleware.*`;

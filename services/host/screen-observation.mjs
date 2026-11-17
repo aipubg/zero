@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { createObservationLifecycle } from '../../packages/observation/lifecycle.mjs';
-import { OBSERVATION_PREFERENCE_NAMESPACE } from '../../packages/observation/preference.mjs';
+import { createObservationLifecycle } from '../../app/zero-control-ui/observation/lifecycle.mjs';
+import { OBSERVATION_PREFERENCE_NAMESPACE } from '../../app/zero-control-ui/observation/preference.mjs';
 
 /** Adapt real native capture to the existing About controls and durable lifecycle. */
 export function createNativeObservationLifecycle({ observer, prefsPath }) {

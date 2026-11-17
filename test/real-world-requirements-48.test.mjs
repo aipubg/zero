@@ -188,8 +188,8 @@ test('Zero AI — 48 Mandatory Real-World Acceptance Requirements Suite', async 
 
   // 4. Actual UI scrolling
   await suite.test('4. Actual UI scrolling', async () => {
-    const cssPath = path.join(REPO_ROOT, 'app', 'zero-ui', 'styles.css');
-    assert.ok(fs.existsSync(cssPath), 'Zero UI CSS exists');
+    const cssPath = path.join(REPO_ROOT, 'dist', 'web', 'assets', 'zero-control-ui.css');
+    assert.ok(fs.existsSync(cssPath), 'Control UI CSS exists');
     const cssContent = fs.readFileSync(cssPath, 'utf8');
     assert.ok(cssContent.includes('overflow-y:auto') || cssContent.includes('overflow-y: auto') || cssContent.includes('overflow: auto'), 'Scrollable rules defined');
   });
@@ -393,7 +393,7 @@ test('Zero AI — 48 Mandatory Real-World Acceptance Requirements Suite', async 
     const res = await fetch(`${BASE_URL}/chat/zero`);
     assert.equal(res.status, 200);
     const html = await res.text();
-    assert.ok(html.includes('/ui/js/app.js'));
+    assert.ok(html.includes('zero-control-ui'));
   });
 
   // 20. Dynamic UI change handling

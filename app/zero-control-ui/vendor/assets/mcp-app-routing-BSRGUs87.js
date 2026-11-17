@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./rolldown-runtime-8BhlS34s.js";import{_a as n,ba as r,ya as i}from"./control-ui-boot-shared-BX8huZUb.js";var a=t({navigateMcpAppLink:()=>o});function o(e,t){let n=r(t);return n?(e.navigate(`apps`,{search:i(n)}),!0):!1}function s(){return(s=e((()=>{n()})))()}export{a as n,o as r,s as t};

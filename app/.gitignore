@@ -1,0 +1,6 @@
+# Zero app build/local artifacts (never commit)
+node_modules/
+dist/
+zero-state/
+.env
+*.log
