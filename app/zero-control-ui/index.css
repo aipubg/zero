@@ -1793,7 +1793,10 @@ select option {
  * Gateway runtime, backend logging, or the host's own diagnostics.
  */
 
-/* Debug / Logs / Updates are not Zero product surfaces. */
+/* Debug / Logs / Updates are not Zero product surfaces; Secrets and
+   Approvals were removed (no working backend). */
+.settings-sidebar a[href$="/settings/secrets"],
+.settings-sidebar a[href$="/settings/approvals"],
 .settings-sidebar .settings-sidebar__item[href="/debug"],
 .settings-sidebar .settings-sidebar__item[href="/logs"],
 .settings-sidebar .settings-sidebar__item[href="/settings/debug"],

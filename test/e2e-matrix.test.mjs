@@ -96,7 +96,7 @@ test('Zero AI historical matrix with explicit assertion scope', { timeout: 12000
       '/settings/devices', '/settings/cloud-workers', '/settings/search',
       '/settings/plugins', '/settings/skills', '/settings/mcp',
       '/settings/memory', '/settings/automation', '/settings/privacy',
-      '/settings/secrets', '/settings/approvals', '/settings/infrastructure',
+      '/settings/infrastructure',
       '/settings/labs', '/settings/advanced', '/systems'
     ];
     for (const r of routes) {

@@ -832,6 +832,14 @@ export class ZeroNativeHost {
         }
       }
 
+      // Secrets and Approvals were removed; old links go to the chat before the
+      // UI tries to load pages that no longer exist.
+      if (pathname === '/settings/secrets' || pathname === '/settings/approvals') {
+        res.writeHead(302, { Location: '/chat/zero' });
+        res.end();
+        return;
+      }
+
       // 5. SPA Fallback for client routes
       const isSpaRoute = pathname === '/' ||
         pathname.startsWith('/chat') ||
@@ -1111,14 +1119,6 @@ export class ZeroNativeHost {
           'board.prompt.authorize', 'board.widget.put', 'board.widget.appView',
           'sessions.usage', 'sessions.usage.timeseries', 'sessions.usage.logs',
           'plugins.catalog.browse', 'plugins.catalog.categories', 'plugins.catalog.get',
-          // Secrets store and approval history. The Settings pages check that
-          // these methods are advertised before they call them, and render a
-          // "Gateway/admin required." / "invalid approval history" notice
-          // when they are not.
-          'secrets.store.list', 'secrets.store.set', 'secrets.store.delete',
-          'approval.get', 'approval.history', 'approval.resolve',
-          'exec.approval.list', 'exec.approval.grants.list', 'exec.approval.grants.revoke',
-          'plugin.approval.list', 'zero.approval.list',
           // Gateway host details. The Systems page checks that this method is
           // advertised before it requests it; without it the inventory request
           // aborts and the page stays on "Loading machines...".
@@ -3030,11 +3030,6 @@ export class ZeroNativeHost {
           nativeUpdateAvailable: false,
         };
 
-      case 'exec.approval.list':
-      case 'plugin.approval.list':
-      case 'zero.approval.list':
-        return { ok: true, items: [], grants: [], history: [] };
-
       case 'presence.activity':
         return { ok: true, activity: 'idle', timestamp: Date.now() };
 
@@ -3141,12 +3136,6 @@ export class ZeroNativeHost {
         return { ok: true, timeline: [], frames: [] };
       case 'logbook.days':
         return { ok: true, days: [] };
-
-      case 'approval.get':
-        return { ok: true, approvals: [], history: [], resolved: true };
-
-      case 'approval.resolve':
-        return { ok: true, approvals: [], history: [], resolved: true };
 
       case 'conversations.list':
         return { ok: true, conversations: [] };
@@ -3307,54 +3296,6 @@ export class ZeroNativeHost {
         const code = this.deviceManager?.generatePairingCode?.() || `ZERO-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
         return { ok: true, setupCode: code, expiresAt: Date.now() + 5 * 60 * 1000 };
       }
-
-      case 'approvals.list':
-      case 'approval.list':
-        return { ok: true, items: [], grants: [], history: [] };
-
-      case 'approval.history': {
-        // The Approvals page validates this payload against
-        // { items: Approval[], nextCursor?: string } with a strict schema
-        // (additional properties are rejected), so the response must not
-        // carry an "ok" wrapper.
-        return {
-          items: [],
-        };
-      }
-
-      case 'exec.approval.grants.list':
-        return { ok: true, grants: [] };
-      case 'exec.approval.grants.revoke':
-        return { ok: true, revoked: true, grantId: params?.grantId ?? null };
-
-      case 'secrets.list':
-      case 'secrets.get': {
-        const cfg = this._redactSecrets(this.config ? this.config : {});
-        const secrets = this._redactSecrets(this.secrets || {});
-        // The protocol expresses admin access through the "operator.admin"
-        // scope rather than through the role name.
-        const isAdmin = clientSession?.role === 'admin'
-          || clientSession?.scopes?.includes('operator.admin');
-        return { ok: true, secrets, config: cfg, grants: isAdmin ? ['admin'] : [], admin: isAdmin };
-      }
-
-      case 'secrets.store.list': {
-        // The Secrets page reads { entries: [...] }. A missing "entries" array
-        // makes it render the "Gateway/admin required." notice.
-        const entries = Object.entries(this.secrets || {}).map(([name, value]) => ({
-          name,
-          kind: 'secret',
-          updatedAtMs: Date.now(),
-          protected: /(_KEY|_TOKEN|_SECRET|_PASSWORD)$/i.test(name),
-          readable: false,
-          allowedHosts: [],
-        }));
-        return { ok: true, entries };
-      }
-      case 'secrets.store.set':
-        return { ok: true, warningCount: 0, saved: true };
-      case 'secrets.store.delete':
-        return { ok: true, deleted: true, name: params?.name ?? null };
 
       case 'dashboards.list':
       case 'dashboards.get':

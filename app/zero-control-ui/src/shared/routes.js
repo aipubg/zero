@@ -37,6 +37,9 @@ const HIDDEN_HOST_ROUTES = new Set([
   "/settings/debug",
   "/settings/logs",
   "/settings/updates",
+  // Secrets and Approvals had no working backend and were removed.
+  "/settings/secrets",
+  "/settings/approvals",
 ]);
 
 /**
