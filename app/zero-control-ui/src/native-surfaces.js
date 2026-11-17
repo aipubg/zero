@@ -1,4 +1,5 @@
 import { mountAboutPage } from "./pages/about.js";
+import { watchScreenSharePill, createModeSwitch } from "./screen-share-pill.js";
 import { mountModelsPage } from "./pages/models.js";
 import { mountComputerHold } from "./computer/hold.js";
 import { agentRole } from "./shared/sessions.js";
@@ -1001,6 +1002,7 @@ function installNativeSurfaces(host) {
     // Live Screen Share preview modal handler
     const screenBtn = pill.querySelector(".zero-screen-share-toggle-btn");
     let screenPreviewModal = null;
+    let screenSharePill = null;
     let screenStreamTimer = null;
 
     const toggleScreenModal = () => {
@@ -1030,6 +1032,7 @@ function installNativeSurfaces(host) {
 
       document.body.appendChild(screenPreviewModal);
       const closeBtn = screenPreviewModal.querySelector(".zero-screen-modal-close");
+      closeBtn?.before(createModeSwitch(host, () => screenSharePill?.update()));
       closeBtn?.addEventListener("click", () => toggleScreenModal());
 
       const imgEl = screenPreviewModal.querySelector(".zero-screen-live-img");
@@ -1061,7 +1064,8 @@ function installNativeSurfaces(host) {
       }}
     };
     void show("agents.list", ".zero-workforce-indicator", state => `Workforce: ${state.agents?.length ?? 0} configured`);
-    void show("zero.observation.status", ".zero-screen-text", state => `Screen Share: ${state.observer?.running ? "Live" : "Stopped"}`);
+    // Offline (local) and online (Gemini) screen share in one pill.
+    if (screenBtn) screenSharePill = watchScreenSharePill(screenBtn, host);
   };
 
   const sanitizeChatModelMenu = () => {

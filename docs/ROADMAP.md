@@ -135,6 +135,19 @@ Status values: `done`, `partial`, `todo`.
 - `todo` Verify a full YouTube → Spotify → WhatsApp request live, after the owner
   has signed in to YouTube and WhatsApp Web in the Zero browser.
 
+## Online screen share (Gemini)  (`partial`)
+
+Plan: `docs/plans/SCREEN-SHARE-ONLINE.md`.
+
+- `done` Phase A: API behaviour verified with the owner's key.
+- `done` Phase B: provider option + connection check; shared keyboard rule.
+- `done` Phase D: `screen_act` (Gemini Computer Use, browser environment).
+- `done` Phase E: Gemini Live session, `ask_screen`, pause rules, hourly limit.
+- `done` Phase F: top-bar pill (Online · Gemini / paused / Offline · Local) and Auto/Offline switch.
+- `todo` Phase C: smooth mouse, drag, hold keys, window move/resize, DPI — blocked on uncommitted changes in `win-actions.ps1`.
+- `todo` Phase H: live check with the owner (needs the Browser pane visible for UI checks).
+- `todo` Voice replies from Live are not played yet; no password-field pause yet.
+
 ## Phase 6 — Long-running Jarvis  (`todo`)
 
 - Prove `goal_plan` → scheduled job → milestone progress across a restart.

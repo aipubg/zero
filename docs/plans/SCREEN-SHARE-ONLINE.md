@@ -1,6 +1,6 @@
 # Plan: Online Screen Share (Gemini) + मज़बूत Mouse/Keyboard
 
-स्थिति: **मंज़ूर (2026-11-17)।** Phase A पूरा — नतीजे Section 4c में।
+स्थिति: **मंज़ूर (2026-11-17)।** Phase A, B, D, E, F पूरे। Phase C (`win-actions.ps1`) दूसरे agent के बिना-commit बदलावों की वजह से रुका है; Phase G owner की अलग मंज़ूरी पर; Phase H owner के साथ live जाँच।
 
 ---
 
@@ -218,6 +218,12 @@ Save होने वाला config (key हमेशा की तरह अ�
 ---
 
 ## 9. Phases (हर phase का अपना commit + push, और ROADMAP अपडेट)
+
+### बनने के बाद के फ़ैसले (plan से अलग)
+- **Live सिर्फ आँखें है, हाथ नहीं।** Live session को action tools नहीं दिए; chat agent उससे `ask_screen` से पूछता है और actions खुद (या `screen_act` से) करता है। वजह: दो models एक साथ mouse न चलाएँ।
+- **Keyboard नियम** engine के अंदर नहीं, साझा `keyboard-rule.mjs` में है और हर request-scope (chat turn, `screen_act`) पर लागू होता है; owner के सीधे tools.call पर नहीं (दूसरे agent का test `keyboard-foreground.test.mjs` यही माँगता है)।
+- **आवाज़ में जवाब** (`voiceReplies`) setting save होती है, पर audio अभी चलाया नहीं जाता — बाकी।
+- **Password field पर रुकना** (UIA `IsPassword`) अभी नहीं; excluded apps, "Take Over" और घंटे की सीमा पर रुकता है।
 
 ### Phase A — आपकी key से पक्की जाँच (read-only, आपकी screen नहीं भेजेंगे)
 - `GET /v1beta/models?key=…` से Live और Computer Use वाले असली model IDs।
