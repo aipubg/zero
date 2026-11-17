@@ -1013,7 +1013,7 @@ export function mountModelsPage(container, context = {}) {
 
   // --- AGENTS NAVIGATION BUTTON ---
   agentsNavBtn.onclick = () => {
-    history.pushState(null, "", "/agents"); dispatchEvent(new PopStateEvent("popstate"));
+    history.pushState(null, "", "/work/agents"); dispatchEvent(new PopStateEvent("popstate"));
   };
 
   // --- 4. ADD & EDIT PROVIDER MODAL ---

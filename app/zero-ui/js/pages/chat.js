@@ -1,5 +1,5 @@
 import { call, on } from '../rpc.js';
-import { h, icon, markdown, toast, confirmBox, formBox, timeAgo, button } from '../ui.js';
+import { h, icon, markdown, toast, confirmBox, formBox, timeAgo, button, modal } from '../ui.js';
 import { look, saveLook } from '../theme.js';
 import { live, refreshLive, modelReady } from '../app.js';
 import * as voice from '../voice.js';
@@ -47,7 +47,7 @@ export async function render(root, { go, params }) {
     else chat.classList.toggle('no-list');
   } }, icon('menu'));
   const head = h('div.convo-head', listBtn, title, modelSelect, speakBtn,
-    h('button.iconbtn', { type: 'button', title: 'Rename', onclick: () => sessionKey && rename(sessionKey) }, icon('edit')));
+    h('button.iconbtn', { type: 'button', title: 'Chat actions', onclick: () => actions() }, icon('menu')));
   const inner = h('div.messages-inner');
   const scroller = h('div.messages', inner);
   const textarea = h('textarea', { rows: 1, placeholder: 'Message Zero… (Shift+Enter for a new line)' });
@@ -74,13 +74,13 @@ export async function render(root, { go, params }) {
   function paintNote() {
     note.replaceChildren(modelReady() || !live.auth
       ? 'Zero can use your computer, browser and terminal to finish a task.'
-      : h('span', '⚠ No model has an API key, so Zero cannot reply yet. ', h('a', { href: '/models', onclick: e => { e.preventDefault(); go('/models'); } }, 'Add a key')));
+      : h('span', '⚠ No model has an API key, so Zero cannot reply yet. ', h('a', { href: '/settings/models', onclick: e => { e.preventDefault(); go('/settings/models'); } }, 'Add a key')));
   }
 
   function bubble(role, content, { tools } = {}) {
     const body = h('div.bubble');
     const toolsEl = h('div.tools');
-    if (tools?.length) for (const t of tools) toolsEl.append(chip(t.label, t.state));
+    if (tools?.length) for (const t of tools) toolsEl.append(chip(t.label, t.state, t));
     if (role === 'user') body.textContent = content;
     else { body.append(toolsEl); const md = h('div.md'); md.innerHTML = markdown(content); body.append(md); }
     const meta = role === 'assistant' ? h('div.msgmeta',
@@ -92,8 +92,43 @@ export async function render(root, { go, params }) {
     return el;
   }
 
-  function chip(label, state = 'run') {
-    return h('span.toolchip' + (state === 'done' ? '.done' : state === 'fail' ? '.fail' : ''), state === 'run' ? h('span.spinner', { style: { width: '10px', height: '10px' } }) : icon(state === 'fail' ? 'close' : 'check', 12), label);
+  function chip(label, state = 'run', info) {
+    const el = h('span.toolchip' + (state === 'done' ? '.done' : state === 'fail' ? '.fail' : '') + (info?.detail ? '.clickable' : ''), state === 'run' ? h('span.spinner', { style: { width: '10px', height: '10px' } }) : icon(state === 'fail' ? 'close' : 'check', 12), label);
+    if (info?.detail) {
+      el.title = 'Show what this step did';
+      el.addEventListener('click', () => {
+        let pretty = info.detail;
+        try { pretty = JSON.stringify(JSON.parse(info.detail), null, 2); } catch {}
+        let args = info.args || '';
+        try { args = JSON.stringify(typeof args === 'string' ? JSON.parse(args) : args, null, 2); } catch {}
+        modal(label, h('div.stack', args && args !== '""' ? [h('div.faint', 'Input'), h('pre.code', args)] : null, h('div.faint', 'Result'), h('pre.code', pretty.slice(0, 20000))), { wide: true });
+      });
+    }
+    return el;
+  }
+
+  async function actions() {
+    if (!sessionKey) return toast('Send a message first');
+    const s = sessions.find(x => x.key === sessionKey) || { key: sessionKey, label: title.textContent };
+    const run = fn => async () => { box.close(); await fn(); };
+    const item = (ic, label, fn, danger) => h('button.menu-item' + (danger ? '.danger' : ''), { type: 'button', onclick: run(fn) }, icon(ic, 16), h('span', label));
+    const box = modal('Chat actions', h('div.menu',
+      item('edit', 'Rename', () => rename(sessionKey)),
+      item('refresh', 'Fork — continue in a copy', async () => {
+        try { const r = await call('sessions.fork', { key: sessionKey }); await loadSessions(); open(r.key || r.sessionKey || r.session?.key); toast('Forked', 'ok'); } catch (e) { toast(e.message, 'error'); }
+      }),
+      item('check', 'Copy as Markdown', async () => {
+        const r = await call('chat.history', { sessionKey, limit: 1000 });
+        const md = (r?.messages || []).filter(m => (m.role === 'user' || m.role === 'assistant') && String(m.content || '').trim())
+          .map(m => `**${m.role === 'user' ? 'You' : 'Zero'}:**\n\n${m.content}`).join('\n\n---\n\n');
+        await navigator.clipboard.writeText(`# ${s.label || 'Chat'}\n\n${md}`); toast('Conversation copied as Markdown', 'ok');
+      }),
+      item('globe', 'Copy link to this chat', async () => { await navigator.clipboard.writeText(location.origin + '/chat?session=' + encodeURIComponent(sessionKey)); toast('Link copied', 'ok'); }),
+      item('clock', 'Archive', async () => {
+        try { await call('sessions.archive', { key: sessionKey }); toast('Archived', 'ok'); newChat(); loadSessions(); } catch (e) { toast(e.message, 'error'); }
+      }),
+      item('trash', 'Delete', () => remove(s), true),
+    ));
   }
 
   function welcome() {
@@ -145,8 +180,12 @@ export async function render(root, { go, params }) {
     for (const m of messages) {
       const text = typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? m.content.map(c => c?.text || '').join('\n') : '';
       if (m.role === 'user') { pendingTools = []; inner.append(bubble('user', text)); }
+      else if (m.role === 'tool') {
+        const t = pendingTools.find(x => x.id && x.id === m.tool_call_id) || pendingTools.find(x => !x.detail);
+        if (t) { t.detail = text; try { const r = JSON.parse(text); if (r?.ok === false || r?.outcome === 'FAILED') t.state = 'fail'; } catch {} }
+      }
       else if (m.role === 'assistant') {
-        for (const call of m.tool_calls || m.toolCalls || []) pendingTools.push({ label: toolLabel(call.function?.name || call.name), state: 'done' });
+        for (const call of m.tool_calls || m.toolCalls || []) pendingTools.push({ id: call.id, label: toolLabel(call.function?.name || call.name), args: call.function?.arguments, state: 'done' });
         if (text.trim()) { inner.append(bubble('assistant', text, { tools: pendingTools })); pendingTools = []; }
       }
     }

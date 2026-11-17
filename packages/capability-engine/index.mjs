@@ -124,6 +124,10 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Create or update a UTF-8 local file and read it back to verify the write.',
     allowedActions: ['write'],
   },
+  'terminal': {
+    description: "Zero's own terminal: long-lived PowerShell/cmd sessions the owner watches live in the Terminal room. Use action 'run' for a command whose output you need (it waits and returns the output; the working folder persists between commands), 'open' for a new session, 'read'/'list'/'close'. 'open_external' opens a visible Windows Terminal window on the desktop for the owner (its output cannot be read back).",
+    allowedActions: ['list', 'open', 'run', 'send', 'read', 'close', 'open_external'],
+  },
   'run_process': {
     description: 'Zero Terminal & Security Ops: execute any local program or command line, including PowerShell/bash pipelines, Python scripts, network and security tooling (nmap, curl, git, ffmpeg, gh) and bug-hunting scripts.',
     allowedActions: ['run'],
@@ -172,6 +176,15 @@ const params = (properties, required = []) => Object.freeze({ type: 'object', pr
 export const CAPABILITY_PARAMETERS = Object.freeze({
   read_file: params({ path: str('Absolute or relative path of the UTF-8 file to read') }, ['path']),
   write_file: params({ path: str('Path of the file to create or overwrite'), content: str('Full UTF-8 text content to write') }, ['path', 'content']),
+  terminal: params({
+    action: { type: 'string', enum: ['list', 'open', 'run', 'send', 'read', 'close', 'open_external'], description: 'What to do (default run when a command is given)' },
+    command: str('Command line to run (run) or to start in the external window (open_external)'),
+    id: str('Terminal id from list/open; run without an id uses the terminal Zero opened for itself'),
+    shell: { type: 'string', enum: ['powershell', 'cmd'], description: 'Shell for open (default powershell)' },
+    cwd: str('Working folder for open / open_external'),
+    text: str('Text to type for send (no waiting)'),
+    timeoutMs: { type: 'integer', minimum: 1000, maximum: 600000, description: 'How long run waits (default 120000)' },
+  }, []),
   run_process: params({
     command: str('Executable to run, e.g. "hostname", "powershell.exe", "git". Use this tool (not GUI typing) for any shell/CLI task.'),
     args: { type: 'array', items: { type: 'string' }, description: 'Arguments as separate strings, e.g. ["-NoProfile","-Command","Get-Date"]. Use [] when there are none.' },
@@ -828,6 +841,7 @@ canonicalCapabilityEngine.registerHandler('browser', async (params, signal, { ac
   return primaryFailure ? { ...fallback, primaryFailure } : fallback;
 });
 import { defaultVoiceStatus } from './voice-status.mjs';
+import { terminalTool } from './terminal-sessions.mjs';
 
 // read_file / write_file / run_process (moved from terminal-ops.mjs)
 const resolvePath = (value, cwd = process.cwd()) => {
@@ -852,6 +866,8 @@ canonicalCapabilityEngine.registerHandler('write_file', async ({ path: file, con
   const { createHash } = await import('node:crypto');
   return { ok: actual === content, status: 'COMPLETED', outcome: 'VERIFIED', taskComplete: true, path: resolved, verified: actual === content, summary: `Wrote ${Buffer.byteLength(actual)} bytes to ${resolved}`, evidence: { bytes: Buffer.byteLength(actual), sha256: createHash('sha256').update(actual).digest('hex') } };
 });
+
+canonicalCapabilityEngine.registerHandler('terminal', params => terminalTool(params));
 
 canonicalCapabilityEngine.registerHandler('run_process', async ({ command, args = [], cwd: directory, timeoutMs = 60000, shell = false, shellExecutable = '' }, signal) => {
   const { execFile } = await import('node:child_process');

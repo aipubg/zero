@@ -16,7 +16,7 @@ export async function render(root, { go }) {
       const method = v.planOnly ? 'agent.task.plan' : 'agent.task.execute';
       const r = await call(method, { goal: v.goal, teamId }, { timeoutMs: 10 * 60000 });
       toast(v.planOnly ? 'Plan ready — see Tasks' : 'Team started — follow it in Tasks', 'ok');
-      if (r?.taskId || r?.task?.id) go('/tasks?id=' + encodeURIComponent(r.taskId || r.task.id));
+      if (r?.taskId || r?.task?.id) go('/work/tasks?id=' + encodeURIComponent(r.taskId || r.task.id));
     } catch (e) { toast(e.message, 'error'); }
   }
 

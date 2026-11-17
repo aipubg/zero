@@ -47,7 +47,6 @@ export const CAPABILITY_ALIASES = Object.freeze({
   submit_form: { name: 'zero_computer_action', action: 'submit_form' },
 
   // Terminal & Security Ops â€” Zero Terminal
-  terminal: { name: 'run_process', set: { shell: true } },
   execute_command: { name: 'run_process', set: { shell: true } },
   run_command: { name: 'run_process', set: { shell: true } },
   shell: { name: 'run_process', set: { shell: true } },

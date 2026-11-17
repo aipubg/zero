@@ -1,6 +1,6 @@
 /* Models & Providers page: the original Zero design, restored as it was.
    Its colour names map onto the current theme inside .page-models only. */
-.page-models{--accent:var(--a);--accent-hover:color-mix(in srgb,var(--a) 80%,#fff);--accent-subtle:rgba(var(--a-rgb),.09);--accent-foreground:#0b0f17;--border:var(--line-2);--border-subtle:var(--line);--border-strong:var(--line-2);--bg:var(--bg-tint);--bg-elevated:var(--surface-solid);--bg-surface:var(--surface-solid);--bg-hover:var(--surface-2);--surface:var(--surface-solid);--surface-strong:var(--surface-2);--surface-hover:var(--surface-2);--card:var(--surface-solid);--panel:var(--surface-solid);--text-primary:var(--text);--text-strong:var(--text);--text-secondary:var(--muted);--text-tertiary:var(--faint);--text-muted:var(--faint);--fg:var(--text);--muted:var(--muted);--radius-lg:var(--radius);--overlay-shadow:var(--shadow);max-width:1180px}
+.page-models,.zero-modal-overlay{--accent:var(--a);--accent-hover:color-mix(in srgb,var(--a) 80%,#fff);--accent-subtle:rgba(var(--a-rgb),.09);--accent-foreground:#0b0f17;--border:var(--line-2);--border-subtle:var(--line);--border-strong:var(--line-2);--bg:var(--bg-tint);--bg-elevated:var(--surface-solid);--bg-surface:var(--surface-solid);--bg-hover:var(--surface-2);--surface:var(--surface-solid);--surface-strong:var(--surface-2);--surface-hover:var(--surface-2);--card:var(--surface-solid);--panel:var(--surface-solid);--text-primary:var(--text);--text-strong:var(--text);--text-secondary:var(--muted);--text-tertiary:var(--faint);--text-muted:var(--faint);--fg:var(--text);--muted:var(--muted);--radius-lg:var(--radius);--overlay-shadow:var(--shadow);max-width:1180px}
 /* Zero native surface integration */
 .zero-native-surface { min-width: 0; }
 /*
@@ -1451,3 +1451,10 @@ select option {
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
+/* Buttons without their own variant follow the theme (the browser default was white). */
+:is(.page-models, .zero-modal-overlay) :is(.zero-models-btn, .zero-providers-btn) {
+  background: var(--surface-2); color: var(--text); border-color: var(--line-2);
+}
+:is(.page-models, .zero-modal-overlay) .zero-models-btn:hover:not(:disabled) { border-color: var(--a); }
+:is(.page-models, .zero-modal-overlay) .zero-models-btn:disabled { opacity: .5; cursor: not-allowed; }
+.zero-modal-overlay.active { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; z-index: 60; }
