@@ -449,7 +449,10 @@ export class ComputerOperator {
           const needles = [base, names[base]].filter(Boolean);
           const matches = w => needles.some(n => String(w.title || "").toLowerCase().includes(n) || String(w.process || "").toLowerCase().includes(n));
           let appWindow = null;
-          const deadline = Date.now() + 8000;
+          let focused = false;
+          const started = Date.now();
+          const deadline = started + 8000;
+          let triedHidden = false;
           while (!appWindow && Date.now() < deadline) {
             signal?.throwIfAborted?.();
             await new Promise(resolve => setTimeout(resolve, 400));
@@ -458,9 +461,18 @@ export class ComputerOperator {
               || now.find(w => !before.has(String(w.hwnd)) && w.isForeground)
               || now.find(matches)
               || null;
+            // Some apps (Windows 11 Notepad) hand the launch to an already
+            // running copy whose window is hidden; focus_window by name shows it.
+            if (!appWindow && !triedHidden && Date.now() - started > 2500) {
+              triedHidden = true;
+              const shown = await Driver.focusWindow({ target: base, command: "restore" }, signal).catch(() => null);
+              if (shown?.hwnd) {
+                appWindow = { hwnd: shown.hwnd, title: shown.title, process: shown.process };
+                focused = shown.focused === true;
+              }
+            }
           }
-          let focused = false;
-          if (appWindow?.hwnd) {
+          if (appWindow?.hwnd && !focused) {
             const focusRes = await Driver.focusWindow({ target: String(appWindow.hwnd), command: "restore" }, signal).catch(() => null);
             focused = focusRes?.focused === true;
           }

@@ -175,10 +175,59 @@ public static class WinApiWindow {
         return accepted;
     }
 
+    // Extended keys (arrows, navigation block, Windows key) need the flag so
+    // Windows does not read them as their numeric-keypad twins.
+    static uint ExtendedFlag(ushort vk) {
+        switch (vk) {
+            case 0x21: case 0x22: case 0x23: case 0x24: case 0x25: case 0x26:
+            case 0x27: case 0x28: case 0x2D: case 0x2E: case 0x5B: case 0x5C: case 0x5D:
+                return 1;
+            default:
+                return 0;
+        }
+    }
+
+    // Holds every key of a combination down in order, then releases them in
+    // reverse (ctrl+shift+esc, win+r, alt+tab, f5 ...). Returns events sent.
+    public static int PressCombination(ushort[] keys, int repeat) {
+        int sent = 0;
+        for (int r = 0; r < repeat; r++) {
+            var events = new List<INPUT>();
+            foreach (var vk in keys) events.Add(Key(vk, 0, ExtendedFlag(vk)));
+            for (int i = keys.Length - 1; i >= 0; i--) events.Add(Key(keys[i], 0, ExtendedFlag(keys[i]) | 0x0002));
+            sent += (int)SendInput((uint)events.Count, events.ToArray(), Marshal.SizeOf(typeof(INPUT)));
+            System.Threading.Thread.Sleep(40);
+        }
+        return sent;
+    }
+
     // Every visible top-level window that has a title, front to back.
     public static List<IntPtr> TopLevelWindows() {
         var found = new List<IntPtr>();
         EnumWindows((hWnd, lParam) => { if (IsWindowVisible(hWnd) && GetWindowTextLength(hWnd) > 0) found.Add(hWnd); return true; }, IntPtr.Zero);
+        return found;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder s, int n);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder s, int n);
+    [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);
+
+    // Hidden, titled, unowned top-level windows of one process. Windows 11
+    // Notepad (and some tray apps) keep running with their main window hidden
+    // after it is closed; reopening the app just hands over to that process.
+    public static List<IntPtr> HiddenMainWindows(uint pid) {
+        var found = new List<IntPtr>();
+        EnumWindows((hWnd, lParam) => {
+            uint owner;
+            FgThread(hWnd, out owner);
+            if (owner != pid || IsWindowVisible(hWnd) || GetWindowTextLength(hWnd) == 0) return true;
+            if (GetWindow(hWnd, 4) != IntPtr.Zero) return true; // owned popup
+            var cls = new System.Text.StringBuilder(256); GetClassName(hWnd, cls, 256);
+            var c = cls.ToString();
+            if (c == "IME" || c == "MSCTFIME UI" || c.StartsWith("GDI+") || c.Contains("Hook") || c.StartsWith("tooltips")) return true;
+            found.Add(hWnd);
+            return true;
+        }, IntPtr.Zero);
         return found;
     }
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -186,11 +235,81 @@ public static class WinApiWindow {
     [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern IntPtr PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+    [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+    [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll", EntryPoint = "SetForegroundWindow")] static extern bool FgSet(IntPtr hWnd);
+    [DllImport("user32.dll", EntryPoint = "GetForegroundWindow")] static extern IntPtr FgGet();
+    [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")] static extern uint FgThread(IntPtr hWnd, out uint pid);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll")] public static extern IntPtr SetFocus(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern IntPtr SetActiveWindow(IntPtr hWnd);
+
+    // Windows refuses SetForegroundWindow from a background process. Try the
+    // plain route (after a neutral Alt tap), then join the foreground thread's
+    // input queue and flip the window to topmost and back.
+    public static bool ForceForeground(IntPtr hWnd) {
+        if (IsIconic(hWnd)) ShowWindow(hWnd, 9);
+        keybd_event(0x12, 0, 0, UIntPtr.Zero);
+        keybd_event(0x12, 0, 2, UIntPtr.Zero);
+        BringWindowToTop(hWnd);
+        FgSet(hWnd);
+        System.Threading.Thread.Sleep(60);
+        if (FgGet() == hWnd) return true;
+
+        uint pid;
+        uint fgThread = FgThread(FgGet(), out pid);
+        uint targetThread = FgThread(hWnd, out pid);
+        uint me = GetCurrentThreadId();
+        bool a1 = fgThread != 0 && fgThread != me && AttachThreadInput(me, fgThread, true);
+        bool a2 = targetThread != 0 && targetThread != me && targetThread != fgThread && AttachThreadInput(me, targetThread, true);
+        try {
+            ShowWindow(hWnd, IsIconic(hWnd) ? 9 : 5);
+            SetWindowPos(hWnd, new IntPtr(-1), 0, 0, 0, 0, 0x0003 | 0x0040);
+            SetWindowPos(hWnd, new IntPtr(-2), 0, 0, 0, 0, 0x0003 | 0x0040);
+            BringWindowToTop(hWnd);
+            FgSet(hWnd);
+            SetActiveWindow(hWnd);
+            SetFocus(hWnd);
+        } finally {
+            if (a1) AttachThreadInput(me, fgThread, false);
+            if (a2) AttachThreadInput(me, targetThread, false);
+        }
+        System.Threading.Thread.Sleep(60);
+        return FgGet() == hWnd;
+    }
 }
 '@
-try { Add-Type -TypeDefinition $windowApi } catch {}
+try { Add-Type -TypeDefinition $windowApi } catch { if ("$_" -notmatch 'already exists') { throw } }
 
 $result = [ordered]@{ ok = $true; action = $Action }
+$hasPoint = $PSBoundParameters.ContainsKey('X') -and $PSBoundParameters.ContainsKey('Y')
+
+# Virtual-key code for a key name: letters, digits, F1-F24, punctuation and
+# the named keys. Returns $null for a name Windows has no key for.
+function Resolve-VirtualKey([string]$name) {
+  $n = $name.ToLower().Trim()
+  $named = @{
+    'enter' = 0x0D; 'return' = 0x0D; 'tab' = 0x09; 'esc' = 0x1B; 'escape' = 0x1B; 'backspace' = 0x08;
+    'delete' = 0x2E; 'del' = 0x2E; 'insert' = 0x2D; 'ins' = 0x2D; 'space' = 0x20; 'spacebar' = 0x20;
+    'up' = 0x26; 'down' = 0x28; 'left' = 0x25; 'right' = 0x27;
+    'arrowup' = 0x26; 'arrowdown' = 0x28; 'arrowleft' = 0x25; 'arrowright' = 0x27;
+    'home' = 0x24; 'end' = 0x23; 'pageup' = 0x21; 'pgup' = 0x21; 'pagedown' = 0x22; 'pgdn' = 0x22;
+    'capslock' = 0x14; 'printscreen' = 0x2C; 'prtsc' = 0x2C; 'menu' = 0x5D; 'apps' = 0x5D; 'contextmenu' = 0x5D;
+    'volumeup' = 0xAF; 'volumedown' = 0xAE; 'volumemute' = 0xAD; 'mute' = 0xAD;
+    'playpause' = 0xB3; 'mediaplaypause' = 0xB3; 'nexttrack' = 0xB0; 'medianext' = 0xB0; 'prevtrack' = 0xB1; 'mediaprev' = 0xB1;
+    'ctrl' = 0x11; 'control' = 0x11; 'shift' = 0x10; 'alt' = 0x12; 'option' = 0x12;
+    'win' = 0x5B; 'windows' = 0x5B; 'meta' = 0x5B; 'super' = 0x5B; 'cmd' = 0x5B; 'command' = 0x5B;
+    '-' = 0xBD; 'minus' = 0xBD; '=' = 0xBB; 'equals' = 0xBB; 'plus' = 0xBB; ',' = 0xBC; 'comma' = 0xBC;
+    '.' = 0xBE; 'period' = 0xBE; '/' = 0xBF; 'slash' = 0xBF; ';' = 0xBA; 'semicolon' = 0xBA;
+    "'" = 0xDE; 'quote' = 0xDE; '[' = 0xDB; ']' = 0xDD; '\' = 0xDC; 'backslash' = 0xDC; '`' = 0xC0; 'backtick' = 0xC0
+  }
+  if ($named.ContainsKey($n)) { return [uint16]$named[$n] }
+  if ($n -match '^f([1-9]|1[0-9]|2[0-4])$') { return [uint16](0x6F + [int]$Matches[1]) }
+  if ($n -match '^[a-z]$') { return [uint16][int][char]$n.ToUpper() }
+  if ($n -match '^[0-9]$') { return [uint16](0x30 + [int]$n) }
+  if ($n -match '^(numpad|num)([0-9])$') { return [uint16](0x60 + [int]$Matches[2]) }
+  return $null
+}
 
 # Real top-level windows. Packaged apps (Windows 11 Notepad, Calculator) do
 # not expose their window through Get-Process, so the window list is read
@@ -282,12 +401,14 @@ switch ($actionKey) {
   }
 
   "move" {
+    if (-not $hasPoint) { throw "mouse_move needs x and y" }
     [WinApiCore]::SetCursorPos($X, $Y) | Out-Null
     $result["x"] = $X
     $result["y"] = $Y
   }
 
   "click" {
+    if (-not $hasPoint) { throw "click needs x and y, or an element name" }
     [WinApiCore]::Click($X, $Y, $Button, $Count)
     $result["x"] = $X
     $result["y"] = $Y
@@ -296,6 +417,7 @@ switch ($actionKey) {
   }
 
   "drag" {
+    if (-not $hasPoint -or -not $PSBoundParameters.ContainsKey('ToX') -or -not $PSBoundParameters.ContainsKey('ToY')) { throw "mouse_drag needs from x,y and to_x,to_y" }
     [WinApiCore]::Drag($X, $Y, $ToX, $ToY)
     $result["from_x"] = $X
     $result["from_y"] = $Y
@@ -304,6 +426,13 @@ switch ($actionKey) {
   }
 
   "scroll" {
+    if (-not $hasPoint) {
+      # No point given: scroll the middle of the window in front.
+      $rect = New-Object WinApiCore+RECT
+      [WinApiCore]::GetWindowRect([WinApiCore]::GetForegroundWindow(), [ref]$rect) | Out-Null
+      $X = [int](($rect.Left + $rect.Right) / 2)
+      $Y = [int](($rect.Top + $rect.Bottom) / 2)
+    }
     $wheelDelta = if ($Direction -eq "up") { $Amount * 120 } else { -($Amount * 120) }
     [WinApiCore]::Scroll($X, $Y, $wheelDelta)
     $result["x"] = $X
@@ -354,59 +483,35 @@ switch ($actionKey) {
   }
 
   "press" {
-    if ($Key.Length -gt 0) {
-      $keyMap = @{
-        "enter" = "{ENTER}";
-        "return" = "{ENTER}";
-        "tab" = "{TAB}";
-        "esc" = "{ESC}";
-        "escape" = "{ESC}";
-        "backspace" = "{BACKSPACE}";
-        "delete" = "{DELETE}";
-        "del" = "{DELETE}";
-        "space" = " ";
-        "up" = "{UP}";
-        "down" = "{DOWN}";
-        "left" = "{LEFT}";
-        "right" = "{RIGHT}";
-        "home" = "{HOME}";
-        "end" = "{END}";
-        "pageup" = "{PGUP}";
-        "pagedown" = "{PGDN}";
-        "ctrl+c" = "^c";
-        "ctrl+v" = "^v";
-        "ctrl+x" = "^x";
-        "ctrl+z" = "^z";
-        "ctrl+a" = "^a";
-        "alt+f4" = "%{F4}";
-        "alt+tab" = "%{TAB}"
+    if ($Key.Trim().Length -gt 0) {
+      $names = @($Key -split '\s*\+\s*' | Where-Object { $_ -ne '' })
+      if ($Key.Trim() -eq '+') { $names = @('plus') }
+      $codes = @()
+      $unknown = @()
+      foreach ($name in $names) {
+        $vk = Resolve-VirtualKey $name
+        if ($null -eq $vk) { $unknown += $name } else { $codes += $vk }
       }
-      $lowered = $Key.ToLower().Trim()
-      $sendKey = $null
-      if ($keyMap.ContainsKey($lowered)) {
-        $sendKey = $keyMap[$lowered]
-      } elseif ($lowered.Contains("+") -and $lowered.Length -gt 1) {
-        # Generic combination: modifiers followed by one key.
-        $parts = $lowered.Split("+") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-        $prefix = ""
-        $main = ""
-        foreach ($part in $parts) {
-          switch ($part) {
-            "ctrl" { $prefix += "^" } "control" { $prefix += "^" }
-            "shift" { $prefix += "+" } "alt" { $prefix += "%" }
-            default { $main = $part }
-          }
-        }
-        if ($keyMap.ContainsKey($main)) { $main = $keyMap[$main] }
-        elseif ($main -match '^f([1-9]|1[0-2])$') { $main = "{" + $main.ToUpper() + "}" }
-        $sendKey = $prefix + $main
-      } elseif ($lowered -match '^f([1-9]|1[0-2])$') {
-        $sendKey = "{" + $lowered.ToUpper() + "}"
+      if ($unknown.Count -gt 0 -or $codes.Count -eq 0) {
+        $result["ok"] = $false
+        $result["error"] = "Unknown key name(s): " + ($unknown -join ', ') + ". Use names like enter, tab, esc, f5, ctrl, shift, alt, win, a-z, 0-9."
       } else {
-        $sendKey = $Key
+        # Modifiers go down first, whatever order they were written in.
+        $modifierCodes = @(0x10, 0x11, 0x12, 0x5B)
+        $ordered = @($codes | Where-Object { $modifierCodes -contains $_ }) + @($codes | Where-Object { $modifierCodes -notcontains $_ })
+        $repeat = [Math]::Max(1, [Math]::Min($Count, 50))
+        $sent = [WinApiWindow]::PressCombination([uint16[]]$ordered, $repeat)
+        $expected = $ordered.Count * 2 * $repeat
+        $result["key"] = $Key
+        $result["repeat"] = $repeat
+        if ($sent -lt $expected) {
+          $result["ok"] = $false
+          $result["error"] = "Windows accepted only $sent of $expected key events (the window in front may be running as administrator)"
+        }
       }
-      [System.Windows.Forms.SendKeys]::SendWait($sendKey)
-      $result["key"] = $Key
+    } else {
+      $result["ok"] = $false
+      $result["error"] = "Missing key parameter"
     }
   }
 
@@ -544,6 +649,23 @@ switch ($actionKey) {
       if (-not $matched) { $matched = $candidates | Where-Object { $_.title.ToLower() -eq $needle } | Select-Object -First 1 }
       if (-not $matched -and $mode -notin @("close", "minimize")) { $matched = $candidates | Where-Object { $_.title.ToLower().Contains($needle) } | Select-Object -First 1 }
       if (-not $matched -and $mode -notin @("close", "minimize")) { $matched = $candidates | Where-Object { $_.process.ToLower().Contains($needle) } | Select-Object -First 1 }
+      if (-not $matched -and $mode -notin @("close", "minimize")) {
+        # The app may be running with its main window hidden (Windows 11
+        # Notepad after it was closed): show that window.
+        foreach ($proc in @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName.ToLower() -eq $needle })) {
+          $hidden = @([WinApiWindow]::HiddenMainWindows([uint32]$proc.Id))
+          if ($hidden.Count -gt 0) {
+            $h = $hidden[0]
+            [void][WinApiWindow]::ShowWindow($h, 5)
+            Start-Sleep -Milliseconds 120
+            $tb = New-Object System.Text.StringBuilder 512
+            [WinApiCore]::GetWindowText($h, $tb, 512) | Out-Null
+            $matched = [pscustomobject]@{ hwnd = $h; title = $tb.ToString(); process = $proc.ProcessName; pid = $proc.Id; isForeground = $false }
+            $result["revealedHidden"] = $true
+            break
+          }
+        }
+      }
       if ($matched) { $hwnd = $matched.hwnd }
     } else {
       $hwnd = [WinApiCore]::GetForegroundWindow()
@@ -555,16 +677,13 @@ switch ($actionKey) {
     } else {
       switch ($mode) {
         "minimize" { [void][WinApiWindow]::ShowWindow($hwnd, 6) }
-        "maximize" { [void][WinApiWindow]::ShowWindow($hwnd, 3); [void][WinApiCore]::SetForegroundWindow($hwnd) }
+        "maximize" { [void][WinApiWindow]::ShowWindow($hwnd, 3); [void][WinApiWindow]::ForceForeground($hwnd) }
         "close"    { [void][WinApiWindow]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) }
         default {
-          if ([WinApiWindow]::IsIconic($hwnd)) { [void][WinApiWindow]::ShowWindow($hwnd, 9) }
-          # Windows only lets a process take the foreground after recent input;
-          # a neutral Alt key tap satisfies that rule.
-          [WinApiWindow]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)
-          [WinApiWindow]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
-          [void][WinApiWindow]::BringWindowToTop($hwnd)
-          [void][WinApiCore]::SetForegroundWindow($hwnd)
+          if (-not [WinApiWindow]::ForceForeground($hwnd)) {
+            Start-Sleep -Milliseconds 200
+            [void][WinApiWindow]::ForceForeground($hwnd)
+          }
         }
       }
       Start-Sleep -Milliseconds 150
@@ -585,36 +704,61 @@ switch ($actionKey) {
   }
 
   "launch_app" {
-    if ($App) {
-      $targetApp = $App.Trim()
-      if ($targetApp.ToLower() -in @("calculator", "calculator.exe", "calc.exe")) {
-        $targetApp = "calc"
-      }
-      if ($targetApp.ToLower() -in @("paint", "paint.exe", "ms paint", "mspaint.exe")) {
-        $targetApp = "mspaint"
-      }
-      if ($targetApp.ToLower() -in @("chrome", "google chrome", "chrome.exe") -and -not (Get-Command chrome -ErrorAction SilentlyContinue)) {
-        if (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe") {
-          $targetApp = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+    if (-not $App) { throw "Missing app parameter" }
+    $wanted = $App.Trim()
+    $launched = $null
+    $displayName = $null
+    $how = $null
+    if ($wanted -match '^[a-z][a-z0-9+.-]*:' -and $wanted -notmatch '^[a-z]:\\') {
+      # A protocol such as ms-settings: or mailto:
+      Start-Process $wanted
+      $launched = $wanted; $how = "protocol"
+    } elseif ($wanted -match '[\\/]' -and (Test-Path -LiteralPath $wanted)) {
+      $p = Start-Process -FilePath $wanted -PassThru
+      $launched = $wanted; $how = "path"; $result["pid"] = $p.Id
+    } else {
+      # Not named $command: PowerShell names are case-insensitive, so that
+      # would be the [string]$Command parameter and the path would be lost.
+      $exePath = $null
+      $exeName = if ([System.IO.Path]::GetExtension($wanted)) { $wanted } else { $wanted + ".exe" }
+      if ($exeName -match '\.exe$') {
+        # Windows' own copy first (Git ships a different "notepad" on PATH).
+        $systemCopy = Join-Path $env:SystemRoot ("System32\" + $exeName)
+        if (Test-Path -LiteralPath $systemCopy) { $exePath = $systemCopy }
+        if (-not $exePath) {
+          $found = Get-Command $exeName -CommandType Application -ErrorAction SilentlyContinue |
+            Where-Object { $_.Path -and $_.Path -notmatch '\\(Git|msys64|cygwin)[^\\]*\\(usr\\)?bin\\' } | Select-Object -First 1
+          if ($found) { $exePath = $found.Path }
         }
       }
-      # A bare name must resolve to a real executable. Without this, a script
-      # that happens to share the name earlier on PATH opens an "Open with" dialog.
-      if ($targetApp -notmatch '[\/:]' -and -not [System.IO.Path]::GetExtension($targetApp)) {
-        $resolved = Get-Command ($targetApp + ".exe") -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($resolved) { $targetApp = $resolved.Source }
+      if ($exePath) {
+        try {
+          $p = Start-Process -FilePath $exePath -PassThru
+          $launched = $exePath; $how = "executable"; $result["pid"] = $p.Id
+        } catch { $exePath = $null }
       }
-      try {
-        $p = Start-Process -FilePath $targetApp -PassThru -ErrorAction Stop
-        $result["launched"] = $targetApp
-        $result["pid"] = $p.Id
-      } catch {
-        Start-Process $targetApp
-        $result["launched"] = $targetApp
-        $result["pid"] = 0
+      if (-not $exePath) {
+        # Any app in the Start menu, desktop or Store, by its shown name.
+        $needle = ($wanted -replace '\.exe$', '').ToLower()
+        $apps = @()
+        try { $apps = @(Get-StartApps) } catch {}
+        $match = $apps | Where-Object { $_.Name.ToLower() -eq $needle } | Select-Object -First 1
+        if (-not $match) { $match = $apps | Where-Object { $_.Name.ToLower().StartsWith($needle) } | Sort-Object { $_.Name.Length } | Select-Object -First 1 }
+        if (-not $match) { $match = $apps | Where-Object { $_.Name.ToLower().Contains($needle) } | Sort-Object { $_.Name.Length } | Select-Object -First 1 }
+        if (-not $match) { $match = $apps | Where-Object { $_.AppID.ToLower().Contains($needle) } | Select-Object -First 1 }
+        if ($match) {
+          Start-Process ("shell:AppsFolder\" + $match.AppID)
+          $launched = $match.AppID; $displayName = $match.Name; $how = "start-menu"
+        }
       }
+    }
+    if (-not $launched) {
+      $result["ok"] = $false
+      $result["error"] = "No installed app matches '$wanted'"
     } else {
-      throw "Missing app parameter"
+      $result["launched"] = $launched
+      $result["how"] = $how
+      if ($displayName) { $result["displayName"] = $displayName }
     }
   }
 
