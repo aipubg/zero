@@ -72,6 +72,7 @@ import { readSkillForModel } from '../../packages/skill-sdk/skill-read.mjs';
 import { planFold, foldRequest, foldNote, estimateTokens, tailStart, trimOldToolOutputs, FOLD_DEFAULTS } from '../../packages/sessions/context-fold.mjs';
 import { turnBudgetHint, TURN_BUDGET_PREFIX } from '../../packages/agent-runtime/turn-budget.mjs';
 import { shouldReflect, runTurnReflection } from '../../packages/agent-runtime/turn-reflection.mjs';
+import { matchChatCommand } from '../../packages/agent-runtime/chat-commands.mjs';
 import { composeZeroPrompt, operatingRules, placeLayer, readIdentity, identityPathFor, PROMPT_LAYERS_VERSION } from '../../packages/agent-runtime/prompt-layers.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
@@ -4033,7 +4034,8 @@ export class ZeroNativeHost {
     if (!session) return { folded: false, reason: 'no chat' };
     const context = this.sessions.getModelContext(sessionKey).filter((m) => m.role !== 'system');
     const contextWindow = this._contextWindowFor(modelId);
-    const plan = planFold(context, { contextWindow, foldAt: force ? 0 : this.foldAt });
+    // A forced fold (/fold) keeps only a small recent tail.
+    const plan = planFold(context, { contextWindow, foldAt: force ? 0 : this.foldAt, ...(force ? { tailShare: 0 } : {}) });
     if (plan.action !== 'fold') return { folded: false, reason: plan.action === 'none' ? 'the chat is small enough' : 'only old tool outputs needed trimming', tokens: plan.tokens };
     const toFold = context.slice(0, plan.foldCount);
     const previous = session.metadata?.contextFold || {};
@@ -4400,6 +4402,16 @@ ${currentMessages[existingSysIdx].content}`,
         firstTokenTime = Date.now();
         turns = 1;
         recordTool('core_unified_diagnostic', { command: trimmedUser }, { ok: true, status: coreDiag.status, modules: coreDiag.modules });
+      }
+
+      // Chat Commands (/help, /fold, /notebook, /skills, /budget): answered without a model call.
+      const chatCommand = completedModelTurn ? null : matchChatCommand(userContent);
+      if (chatCommand) {
+        finalContent = String(await chatCommand.command.run({ host: this, sessionKey, args: chatCommand.args }));
+        completedModelTurn = true;
+        firstTokenTime = Date.now();
+        turns = 1;
+        recordTool('chat_command', { command: chatCommand.command.name, args: chatCommand.args }, { ok: true, verified: true });
       }
 
       // Immediately emit early progress card so Chat UI shows active perception/execution right away (<200ms)
