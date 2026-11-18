@@ -40,10 +40,12 @@ function setupBrowser() {
 test('voice manners: short replies, stop when interrupted, ignore own voice, mic off', async t => {
   const b = setupBrowser();
   const sent = [];
+  const requests = [];
   const host = {
     isConnected: () => true,
     sessions: { selectedKey: 'chat-test' },
     async request(method, params) {
+      requests.push({ method, params });
       if (method === 'chat.send') { sent.push(params.message); return { content: 'Notepad is open and in front. I typed your list with three items. You can save it with Ctrl+S anytime you like.\n\n- milk\n- eggs' }; }
       if (method === 'voice.status') return { status: 'READY', sessions: [] };
       return { ok: true };
@@ -87,10 +89,16 @@ test('voice manners: short replies, stop when interrupted, ignore own voice, mic
   assert.equal(b.speaking(), false, 'talking over Zero stops it');
   await tick(1400);
   assert.deepEqual(sent.slice(-1), ['tell me something else instead']);
+  await button.zeroVoice.mute();
+  assert.equal(b.speaking(), true, 'muting the microphone preserves assistant speech');
+  assert.equal(button.zeroVoice.active, true, 'muting keeps the voice session active');
+  assert.deepEqual(requests.find(r => r.method === 'voice.microphone.stop').params, { sessionId: 'chat-test', preserveConversation: true });
+  await button.zeroVoice.unmute();
   b.finishSpeech();
+  await tick(0);
 
   // 5. Mic off: recognition stops and stays stopped; nothing is heard.
-  button.zeroVoice.mute();
+  await button.zeroVoice.mute();
   assert.equal(button.zeroVoice.muted, true);
   assert.equal(b.recognizer().started, false);
   assert.equal(button.dataset.voiceState, 'mic-off');
@@ -98,6 +106,6 @@ test('voice manners: short replies, stop when interrupted, ignore own voice, mic
   b.recognizer().onresult?.({ resultIndex: 0, results: [Object.assign([{ transcript: 'secret words' }], { isFinal: true })] });
   await tick(1400);
   assert.equal(sent.length, before, 'with the mic off nothing reaches Zero');
-  button.zeroVoice.unmute();
+  await button.zeroVoice.unmute();
   assert.equal(b.recognizer().started, true, 'mic on listens again');
 });

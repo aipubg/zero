@@ -16,12 +16,6 @@ import os from 'node:os';
 export const DESKTOP_OBSERVATIONS = new Set([
   'status', 'version', 'snapshot', 'find', 'get', 'is', 'list-apps', 'list-windows',
   'list-displays', 'list-surfaces', 'skills', 'wait', 'clipboard-get', 'screenshot', 'list-notifications',
-  'click', 'double-click', 'right-click', 'type', 'set-value', 'clear', 'focus', 'select',
-  'toggle', 'check', 'uncheck', 'expand', 'collapse', 'scroll', 'scroll-to', 'press', 'hover',
-  'drag', 'mouse-move', 'mouse-click', 'mouse-wheel', 'launch', 'close-app', 'focus-window',
-  'resize-window', 'move-window', 'minimize', 'maximize', 'restore', 'clipboard-set',
-  'clipboard-clear', 'dismiss-notification', 'dismiss-all-notifications', 'notification-action',
-  'open-system-surface',
 ]);
 
 export const CAPABILITY_DEFINITIONS = Object.freeze({
@@ -658,7 +652,7 @@ export class CapabilityEngine {
           verified = true;
         }
       }
-      if (execResult.ok && ['get_elements', 'get_uia_elements', 'list_windows', 'list_apps', 'play', 'browser', 'open_url', 'navigate', 'spotify_control', 'type_text', 'type', 'press_key', 'press', 'hotkey', 'left_click', 'click', 'right_click', 'double_click', 'close_app', 'kill_app', 'screenshot', 'scroll', 'wait', 'mouse_move', 'move', 'run_process'].includes(action)) {
+      if (execResult.ok && ['get_window_state', 'get_cursor', 'get_cursor_position', 'get_elements', 'get_uia_elements', 'list_windows', 'list_apps', 'play', 'browser', 'open_url', 'navigate', 'spotify_control', 'type_text', 'type', 'press_key', 'press', 'hotkey', 'left_click', 'click', 'right_click', 'double_click', 'close_app', 'kill_app', 'screenshot', 'scroll', 'wait', 'mouse_move', 'move', 'run_process'].includes(action)) {
         if (execResult.verified !== false) verified = true;
       }
       if (execResult.ok && (execResult.outcome === 'COMPLETED' || execResult.verified === true)) {
@@ -685,7 +679,7 @@ export class CapabilityEngine {
       ok: executed && execResult.ok !== false && !isCancelled,
       executed,
       verified,
-      completed: outcome === 'COMPLETED' && execResult.ok !== false && !isCancelled,
+      completed: execResult.completed ?? (!isCancelled && execResult.ok !== false && executed && outcome !== 'FAILED' && outcome !== 'BLOCKED' && outcome !== 'CANCELLED'),
       outcome,
       capability: toolName,
       action,

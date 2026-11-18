@@ -7,6 +7,7 @@ export const PLUGINS_UI_METHODS = Object.freeze([
 ]);
 
 const generations = new WeakMap();
+const remoteGap = 'Remote plugin catalogs are unavailable. Install a local plugin directory or an npm package.';
 const mutations = new Set(['plugins.install', 'plugins.setEnabled', 'plugins.enable', 'plugins.disable',
   'plugins.update', 'plugins.restart', 'plugins.uninstall', 'plugins.remove']);
 
@@ -229,8 +230,7 @@ export async function handlePluginsUi(method, params = {}, manager, { mutationAl
       const all = catalogueItems();
       const matching = all.filter(item => !query || `${item.id} ${item.catalog.name} ${item.catalog.summary ?? ''}`.toLowerCase().includes(query));
       const items = ['featured', 'trending'].includes(params.intent) || params.category ? [] : matching;
-      // No remoteError: the local catalogue is authoritative here.
-      return { items, categories: [{ id: 'installed', label: 'Installed' }], overview: items.length > 0, nextCursor: null };
+      return { items, categories: [{ id: 'installed', label: 'Installed' }], overview: items.length > 0, nextCursor: null, remoteError: remoteGap };
     }
     case 'plugins.catalog.get':
       return catalogDetail(required(manager, idOf(params)));

@@ -50,7 +50,7 @@ async function fixture(root, { id = 'actual-math', version = '1.0.0', factor = 1
   await fs.writeFile(path.join(directory, 'index.mjs'), `
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { dot } from './math.mjs';
+import { dot } from '${'./math.mjs'}';
 export default {
   async onLoad(context) { this.context = context; await fs.appendFile(path.join(context.dataDir,'hooks.log'),'load\\n'); ${failLoad ? "throw new Error('load-boom');" : ''} },
   async onEnable() { await fs.appendFile(path.join(this.context.dataDir,'hooks.log'),'enable\\n'); ${failEnable ? "throw new Error('enable-boom');" : ''} },

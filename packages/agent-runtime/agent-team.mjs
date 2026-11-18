@@ -548,7 +548,7 @@ export class AgentTeamOrchestrator extends EventEmitter {
     if (this.modelFabric && failedCount === 0 && !workflowSignal.aborted) {
       const synthesisTimer = setTimeout(() => deadlineController.abort(new Error('Team consolidation timed out')), Math.max(1, timeoutMs - (Date.now() - startTime)));
       try {
-        const modelId = this.modelFabric.resolveAgentModel(team.leadAgentId)?.canonicalModelId;
+        const modelId = (this.modelFabric.resolveAgentModel(team.leadAgentId) || this.modelFabric.resolveModel('zero-lead'))?.canonicalModelId;
         if (!modelId) throw new Error('No coordinator model available');
         const response = await abortable(() => this.modelFabric.executeChat({
           model: modelId, stream: false, max_tokens: maxOutputTokens,

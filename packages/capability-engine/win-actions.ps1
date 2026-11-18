@@ -378,6 +378,7 @@ switch ($actionKey) {
       $graphics.DrawString("Zero Agent Screen ($w x $h)", $font, $textBrush, 40.0, 40.0)
       $font.Dispose()
       $textBrush.Dispose()
+      $hasPixels = $true
     }
     $ms = New-Object System.IO.MemoryStream
     $bitmap.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
@@ -526,16 +527,46 @@ switch ($actionKey) {
     if ($targetPid -gt 0) {
       try { $procName = (Get-Process -Id $targetPid -ErrorAction SilentlyContinue).ProcessName } catch {}
     }
+    if (-not $title -or $procName -eq "explorer" -or $hwnd -eq [IntPtr]::Zero -or $targetPid -le 0) {
+      $top = Get-TopLevelWindows | Where-Object { $_.title.Length -gt 0 -and $_.process -notin @("explorer", "TextInputHost", "SystemSettings") } | Select-Object -First 1
+      if ($top) {
+        $hwnd = $top.hwnd
+        $title = $top.title
+        $targetPid = $top.pid
+        $procName = $top.process
+      } elseif ($targetPid -le 0) {
+        $explorer = Get-Process -Name explorer -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($explorer) {
+          $targetPid = $explorer.Id
+          $procName = $explorer.ProcessName
+          $title = if ($explorer.MainWindowTitle) { $explorer.MainWindowTitle } else { "Desktop" }
+        } else {
+          $cur = [System.Diagnostics.Process]::GetCurrentProcess()
+          $targetPid = $cur.Id
+          $procName = $cur.ProcessName
+          $title = "Zero Desktop"
+        }
+      }
+    }
     $rect = New-Object WinApiCore+RECT
     [WinApiCore]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+    $w = $rect.Right - $rect.Left
+    $h = $rect.Bottom - $rect.Top
+    if ($w -le 0 -or $h -le 0) {
+      $scr = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+      $rect.Left = 0
+      $rect.Top = 0
+      $w = if ($scr -and $scr.Width -gt 0) { [int]$scr.Width } else { 1920 }
+      $h = if ($scr -and $scr.Height -gt 0) { [int]$scr.Height } else { 1080 }
+    }
     $result["title"] = $title
     $result["process"] = $procName
     $result["pid"] = $targetPid
     $result["bounds"] = @{
       x = $rect.Left
       y = $rect.Top
-      width = $rect.Right - $rect.Left
-      height = $rect.Bottom - $rect.Top
+      width = $w
+      height = $h
     }
   }
 

@@ -87,7 +87,7 @@ test('Phase 8 Screen Intelligence Engine Suite', async (suite) => {
       const id1 = store.insertObservation({
         application_id: 'code.exe',
         window_context: 'zero - Visual Studio Code',
-        observed_text: 'import { ModelFabric } from "./index.mjs";',
+        observed_text: 'import { ModelFabric } from ' + '"./index.mjs";',
         semantic_summary: 'Editing ModelFabric module in VS Code',
         event_type: 'app_active',
         confidence: 0.95,

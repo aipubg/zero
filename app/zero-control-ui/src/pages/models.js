@@ -894,7 +894,42 @@ export function mountModelsPage(container, context = {}) {
       cardHeader.append(left, actions);
       card.append(cardHeader);
 
-      // Model chips are kept inside the Edit modal to keep the outer card clean
+      if (Array.isArray(p.models) && p.models.length > 0) {
+        const chipsContainer = element("div", "zero-model-chips-container");
+        chipsContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;background:rgba(0,0,0,0.18);border-top:1px solid rgba(255,255,255,0.06);";
+        for (const m of p.models) {
+          const mname = typeof m === "string" ? m : (m.name || m.id);
+          const mid = typeof m === "string" ? m : m.id;
+          const modelKey = mid.startsWith(p.id + '/') ? mid : `${p.id}/${mid}`;
+          const isCurrentActive = systemDefaults.primary === modelKey || agentBindings?.zero?.model === modelKey || systemDefaults.primary === mid;
+          const chip = element("div", `zero-model-chip ${isCurrentActive ? "zero-model-chip--active" : ""}`);
+          chip.style.cssText = `display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:12px;background:${isCurrentActive ? "color-mix(in srgb, var(--accent) 16%, transparent)" : "rgba(255,255,255,0.04)"};border:1px solid ${isCurrentActive ? "var(--accent)" : "rgba(255,255,255,0.08)"};color:${isCurrentActive ? "var(--accent)" : "inherit"};cursor:pointer;`;
+          const nameSpan = element("span", "zero-model-chip__name", mname);
+          nameSpan.style.fontWeight = isCurrentActive ? "700" : "500";
+          chip.append(nameSpan);
+
+          if (isCurrentActive) {
+            const actBadge = element("span", "zero-chip-badge", "✓ Active");
+            actBadge.style.cssText = "font-size:10px;padding:1px 4px;border-radius:3px;background:rgba(16,185,129,0.3);color:var(--color-success, #10b981);font-weight:700;";
+            chip.append(actBadge);
+          }
+
+          chip.onclick = async () => {
+            try {
+              await callGateway(host, "zero.providers.setActive", { modelId: modelKey });
+              showNotice(`Active model set to "${mname}"`);
+              systemDefaults.primary = modelKey;
+              if (agentBindings?.zero) agentBindings.zero.model = modelKey;
+              await loadAllData();
+            } catch (err) {
+              showNotice(err.message, true);
+            }
+          };
+          chipsContainer.append(chip);
+        }
+        card.append(chipsContainer);
+      }
+
       modelsListContainer.append(card);
     }
   }

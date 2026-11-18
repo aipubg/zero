@@ -453,3 +453,33 @@ test('invalid synthesis, format and capture options fail before any native proce
   await assert.rejects(native.transcribe(Buffer.alloc(1)), { code: 'VOICE_INVALID_AUDIO' });
   assert.throws(() => native.startMicrophone({ durationMs: -1 }), { code: 'VOICE_INVALID_DURATION' });
 });
+
+test('malformed capture frames report failure instead of escaping the native callback', async t => {
+  let frame;
+  const engine = engineFor(t, { startMicrophone: options => {
+    frame = options.onFrame;
+    return { ready: Promise.resolve(), done: untilAborted(options.signal) };
+  } });
+  await engine.startMicrophone('session');
+  assert.doesNotThrow(() => frame(Buffer.from([1])));
+  await new Promise(resolve => setImmediate(resolve));
+  const status = engine.getStatus().sessions[0];
+  assert.equal(status.microphoneActive, false);
+  assert.equal(status.capture.state, 'failed');
+  assert.equal(status.lastError.operation, 'microphone');
+});
+
+test('a session stopped while waiting for microphone ownership cannot open a stale capture', async t => {
+  const done = deferred(); let opens = 0;
+  const engine = new VoiceEngine({ backend: backend({ startMicrophone: () => {
+    opens++; return { ready: Promise.resolve(), done: done.promise };
+  } }) });
+  t.after(() => engine.close());
+  engine.startSession('old'); await engine.startMicrophone('old'); engine.stopSession('old');
+  engine.startSession('next');
+  const pending = engine.startMicrophone('next');
+  const rejected = assert.rejects(pending, { code: 'VOICE_CANCELLED' });
+  engine.stopSession('next'); done.resolve();
+  await rejected;
+  assert.equal(opens, 1);
+});

@@ -2,7 +2,7 @@
  * Zero — Guaranteed Native Chat Composer Dock.
  *
  * A watchdog that guarantees a usable chat surface exists on every chat or
- * workspace route (/, /chat/*, /Command, /dashboard/*).
+ * conversation route (/, /chat/*, /Command, /new).
  *
  * The vendor Control UI owns the primary chat experience, but it can fail to
  * mount or collapse when a browser carries stale state from an older build
@@ -22,8 +22,6 @@ const CHAT_ROUTES = [
   /^\/chat(\/|$)/,
   /^\/command(\/|$)/i,
   /^\/new(\/|$)/,
-  /^\/dashboard(\/|$)/,
-  /^\/dashboards(\/|$)/,
 ];
 
 const COMPOSER_SELECTOR = [
@@ -246,6 +244,8 @@ export function installGuaranteedChatComposer(host) {
   const existingComposer = () => {
     const candidates = document.querySelectorAll(COMPOSER_SELECTOR);
     for (const candidate of candidates) {
+      // Our recovery composer must not trigger its own teardown every tick.
+      if (candidate.closest?.('.zero-chat-dock')) continue;
       if (composerIsUsable(candidate)) return candidate;
     }
     return null;

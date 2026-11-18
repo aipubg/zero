@@ -115,20 +115,29 @@ function ensureStyle() {
 }
 
 /** Particle ring + layered sound wave, drawn every frame. */
-function startScene(particles, wave, getEnergy, getState) {
+export function startScene(particles, wave, getEnergy, getState) {
   const pc = particles.getContext("2d"), wc = wave.getContext("2d");
+  if (!pc || !wc) return () => {};
   const dots = Array.from({ length: 140 }, (_, i) => ({
     a: Math.random() * Math.PI * 2, r: 0.62 + Math.random() * 0.3, s: 0.0015 + Math.random() * 0.004,
     size: 0.6 + Math.random() * 1.9, tw: Math.random() * Math.PI * 2, hue: [195, 265, 315][i % 3],
   }));
-  let t = 0, raf = 0, energy = 0.12;
-  const fit = c => { if (c.style.display === "none") c.style.removeProperty("display"); const r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); if (c.width !== Math.round(r.width * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } };
-  const frame = () => {
+  let t = 0, raf = 0, energy = 0.12, previous = null;
+  const fit = c => {
+    const r = c.getBoundingClientRect(), d = Math.min(2, globalThis.devicePixelRatio || 1);
+    const width = Math.max(0, Math.round(r.width * d)), height = Math.max(0, Math.round(r.height * d));
+    if (c.width !== width || c.height !== height) { c.width = width; c.height = height; }
+  };
+  const frame = (now = 0) => {
+    const dt = previous === null ? 1 / 60 : Math.min(0.05, Math.max(0, (now - previous) / 1000));
+    previous = now;
+    if (document.hidden) { raf = requestAnimationFrame(frame); return; }
     fit(particles); fit(wave);
+    if (!particles.width || !particles.height || !wave.width || !wave.height) { raf = requestAnimationFrame(frame); return; }
     const state = getState();
     const target = Math.max(getEnergy(), state === "speaking" ? 0.55 : state === "thinking" ? 0.3 : state === "mic-off" ? 0.03 : 0.12);
-    energy += (target - energy) * 0.12;
-    t += 0.016;
+    energy += (target - energy) * (1 - Math.exp(-8 * dt));
+    t += dt;
     // particles
     const w = particles.width, h = particles.height, cx = w / 2, cy = h * 0.44, R = Math.min(w, h) * 0.42;
     pc.clearRect(0, 0, w, h);
@@ -137,7 +146,7 @@ function startScene(particles, wave, getEnergy, getState) {
     pc.fillStyle = halo; pc.fillRect(0, 0, w, h);
     const speed = 1 + energy * 3 + (state === "thinking" ? 2 : 0);
     for (const d of dots) {
-      d.a += d.s * speed;
+      d.a += d.s * speed * dt * 60;
       const rr = R * d.r * (1 + Math.sin(t * 2 + d.tw) * 0.02 * (1 + energy * 4));
       const x = cx + Math.cos(d.a) * rr, y = cy + Math.sin(d.a) * rr * 0.92;
       const alpha = (0.35 + 0.65 * Math.abs(Math.sin(t * 1.7 + d.tw))) * (state === "mic-off" ? 0.35 : 1);
@@ -212,7 +221,7 @@ export function mountHomeScreen(host) {
     const vc = () => voiceButton()?.zeroVoice;
     const paint = () => {
       const v = vc();
-      const s = v ? (v.muted ? "mic-off" : v.active ? v.state : "idle") : "idle";
+      const s = v ? ((v.speaking || v.state === "speaking") ? "speaking" : v.muted ? "mic-off" : v.active ? v.state : "idle") : "idle";
       screen.dataset.state = s;
       state.textContent = STATE_TEXT[s] || STATE_TEXT.idle;
       mic.dataset.on = String(Boolean(v?.active && !v?.muted));
@@ -225,9 +234,9 @@ export function mountHomeScreen(host) {
     mic.onclick = async () => {
       const v = vc();
       if (!v) { caption.textContent = "Voice is still starting — try again in a moment."; return; }
-      if (!v.active) { if (v.muted) v.unmute(); await v.start(); }
-      else if (v.muted) v.unmute();
-      else v.mute();
+      if (!v.active) { if (v.muted) await v.unmute(); await v.start(); }
+      else if (v.muted) await v.unmute();
+      else await v.mute();
       paint();
     };
     screen.querySelector(".zero-home-end").onclick = async () => { await vc()?.stop(); paint(); };
@@ -238,27 +247,36 @@ export function mountHomeScreen(host) {
       clearTimeout(captionTimer);
       if (ms) captionTimer = setTimeout(() => { caption.textContent = ""; }, ms);
     };
+    const voiceListeners = [];
+    let wiredButton = null;
+    const unwireVoice = () => {
+      for (const [btn, name, handler] of voiceListeners.splice(0)) btn.removeEventListener(name, handler);
+      wiredButton = null;
+    };
     const wireVoice = () => {
       const btn = voiceButton();
-      if (!btn || btn.__zeroHomeWired) return;
-      btn.__zeroHomeWired = true;
-      btn.addEventListener("zero-voice:state", paint);
-      btn.addEventListener("zero-voice:heard", e => { energy = 0.45; showCaption(`“${e.detail.text}”`, 6000); });
-      btn.addEventListener("zero-voice:sent", e => showCaption(`You: ${e.detail.text}`, 0));
-      btn.addEventListener("zero-voice:speak", e => showCaption(e.detail.text, 0));
-      btn.addEventListener("zero-voice:word", () => {
+      if (btn === wiredButton) return;
+      unwireVoice();
+      if (!btn) return;
+      wiredButton = btn;
+      const listen = (name, handler) => { btn.addEventListener(name, handler); voiceListeners.push([btn, name, handler]); };
+      listen("zero-voice:state", paint);
+      listen("zero-voice:heard", e => { energy = 0.45; showCaption(`“${e.detail.text}”`, 6000); });
+      listen("zero-voice:sent", e => showCaption(`You: ${e.detail.text}`, 0));
+      listen("zero-voice:speak", e => showCaption(e.detail.text, 0));
+      listen("zero-voice:word", () => {
         energy = 1;
         if (mouth) mouth.style.transform = "scaleY(2.2)";
         clearTimeout(pulseTimer);
         pulseTimer = setTimeout(() => { energy = 0.35; if (mouth) mouth.style.transform = ""; }, 140);
       });
-      btn.addEventListener("zero-voice:quiet", () => { energy = 0; if (mouth) mouth.style.transform = ""; paint(); });
-      btn.addEventListener("zero-voice:interrupted", () => { energy = 0.2; showCaption("Okay — I'm listening.", 3000); paint(); });
+      listen("zero-voice:quiet", () => { energy = 0; if (mouth) mouth.style.transform = ""; paint(); });
+      listen("zero-voice:interrupted", () => { energy = 0.2; showCaption("Okay — I'm listening.", 3000); paint(); });
     };
     wireVoice();
     const wireTimer = setInterval(() => { wireVoice(); paint(); energy *= 0.9; }, 400);
     stopScene = startScene(screen.querySelector(".zhs-particles"), screen.querySelector(".zhs-wave"), () => energy, () => screen?.dataset.state || "idle");
-    screen.__dispose = () => clearInterval(wireTimer);
+    screen.__dispose = () => { clearInterval(wireTimer); clearTimeout(pulseTimer); clearTimeout(captionTimer); unwireVoice(); energy = 0; };
     paint();
     placeControls();
   };
@@ -282,7 +300,7 @@ export function mountHomeScreen(host) {
   };
 
   const sync = () => {
-    if (isHome()) { if (!screen?.isConnected) { screen = null; open(); } else placeControls(); }
+    if (isHome()) { if (!screen?.isConnected) { close(); open(); } else placeControls(); }
     else close();
   };
 

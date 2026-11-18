@@ -1119,15 +1119,7 @@ function installNativeSurfaces(host) {
         }
       }
 
-      // Reflect Default mode in the closed trigger as well. Only do this when
-      // the Default entry is the selected entry.
-      const selected = document.querySelector('.chat-controls__model-option[aria-selected="true"]');
-      const trigger = document.querySelector(".chat-controls__model-trigger");
-      const triggerLabel = trigger?.querySelector(".chat-controls__inline-select-label");
-      if (selected?.getAttribute("data-chat-model-default") === "true" && triggerLabel) {
-        if (triggerLabel.textContent !== "Default model (Auto-Best)") triggerLabel.textContent = "Default model (Auto-Best)";
-        if (trigger.getAttribute("aria-label") !== "Chat model: Default model (Auto-Best)") trigger.setAttribute("aria-label", "Chat model: Default model (Auto-Best)");
-      }
+
     } catch {}
   };
 

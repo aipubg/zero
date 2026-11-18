@@ -1,5 +1,54 @@
 [
   {
+    "id": "gemini-live-screen",
+    "name": "Gemini Live Screen Share",
+    "api": "openai-completions",
+    "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "screenShare": {
+      "enabled": true,
+      "liveModel": "gemini-3.8-live",
+      "computerUseModel": "gemini-3.5-flash-lite",
+      "computerUseEnvironment": "browser",
+      "frameMode": "on-change",
+      "maxFps": 1,
+      "heartbeatSeconds": 10,
+      "voiceReplies": false,
+      "excludedApps": [
+        "KeePass",
+        "KeePassXC",
+        "1Password",
+        "Bitwarden",
+        "LastPass",
+        "Windows Security"
+      ],
+      "maxMinutesPerHour": 60
+    },
+    "models": [
+      {
+        "id": "gemini-3.8-live",
+        "name": "gemini-3.8-live",
+        "reasoning": false,
+        "image": true
+      },
+      {
+        "id": "gemini-3.5-flash-lite",
+        "name": "gemini-3.5-flash-lite",
+        "reasoning": false,
+        "image": true
+      },
+      {
+        "id": "gemini-3.8-flash",
+        "name": "gemini-3.8-flash",
+        "reasoning": false,
+        "image": true
+      }
+    ],
+    "apiKey": "env:GEMINI_LIVE_SCREEN_API_KEY",
+    "apiKeys": [
+      "env:GEMINI_LIVE_SCREEN_API_KEY"
+    ]
+  },
+  {
     "id": "nv",
     "name": "nv",
     "api": "openai-completions",
@@ -8,6 +57,12 @@
       {
         "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
         "name": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+        "reasoning": false,
+        "image": false
+      },
+      {
+        "id": "minimaxai/minimax-m3.1-flash",
+        "name": "minimaxai/minimax-m3.1-flash",
         "reasoning": false,
         "image": false
       }

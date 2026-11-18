@@ -1,14 +1,18 @@
 {
   "defaults": {
-    "primary": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "utility": null,
-    "fallback": null,
+    "primary": "nv/minimaxai/minimax-m3.1-flash",
+    "utility": "nv/minimaxai/minimax-m3.1-flash",
+    "fallback": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
     "thinking": "default",
-    "fastMode": null
+    "fastMode": null,
+    "modelFallbacks": [
+      "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "gemini-live-screen/gemini-3.8-flash"
+    ]
   },
   "agentBindings": {
     "zero": {
-      "model": "nv/nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": "nv/minimaxai/minimax-m3.1-flash",
       "allowOverride": true
     }
   }

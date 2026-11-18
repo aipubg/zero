@@ -301,24 +301,24 @@ export function validateHandshake(params, authOptions = '') {
   let grantedRole = ROLES.VIEWER;
   let grantedScopes = [...VIEWER_SCOPES];
 
-  if (verifiedSession) {
+  if (expectedToken.length > 0 && clientToken === expectedToken) {
     isAuthenticated = true;
     const clientReqRole = params.role || requestedRole;
-    grantedRole = clientReqRole === ROLES.ADMIN && verifiedSession.role === ROLES.ADMIN ? ROLES.ADMIN : (verifiedSession.role || ROLES.OPERATOR);
+    grantedRole = clientReqRole === ROLES.ADMIN ? ROLES.ADMIN : ROLES.OPERATOR;
+    grantedScopes = [...ADMIN_SCOPES];
+  } else if (verifiedSession) {
+    isAuthenticated = true;
+    const clientReqRole = params.role || requestedRole;
+    grantedRole = clientReqRole === ROLES.ADMIN && (verifiedSession.role === ROLES.ADMIN || verifiedSession.scopes?.includes('admin')) ? ROLES.ADMIN : (verifiedSession.role || ROLES.OPERATOR);
     grantedScopes = [...(verifiedSession.scopes || ADMIN_SCOPES)];
   } else if (validSessions && clientToken && (typeof validSessions.has === 'function' ? validSessions.has(clientToken) : validSessions[clientToken])) {
     const sessionObj = typeof validSessions.get === 'function' ? validSessions.get(clientToken) : validSessions[clientToken];
     isAuthenticated = true;
     const clientReqRole = params.role || requestedRole;
-    grantedRole = clientReqRole === ROLES.ADMIN && sessionObj?.role === ROLES.ADMIN ? ROLES.ADMIN : (sessionObj?.role || ROLES.OPERATOR);
+    grantedRole = clientReqRole === ROLES.ADMIN && (sessionObj?.role === ROLES.ADMIN || sessionObj?.scopes?.includes('admin')) ? ROLES.ADMIN : (sessionObj?.role || ROLES.OPERATOR);
     grantedScopes = [...(sessionObj?.scopes || ADMIN_SCOPES)];
   } else if (expectedToken.length > 0) {
-    if (clientToken === expectedToken) {
-      isAuthenticated = true;
-      const clientReqRole = params.role || requestedRole;
-      grantedRole = clientReqRole === ROLES.ADMIN ? ROLES.ADMIN : ROLES.OPERATOR;
-      grantedScopes = [...ADMIN_SCOPES];
-    } else if (clientToken.length > 0) {
+    if (clientToken.length > 0) {
       // Provided an invalid token
       return {
         ok: false,

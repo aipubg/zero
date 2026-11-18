@@ -39,7 +39,7 @@ export async function executeSpecialist(orchestrator, subtask, context) {
   const requestedModel = subtask.modelId || subtask.model;
   const resolution = requestedModel
     ? modelFabric.resolveModel(requestedModel)
-    : modelFabric.resolveAgentModel(subtask.agentId);
+    : (modelFabric.resolveAgentModel(subtask.agentId) || modelFabric.resolveModel('zero-lead'));
   if (!resolution?.canonicalModelId) throw new Error(`No assigned model available for ${subtask.agentId}`);
   const modelId = resolution.canonicalModelId;
   context.onModelResolved?.(resolution.provider?.id ? `${resolution.provider.id}/${modelId}` : modelId);
@@ -81,9 +81,6 @@ export async function executeSpecialist(orchestrator, subtask, context) {
     }, { signal }), signal);
     signal.throwIfAborted();
     const choice = response?.data?.choices?.[0];
-    if (choice?.finish_reason === 'length') {
-      throw new Error('Specialist model turn truncated due to token limit (finish_reason: length)');
-    }
     let message;
     try { message = requireCompletedChoice(choice, 'Specialist', { allowTools: true }); }
     catch (error) {
@@ -118,8 +115,8 @@ export async function executeSpecialist(orchestrator, subtask, context) {
       }
       signal.throwIfAborted();
       const stepStatus = result?.ok === false ? 'failed' : (result?.verified ? 'completed' : (result?.outcome || 'unverified'));
-      record({ toolName: name, toolArgs: args, toolResult: result, status: stepStatus, evidence: result?.evidence, backend: result?.backend });
-      toolResults.push({ toolCallId: call.id, toolName: name, args, result, backend: result?.backend, evidence: result?.evidence });
+      record({ toolName: name, toolArgs: args, toolResult: result, status: stepStatus, ...(result?.evidence !== undefined ? { evidence: result.evidence } : {}), ...(result?.backend !== undefined ? { backend: result.backend } : {}) });
+      toolResults.push({ toolCallId: call.id, toolName: name, args, result, ...(result?.backend !== undefined ? { backend: result.backend } : {}), ...(result?.evidence !== undefined ? { evidence: result.evidence } : {}) });
       messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result ?? null) });
       if (result?.ok === false || ['FAILED', 'BLOCKED', 'CANCELLED'].includes(result?.outcome)) {
         throw new Error(`Tool '${name}' failed: ${result.error || result.message || result.outcome}`);

@@ -79,10 +79,12 @@ function isEcho(heard, spokenText) {
 export function mountVoiceControl(button, host) {
   let disposed = false;
   let timer;
+  let refreshPending = false;
   let microphoneSession;
   let busy = false;
   let failure = null;
   let active = false;
+  let generation = 0;
   let speaking = false;
   let interimText = '';
   let finalBuffer = '';
@@ -136,9 +138,10 @@ export function mountVoiceControl(button, host) {
     }
 
     if (muted && voiceState !== 'speaking' && voiceState !== 'error' && voiceState !== 'disconnected') voiceState = 'mic-off';
-    if (button.dataset.voiceState !== voiceState) emit('state', { state: voiceState });
+    const changed = button.dataset.voiceState !== voiceState;
     button.dataset.voiceState = voiceState;
-    if (voiceState === 'mic-off') { label.textContent = 'Voice: Mic off'; button.setAttribute('aria-pressed', 'false'); return; }
+    if (changed) emit('state', { state: voiceState });
+    if (voiceState === 'mic-off') { button.style.setProperty('--zero-mic-level', '0'); button.title = 'Turn the microphone on'; label.textContent = 'Voice: Mic off'; button.setAttribute('aria-pressed', 'false'); return; }
 
     if (voiceState === 'speaking') {
       label.textContent = 'Voice: Speaking...';
@@ -181,7 +184,7 @@ export function mountVoiceControl(button, host) {
   const speak = async (text) => {
     // Only the useful lead of the reply is spoken; the full reply is in chat.
     const prose = voiceSummary(text);
-    if (!prose) return;
+    if (!prose || disposed || !active) return;
     speaking = true;
     currentProse = prose;
     emit('speak', { text: prose, full: String(text || '') });
@@ -190,8 +193,8 @@ export function mountVoiceControl(button, host) {
       const synth = window.speechSynthesis;
       if (synth && typeof window.SpeechSynthesisUtterance === 'function') {
         await new Promise((resolve) => {
-          let settled = false;
-          const done = () => { if (settled) return; settled = true; cancelSpeech = null; resolve(); };
+          let settled = false, watchdog;
+          const done = () => { if (settled) return; settled = true; clearTimeout(watchdog); cancelSpeech = null; resolve(); };
           const utterance = new window.SpeechSynthesisUtterance(prose);
           utterance.lang = DEVANAGARI.test(prose) ? 'hi-IN' : lang;
           const voice = synth.getVoices?.().find(v => v.lang === utterance.lang) || synth.getVoices?.().find(v => v.lang?.startsWith(utterance.lang.slice(0, 2)));
@@ -204,7 +207,7 @@ export function mountVoiceControl(button, host) {
           cancelSpeech = () => { try { synth.cancel(); } catch {} done(); };
           try { synth.cancel(); synth.speak(utterance); } catch { done(); }
           // Never let a stuck synthesizer block the conversation loop.
-          setTimeout(done, Math.min(60000, 2500 + prose.length * 90));
+          if (!settled) watchdog = setTimeout(() => { try { synth.cancel(); } catch {} done(); }, Math.min(60000, 2500 + prose.length * 90));
         });
       } else {
         await request('voice.speak', { text: prose, sessionId: sessionKey() });
@@ -238,7 +241,7 @@ export function mountVoiceControl(button, host) {
     recognition.interimResults = true;
     recognition.lang = lang;
     recognition.onresult = (event) => {
-      if (muted) return;
+      if (muted || disposed || !active) return;
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
@@ -296,7 +299,8 @@ export function mountVoiceControl(button, host) {
   const stopRecognition = () => {
     browserAsr = false;
     if (recognition) {
-      try { recognition.stop(); } catch {}
+      recognition.onend = null; recognition.onresult = null; recognition.onerror = null;
+      try { recognition.abort ? recognition.abort() : recognition.stop(); } catch {}
       recognition = null;
     }
   };
@@ -312,15 +316,18 @@ export function mountVoiceControl(button, host) {
     const text = finalBuffer.trim();
     finalBuffer = '';
     interimText = '';
-    if (!text || disposed || muted) return;
+    if (!text || disposed || muted || !active) return;
     // A bare "stop" is a request to be quiet, not a message for the model.
     if (STOP_WORDS.test(text) && text.split(/\s+/).length <= 3) { emit('interrupted', { by: 'stop-word', text }); return; }
+    const turnGeneration = generation;
+    const turnSession = microphoneSession || sessionKey();
     try {
       label.textContent = 'Voice: Thinking...';
       button.dataset.voiceState = 'thinking';
       emit('state', { state: 'thinking' });
       emit('sent', { text });
-      const reply = await request('chat.send', { sessionKey: sessionKey(), message: text });
+      const reply = await request('chat.send', { sessionKey: turnSession, message: text });
+      if (disposed || !active || turnGeneration !== generation) return;
       const content = reply?.content || reply?.text || reply?.message || '';
       if (speakableText(content)) await speak(content);
     } catch (error) {
@@ -333,21 +340,21 @@ export function mountVoiceControl(button, host) {
   // When the browser recognizer is unavailable the backend owns the turn:
   // VAD -> Windows SAPI recognition -> agent -> SAPI playback.
   const onServerTurnComplete = (payload) => {
-    if (!payload || disposed) return;
+    if (!payload || disposed || !active || (payload.sessionId && payload.sessionId !== microphoneSession)) return;
     const text = speakableText(payload.content || '');
     if (!text) return;
     if (payload.played) {
-      // The backend already spoke it through Windows SAPI.
-      speaking = true;
-      render('Voice: Speaking...', active, null, null);
-      setTimeout(() => { speaking = false; render('Voice: Listening', active, null, null); }, 400);
+      // Completion means playback has finished; status polling tracks live output.
+      speaking = false;
+      emit('quiet');
+      render('Voice: Listening', active, null, null);
       return;
     }
     void speak(text);
   };
 
   const onServerTranscript = (payload) => {
-    if (!payload || disposed) return;
+    if (!payload || disposed || !active || (payload.sessionId && payload.sessionId !== microphoneSession)) return;
     const text = String(payload.text || '').trim();
     if (!text) return;
     interimText = text.slice(0, 48);
@@ -355,7 +362,7 @@ export function mountVoiceControl(button, host) {
   };
 
   const onServerTurnError = (payload) => {
-    if (!payload || disposed) return;
+    if (!payload || disposed || !active || (payload.sessionId && payload.sessionId !== microphoneSession)) return;
     failure = payload.error || 'voice turn failed';
     render(`Voice: ${failure}`, active, null, null);
   };
@@ -369,28 +376,33 @@ export function mountVoiceControl(button, host) {
 
   // ------------------------------------------------------------------ status
   const refresh = async () => {
+    if (refreshPending || disposed) return;
+    refreshPending = true;
     try {
       const status = await request('voice.status');
       if (disposed || !button.isConnected || busy) return;
-      const session = status.sessions?.find(entry => entry.microphoneActive);
-      microphoneSession = session?.sessionId;
+      const session = status.sessions?.find(entry => entry.sessionId === (microphoneSession || sessionKey()));
       if (!active) render(`Voice: ${failure || status.status || 'READY'}`, false, session?.capture, session);
       else render('Voice: READY', true, session?.capture, session);
     } catch (error) {
-      if (!disposed && !busy) { microphoneSession = null; render('Voice: Unavailable', false, null, { state: 'disconnected' }); }
+      if (!disposed && !busy) { failure = error.message || 'Voice unavailable'; render('Voice: Unavailable', false, null, { state: 'disconnected' }); }
     } finally {
+      refreshPending = false;
       if (!disposed && button.isConnected) timer = window.setTimeout(refresh, active ? 250 : 2000);
     }
   };
 
   const click = async () => {
-    if (busy) return;
+    if (busy || disposed) return;
     busy = true; button.disabled = true;
     const stopping = active;
+    generation++;
     render(stopping ? 'Voice: Stopping…' : 'Voice: Starting…');
     try {
       if (stopping) {
         active = false;
+        cancelSpeech?.();
+        finalBuffer = ''; interimText = '';
         stopRecognition();
         window.clearTimeout(silenceTimer);
         await request('voice.microphone.stop', { sessionId: microphoneSession || sessionKey() });
@@ -398,10 +410,12 @@ export function mountVoiceControl(button, host) {
         failure = null;
       } else {
         const id = sessionKey();
+        muted = false;
         const hasBrowserAsr = startRecognition();
         // When the browser drives recognition, the server must not run a
         // second turn for the same audio.
-        await request('voice.microphone.start', { sessionId: id, autoConversation: !hasBrowserAsr });
+        await request('voice.microphone.start', { sessionId: id, autoConversation: !hasBrowserAsr, language: lang });
+        if (disposed) { await request('voice.microphone.stop', { sessionId: id }); return; }
         microphoneSession = id;
         active = true;
         failure = null;
@@ -430,19 +444,32 @@ export function mountVoiceControl(button, host) {
     get state() { return button.dataset.voiceState || 'idle'; },
     start: async () => { if (!active) await click(); },
     stop: async () => { if (active) await click(); },
-    mute() {
+    async mute() {
+      if (busy || disposed || muted) return;
       muted = true;
-      cancelSpeech?.();
-      speaking = false;
       stopRecognition();
       window.clearTimeout(silenceTimer);
       finalBuffer = ''; interimText = '';
       render('Voice: Mic off', active, null, null);
+      busy = true;
+      try {
+        if (active) await request('voice.microphone.stop', { sessionId: microphoneSession || sessionKey(), preserveConversation: true });
+        failure = null;
+      } catch (error) { failure = error.message; }
+      finally { busy = false; if (!disposed) render('Voice: Mic off', active); }
     },
-    unmute() {
-      muted = false;
-      if (active) startRecognition();
-      render('Voice: Listening', active, null, null);
+    async unmute() {
+      if (busy || disposed || !muted) return;
+      busy = true;
+      try {
+        if (active) {
+          const hasBrowserAsr = startRecognition();
+          await request('voice.microphone.start', { sessionId: microphoneSession || sessionKey(), autoConversation: !hasBrowserAsr, language: lang });
+        }
+        muted = false;
+        failure = null;
+      } catch (error) { stopRecognition(); failure = error.message; }
+      finally { busy = false; if (!disposed) render('Voice: Listening', active); }
     },
     stopSpeaking() { cancelSpeech?.(); },
     setLang(next) {
@@ -455,6 +482,10 @@ export function mountVoiceControl(button, host) {
 
   return () => {
     disposed = true;
+    generation++;
+    active = false;
+    cancelSpeech?.();
+    if (microphoneSession) void request('voice.microphone.stop', { sessionId: microphoneSession }).catch(() => {});
     window.clearTimeout(timer);
     window.clearTimeout(silenceTimer);
     stopRecognition();

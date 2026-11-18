@@ -95,3 +95,4 @@ export class ZeroDesktop {
 }
 
 export const defaultZeroDesktop = new ZeroDesktop();
+export const AgentDesktop = ZeroDesktop;

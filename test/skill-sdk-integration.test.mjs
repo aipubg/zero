@@ -323,7 +323,7 @@ test('direct Skills UI handlers persist loader state and guard bundle revisions'
   assert.deepEqual(before.skills[0].missing.env, ['SDK_FIXTURE_TOKEN']);
   const update = await handleSkillsUi('skills.update', { skillKey: 'external-report', enabled: false, apiKey: 'private-fixture-key', env: { EXAMPLE: 'private-env' } }, loader);
   assert.equal(update.config.enabled, false);
-  assert.equal(update.config.apiKey, '__ZERO');
+  assert.equal(update.config.apiKey, '__ZERO_REDACTED__');
   assert.ok(!JSON.stringify(update).includes('private-'));
   const restarted = new SkillLoader({ skillsDir: loader.skillsDir });
   assert.equal(restarted.getSkillConfig('external-report').apiKey, 'private-fixture-key');

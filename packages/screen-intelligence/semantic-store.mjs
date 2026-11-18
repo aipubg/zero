@@ -42,7 +42,7 @@ export class SemanticObservationStore {
       // machine or credentials change. Quarantine the unusable key/database
       // (never delete it) and start a fresh store so observation support does
       // not prevent the entire host from booting.
-      const recoverable = this.persistent && !options.encryptionKey && options.recoverUnreadableKey !== false
+      const recoverable = this.persistent && !options.encryptionKey && options.recoverUnreadableKey === true
         && /cannot be unlocked|key is missing|Key not valid/i.test(error?.message || '');
       if (!recoverable) { this.db.close(); throw error; }
       try { this.db.close(); } catch {}

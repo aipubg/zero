@@ -196,7 +196,7 @@ export class ModelFabric {
         const id = aliasResolved.slice(pId.length + 1);
         const entry = provider.models?.find(m => {
           const candidate = typeof m === 'string' ? m : m.id;
-          return candidate === id || candidate === `models/${id}` || candidate === id.replace(/^models\//, '');
+          return candidate === id || candidate === `models/${id}` || candidate === id.replace(/^models\//, '') || candidate === aliasResolved;
         });
         // A provider-qualified id that is not in the provider's catalogue is
         // stale (for example a session pinned to a model that was removed).
@@ -525,6 +525,16 @@ export class ModelFabric {
         return resolved;
       }
     }
+    if (this.aliases) {
+      if (this.aliases[agentId]) {
+        const resolved = this.resolveModel(this.aliases[agentId]);
+        if (resolved) return resolved;
+      }
+      if (this.aliases[`${agentId}-lead`]) {
+        const resolved = this.resolveModel(this.aliases[`${agentId}-lead`]);
+        if (resolved) return resolved;
+      }
+    }
     // No saved assignment: Default mode is resolved dynamically by autoBestModel().
     return null;
   }
@@ -565,13 +575,19 @@ export class ModelFabric {
     const modelId = typeof requested === 'string' ? requested.trim() : '';
     let resolution = this.resolveModel(modelId);
     if (!resolution) {
-      // Unknown/fake model IDs (e.g. vendor defaults or stale Gemini IDs) must
-      // not break multi-step chat. Fall back to the owner's configured best model.
-      const fallback = this.autoCandidates(options.exclude)[0];
-      if (fallback) {
-        resolution = this.resolveModel(fallback.modelId);
-        if (resolution) {
-          return this._executeResolvedChat({ ...payload, model: fallback.modelId }, options, resolution);
+      if (modelId.startsWith('local-gguf/')) {
+        const err = new Error(`Local model '${modelId}' is unavailable; select a provisioned model`);
+        err.code = 'model_unavailable';
+        err.status = 404;
+        throw err;
+      }
+      if (options.allowFallback) {
+        const fallback = this.autoCandidates(options.exclude)[0];
+        if (fallback) {
+          resolution = this.resolveModel(fallback.modelId);
+          if (resolution) {
+            return this._executeResolvedChat({ ...payload, model: fallback.modelId }, options, resolution);
+          }
         }
       }
       const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
@@ -587,6 +603,12 @@ export class ModelFabric {
     const modelId = String(payload.model || '').trim();
     if (!resolution) resolution = this.resolveModel(modelId);
     if (!resolution) {
+      if (modelId.startsWith('local-gguf/')) {
+        const err = new Error(`Local model '${modelId}' is unavailable; select a provisioned model`);
+        err.code = 'model_unavailable';
+        err.status = 404;
+        throw err;
+      }
       const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
       err.code = 'model_not_found';
       err.status = 404;
@@ -743,12 +765,20 @@ export class ModelFabric {
     const modelId = typeof requested === 'string' ? requested.trim() : '';
     let resolution = this.resolveModel(modelId);
     if (!resolution) {
-      const fallback = this.autoCandidates(options.exclude)[0];
-      if (fallback) {
-        resolution = this.resolveModel(fallback.modelId);
-        if (resolution) {
-          yield* this._streamResolvedChat({ ...payload, model: fallback.modelId }, options, resolution);
-          return;
+      if (modelId.startsWith('local-gguf/')) {
+        const err = new Error(`Local model '${modelId}' is unavailable; select a provisioned model`);
+        err.code = 'model_unavailable';
+        err.status = 404;
+        throw err;
+      }
+      if (options.allowFallback) {
+        const fallback = this.autoCandidates(options.exclude)[0];
+        if (fallback) {
+          resolution = this.resolveModel(fallback.modelId);
+          if (resolution) {
+            yield* this._streamResolvedChat({ ...payload, model: fallback.modelId }, options, resolution);
+            return;
+          }
         }
       }
       const err = new Error(`Model '${modelId}' not found in the configured provider catalog.`);
@@ -772,13 +802,20 @@ export class ModelFabric {
     const decoder = new TextDecoder();
     let buffer = '';
     let terminalReason = null;
+    const onAbort = () => {
+      void reader.cancel(options.signal?.reason).catch(() => {});
+    };
+    if (options.signal?.aborted) onAbort();
+    else options.signal?.addEventListener('abort', onAbort, { once: true });
 
     try {
       while (true) {
+        if (options.signal?.aborted) throw options.signal.reason;
         let expired = false;
         const idleTimer = setTimeout(() => { expired = true; void reader.cancel().catch(() => {}); }, options.idleTimeoutMs ?? options.timeoutMs ?? 60000);
         let next;
         try { next = await reader.read(); } finally { clearTimeout(idleTimer); }
+        if (options.signal?.aborted) throw options.signal.reason;
         if (expired) throw new DOMException('Model stream became inactive', 'TimeoutError');
         const { done, value } = next;
         if (done) break;
@@ -818,6 +855,7 @@ export class ModelFabric {
       }
       if (!terminalReason) throw new Error('Model stream ended without a terminal finish reason or DONE marker');
     } finally {
+      options.signal?.removeEventListener('abort', onAbort);
       try { await reader.cancel(); } catch (_) {}
       try { reader.releaseLock(); } catch (_) {}
     }

@@ -213,6 +213,7 @@ export class VoiceEngine extends EventEmitter {
     if (previous?.controller.signal.aborted) {
       try { await previous.done; } catch (error) { if (error.code !== 'VOICE_CANCELLED') throw error; }
     }
+    if (!session.active || this.sessions.get(sessionId) !== session) throw abortError();
     if (this.microphoneOperation) throw new VoiceError('VOICE_MICROPHONE_BUSY', 'The microphone is already assigned to another voice session');
     for (const other of this.sessions.values()) {
       if (other.microphone) throw new VoiceError('VOICE_MICROPHONE_BUSY', 'The microphone is already assigned to another voice session');
@@ -236,12 +237,18 @@ export class VoiceEngine extends EventEmitter {
       this._checkOperation(session, operation);
       const job = this.backend.startMicrophone({ ...options, sampleRate: this.sampleRate, signal: operation.controller.signal, onFrame: pcm => {
         if (session.active && !operation.controller.signal.aborted) {
-          this.ingestChunk(sessionId, pcm);
-          const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength); let squares = 0;
-          for (let offset = 0; offset < view.byteLength; offset += 2) squares += view.getInt16(offset, true) ** 2;
-          capture.frames++; capture.bytes += pcm.length; capture.lastFrameAt = Date.now();
-          capture.lastFrameRms = pcm.length ? Math.sqrt(squares / (pcm.length / 2)) : 0;
-          capture.maxFrameRms = Math.max(capture.maxFrameRms, capture.lastFrameRms);
+          try {
+            this.ingestChunk(sessionId, pcm);
+            const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength); let squares = 0;
+            for (let offset = 0; offset < view.byteLength; offset += 2) squares += view.getInt16(offset, true) ** 2;
+            capture.frames++; capture.bytes += pcm.length; capture.lastFrameAt = Date.now();
+            capture.lastFrameRms = pcm.length ? Math.sqrt(squares / (pcm.length / 2)) : 0;
+            capture.maxFrameRms = Math.max(capture.maxFrameRms, capture.lastFrameRms);
+          } catch (error) {
+            capture.state = 'failed';
+            this._reportError(session, 'microphone', error);
+            operation.controller.abort();
+          }
         }
       } });
       operation.done = job.done;
@@ -261,12 +268,17 @@ export class VoiceEngine extends EventEmitter {
     }
   }
 
-  async stopMicrophone(sessionId) {
+  async stopMicrophone(sessionId, { discardInput = false } = {}) {
     const session = this._session(sessionId);
     const operation = session.microphone;
     if (operation) {
       operation.controller.abort();
       try { await operation.done; } catch (error) { if (error.code !== 'VOICE_CANCELLED') throw error; }
+    }
+    if (discardInput) {
+      session.router.drainInputBuffer();
+      session.vadPending = Buffer.alloc(0);
+      session.vad.reset();
     }
     return { ok: true, sessionId, microphoneActive: false };
   }

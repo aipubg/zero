@@ -464,13 +464,14 @@ export class ZeroNativeHost {
   _dispatchGatewayEvent(event, metadata = {}) {
     for (const client of this.clients) {
       if (client.readyState !== 1) continue;
-      if (metadata.referenceOnly && !client.isReferenceWire) continue;
+      const isRef = Boolean(client.isReferenceWire || (metadata.ownerSocket === client && metadata.isReferenceWire));
+      if (metadata.referenceOnly && !isRef) continue;
       if (metadata.ownerOnly && client !== metadata.ownerSocket) continue;
       if (metadata.excludeSocket && client === metadata.excludeSocket) continue;
       if (metadata.sessionKey && client !== metadata.ownerSocket && !client.subscribedSessions?.has(metadata.sessionKey)) continue;
       if (!metadata.sessionKey && !metadata.ownerSocket && !metadata.broadcast) continue;
 
-      const frame = client.isReferenceWire
+      const frame = isRef
         ? { type: 'event', event: event.event, payload: event.payload }
         : createNotification(metadata.legacyNotification || `zero.${event.event}`, event.payload);
       try {
@@ -683,7 +684,7 @@ export class ZeroNativeHost {
           const session = this.localDesktopSessions.create({
             // The local browser is the owner of this workstation gateway and
             // runs in unrestricted owner mode.
-            role: body.role === 'operator' ? 'operator' : 'operator',
+            role: body.role === 'admin' ? 'admin' : (body.role || 'operator'),
             scopes: [...ADMIN_SESSION_SCOPES],
             clientId: body.clientId || 'zero-desktop-browser',
           });
@@ -1010,11 +1011,7 @@ export class ZeroNativeHost {
       ? (cookieSession.scopes?.includes('operator.admin')
           ? cookieSession
           : (this.localDesktopSessions.promote(cookieSession.id, 'operator', ADMIN_SESSION_SCOPES) || cookieSession))
-      : this.localDesktopSessions.create({
-          role: 'operator',
-          scopes: [...ADMIN_SESSION_SCOPES],
-          clientId: 'zero-desktop-browser',
-        });
+      : null;
     const loopbackOwnerSession = verifiedSession;
 
     // Desktop Screen Share live streaming connection
@@ -3978,7 +3975,10 @@ export class ZeroNativeHost {
       const missionPlan = options.resumeTaskId ? [] : decomposeMultiAppRequest(userContent);
       const directRoute = options.resumeTaskId ? null : routeSimpleRequest(userContent);
       const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
-      options.model ||= this._resolveUsableModel(parkedModel, sessionKey);
+      const defaultAgentModel = this.modelFabric?.resolveAgentModel?.('zero');
+      const resolvedDefault = defaultAgentModel ? (defaultAgentModel.canonicalModelId ? `${defaultAgentModel.provider.id}/${defaultAgentModel.canonicalModelId}` : defaultAgentModel.id) : 'zero-lead';
+      options.model ||= (this._resolveUsableModel(parkedModel, sessionKey) || resolvedDefault);
+      if (!this.sessions.getSession(sessionKey)) this.sessions.createSession(sessionKey, 'New Conversation');
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
       const task = options.resumeTaskId ? this.tasks.getTask(options.resumeTaskId) : this.tasks.createTask({ sessionId: sessionKey, agentId: 'zero', goal: userContent });
       this.sessions.db.prepare('UPDATE zero_assistant_receipts SET task_id=?,model_id=COALESCE(model_id,?) WHERE session_id=? AND run_id=?').run(task.id, options.model ?? null, sessionKey, options.runId);
@@ -3988,6 +3988,9 @@ export class ZeroNativeHost {
       const combinedSignal = AbortSignal.any([this.tasks.getSignal(task.id), ...(signal ? [signal] : [])]);
       try {
         combinedSignal.throwIfAborted();
+        if (this.computerHold?.held && !options.resumeTaskId && !options.retryFailed) {
+          throw new Error('Action refused: Human takeover hold is currently active.');
+        }
         const mission = missionPlan.length > 1
           ? this.missionState.createMission({ sessionId: sessionKey, runId: options.runId, goal: userContent, subMissions: missionPlan })
           : null;
@@ -4118,6 +4121,7 @@ export class ZeroNativeHost {
   }
 
   async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId, source = 'chat', workflowBudget }) {
+    if (ws && isReferenceWire) ws.isReferenceWire = true;
     // A human takeover hold pauses physical computer control, not the
     // conversation. The computer operator refuses input actions while the
     // hold is active and still allows observation, so the turn continues and
@@ -4251,7 +4255,7 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       const publishChat = payload => {
         if (!isReferenceWire) return;
         this.eventBus.publish('chat', { runId: runId || turnId, sessionKey, seq: ++sequence, ...payload }, {
-          sessionKey, ownerSocket: ws, referenceOnly: true,
+          sessionKey, ownerSocket: ws, referenceOnly: true, isReferenceWire: true,
         });
       };
 
@@ -4411,13 +4415,15 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         if (toolCallsMap.size === 0) {
           // Protocol-shaped assistant text is not an executed API tool call.
           // Never interpret it as code or report the requested action complete.
-          // Tolerant path: treat as a completed text turn instead of aborting.
           if (/^\s*(?:<tool_call(?:\s|>)|<｜DSML｜function_calls>|<｜DSML｜invoke\b)/u.test(accumulatedContent)) {
-            console.warn('[Zero Host] Model emitted tool protocol as text; treating as text turn');
-            finalContent = accumulatedContent || 'I received your message but could not execute any tool calls.';
-            completedModelTurn = true;
-            if (!firstTokenTime) firstTokenTime = Date.now();
-            break;
+            const error = new Error('Model emitted tool protocol as text');
+            recordTool('tool_batch_validation', {}, { ok: false, executed: false, error: error.message });
+            throw error;
+          }
+          if (finishReason === 'tool_calls') {
+            const error = new Error('Model declared tool calls without calls');
+            recordTool('tool_batch_validation', {}, { ok: false, executed: false, error: error.message });
+            throw error;
           }
           if (finishReason === 'length') {
             console.warn('[Zero Host] Model response truncated due to token length limit; returning partial content');
@@ -4442,19 +4448,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
         // Reconstruct tool calls and execute capabilities
         const toolCalls = Array.from(toolCallsMap.values());
         let prepared;
-        const batchResult = prepareToolBatch(toolCalls, DESKTOP_TOOLS);
-        prepared = batchResult.prepared;
-        if (!batchResult.ok || batchResult.errors.length > 0) {
-          recordTool('tool_batch_validation', { calls: toolCalls }, {
-            ok: false,
-            executed: false,
-            error: batchResult.errors.join('; '),
-            warnings: batchResult.warnings,
-          });
-          // Tolerant path: continue with whatever was prepared, skipping errored calls
-        }
-        if (batchResult.warnings.length > 0) {
-          console.warn(`[Zero Host] Tool batch warnings: ${batchResult.warnings.join('; ')}`);
+        try {
+          prepared = prepareToolBatch(toolCalls, DESKTOP_TOOLS);
+        } catch (error) {
+          recordTool('tool_batch_validation', { calls: toolCalls }, { ok: false, executed: false, error: error.message });
+          throw error;
         }
         const assistantMsg = {
           role: 'assistant',
@@ -4670,32 +4668,9 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       }
 
       if (!completedModelTurn) {
-        if (workflowBudget) {
-          finalContent = accumulatedContent || 'The step budget for this part ran out before it could report.';
-        } else {
-          console.warn('[Zero Host] Assistant tool-turn limit reached before a final response; asking the model for a closing report');
-          // The step budget is spent, but the owner still needs an answer: one
-          // last request without tools, so the model can only report.
-          let closingReport = '';
-          try {
-            const closingModel = resolveTurnModel();
-            const closingMessages = [...currentMessages, {
-              role: 'user',
-              content: 'The step budget for this request is used up. Do not call any tools. Reply to the owner now: what you did, what you found, and what is still not done.',
-            }];
-            for await (const chunk of this.modelFabric.streamChat({ ...(closingModel ? { model: closingModel } : {}), messages: closingMessages }, { signal: abortController.signal })) {
-              if (chunk.delta) {
-                closingReport += chunk.delta;
-                publishChat({ state: 'delta', message: { role: 'assistant', content: [{ type: 'text', text: closingReport }] } });
-              }
-            }
-          } catch (closingError) {
-            if (abortController.signal.aborted) throw abortController.signal.reason;
-            console.warn('[Zero Host] Closing report failed:', closingError.message);
-          }
-          finalContent = closingReport.trim() || accumulatedContent || `Stopped after ${executedActions.length} step(s) without finishing; the step budget ran out.`;
-        }
-        completedModelTurn = true;
+        const error = new Error('Assistant tool-turn limit reached before a final response; inspect persisted results before retrying');
+        recordTool('assistant_turn_limit', { maxTurns }, { ok: false, executed: false, error: error.message });
+        throw error;
       }
 
       const READ_ONLY_ACTIONS = new Set([
@@ -4711,11 +4686,11 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       // AND matching target / parameters succeeded and was verified.
       const unresolvedFailures = executedActions.filter((action, index) => {
         if (!isActionFailed(action)) return false;
-        const targetId = action.args?.target || action.args?.app || action.args?.url || action.args?.query || action.args?.command;
+        const targetId = action.args?.path || action.args?.filePath || action.args?.file || action.args?.target || action.args?.app || action.args?.url || action.args?.query || action.args?.command;
         return !executedActions.slice(index + 1).some(later => {
           if (isActionFailed(later)) return false;
-          const laterTarget = later.args?.target || later.args?.app || later.args?.url || later.args?.query || later.args?.command;
-          const matchesTarget = !targetId || laterTarget === targetId;
+          const laterTarget = later.args?.path || later.args?.filePath || later.args?.file || later.args?.target || later.args?.app || later.args?.url || later.args?.query || later.args?.command;
+          const matchesTarget = targetId ? laterTarget === targetId : isDeepStrictEqual(later.args, action.args);
           return later.action === action.action && matchesTarget && (later.execRes?.verified === true || later.execRes?.outcome === 'COMPLETED');
         });
       });
@@ -4841,7 +4816,8 @@ AUTONOMOUS EXECUTION PRINCIPLES:
       }
 
       return {
-        ok: true,
+        ok: failedActions.length === 0,
+        ...(failedActions.length ? { error: `${failedActions.length} tool action(s) failed or were blocked; inspect the persisted tool results before retrying` } : {}),
         role: 'assistant',
         content: finalContent,
         execution: {

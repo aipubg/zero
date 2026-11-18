@@ -306,8 +306,9 @@ export class EventAutomationEngine extends EventEmitter {
       if (conn.type === 'cli') {
         if (typeof conn.config.binary !== 'string' || !conn.config.binary.trim()) throw new Error('CLI binary is missing');
         const { execFile } = await import('node:child_process');
+        const isCmd = process.platform === 'win32' && /\.(cmd|bat)$/i.test(conn.config.binary);
         const output = await new Promise((resolve, reject) => execFile(conn.config.binary, ['--version'], {
-          windowsHide: true, timeout: 5000, maxBuffer: 65536, shell: false,
+          windowsHide: true, timeout: 5000, maxBuffer: 65536, shell: isCmd,
         }, (error, stdout) => error ? reject(error) : resolve(stdout)));
         return { ok: true, id, status: 'executable', available: true, output: String(output).slice(0, 2000),
           latencyMs: performance.now() - started, scope: 'Actual --version execution only', functionalExecutionVerified: false };

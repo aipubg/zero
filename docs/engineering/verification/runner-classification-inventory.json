@@ -4,7 +4,7 @@
   "runners": [
     {
       "file": "scripts/functional-browser-check.mjs",
-      "sha256": "d86754eaddbbe81a995a847e9461e8cfb7a17f29fb32061781683b047b103e8f",
+      "sha256": "067598ad5d953dbcd544e7f7f11be66ef0956b9c6a26790b1d8f74835c8857b0",
       "labels": [
         "REAL_BROWSER",
         "INTEGRATION",
@@ -53,7 +53,7 @@
     },
     {
       "file": "scripts/screen-intelligence-endurance.mjs",
-      "sha256": "ade5ae3568ed2f4f57914466e00afbaa5b275322d8998fcb54c74b9c8a42a968",
+      "sha256": "2f2c616b3fe6aee277be9e30ce20831770cd959129f8f3d4b993bf86d82ad825",
       "labels": [
         "REAL_OS",
         "INTEGRATION",
@@ -70,7 +70,7 @@
     },
     {
       "file": "scripts/screen-intelligence-real-os.mjs",
-      "sha256": "6f19620faf77ac7ca0c6fde9035eab318bba26078fa6c5385f40620c44fe6dcb",
+      "sha256": "c74fd715f1d5db20c5258b5b5477540b5e9654e48a18b17d83ca074e62c36501",
       "labels": [
         "REAL_OS",
         "INTEGRATION"
@@ -82,7 +82,7 @@
     },
     {
       "file": "scripts/verify-assistant-crash.mjs",
-      "sha256": "02f3f807cf8da97106f749dad640f2b7f3438e39397105a975274b18bf9e6ebf",
+      "sha256": "36bed25a12459a5600d8ebe9a073bbebae5704987e27f560de85320cc4b550ad",
       "labels": [
         "REAL_EXTERNAL",
         "INTEGRATION"
@@ -100,7 +100,7 @@
     },
     {
       "file": "scripts/verify-automation-isolated.mjs",
-      "sha256": "53ff12213f0245e4a542c5d170bdbae32037ef2c79939a58aff9bc5fdf97b2a0",
+      "sha256": "d4a8aa36c0e7e90d36606b1229a70ffd7ff8d2c04e7c5e4e005710c564f76724",
       "labels": [
         "REAL_OS",
         "INTEGRATION"
@@ -125,7 +125,7 @@
     },
     {
       "file": "scripts/verify-external-skill.mjs",
-      "sha256": "6b89f6767e6e6dbc578125986c019bcea1201cf6b90260ab753a40700fed46d1",
+      "sha256": "0c8fe6179089467a820e168cec8f7e8020370457e3db3e935c75b4c8a77b6f35",
       "labels": [
         "REAL_EXTERNAL",
         "REAL_BROWSER",
@@ -138,6 +138,28 @@
       ],
       "execution": "NOT_RUN_BY_INVENTORY",
       "originalAuditByteSha256": "6b89f6767e6e6dbc578125986c019bcea1201cf6b90260ab753a40700fed46d1"
+    },
+    {
+      "file": "scripts/verify-handlers.mjs",
+      "sha256": "2a020134a73416d9b3fac3c00b6450510db47c2803b89129bd0fc98cb7e2adda",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Verify all required JSON-RPC handlers are present and correctly declared in the native gateway.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-imports.mjs",
+      "sha256": "38ebd1abc1a213ae97575f5917105ca03267ee891919f42566215af94c454eff",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Verify all codebase module imports and export bindings across capabilities and packages.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
     },
     {
       "file": "scripts/verify-local-vision-screen.mjs",
@@ -181,8 +203,30 @@
       "execution": "NOT_RUN_BY_INVENTORY"
     },
     {
+      "file": "scripts/verify-provider-catalog.mjs",
+      "sha256": "42e2e51b6813798902d8ffa92ae2dbd902da9685d66b3032f955d4d80c0558ca",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Verify provider configuration schema and model availability across gateway catalog files.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
+      "file": "scripts/verify-rpc-coverage.mjs",
+      "sha256": "796b89f2737fa92e26810943d9bc6ccb3a6691199734b416ccb484b7f7c6a703",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Verify JSON-RPC API endpoint coverage, schema validation, and gateway response parity.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
+    },
+    {
       "file": "scripts/verify-screen-automation.mjs",
-      "sha256": "492927c89b6c7a978dc2adcfdb8a1fdb579d340e4d984c04cb76deaecd5596ed",
+      "sha256": "2debc623a8c1f8ff9d71d8a8645639d0d0656b79b50b60b219e88880bfbb0397",
       "labels": [
         "REAL_OS",
         "REAL_BROWSER",
@@ -195,7 +239,7 @@
     },
     {
       "file": "scripts/verify-screen-resource-usage.mjs",
-      "sha256": "d300a6a59ba0633ce5db861f691474ceecba2713e3ba707c066b40ea751d194c",
+      "sha256": "7be05acebad3253bfd33654e2435d1516f2c0d33af84cbad51b440003c9886fa",
       "labels": [
         "REAL_OS"
       ],
@@ -216,6 +260,17 @@
       ],
       "execution": "NOT_RUN_BY_INVENTORY",
       "originalAuditByteSha256": "6aa4e9fd26342cfb996b9f57c2959af468a132db2212c8a650ea2787ba7a0183"
+    },
+    {
+      "file": "scripts/verify-user-requirements.mjs",
+      "sha256": "fdd4ea5dcf9ab53dd26ae148dac31bb4127df5f70d9f1761d91b5afaf7555ffc",
+      "labels": [
+        "CONTRACT",
+        "INTEGRATION"
+      ],
+      "scope": "Verify user-facing acceptance requirements against verified capabilities and execution proofs.",
+      "modes": [],
+      "execution": "NOT_RUN_BY_INVENTORY"
     },
     {
       "file": "scripts/verify-voice-conversation.mjs",

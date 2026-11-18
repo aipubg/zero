@@ -204,6 +204,8 @@ function writeProviders(fabric, providers) {
   const file = fabric.configPath; if (!file) throw new Error('No provider configuration path');
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const suffix = crypto.randomUUID(); const temporary = `${file}.${suffix}.tmp`;
+  const backup = fs.existsSync(file) ? `${file}.before-provider-change-${suffix}.json` : null;
+  if (backup) fs.copyFileSync(file, backup);
   try { fs.writeFileSync(temporary, JSON.stringify(providers, null, 2) + '\n', { flag: 'wx', mode: 0o600 }); fs.renameSync(temporary, file); }
   finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
   // Deletion is permanent: mirror the exact catalog into zero.json, drop saved
@@ -211,7 +213,7 @@ function writeProviders(fabric, providers) {
   syncGlobalConfig(fabric, providers);
   pruneBindings(fabric, providers);
   fabric.reloadFromDisk();
-  return { ...modelSettings(fabric), backupPath: null };
+  return { ...modelSettings(fabric), backupPath: backup };
 }
 
 function providerRows(fabric) {

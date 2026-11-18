@@ -89,3 +89,20 @@ test('[CONTRACT] supplied empty recognition and executor failure never produce s
   assert.equal(bridge.status('chat').attached, false);
   await bridge.close();
 });
+
+test('[CONTRACT] pausing microphone input preserves in-flight reply and clears pending endpoint', async t => {
+  let finish, entered;
+  const playing = new Promise(resolve => { entered = resolve; });
+  const voice = engine({ synthesizeSpeech: async () => { entered(); await new Promise(resolve => { finish = resolve; }); return { played: true }; } });
+  const bridge = new VoiceConversation({ engine: voice, endpointDelayMs: 40, executeTurn: async () => ({ ok: true, content: 'reply' }) });
+  t.after(() => bridge.close());
+  bridge.attach('chat', { ownerId: 'owner' });
+  const pending = bridge.process('chat');
+  await playing;
+  voice.emit('voice:speech_end', { sessionId: 'chat' });
+  bridge.pauseInput('chat');
+  assert.equal(bridge.status('chat').attached, true);
+  assert.equal(bridge.status('chat').pendingUtterance, false);
+  finish();
+  assert.equal((await pending).played, true);
+});

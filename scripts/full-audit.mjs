@@ -3,8 +3,8 @@
  * Zero Host full audit gate.
  *
  * Covers:
- *  1. 100% native DOM: <zero-app> mounted, zero <zero-*> tags, zero
- *     zero/zero/zero strings or external store/community links,
+ *  1. 100% native DOM: <zero-app> mounted, zero <openclaw-*> tags, zero
+ *     OpenClaw/PinchTab/Crabbox strings or external store/community links,
  *     and no "Styles failed to load" banner.
  *  2. Single-room architecture: every tool resolves through
  *     packages/capability-engine, no duplicate RPC switch cases.
@@ -32,7 +32,7 @@ const ROUTES = [
 ];
 
 const FORBIDDEN_VISIBLE = [
-  'zero', 'zero', 'zero', 'zero', 'zero', 'zero',
+  'OpenClaw', 'openclaw', 'PinchTab', 'pinchtab', 'Crabbox', 'crabbox',
   'apps.apple.com', 'play.google.com', 'discord.gg', 'discordapp.com',
   'Styles failed to load',
   'Couldn\'t finish this reply', 'Missing API key',
@@ -86,7 +86,7 @@ function staticChecks() {
         if (!/\.(js|css|html|json|webmanifest|txt|md|svg)$/.test(e.name)) continue;
         const src = fs.readFileSync(f, 'utf8');
         checked++;
-        const hits = src.match(/zero|zero/i);
+        const hits = src.match(/openclaw|crabbox/i);
         if (hits) residual += hits.length;
       }
     };
@@ -206,7 +206,7 @@ async function main() {
           red,
           fallbackVisible: fallback ? fallback.getBoundingClientRect().height > 0 : false,
           overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-          zero: [...document.querySelectorAll('*')].filter(e => e.tagName.toLowerCase().startsWith('zero-')).length,
+          openclaw: [...document.querySelectorAll('*')].filter(e => e.tagName.toLowerCase().startsWith('openclaw-')).length,
           zeroApp: !!document.querySelector('zero-app'),
           zeroAppVisible: (() => {
             const el = document.querySelector('zero-app');
@@ -237,8 +237,8 @@ async function main() {
       if (state.overflow) bad(`${route} horizontal overflow`);
       else ok(`${route} no horizontal overflow`);
 
-      if (state.zero > 0) bad(`${route} zero custom elements`, String(state.zero));
-      else ok(`${route} 0 zero custom elements`);
+      if (state.openclaw > 0) bad(`${route} openclaw custom elements`, String(state.openclaw));
+      else ok(`${route} 0 openclaw custom elements`);
     }
 
     // ---- Native DOM + chat ----

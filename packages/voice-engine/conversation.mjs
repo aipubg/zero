@@ -110,6 +110,12 @@ export class VoiceConversation extends EventEmitter {
     const binding = this.bindings.get(sessionId);
     return binding ? { sessionId, attached: true, state: binding.state, completedTurns: binding.turns, pendingUtterance: Boolean(binding.endpointTimer), endpointDelayMs: this.endpointDelayMs, lastError: binding.lastError } : { sessionId, attached: false };
   }
+  pauseInput(sessionId) {
+    const binding = this.bindings.get(sessionId);
+    if (!binding) return;
+    clearTimeout(binding.endpointTimer);
+    binding.endpointTimer = null;
+  }
   async detach(sessionId) {
     const binding = this.bindings.get(sessionId);
     if (!binding) return;

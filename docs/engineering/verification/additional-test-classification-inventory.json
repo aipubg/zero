@@ -5080,7 +5080,7 @@
     },
     {
       "file": "test/skill-sdk-integration.test.mjs",
-      "sha256": "87e0090cfc91ef45848954d8db03e29de20fc2f3341adfa00cc653c19c574983",
+      "sha256": "dd324bc29018730fa54722838d2eb52287db1cae3fd7d630561446a252b17dcb",
       "execution": "NOT_RUN_BY_INVENTORY",
       "reviewStatus": "REVIEWED_SCOPED",
       "labels": [
