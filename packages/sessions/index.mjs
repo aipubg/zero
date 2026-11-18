@@ -322,7 +322,8 @@ export class SessionManager {
     for (let index = 0; index < messages.length; index++) {
       const message = messages[index];
       if (message.role === 'tool') continue; // Orphaned by an old schema or a context boundary.
-      const projected = { role: message.role, content: message.content };
+      // id lets Context Fold archive exactly these rows; the chat loop strips it before the model call.
+      const projected = { id: message.id, role: message.role, content: message.content };
       if (message.role === 'assistant' && message.tool_calls?.length) {
         const outputs = new Map();
         let end = index + 1;
@@ -358,7 +359,7 @@ export class SessionManager {
                 content = content.slice(0, 5000) + '... [truncated]';
               }
             }
-            context.push({ role: 'tool', content, tool_call_id: call.id });
+            context.push({ id: output.id, role: 'tool', content, tool_call_id: call.id });
           }
         } else if (message.content) context.push(projected);
         index = end - 1;
@@ -435,6 +436,21 @@ export class SessionManager {
       prunedCount: pruneCount,
       retainedCount: retained.length + systemMsgs.length + 1,
     };
+  }
+
+  /** Context Fold: remove these messages from the model context (chat history keeps them). */
+  archiveFromContext(sessionId, ids = []) {
+    const archive = this.db.prepare('UPDATE zero_messages SET context_archived = 1 WHERE id = ? AND session_id = ?');
+    let count = 0;
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      for (const id of ids) if (id) count += Number(archive.run(id, sessionId).changes || 0);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+    return count;
   }
 
   close() {

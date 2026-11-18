@@ -75,7 +75,7 @@ live terminal sessions, sandboxed code execution, a clarify/question tool.
 | 1. Prompt Layers + IDENTITY.md | done | (this commit) | Old hard-coded prompt (with YouTube/Spotify/WhatsApp scripts) replaced; prompt frozen per chat in session metadata `zeroPrompt`; matched learned procedures moved to a per-turn hint. Tests: `prompt-layers*.test.mjs` |
 | 2. Zero Notebook + `notebook` tool | done | (this commit) | Books `owner` (1,400 chars) and `zero` (2,200 chars) as editable markdown in `.zero-data/notebook/`; secrets and model-directed instructions refused; snapshot goes into each new chat (running chats keep their frozen prompt). Tests: `notebook.test.mjs` |
 | 3. Skill Catalog + `skill_read` | done | (this commit) | Prompt lists enabled skills (name + one line); `skill_read` returns the full instructions or a file inside the skill folder (no path escape); owner-only skills hidden. Test: `skill-catalog.test.mjs` |
-| 4. Context Fold | pending | | |
+| 4. Context Fold | done | (this commit) | At `ZERO_FOLD_AT` (default 50%) of the model window: old tool outputs trimmed each model turn; if still over, the part before the recent tail is summarised (goal, preferences, done, in progress, open, details) and archived from the model context only. The note says “reference only, newest message wins, tools still work”. Prompt rebuilt only on a fold. Test: `context-fold.test.mjs` |
 | 5. Turn Budget wrap-up | pending | | |
 | 6. Chat Recall + `chat_search` | pending | | |
 | 7. Key Guard | pending | | |

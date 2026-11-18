@@ -69,6 +69,7 @@ import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS, CAPABILITY_PARAMETER
 import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../packages/capability-engine/memory-planner.mjs';
 import { ZeroNotebook } from '../../packages/memory/notebook.mjs';
 import { readSkillForModel } from '../../packages/skill-sdk/skill-read.mjs';
+import { planFold, foldRequest, foldNote, estimateTokens, tailStart, trimOldToolOutputs, FOLD_DEFAULTS } from '../../packages/sessions/context-fold.mjs';
 import { composeZeroPrompt, operatingRules, placeLayer, readIdentity, identityPathFor, PROMPT_LAYERS_VERSION } from '../../packages/agent-runtime/prompt-layers.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
@@ -203,6 +204,9 @@ export class ZeroNativeHost {
     this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 12);
     if (!Number.isInteger(this.maxAssistantTurns) || this.maxAssistantTurns < 1 || this.maxAssistantTurns > 128) throw new Error('maxAssistantTurns must be an integer between 1 and 128');
     this.maxActions = options.maxActions ?? Number(process.env.ZERO_MAX_ACTIONS ?? 25);
+    // Context Fold: share of the model window at which a chat is folded.
+    this.foldAt = options.foldAt ?? Number(process.env.ZERO_FOLD_AT ?? FOLD_DEFAULTS.foldAt);
+    this.foldContextWindow = options.foldContextWindow;
     if (!Number.isInteger(this.maxActions) || this.maxActions < 1 || this.maxActions > 128) throw new Error('maxActions must be an integer between 1 and 128');
     this.voiceRecognitionBackend = options.voiceRecognitionBackend ?? process.env.ZERO_VOICE_RECOGNITION_BACKEND;
     if (this.voiceRecognitionBackend !== undefined && !['windows', 'whisper'].includes(this.voiceRecognitionBackend)) throw new Error('Unknown voice recognition backend');
@@ -3931,6 +3935,41 @@ export class ZeroNativeHost {
    * the session, so it stays identical for every later message of that chat.
    * Pass rebuild=true after a context fold.
    */
+  _contextWindowFor(modelId) {
+    if (Number.isFinite(this.foldContextWindow) && this.foldContextWindow > 0) return this.foldContextWindow;
+    try { return this.modelFabric.calculateContextBudget(modelId || 'auto', []).contextWindow || 131072; } catch { return 131072; }
+  }
+
+  /**
+   * Context Fold: when a chat passes foldAt of the model window, summarise the
+   * part before the recent tail and remove it from the model context (history
+   * keeps it). force=true folds whatever can be folded (the /fold command).
+   */
+  async _foldContext(sessionKey, { modelId, signal, force = false } = {}) {
+    const session = this.sessions.getSession(sessionKey);
+    if (!session) return { folded: false, reason: 'no chat' };
+    const context = this.sessions.getModelContext(sessionKey).filter((m) => m.role !== 'system');
+    const contextWindow = this._contextWindowFor(modelId);
+    const plan = planFold(context, { contextWindow, foldAt: force ? 0 : this.foldAt });
+    if (plan.action !== 'fold') return { folded: false, reason: plan.action === 'none' ? 'the chat is small enough' : 'only old tool outputs needed trimming', tokens: plan.tokens };
+    const toFold = context.slice(0, plan.foldCount);
+    const previous = session.metadata?.contextFold || {};
+    const response = await this.modelFabric.executeChat({
+      ...(modelId ? { model: modelId } : {}),
+      messages: foldRequest(toFold, { earlier: previous.summary || '' }),
+      max_tokens: 2048,
+      stream: false,
+    }, { signal });
+    const summary = String(response?.data?.choices?.[0]?.message?.content || '').trim();
+    if (!summary) throw new Error('The model returned an empty fold summary');
+    const archived = this.sessions.archiveFromContext(sessionKey, toFold.map((m) => m.id));
+    this.sessions.patchSession(sessionKey, { metadata: { contextFold: { summary, foldedAt: Date.now(), folds: (previous.folds || 0) + 1, archived: (previous.archived || 0) + archived } } });
+    // The prompt is rebuilt only here, so a fold also picks up notebook changes.
+    this._sessionPrompt(sessionKey, { rebuild: true });
+    console.log(`[Zero Host] Context folded: ${archived} message(s) summarised for ${sessionKey}`);
+    return { folded: true, archived, summaryChars: summary.length };
+  }
+
   _sessionPrompt(sessionKey, { rebuild = false } = {}) {
     const session = this.sessions.getSession(sessionKey);
     const saved = session?.metadata?.zeroPrompt;
@@ -4166,6 +4205,15 @@ export class ZeroNativeHost {
     const DESKTOP_TOOLS = this._assistantToolDefinitions();
 
     try {
+      // Context Fold: keep the chat inside the model's window (summary + archive).
+      try {
+        const foldModel = (typeof model === 'string' && model.trim()) ? model.trim() : this._resolveUsableModel(this.sessions.getSession(sessionKey)?.metadata?.model, sessionKey);
+        await this._foldContext(sessionKey, { modelId: foldModel, signal: abortController.signal });
+      } catch (foldError) {
+        if (abortController.signal.aborted) throw abortController.signal.reason;
+        console.warn('[Zero Host] Context fold skipped:', foldError.message);
+      }
+
       let currentMessages = this.sessions.getModelContext(sessionKey).map((m) => ({
         role: m.role,
         content: m.content,
@@ -4193,6 +4241,11 @@ ${currentMessages[existingSysIdx].content}`,
         }
       } else {
         currentMessages.unshift({ role: 'system', content: systemPrompt });
+      }
+      const foldState = this.sessions.getSession(sessionKey)?.metadata?.contextFold;
+      if (foldState?.summary) {
+        const promptIdx = currentMessages.findIndex((m) => m.role === 'system');
+        currentMessages.splice(promptIdx + 1, 0, { role: 'system', content: foldNote(foldState.summary) });
       }
 
       // Learned procedures that match this message: a hint for this turn only,
@@ -4299,6 +4352,13 @@ ${currentMessages[existingSysIdx].content}`,
         accumulatedContent = '';
 
         const explicitModel = resolveTurnModel();
+        {
+          const window = this._contextWindowFor(explicitModel);
+          if (estimateTokens(currentMessages) > window * this.foldAt) {
+            const keepFrom = tailStart(currentMessages, { contextWindow: window });
+            currentMessages = trimOldToolOutputs(currentMessages, keepFrom < 0 ? Math.max(0, currentMessages.length - FOLD_DEFAULTS.minTail) : keepFrom).messages;
+          }
+        }
         // No explicit model = Default model (Auto-Best): ModelFabric ranks the
         // owner's configured models and fails over automatically.
         const modelPayload = {
