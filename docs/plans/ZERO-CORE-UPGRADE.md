@@ -76,7 +76,7 @@ live terminal sessions, sandboxed code execution, a clarify/question tool.
 | 2. Zero Notebook + `notebook` tool | done | (this commit) | Books `owner` (1,400 chars) and `zero` (2,200 chars) as editable markdown in `.zero-data/notebook/`; secrets and model-directed instructions refused; snapshot goes into each new chat (running chats keep their frozen prompt). Tests: `notebook.test.mjs` |
 | 3. Skill Catalog + `skill_read` | done | (this commit) | Prompt lists enabled skills (name + one line); `skill_read` returns the full instructions or a file inside the skill folder (no path escape); owner-only skills hidden. Test: `skill-catalog.test.mjs` |
 | 4. Context Fold | done | (this commit) | At `ZERO_FOLD_AT` (default 50%) of the model window: old tool outputs trimmed each model turn; if still over, the part before the recent tail is summarised (goal, preferences, done, in progress, open, details) and archived from the model context only. The note says “reference only, newest message wins, tools still work”. Prompt rebuilt only on a fold. Test: `context-fold.test.mjs` |
-| 5. Turn Budget wrap-up | pending | | |
+| 5. Turn Budget wrap-up | done | (this commit) | Closing report without tools already existed; added a one-turn budget warning when ≤2 turns or ≤5 actions are left, and raised defaults to 30 turns / 60 actions (`ZERO_MAX_ASSISTANT_TURNS`, `ZERO_MAX_ACTIONS`). Test: `turn-budget.test.mjs` |
 | 6. Chat Recall + `chat_search` | pending | | |
 | 7. Key Guard | pending | | |
 | 8. Turn Reflection | pending | | |

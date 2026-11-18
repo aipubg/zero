@@ -70,6 +70,7 @@ import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../package
 import { ZeroNotebook } from '../../packages/memory/notebook.mjs';
 import { readSkillForModel } from '../../packages/skill-sdk/skill-read.mjs';
 import { planFold, foldRequest, foldNote, estimateTokens, tailStart, trimOldToolOutputs, FOLD_DEFAULTS } from '../../packages/sessions/context-fold.mjs';
+import { turnBudgetHint, TURN_BUDGET_PREFIX } from '../../packages/agent-runtime/turn-budget.mjs';
 import { composeZeroPrompt, operatingRules, placeLayer, readIdentity, identityPathFor, PROMPT_LAYERS_VERSION } from '../../packages/agent-runtime/prompt-layers.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
@@ -201,9 +202,9 @@ async function loadWs() {
 
 export class ZeroNativeHost {
   constructor(options = {}) {
-    this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 12);
+    this.maxAssistantTurns = options.maxAssistantTurns ?? Number(process.env.ZERO_MAX_ASSISTANT_TURNS ?? 30);
     if (!Number.isInteger(this.maxAssistantTurns) || this.maxAssistantTurns < 1 || this.maxAssistantTurns > 128) throw new Error('maxAssistantTurns must be an integer between 1 and 128');
-    this.maxActions = options.maxActions ?? Number(process.env.ZERO_MAX_ACTIONS ?? 25);
+    this.maxActions = options.maxActions ?? Number(process.env.ZERO_MAX_ACTIONS ?? 60);
     // Context Fold: share of the model window at which a chat is folded.
     this.foldAt = options.foldAt ?? Number(process.env.ZERO_FOLD_AT ?? FOLD_DEFAULTS.foldAt);
     this.foldContextWindow = options.foldContextWindow;
@@ -4352,6 +4353,12 @@ ${currentMessages[existingSysIdx].content}`,
         accumulatedContent = '';
 
         const explicitModel = resolveTurnModel();
+        // Turn Budget: when little is left, say so for this model turn only.
+        const budgetHint = turnBudgetHint({ turnsLeft: maxTurns - budgetState.turnsUsed, actionsLeft: maxActions - budgetState.actionsUsed });
+        if (budgetHint) {
+          currentMessages = currentMessages.filter((m) => !(m.role === 'system' && m.content.startsWith(TURN_BUDGET_PREFIX)));
+          currentMessages.push({ role: 'system', content: budgetHint });
+        }
         {
           const window = this._contextWindowFor(explicitModel);
           if (estimateTokens(currentMessages) > window * this.foldAt) {
