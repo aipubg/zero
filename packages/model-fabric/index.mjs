@@ -6,6 +6,7 @@
  * exponential backoff retry, provider failover cascade, and token usage accounting.
  */
 
+import { keyAllowedFor, keyWithheldReason } from './key-guard.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -245,10 +246,17 @@ export class ModelFabric {
       provider.apiKey,
       ...(Array.isArray(provider.apiKeys) ? provider.apiKeys : []),
     ].filter(value => typeof value === 'string' && value.trim());
+    // Key Guard: a well-known key only goes to its own provider's host.
+    const guarded = name => {
+      if (keyAllowedFor(name, provider.baseUrl)) return true;
+      this.keyGuardNotes ||= new Map();
+      this.keyGuardNotes.set(provider.id, keyWithheldReason(name, provider.baseUrl));
+      return false;
+    };
     for (const candidate of candidates) {
       if (candidate.startsWith('env:')) {
         const value = process.env[candidate.slice(4)] || '';
-        if (value.trim()) return value.trim();
+        if (value.trim() && guarded(candidate.slice(4))) return value.trim();
         continue;
       }
       if (candidate === '[REDACTED]') continue;
@@ -260,22 +268,22 @@ export class ModelFabric {
 
     // Check well-known environment variables
     const provId = (provider.id || '').toLowerCase();
+    const fromEnv = name => (process.env[name] && process.env[name].trim() && guarded(name) ? process.env[name].trim() : '');
     if (provId === 'google') {
-      const gKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-      if (gKey && gKey.trim()) return gKey.trim();
+      const gKey = fromEnv('GEMINI_API_KEY') || fromEnv('GOOGLE_API_KEY');
+      if (gKey) return gKey;
     }
     if (provId === 'nvidia') {
-      const nKey = process.env.NVIDIA_API_KEY;
-      if (nKey && nKey.trim()) return nKey.trim();
+      const nKey = fromEnv('NVIDIA_API_KEY');
+      if (nKey) return nKey;
     }
     if (provId === 'openai') {
-      const oKey = process.env.OPENAI_API_KEY;
-      if (oKey && oKey.trim()) return oKey.trim();
+      const oKey = fromEnv('OPENAI_API_KEY');
+      if (oKey) return oKey;
     }
     const genericEnvKey = `${(provider.id || '').toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`;
-    if (process.env[genericEnvKey] && process.env[genericEnvKey].trim()) {
-      return process.env[genericEnvKey].trim();
-    }
+    const generic = fromEnv(genericEnvKey);
+    if (generic) return generic;
     return '';
   }
 
