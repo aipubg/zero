@@ -80,6 +80,6 @@ live terminal sessions, sandboxed code execution, a clarify/question tool.
 | 6. Chat Recall + `chat_search` | done | (this commit) | FTS5 index `zero_messages_search` kept in sync by triggers (backfilled once); owner + Zero messages only; all-words then any-word; current chat excluded; works for Hindi. Tool `chat_search`. Test: `chat-recall.test.mjs` |
 | 7. Key Guard | done | (this commit) | Well-known env keys (OPENAI, GEMINI, NVIDIA, ANTHROPIC, OPENROUTER, GROQ, …) are only sent to their own host; look-alike hosts refused; keys the owner saved for a provider are unchanged; the reason is kept in `keyGuardNotes`. Test: `key-guard.test.mjs` |
 | 8. Turn Reflection | done | (this commit) | After a reply with ≥3 tool actions, or every `ZERO_REFLECT_EVERY` (6) owner messages, a background review may add a grounded Notebook entry or a procedure (only `notebook` + `procedure_learn` offered). Never blocks the reply, never writes into the chat; `ZERO_TURN_REFLECTION=off` disables it. Test: `turn-reflection.test.mjs` |
-| 9. Ask Zero jobs | pending | | |
+| 9. Ask Zero jobs | done | (this commit) | `assistant.prompt` jobs run a prompt as a Zero request in chat `automation-<job>` (named after the job), with optional `skills` named for `skill_read`; `schedule_task`/`goal_plan` not offered inside a job; `cron.run {id}` runs one job now (a disabled job stays disabled); job list returns cron, action and params. Test: `ask-zero-jobs.test.mjs` |
 | 10. Chat Commands | pending | | |
 | 11. Full test run, merge to main | pending | | |

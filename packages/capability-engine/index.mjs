@@ -105,7 +105,7 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     allowedActions: ['execute'],
   },
   'schedule_task': {
-    description: 'Register a durable recurring Zero automation. Use standard five-field cron or @hourly/@daily/@weekly. The job survives restarts and wakes Zero on schedule.',
+    description: 'Register a durable recurring Zero automation. Use standard five-field cron or @hourly/@daily/@weekly. The job survives restarts and wakes Zero on schedule. For a job where Zero itself should do something on a schedule (a daily summary, a check, a report), use targetAction "assistant.prompt" with params { prompt: "what to do", skills: [optional skill names] }; Zero then runs that prompt in its own chat each time.',
     allowedActions: ['register'],
   },
   'goal_plan': {

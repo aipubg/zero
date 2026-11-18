@@ -1,7 +1,13 @@
 // Service workflows are not desktop operator commands.
-export function createAutomationDispatcher({ memoryEngine, researchEngine, capabilityEngine, requestOrchestrator, goalRunner }) {
+export function createAutomationDispatcher({ memoryEngine, researchEngine, capabilityEngine, requestOrchestrator, goalRunner, promptRunner }) {
   return async (action, params = {}) => {
     if (action === 'memory.consolidate') return memoryEngine.consolidateMemories(params);
+    // Ask Zero job: run a prompt as a normal Zero request in its own chat.
+    if (action === 'assistant.prompt') {
+      if (typeof promptRunner !== 'function') throw new Error('Ask Zero jobs are not connected');
+      if (!String(params.prompt || '').trim()) throw new Error('An Ask Zero job needs a prompt');
+      return promptRunner(params);
+    }
     if (action === 'goal.tick') {
       if (typeof goalRunner !== 'function') throw new Error('Autonomous goal runner is not connected');
       return goalRunner(params);

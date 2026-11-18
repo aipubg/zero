@@ -446,6 +446,7 @@ export class ZeroNativeHost {
       capabilityEngine: canonicalCapabilityEngine,
       requestOrchestrator: this.requestOrchestrator,
       goalRunner: params => this._advanceGoal(params),
+      promptRunner: params => this._runAskZeroJob(params),
     });
     this.automation = new AutomationScheduler({
       dbPath: path.join(dataDir, 'zero-automation.sqlite'),
@@ -2540,7 +2541,10 @@ export class ZeroNativeHost {
         const allJobs = (this.automation?.listJobs?.() || []).map(j => ({
           id: j.id,
           name: j.name || j.title || j.id,
-          schedule: j.cronExpression || j.schedule || 'every 1h',
+          schedule: j.cronExpr || j.cronExpression || j.schedule || 'every 1h',
+          cronExpr: j.cronExpr || null,
+          targetAction: j.targetAction || null,
+          params: j.params || {},
           enabled: j.enabled !== false,
           lastRun: j.lastRun || null,
           nextRun: j.nextRun || null,
@@ -2575,7 +2579,10 @@ export class ZeroNativeHost {
         const allJobs = (this.automation?.listJobs?.() || []).map(j => ({
           id: j.id,
           name: j.name || j.title || j.id,
-          schedule: j.cronExpression || j.schedule || 'every 1h',
+          schedule: j.cronExpr || j.cronExpression || j.schedule || 'every 1h',
+          cronExpr: j.cronExpr || null,
+          targetAction: j.targetAction || null,
+          params: j.params || {},
           enabled: j.enabled !== false,
           lastRun: j.lastRun || null,
           nextRun: j.nextRun || null,
@@ -2616,6 +2623,8 @@ export class ZeroNativeHost {
       }
 
       case 'cron.run': {
+        // With an id: run that one job now. Without: run whatever is due.
+        if (params?.id || params?.jobId) return { ok: true, ran: true, run: await this.automation.runNow(params.id || params.jobId) };
         const result = this.automation?.triggerDueJobs ? await this.automation.triggerDueJobs() : { ok: true };
         return { ok: true, ran: true, ...result };
       }
@@ -3862,6 +3871,30 @@ export class ZeroNativeHost {
     return { ok: true, plan, job };
   }
 
+  /**
+   * Ask Zero job: an automation that runs a prompt as a normal Zero request in
+   * its own chat (automation-<job id>). Attached skills are named in the
+   * prompt; the job cannot schedule further jobs.
+   */
+  async _runAskZeroJob({ prompt, jobId = 'prompt', title, skills = [], sessionKey } = {}) {
+    const key = sessionKey || `automation-${String(jobId).replace(/[^A-Za-z0-9_-]/g, '-')}`;
+    const jobTitle = title || this.automation?.getJob?.(jobId)?.title;
+    if (!this.sessions.getSession(key)) this.sessions.createSession(key, jobTitle ? `Automation: ${jobTitle}` : 'Automation', { automation: { jobId } });
+    const skillNote = Array.isArray(skills) && skills.length ? `
+
+(Before you start, load and follow these skills with skill_read: ${skills.join(', ')}.)` : '';
+    const result = await this._runAssistantRequest({
+      sessionKey: key,
+      runId: `job-${jobId}-${Date.now()}`,
+      userContent: `${String(prompt).trim()}${skillNote}`,
+      source: 'automation',
+      excludeTools: ['schedule_task', 'goal_plan'],
+    });
+    // The job is done when Zero replied; how its own actions went is reported separately.
+    const reply = String(result?.content || '').trim();
+    return { ok: result?.ok !== false && Boolean(reply), executed: true, completed: Boolean(reply), sessionKey: key, reply, assistantOutcome: result?.execution?.outcome || null };
+  }
+
   _scheduleTask({ title, cronExpr = '@daily', targetAction = 'goal.tick', params = {}, enabled = true, id } = {}) {
     if (!title) throw new Error('schedule_task requires a title');
     const job = this.automation.registerJob({ id, title, cronExpr, targetAction, params, enabled });
@@ -4236,7 +4269,7 @@ export class ZeroNativeHost {
     }
   }
 
-  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId, source = 'chat', workflowBudget }) {
+  async _executeAgentTurn({ sessionKey, userContent, model, ws, isReferenceWire, clientSession, signal, runId, taskId, source = 'chat', workflowBudget, excludeTools = [] }) {
     // A human takeover hold pauses physical computer control, not the
     // conversation. The computer operator refuses input actions while the
     // hold is active and still allows observation, so the turn continues and
@@ -4252,7 +4285,7 @@ export class ZeroNativeHost {
     const turnId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-    const DESKTOP_TOOLS = this._assistantToolDefinitions();
+    const DESKTOP_TOOLS = this._assistantToolDefinitions().filter((definition) => !excludeTools.includes(definition.function?.name));
 
     try {
       // Context Fold: keep the chat inside the model's window (summary + archive).
