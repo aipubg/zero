@@ -72,7 +72,7 @@ live terminal sessions, sandboxed code execution, a clarify/question tool.
 | Step | Status | Commit | Notes |
 |---|---|---|---|
 | 0. Plan, worktree, reference clone | done | — | this file |
-| 1. Prompt Layers + IDENTITY.md | pending | | |
+| 1. Prompt Layers + IDENTITY.md | done | (this commit) | Old hard-coded prompt (with YouTube/Spotify/WhatsApp scripts) replaced; prompt frozen per chat in session metadata `zeroPrompt`; matched learned procedures moved to a per-turn hint. Tests: `prompt-layers*.test.mjs` |
 | 2. Zero Notebook + `notebook` tool | pending | | |
 | 3. Skill Catalog + `skill_read` | pending | | |
 | 4. Context Fold | pending | | |

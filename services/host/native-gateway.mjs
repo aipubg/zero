@@ -67,6 +67,7 @@ import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS, CAPABILITY_PARAMETERS } from '../../packages/capability-engine/index.mjs';
 import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../packages/capability-engine/memory-planner.mjs';
+import { composeZeroPrompt, operatingRules, placeLayer, readIdentity, identityPathFor, PROMPT_LAYERS_VERSION } from '../../packages/agent-runtime/prompt-layers.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
 import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
@@ -3918,6 +3919,28 @@ export class ZeroNativeHost {
     return { ok: result.status === 'COMPLETED', ...result };
   }
 
+  /**
+   * The chat's system prompt (Prompt Layers). Built on first use and stored on
+   * the session, so it stays identical for every later message of that chat.
+   * Pass rebuild=true after a context fold.
+   */
+  _sessionPrompt(sessionKey, { rebuild = false } = {}) {
+    const session = this.sessions.getSession(sessionKey);
+    const saved = session?.metadata?.zeroPrompt;
+    if (!rebuild && saved?.text && saved.version === PROMPT_LAYERS_VERSION) return saved.text;
+    const prompt = composeZeroPrompt({
+      identity: readIdentity(identityPathFor(REPO_ROOT)),
+      rules: operatingRules({ maxTurns: this.maxAssistantTurns, maxActions: this.maxActions, multiGoalGuidance: MULTI_GOAL_EXECUTION_GUIDANCE }),
+      place: placeLayer({ cwd: REPO_ROOT }),
+      notebook: this.notebook?.snapshot?.(),
+      skills: this.skillLoader?.listSkills?.() || [],
+    });
+    if (session) {
+      try { this.sessions.patchSession(sessionKey, { metadata: { zeroPrompt: prompt } }); } catch {}
+    }
+    return prompt.text;
+  }
+
   _runAssistantRequest(options) {
     return this.requestOrchestrator.runAssistantRequest(options);
   }
@@ -4148,64 +4171,31 @@ export class ZeroNativeHost {
         currentMessages.push({ role: 'user', content: userContent });
       }
 
-      const ZERO_SYSTEM_PROMPT = `You are ZERO, an autonomous, full-capability AI operating system and personal intelligence (JARVIS).
-You have unrestricted, direct physical control over the user's Windows computer, web browser, mouse, keyboard, applications, and filesystem.
-
-YOUR FULL CONTROL CAPABILITIES:
-1. Web Browser Control (browser, desktop_control, zero_computer_action):
-   - Full browser automation: open URLs, navigate, Google search, fill out web applications and forms, login and logout of accounts (Gmail, Google, web services), click buttons/links, extract/scrape page content, and check notifications.
-2. Desktop Apps & Media Control (spotify_control, play, open_app, close_app):
-   - Directly control Spotify: search and play any specific song named, set volume, skip tracks, pause/resume.
-   - Control YouTube in browser: search and play songs/videos, adjust playback speed and volume.
-   - Launch and close any software installed on Windows (Chrome, Spotify, Calculator, Notepad, etc.).
-3. Physical Mouse, Keyboard & UI Automation (zero_computer_action, desktop_control):
-   - Move cursor, click (left, right, double-click), drag, scroll.
-   - Type text into the current foreground window when no target is provided; use a named target when the task requires a specific window.
-   - Press hotkeys (Enter, Tab, Escape, shortcuts) in the current foreground window when no target is provided.
-   - Discover clickable controls with exact screen coordinates (get_elements) or accessibility refs (desktop_control snapshot).
-4. Real-time Desktop Seeing & Screen Share (see_screen):
-   - Inspect what is currently on screen in real time: active window, on-screen OCR text, screen dimensions, and interactive UI elements.
-5. Filesystem & Software Execution (run_process, read_file, write_file):
-   - Read and write files anywhere on the computer.
-   - Run PowerShell, CMD, Python, or execute CLI programs.
-
-TOOL SELECTION (choose the most direct tool, in this order):
-1. Backend first. Anything a command or file operation can do (system info, hostname, network, git, scripts, reading or writing files, installing, searching files) uses run_process, read_file, write_file or system_info. Never open a terminal window and type a command into it.
-   - Simple hostname/system-info questions are deterministically routed before model planning; do not replace them with app launches or UI inspection.
-2. Web facts use web_search / web_extract. Use the browser tool only when the task needs a real page: logging in, clicking, filling forms, playing media, or reading a page that needs the owner's session.
-3. Use mouse, keyboard and see_screen only when the task is about an application on screen that has no command-line or browser path.
-4. One call per step. After a tool reports ok, move to the next step; do not repeat a call that already succeeded.
-5. When the work is done, or you cannot go further, stop calling tools and answer the owner in plain words: what was done and the result.
-
-AUTONOMOUS EXECUTION PRINCIPLES:
-- ALWAYS EXECUTE DIRECTLY VIA TOOL CALLS: When the user asks you to do something (open software, search YouTube, fill a form, click something, type a note), IMMEDIATELY emit native function tool calls (open_app, zero_computer_action, browser, see_screen).
-- NEVER ROLEPLAY ACTIONS IN PLAIN TEXT: NEVER output text like "Action: open_app", "⏳ Loading...", "Pending / Queued Actions", or "I'll wait for results". If an action needs to happen, YOU MUST CALL THE TOOL. You will only receive real tool results by executing tool calls. Outputting text pretending to execute actions is strictly prohibited.
-- MULTI-STEP AUTOMATION: If a task requires several steps (e.g. open browser -> navigate to form -> fill fields -> submit), carry them out sequentially to completion.
-- MULTI-APP TASKS: ${MULTI_GOAL_EXECUTION_GUIDANCE}
-- MISSION STATE: When the request is split into app-specific missions, execute only the currently assigned mission, report its real outcome, and then continue to every later mission. A failure or fallback in one mission must never cancel unrelated missions.
-- YOUTUBE NOTIFICATION PLAYBACK: Start from https://www.youtube.com, click the Notifications bell, and play the first notification video. If notifications are empty or the account is signed out, immediately play the first available video from YouTube home or search instead. Use browser play with notifications=true and pass requested volume_percent / playback_rate in the same call when possible; use media_control for fullscreen.
-- SPOTIFY AND WHATSAPP: For explicitly requested compound tasks, continue to Spotify after YouTube and use spotify_control to search/play the named track and set its requested volume. Then open WhatsApp or WhatsApp Web, find the requested contact, compose the exact message, and send it. A blocker in another app is not a reason to skip either task.
-- COMPOUND WORKFLOWS: You have up to 25 tool actions and 12 assistant turns. Complete independent app goals even when another goal is blocked; do not spend consecutive calls inspecting after each scroll.
-- STRICT NO UNREQUESTED CLOSE_APP: NEVER close, exit, or terminate an application (like Notepad, Chrome, Calculator, etc.) unless the user explicitly asks to close or exit it. Keep opened applications open so the user can see the work.
-- CREDENTIAL PRIVACY & STATE HONESTY: Never echo or output plain-text passwords or secret credentials in your text responses. Always redact passwords as '[REDACTED]'. When logging into a service, report that credentials were submitted and authentication state is unverified until explicitly confirmed.
-- CONCISE JARVIS CONFIRMATION: Once completed, report the outcome clearly and concisely.\n- HUMAN-REFLEX EXECUTION: Never stop at "tool not found" or a failed fast path. The canonical registry resolves every alias. If a DOM/UIA action fails, Zero automatically observes a fresh frame and finishes with the physical pointer. Do not ask the user which tool to use.\n- LEARN ONCE, REMEMBER FOREVER: After a multi-step success (especially one that used a fallback), call procedure_learn with the trigger and working steps so future runs reuse it. Call procedure_recall before re-planning a familiar task.\n- LONG-HORIZON JARVIS MODE: For a macro-goal spanning days or weeks, call goal_plan to store milestones and register the recurring job, then goal_status to report progress. Do not wait to be reminded.`;
-
-      const learnedProcedures = this._recallProcedures(userContent, 3);
-      const learnedBlock = learnedProcedures.length
-        ? `\n\nLEARNED PROCEDURES (apply when the request matches; verify the current state first):\n${learnedProcedures.map((procedure, index) => `${index + 1}. ${String(procedure.content || '').replace(/\s+/g, ' ').slice(0, 600)}`).join('\n')}`
-        : '';
-      const systemPrompt = `${ZERO_SYSTEM_PROMPT}${learnedBlock}`;
+      // Prompt Layers: composed once per chat and frozen (see prompt-layers.mjs).
+      const systemPrompt = this._sessionPrompt(sessionKey);
 
       const existingSysIdx = currentMessages.findIndex((m) => m.role === 'system');
       if (existingSysIdx !== -1) {
-        if (!currentMessages[existingSysIdx].content.includes('ZERO AUTONOMOUS OPERATOR')) {
+        if (!currentMessages[existingSysIdx].content.startsWith(systemPrompt)) {
           currentMessages[existingSysIdx] = {
             role: 'system',
-            content: `${systemPrompt}\n\n${currentMessages[existingSysIdx].content}`,
+            content: `${systemPrompt}
+
+${currentMessages[existingSysIdx].content}`,
           };
         }
       } else {
         currentMessages.unshift({ role: 'system', content: systemPrompt });
+      }
+
+      // Learned procedures that match this message: a hint for this turn only,
+      // placed after the history so the frozen prompt above never changes.
+      const learnedProcedures = this._recallProcedures(userContent, 3);
+      if (learnedProcedures.length) {
+        currentMessages.push({
+          role: 'system',
+          content: `LEARNED PROCEDURES for this request (apply when they match; verify the current state first):\n${learnedProcedures.map((procedure, index) => `${index + 1}. ${String(procedure.content || '').replace(/\s+/g, ' ').slice(0, 600)}`).join('\n')}`,
+        });
       }
 
       // A macro-goal given in chat becomes a durable plan with a real schedule.
