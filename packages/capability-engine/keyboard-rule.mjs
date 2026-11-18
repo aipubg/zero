@@ -46,7 +46,12 @@ export class KeyboardTargetScope {
     const hasPoint = next.x !== undefined && next.y !== undefined;
     if (!named && !hasPoint) {
       if (!this.window) {
-        return { refusal: refusal(action, 'keyboard-target-required', `${action} was not sent: no destination window. Pass \`target\` (window title or app name), or call open_app / focus_window / browser first. Keystrokes are never sent to an unknown window.`) };
+        const active = await this.osController.getActiveWindow(signal).catch(error => ({ ok: false, error: error.message }));
+        const title = active?.title || active?.window?.title || active?.data?.window?.title || null;
+        if (!title) {
+          return { refusal: refusal(action, 'keyboard-target-required', `${action} was not sent: no active foreground window could be resolved. Open or focus a destination window first.`) };
+        }
+        this.window = String(title);
       }
       next.target = this.window;
     }

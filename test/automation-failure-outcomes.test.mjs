@@ -130,3 +130,25 @@ test('[CONTRACT] research routes to its service and desktop action cannot be rep
   await executor('get_window_state', { action: 'type_text', text: 'fixture' });
   assert.deepEqual(request, { agentId: 'zero', toolName: 'zero_computer_action', args: { action: 'get_window_state', text: 'fixture' } });
 });
+
+test('[CONTRACT] automation desktop actions use request orchestrator executeCapability', async () => {
+  let request;
+  const executor = createAutomationDispatcher({
+    memoryEngine: {},
+    capabilityEngine: { execute: async () => { throw new Error('raw capability fallback must not be used'); } },
+    requestOrchestrator: {
+      executeCapability: async args => {
+        request = args;
+        return { ok: true, outcome: 'COMPLETED' };
+      },
+    },
+  });
+  const result = await executor('get_window_state', { sessionKey: 'scheduled-session', action: 'get_window_state' });
+  assert.equal(result.ok, true);
+  assert.deepEqual(request, {
+    agentId: 'zero',
+    toolName: 'zero_computer_action',
+    args: { sessionKey: 'scheduled-session', action: 'get_window_state' },
+    context: { sessionKey: 'scheduled-session', source: 'automation' },
+  });
+});

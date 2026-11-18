@@ -15,6 +15,14 @@ export function createAutomationDispatcher({ memoryEngine, researchEngine, capab
       });
     }
     const executor = requestOrchestrator || capabilityEngine;
+    if (typeof executor.executeCapability === 'function') {
+      return executor.executeCapability({
+        agentId: 'zero',
+        toolName: 'zero_computer_action',
+        args: { ...params, action },
+        context: { sessionKey: params.sessionKey || params.sessionId, source: 'automation' },
+      });
+    }
     return executor.execute({
       agentId: 'zero', toolName: 'zero_computer_action', args: { ...params, action },
     });

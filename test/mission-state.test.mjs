@@ -20,6 +20,45 @@ test('mission state persists ordered outcomes and continues after one app fails'
         { app: 'WhatsApp', goal: 'Send a message', order: 3 },
       ],
     });
+
+    test('mission resume skips completed sub-missions and reruns remaining ones', async () => {
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'zero-mission-resume-'));
+      const dbPath = path.join(directory, 'missions.sqlite');
+      const store = new MissionStateStore({ dbPath });
+      try {
+        const mission = store.createMission({
+          sessionId: 'resume_session',
+          runId: 'resume_run',
+          goal: 'YouTube, Spotify, WhatsApp',
+          subMissions: [
+            { app: 'YouTube', goal: 'Play video' },
+            { app: 'Spotify', goal: 'Play song' },
+            { app: 'WhatsApp', goal: 'Send message' },
+          ],
+        });
+        store.transitionSubMission(mission.subMissions[0].id, 'IN_PROGRESS');
+        store.transitionSubMission(mission.subMissions[0].id, 'COMPLETED', { summary: 'YouTube done' });
+        store.transitionSubMission(mission.subMissions[1].id, 'IN_PROGRESS');
+        store.transitionSubMission(mission.subMissions[1].id, 'FAILED', { error: 'Spotify unavailable' });
+
+        const attempted = [];
+        const execution = await executeMissionPlan({
+          store,
+          missionId: mission.id,
+          resume: true,
+          executeSubMission: async subMission => {
+            attempted.push(subMission.app);
+            return { ok: true, content: `${subMission.app} resumed`, execution: { outcome: 'COMPLETED', completedActions: 1 } };
+          },
+        });
+
+        assert.deepEqual(attempted, ['Spotify', 'WhatsApp']);
+        assert.equal(execution.mission.status, 'COMPLETED');
+      } finally {
+        store.close();
+        fs.rmSync(directory, { recursive: true, force: true });
+      }
+    });
     const attempted = [];
     const execution = await executeMissionPlan({
       store,

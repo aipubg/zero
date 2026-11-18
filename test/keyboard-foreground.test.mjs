@@ -2,6 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { canonicalCapabilityEngine } from '../packages/capability-engine/index.mjs';
 import { ComputerOperator } from '../packages/capability-engine/computer-operator.mjs';
+import { KeyboardTargetScope } from '../packages/capability-engine/keyboard-rule.mjs';
+
+test('keyboard scope resolves a target from the active foreground window', async () => {
+  const scope = new KeyboardTargetScope({
+    osController: {
+      async getActiveWindow() {
+        return { ok: true, title: 'Chrome' };
+      },
+      async focusWindow() {
+        return { ok: true, window: { title: 'Chrome' } };
+      },
+    },
+  });
+  const checked = await scope.before({ action: 'hotkey', args: { key: 'Control+L' } });
+  assert.equal(checked.refusal, undefined);
+  assert.equal(checked.args.target, 'Chrome');
+});
 
 test('keyboard actions without a target use the foreground input path', async () => {
   const sentKeys = [];

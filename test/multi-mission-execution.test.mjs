@@ -55,4 +55,14 @@ test('chat requests attempt every app mission after an earlier mission fails', {
   assert.match(result.content, /Spotify: COMPLETED/);
   assert.match(result.content, /WhatsApp: COMPLETED/);
   assert.equal(host.missionState.getMission(result.execution.missionId).status, 'PARTIAL');
+  const missionList = await host._dispatchRpc(
+    'missions.list',
+    { sessionKey: 'mission-chat' },
+    { authenticated: true, role: 'admin', scopes: ['operator.admin', 'operator.read'] },
+    null,
+    false,
+  );
+  assert.equal(missionList.ok, true);
+  assert.equal(missionList.missions.length, 1);
+  assert.equal(missionList.missions[0].id, result.execution.missionId);
 });

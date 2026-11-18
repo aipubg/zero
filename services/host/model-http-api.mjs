@@ -14,6 +14,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createLocalGgufMiddleware } from '../../backend/gateway/server/local-gguf-middleware.ts';
 import { localGgufService } from '../../backend/gateway/server/local-gguf-service.ts';
@@ -418,7 +419,7 @@ async function handleProxy(req, res) {
 /**
  * Standard OpenAI-Compatible /v1/chat/completions Endpoint
  */
-async function handleChatCompletions(req, res) {
+async function handleChatCompletions(req, res, options = {}) {
   setScopedCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
@@ -462,6 +463,49 @@ async function handleChatCompletions(req, res) {
       }
     } catch {}
     const modelId = body.model || body.modelId || defaultPrimaryModel;
+    const assistantMode = body.zeroAssistant === true || body.zero?.execute === true || /^true$/i.test(String(req.headers['x-zero-assistant'] || ''));
+    if (assistantMode && typeof options.runAssistantRequest === 'function') {
+      const messages = body.messages || [];
+      const lastUser = [...messages].reverse().find(message => message?.role === 'user');
+      const prompt = typeof lastUser?.content === 'string'
+        ? lastUser.content
+        : Array.isArray(lastUser?.content)
+          ? lastUser.content.map(part => typeof part === 'string' ? part : part?.text || '').filter(Boolean).join('\n')
+          : '';
+      if (!prompt.trim()) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'zeroAssistant requires a user message' }));
+        return;
+      }
+      const sessionKey = String(body.session_id || body.sessionKey || `http-${crypto.randomUUID()}`);
+      const result = await options.runAssistantRequest({
+        sessionKey,
+        userContent: prompt,
+        model: body.model,
+        source: 'http',
+        runId: body.idempotency_key || body.idempotencyKey,
+      });
+      const content = typeof result?.content === 'string' ? result.content : '';
+      if (body.stream === true) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.write(`data: ${JSON.stringify({ id: `chatcmpl_${Date.now()}`, object: 'chat.completion.chunk', choices: [{ index: 0, delta: { role: 'assistant', content }, finish_reason: null }] })}\n\n`);
+        res.write(`data: ${JSON.stringify({ id: `chatcmpl_${Date.now()}`, object: 'chat.completion.chunk', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\n`);
+        res.end('data: [DONE]\n\n');
+      } else {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({
+          id: `chatcmpl_${Date.now()}`,
+          object: 'chat.completion',
+          created: Math.floor(Date.now() / 1000),
+          model: body.model || 'zero-auto',
+          choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }],
+          zero: { sessionKey, taskId: result?.taskId, execution: result?.execution || null },
+        }));
+      }
+      return;
+    }
     if (!modelId) {
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
@@ -634,7 +678,7 @@ const spacesState = {
  * Handles a request for one of this module's routes. Returns false when the
  * path is not one of them, so the host can continue with its own routes.
  */
-export async function handleModelHttpRequest(req, res) {
+export async function handleModelHttpRequest(req, res, options = {}) {
   const host = req.headers?.host;
   if (host) {
     const hostWithoutPort = host.replace(/:\d+$/, '').trim().toLowerCase();
@@ -728,7 +772,7 @@ export async function handleModelHttpRequest(req, res) {
 
   // 2. OpenAI-compatible /v1/chat/completions
   if (pathname === '/v1/chat/completions') {
-    await handleChatCompletions(req, res);
+    await handleChatCompletions(req, res, options);
     return true;
   }
 

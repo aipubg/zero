@@ -5,13 +5,28 @@ const APP_MARKERS = [
   { app: 'Telegram', pattern: /\btelegram\b/i },
   { app: 'Slack', pattern: /\bslack\b/i },
   { app: 'Gmail', pattern: /\bgmail\b/i },
-  { app: 'Browser', pattern: /\b(?:browser|chrome|edge)\b/i },
 ];
+
+export function routeSimpleRequest(text) {
+  const prompt = String(text || '').trim();
+  if (!prompt) return null;
+  if (/^(?:please\s+)?(?:run|execute)\s+(?:the\s+)?hostname(?:\s+command)?(?:\s+and\s+(?:tell|report|show)\b.*)?[.!?]*$/i.test(prompt)) {
+    return { toolName: 'run_process', args: { command: 'hostname', args: [] } };
+  }
+  if (/^(?:what(?:'s| is)\s+(?:my\s+)?(?:pc|computer|machine)\s+name|(?:show|tell)\s+me\s+(?:my\s+)?(?:pc|computer|machine)\s+name)[.!?]*$/i.test(prompt)) {
+    return { toolName: 'system_info', args: {} };
+  }
+  return null;
+}
 
 export function decomposeMultiAppRequest(text) {
   const prompt = String(text || '').trim();
   if (!prompt) return [];
-  const clauses = prompt.split(/\s+\b(?:then|after that|afterwards|next)\b\s+|[;\n]+/i).map(clause => clause.trim()).filter(Boolean);
+  const clauses = prompt
+    .replace(/\b(?:open\s+(?:the\s+)?)?(?:browser|chrome|edge)\b[^,;]*,\s*/ig, '')
+    .split(/\s+\b(?:then|after that|afterwards|next)\b\s+|[;\n]+/i)
+    .map(clause => clause.trim())
+    .filter(Boolean);
   const missions = [];
   let leadingContext = '';
 

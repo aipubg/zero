@@ -70,7 +70,7 @@ import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../package
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
 import { defaultVoiceStatus } from '../../packages/capability-engine/voice-status.mjs';
-import { decomposeMultiAppRequest } from '../../packages/capability-engine/director-routing.mjs';
+import { decomposeMultiAppRequest, routeSimpleRequest } from '../../packages/capability-engine/director-routing.mjs';
 import { KeyboardTargetScope } from '../../packages/capability-engine/keyboard-rule.mjs';
 import { checkGeminiScreenShare, findScreenShareProvider, prepareScreenShareSetup, SCREEN_SHARE_PROVIDER_ID, SCREEN_SHARE_PROVIDER_NAME } from '../../packages/model-fabric/gemini-screen-share.mjs';
 import { createScreenAct } from '../../packages/capability-engine/screen-act.mjs';
@@ -292,8 +292,9 @@ export class ZeroNativeHost {
     this.voiceOwners = new Map();
     this.executeAssistantOnce = createAssistantReceipts(this.sessions.db);
     this.tasks = new TaskStateMachine({ dbPath: path.join(dataDir, 'zero-tasks.sqlite') });
-    this.tasks.events.on('stateChange', task => {
-      this.eventBus.publish('task.state', task, { sessionKey: task.sessionId });
+    this.tasks.events.on('stateChange', payload => {
+      const task = payload?.task || payload;
+      this.eventBus.publish('task.state', payload, { sessionKey: task.sessionId });
     });
     this.requestOrchestrator = new RequestOrchestrator({
       eventBus: this.eventBus,
@@ -395,11 +396,23 @@ export class ZeroNativeHost {
     // Online screen share: Gemini Live answers questions about the screen.
     canonicalCapabilityEngine.registerHandler('ask_screen', async ({ question }) => this.screenShare.ask(String(question || 'What is on the screen and what is the owner doing?')));
     // Online screen share: Gemini Computer Use decides, Zero's own hands act.
-    const screenHand = (action, args, signal) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'zero_computer_action', args: { ...args, action }, signal });
+    const screenHand = (action, args, signal) => this.requestOrchestrator.executeCapability({
+      agentId: 'zero',
+      toolName: 'zero_computer_action',
+      args: { ...args, action },
+      signal,
+      context: { source: 'screen-act' },
+    });
     canonicalCapabilityEngine.registerHandler('screen_act', createScreenAct({
       getSettings: () => findScreenShareProvider(this.modelFabric),
       act: screenHand,
-      openApp: (app, signal) => canonicalCapabilityEngine.execute({ agentId: 'zero', toolName: 'open_app', args: { app }, signal }),
+      openApp: (app, signal) => this.requestOrchestrator.executeCapability({
+        agentId: 'zero',
+        toolName: 'open_app',
+        args: { app },
+        signal,
+        context: { source: 'screen-act' },
+      }),
       capture: async signal => {
         const frame = await captureDriverDesktop({ signal, compressed: true, format: 'jpeg', maxWidth: 1440, quality: 80 });
         return { base64: String(frame.base64 || frame.data).replace(/^data:[^;]+;base64,/u, ''), mimeType: frame.mimeType || 'image/jpeg' };
@@ -553,6 +566,7 @@ export class ZeroNativeHost {
           this.modelFabric.reloadFromDisk();
           this.executeAssistantOnce.recoverInterrupted();
           this.tasks.recoverTasksOnStartup();
+          this.missionState.recoverInterrupted();
         } catch (error) { this.server.close(); return reject(error); }
         console.log(`[Zero Host] Zero Native Gateway listening on http://${this.host}:${this.port}`);
         resolve(this);
@@ -618,7 +632,14 @@ export class ZeroNativeHost {
         return;
       }
       // 1. Model HTTP routes (/health, /v1/*, /api/gateway/proxy, /api/gateway/local-gguf)
-      const handled = await handleModelHttpRequest(req, res);
+      const handled = await handleModelHttpRequest(req, res, {
+        runAssistantRequest: options => this._runAssistantRequest({
+          ...options,
+          ws: null,
+          isReferenceWire: false,
+          source: 'http',
+        }),
+      });
       if (handled) return;
 
       const urlRaw = req.url || '/';
@@ -1069,6 +1090,7 @@ export class ZeroNativeHost {
           'sessions.companion.state', 'sessions.companion.ask', 'sessions.companion.reset',
           'chat.history', 'gateway.chat.history', 'chat.startup', 'chat.metadata',
           'chat.send', 'chat.abort', 'agent', 'gateway.agent',
+          'missions.list', 'missions.get', 'missions.resume',
           'models.list', 'gateway.models.list', 'models.status',
           'plugins.controlUi.list', 'plugins.controlUi.report', 'plugins.controlUi.status',
           'zero.providers.list', 'zero.providers.configure', 'zero.providers.test', 'zero.providers.setActive', 'zero.providers.save', 'zero.providers.delete',
@@ -1265,6 +1287,9 @@ export class ZeroNativeHost {
       'agent': ['operator.write', 'operator.admin'],
       'gateway.agent': ['operator.write', 'operator.admin'],
       'chat.abort': ['operator.write', 'operator.admin'],
+      'missions.list': ['operator.read', 'operator.admin'],
+      'missions.get': ['operator.read', 'operator.admin'],
+      'missions.resume': ['operator.write', 'operator.admin'],
       'tasks.create': ['operator.write', 'operator.admin'],
       'tasks.cancel': ['operator.write', 'operator.admin'],
       'tasks.resume': ['operator.write', 'operator.admin'],
@@ -1795,6 +1820,55 @@ export class ZeroNativeHost {
           providers: this.modelFabric.getProviders(),
           defaultModel: selection.effectiveModel,
         };
+      }
+
+      case 'missions.list': {
+        return {
+          ok: true,
+          sessionKey: params.sessionKey || params.sessionId || null,
+          missions: this.missionState.listMissions({
+            sessionId: params.sessionKey || params.sessionId || null,
+            limit: params.limit,
+          }),
+        };
+      }
+
+      case 'missions.get': {
+        const missionId = params.missionId || params.id;
+        if (!missionId) throw new Error('Mission id is required');
+        const mission = this.missionState.getMission(missionId);
+        if (!mission) return { ok: false, error: 'mission-not-found', missionId };
+        return { ok: true, mission };
+      }
+
+      case 'missions.resume': {
+        const missionId = params.missionId || params.id;
+        if (!missionId) throw new Error('Mission id is required');
+        const mission = this.missionState.getMission(missionId);
+        if (!mission) return { ok: false, error: 'mission-not-found', missionId };
+        if (!['IN_PROGRESS', 'PARTIAL'].includes(mission.status) && !mission.subMissions.some(item => item.status === 'PENDING' || item.status === 'IN_PROGRESS' || item.status === 'FAILED')) {
+          return { ok: true, resumed: false, mission };
+        }
+        const combinedSignal = new AbortController().signal;
+        const missionRun = await executeMissionPlan({
+          store: this.missionState,
+          missionId,
+          resume: true,
+          executeSubMission: async subMission => this._executeAgentTurn({
+            sessionKey: mission.sessionId,
+            userContent: `MISSION ${subMission.position}/${mission.subMissions.length} — ${subMission.app}\nResume and execute only this sub-mission: ${subMission.goal}`,
+            model: params.model,
+            ws,
+            isReferenceWire,
+            clientSession,
+            signal: combinedSignal,
+            runId: mission.runId,
+            taskId: this.tasks.createTask({ sessionId: mission.sessionId, agentId: 'zero', goal: subMission.goal }).id,
+            source: 'mission.resume',
+            workflowBudget: { actionsUsed: 0, turnsUsed: 0 },
+          }),
+        });
+        return { ok: true, resumed: true, mission: missionRun.mission, results: missionRun.results };
       }
 
 
@@ -2868,6 +2942,10 @@ export class ZeroNativeHost {
 
       case 'voice.turn': {
         await this._attachVoice(params, clientSession, ws, isReferenceWire);
+        const binding = this.voiceConversation.bindings.get(params.sessionId);
+        if (binding?.context?.autoConversation === false) {
+          return { ok: true, cancelled: true, code: 'VOICE_CANCELLED', error: 'Browser SpeechRecognition owns this voice turn', sessionId: params.sessionId };
+        }
         // The turn needs an active engine session to transcribe against.
         if (!this.voiceEngine.getStatus().sessions?.some(s => s.sessionId === params.sessionId)) {
           this.voiceEngine.startSession(params.sessionId);
@@ -2886,8 +2964,9 @@ export class ZeroNativeHost {
       }
 
       case 'voice.microphone.stop':
-        await this.voiceConversation.detach(params.sessionId);
-        return await this.voiceEngine.stopMicrophone(params.sessionId);
+        if (params.preserveConversation === true) this.voiceConversation.pauseInput(params.sessionId);
+        else await this.voiceConversation.detach(params.sessionId);
+        return await this.voiceEngine.stopMicrophone(params.sessionId, { discardInput: params.preserveConversation === true });
 
       // Control UI Lifecycle & Capability Handlers
       case 'sessions.subscribe':
@@ -3300,6 +3379,14 @@ export class ZeroNativeHost {
       case 'dashboards.list':
       case 'dashboards.get':
         return { ok: true, dashboards: [], items: [] };
+
+      case 'approval.history':
+      case 'approvals.list':
+        return { ok: true, items: [], grants: [], history: [] };
+
+      case 'secrets.store.list':
+      case 'secrets.list':
+        return { ok: true, items: [], secrets: [], total: 0 };
 
       case 'board.get':
       case 'board.snapshot.get': {
@@ -3889,6 +3976,7 @@ export class ZeroNativeHost {
       const { sessionKey, userContent, signal, source = 'chat' } = options;
       if (typeof userContent !== 'string' || !userContent.trim()) throw new Error('Assistant message must contain text');
       const missionPlan = options.resumeTaskId ? [] : decomposeMultiAppRequest(userContent);
+      const directRoute = options.resumeTaskId ? null : routeSimpleRequest(userContent);
       const parkedModel = this.sessions.getSession(sessionKey)?.metadata?.model;
       options.model ||= this._resolveUsableModel(parkedModel, sessionKey);
       if (source === 'chat') this.voiceConversation.interrupt(sessionKey);
@@ -3906,7 +3994,31 @@ export class ZeroNativeHost {
         this.sessions.appendMessage(sessionKey, options.resumeTaskId ? { role: 'system', runId: options.runId, content: `Resume interrupted task ${task.id}. Original goal: ${userContent}. Existing effects may already have happened. Inspect prior tool results and actual files/state before repeating any action. Continue remaining work and report unresolved effects honestly.` } : { role: 'user', runId: options.runId, content: userContent });
         this.tasks.recordStep(task.id, { stepNumber: this.tasks.getTaskSteps(task.id).length + 1, toolName: options.resumeTaskId ? 'assistant_resume' : 'assistant_input', toolArgs: { source, sessionKey }, toolResult: userContent, status: 'completed' });
         let result;
-        if (mission) {
+        if (directRoute) {
+          const execution = await this.requestOrchestrator.executeCapability({
+            agentId: options.clientSession?.clientId || 'zero',
+            toolName: directRoute.toolName,
+            args: directRoute.args,
+            signal: combinedSignal,
+            context: { sessionKey, ws: options.ws, source },
+          });
+          if (execution?.ok === false) throw new Error(execution.error || `Direct ${directRoute.toolName} execution failed`);
+          const content = directRoute.toolName === 'run_process'
+            ? `Hostname: ${String(execution.stdout || '').trim() || '(no output)'}`
+            : `Computer name: ${execution.hostname || os.hostname()}\nPlatform: ${execution.platform || process.platform} (${execution.arch || process.arch})`;
+          this.sessions.appendMessage(sessionKey, { role: 'assistant', runId: options.runId, content });
+          this.tasks.recordStep(task.id, {
+            stepNumber: this.tasks.getTaskSteps(task.id).length + 1,
+            toolName: directRoute.toolName,
+            toolArgs: directRoute.args,
+            toolResult: execution,
+            status: 'completed',
+          });
+          const eventMetadata = { sessionKey, ownerSocket: options.ws, ownerOnly: true };
+          this.eventBus.publish('chat.delta', { runId: options.runId, sessionKey, delta: content, timestamp: Date.now() }, { ...eventMetadata, legacyNotification: 'zero.stream.delta' });
+          this.eventBus.publish('chat.complete', { runId: options.runId, sessionKey, content }, { ...eventMetadata, legacyNotification: 'zero.stream.complete' });
+          result = { ok: true, role: 'assistant', content, execution: { outcome: 'COMPLETED', completedActions: 1 } };
+        } else if (mission) {
           const missionRun = await executeMissionPlan({
             store: this.missionState,
             missionId: mission.id,

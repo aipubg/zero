@@ -70,10 +70,10 @@ export class MissionStateStore extends EventEmitter {
     }
     const row = this.db.prepare('SELECT * FROM zero_mission_submissions WHERE id=?').get(subMissionId);
     if (!row) throw new Error(`Unknown sub-mission: ${subMissionId}`);
-    if (row.status !== 'PENDING' && row.status !== 'IN_PROGRESS') {
+    if (row.status !== 'PENDING' && row.status !== 'IN_PROGRESS' && row.status !== 'FAILED') {
       throw new Error(`Cannot transition ${row.status} sub-mission`);
     }
-    if (status === 'IN_PROGRESS' && row.status !== 'PENDING') {
+    if (status === 'IN_PROGRESS' && row.status !== 'PENDING' && row.status !== 'FAILED') {
       throw new Error(`Cannot transition ${row.status} sub-mission to IN_PROGRESS`);
     }
     const now = Date.now();
@@ -117,19 +117,45 @@ export class MissionStateStore extends EventEmitter {
     };
   }
 
+  listMissions({ sessionId = null, limit = 50 } = {}) {
+    const lim = Math.max(1, Math.min(Number(limit) || 50, 500));
+    const rows = sessionId
+      ? this.db.prepare('SELECT id FROM zero_missions WHERE session_id=? ORDER BY created_at DESC LIMIT ?').all(sessionId, lim)
+      : this.db.prepare('SELECT id FROM zero_missions ORDER BY created_at DESC LIMIT ?').all(lim);
+    return rows.map(row => this.getMission(row.id)).filter(Boolean);
+  }
+
+  findByRunId(runId) {
+    const row = this.db.prepare('SELECT id FROM zero_missions WHERE run_id=? ORDER BY created_at DESC LIMIT 1').get(runId);
+    return row ? this.getMission(row.id) : null;
+  }
+
+  recoverInterrupted() {
+    const now = Date.now();
+    this.db.prepare("UPDATE zero_mission_submissions SET status='PENDING', updated_at=? WHERE status='IN_PROGRESS'")
+      .run(now);
+    this.db.prepare("UPDATE zero_missions SET status='IN_PROGRESS', updated_at=? WHERE status='IN_PROGRESS'")
+      .run(now);
+    return this.db.prepare('SELECT COUNT(*) AS count FROM zero_missions').get().count;
+  }
+
   close() {
     this.removeAllListeners();
     this.db.close();
   }
 }
 
-export async function executeMissionPlan({ store, missionId, executeSubMission }) {
+export async function executeMissionPlan({ store, missionId, executeSubMission, resume = false }) {
   if (!store || typeof executeSubMission !== 'function') throw new TypeError('Mission execution requires a store and executor');
   const mission = store.getMission(missionId);
   if (!mission) throw new Error(`Unknown mission: ${missionId}`);
   const results = [];
 
   for (const subMission of mission.subMissions) {
+    if (resume && ['COMPLETED', 'PARTIAL_FALLBACK'].includes(subMission.status)) {
+      results.push({ app: subMission.app, status: subMission.status, summary: subMission.summary, completedActions: subMission.status === 'COMPLETED' ? 1 : 0, resumed: true });
+      continue;
+    }
     store.transitionSubMission(subMission.id, 'IN_PROGRESS');
     try {
       const result = await executeSubMission(subMission);
