@@ -72,6 +72,10 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Retrieve previously stored context from Zero memory.',
     allowedActions: ['recall'],
   },
+  'notebook': {
+    description: "Zero's Notebook: two short notes read into every new chat. Book 'owner' = who the owner is (preferences, language, how they like things done). Book 'zero' = facts about this computer and setup (paths, quirks, what works). Write only things the owner said or a tool showed, and only lasting facts (not one-off requests). One fact goes in one book. Books are small: replace or remove old entries instead of piling up. For long or searchable knowledge use memory_remember.",
+    allowedActions: ['read', 'add', 'replace', 'remove'],
+  },
   'memory_remember': {
     description: 'Persist a fact with provenance for later retrieval. Use semantic for durable facts and preferences.',
     allowedActions: ['remember'],
@@ -182,6 +186,12 @@ export const CAPABILITY_PARAMETERS = Object.freeze({
   web_extract: params({ url: str('HTTP(S) URL to fetch and extract text from') }, ['url']),
   research_search: params({ query: str('Research query') }, ['query']),
   memory_recall: params({ query: str('What to recall from memory') }, ['query']),
+  notebook: params({
+    action: { type: 'string', enum: ['read', 'add', 'replace', 'remove'], description: 'What to do (default read)' },
+    book: { type: 'string', enum: ['owner', 'zero'], description: "'owner' = about the owner; 'zero' = about this computer" },
+    text: str('The entry to add, or the new text for replace (one line, at most 400 characters)'),
+    match: str('A few words from the entry to replace or remove'),
+  }, []),
   memory_remember: params({ content: str('Fact or note to remember'), layer: str('Memory layer, default "semantic"') }, ['content']),
   screen_context: params({ query: str('What to look for in recent screen activity') }),
   see_screen: params({ query: str('Optional focus for the screen inspection') }),

@@ -67,6 +67,7 @@ import { connectScreenAutomation } from './screen-automation.mjs';
 import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS, CAPABILITY_PARAMETERS } from '../../packages/capability-engine/index.mjs';
 import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../packages/capability-engine/memory-planner.mjs';
+import { ZeroNotebook } from '../../packages/memory/notebook.mjs';
 import { composeZeroPrompt, operatingRules, placeLayer, readIdentity, identityPathFor, PROMPT_LAYERS_VERSION } from '../../packages/agent-runtime/prompt-layers.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
@@ -367,6 +368,9 @@ export class ZeroNativeHost {
     canonicalCapabilityEngine.registerHandler('memory_recall', async ({ query }, signal) => {
       return { memories: this.unifiedMemory.recall(query, {}) };
     });
+    // Zero Notebook: owner + zero books, read into each new chat's prompt.
+    this.notebook = new ZeroNotebook({ dir: path.join(dataDir, 'notebook') });
+    canonicalCapabilityEngine.registerHandler('notebook', async params => this.notebook.handle(params));
     canonicalCapabilityEngine.registerHandler('memory_remember', async ({ content, layer = 'semantic' }, signal) => {
       return { memory: this.unifiedMemory.remember({ layer, content }) };
     });
