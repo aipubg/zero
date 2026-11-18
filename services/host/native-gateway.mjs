@@ -71,6 +71,7 @@ import { ZeroNotebook } from '../../packages/memory/notebook.mjs';
 import { readSkillForModel } from '../../packages/skill-sdk/skill-read.mjs';
 import { planFold, foldRequest, foldNote, estimateTokens, tailStart, trimOldToolOutputs, FOLD_DEFAULTS } from '../../packages/sessions/context-fold.mjs';
 import { turnBudgetHint, TURN_BUDGET_PREFIX } from '../../packages/agent-runtime/turn-budget.mjs';
+import { shouldReflect, runTurnReflection } from '../../packages/agent-runtime/turn-reflection.mjs';
 import { composeZeroPrompt, operatingRules, placeLayer, readIdentity, identityPathFor, PROMPT_LAYERS_VERSION } from '../../packages/agent-runtime/prompt-layers.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
@@ -208,6 +209,9 @@ export class ZeroNativeHost {
     // Context Fold: share of the model window at which a chat is folded.
     this.foldAt = options.foldAt ?? Number(process.env.ZERO_FOLD_AT ?? FOLD_DEFAULTS.foldAt);
     this.foldContextWindow = options.foldContextWindow;
+    // Turn Reflection: on unless ZERO_TURN_REFLECTION=off.
+    this.turnReflection = options.turnReflection ?? (String(process.env.ZERO_TURN_REFLECTION || 'on').toLowerCase() !== 'off');
+    this.reflectEvery = options.reflectEvery ?? Number(process.env.ZERO_REFLECT_EVERY ?? 6);
     if (!Number.isInteger(this.maxActions) || this.maxActions < 1 || this.maxActions > 128) throw new Error('maxActions must be an integer between 1 and 128');
     this.voiceRecognitionBackend = options.voiceRecognitionBackend ?? process.env.ZERO_VOICE_RECOGNITION_BACKEND;
     if (this.voiceRecognitionBackend !== undefined && !['windows', 'whisper'].includes(this.voiceRecognitionBackend)) throw new Error('Unknown voice recognition backend');
@@ -3938,6 +3942,49 @@ export class ZeroNativeHost {
    * the session, so it stays identical for every later message of that chat.
    * Pass rebuild=true after a context fold.
    */
+  /**
+   * Turn Reflection: after a busy reply, or every few owner messages, review the
+   * chat in the background and keep lasting facts (Notebook) or procedures.
+   * Never blocks the reply and never writes into the chat.
+   */
+  _scheduleTurnReflection(sessionKey, { toolActions = 0, source = 'chat', model } = {}) {
+    if (!this.turnReflection || !['chat', 'voice'].includes(source)) return;
+    const session = this.sessions.getSession(sessionKey);
+    if (!session) return;
+    const state = session.metadata?.reflection || {};
+    const ownerMessagesSince = (state.ownerMessagesSince || 0) + 1;
+    if (!shouldReflect({ toolActions, ownerMessagesSince, every: this.reflectEvery })) {
+      try { this.sessions.patchSession(sessionKey, { metadata: { reflection: { ...state, ownerMessagesSince } } }); } catch {}
+      return;
+    }
+    try { this.sessions.patchSession(sessionKey, { metadata: { reflection: { ...state, ownerMessagesSince: 0, lastAt: Date.now() } } }); } catch {}
+    this.reflections ||= new Set();
+    this.reflectionRuns ||= new Set();
+    const controller = new AbortController();
+    this.reflections.add(controller);
+    const run = (async () => {
+      try {
+        const transcript = this.sessions.getModelContext(sessionKey);
+        const outcome = await runTurnReflection({
+          modelFabric: this.modelFabric,
+          model,
+          transcript,
+          toolDefinitions: this._assistantToolDefinitions(),
+          runTool: (name, args) => this.requestOrchestrator.executeCapability({ agentId: 'zero', toolName: name, args, signal: controller.signal, context: { sessionKey, source: 'turn-reflection' } }),
+          signal: controller.signal,
+        });
+        if (outcome.saved.length) console.log(`[Zero Host] Turn reflection kept ${outcome.saved.length} item(s) from ${sessionKey}`);
+        this.lastReflection = { sessionKey, at: Date.now(), ...outcome };
+      } catch (error) {
+        if (!controller.signal.aborted) console.warn('[Zero Host] Turn reflection skipped:', error.message);
+      } finally {
+        this.reflections.delete(controller);
+      }
+    })();
+    this.reflectionRuns.add(run);
+    run.finally(() => this.reflectionRuns.delete(run));
+  }
+
   _contextWindowFor(modelId) {
     if (Number.isFinite(this.foldContextWindow) && this.foldContextWindow > 0) return this.foldContextWindow;
     try { return this.modelFabric.calculateContextBudget(modelId || 'auto', []).contextWindow || 131072; } catch { return 131072; }
@@ -4906,6 +4953,9 @@ ${currentMessages[existingSysIdx].content}`,
         }
       }
 
+      // Turn Reflection: maybe look back at this chat in the background.
+      this._scheduleTurnReflection(sessionKey, { toolActions: executedActions.length, source, model: resolveTurnModel() });
+
       return {
         ok: true,
         role: 'assistant',
@@ -4927,6 +4977,9 @@ ${currentMessages[existingSysIdx].content}`,
   }
 
   async close(options = {}) {
+    // Stop background reflections before the stores they write to close.
+    for (const controller of this.reflections || []) controller.abort(new Error('Zero host is closing'));
+    await Promise.allSettled([...(this.reflectionRuns || [])]);
     this.screenShare?.stop();
     const skillSourceDrain = this.skillLoader?.closeSources();
     await this.localGguf?.unloadModel(true);

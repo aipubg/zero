@@ -37,7 +37,7 @@ export async function startChatHarness(t, { reply, hostOptions = {}, prefix = 'z
   fs.writeFileSync(agentBindingsPath, JSON.stringify({ agentBindings: { zero: { model: 'fixture/harness-model' } } }));
   const skillsDir = path.join(root, 'skills');
   fs.mkdirSync(skillsDir, { recursive: true });
-  const host = new ZeroNativeHost({ port, dataDir: path.join(root, 'data'), prefsPath: path.join(root, 'prefs.json'), skillsDir, providersPath, agentBindingsPath, localVision: false, ...hostOptions });
+  const host = new ZeroNativeHost({ port, dataDir: path.join(root, 'data'), prefsPath: path.join(root, 'prefs.json'), skillsDir, providersPath, agentBindingsPath, localVision: false, turnReflection: false, ...hostOptions });
   t.after(async () => {
     await host.close();
     upstream.closeAllConnections();

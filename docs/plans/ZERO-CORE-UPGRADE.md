@@ -79,7 +79,7 @@ live terminal sessions, sandboxed code execution, a clarify/question tool.
 | 5. Turn Budget wrap-up | done | (this commit) | Closing report without tools already existed; added a one-turn budget warning when ≤2 turns or ≤5 actions are left, and raised defaults to 30 turns / 60 actions (`ZERO_MAX_ASSISTANT_TURNS`, `ZERO_MAX_ACTIONS`). Test: `turn-budget.test.mjs` |
 | 6. Chat Recall + `chat_search` | done | (this commit) | FTS5 index `zero_messages_search` kept in sync by triggers (backfilled once); owner + Zero messages only; all-words then any-word; current chat excluded; works for Hindi. Tool `chat_search`. Test: `chat-recall.test.mjs` |
 | 7. Key Guard | done | (this commit) | Well-known env keys (OPENAI, GEMINI, NVIDIA, ANTHROPIC, OPENROUTER, GROQ, …) are only sent to their own host; look-alike hosts refused; keys the owner saved for a provider are unchanged; the reason is kept in `keyGuardNotes`. Test: `key-guard.test.mjs` |
-| 8. Turn Reflection | pending | | |
+| 8. Turn Reflection | done | (this commit) | After a reply with ≥3 tool actions, or every `ZERO_REFLECT_EVERY` (6) owner messages, a background review may add a grounded Notebook entry or a procedure (only `notebook` + `procedure_learn` offered). Never blocks the reply, never writes into the chat; `ZERO_TURN_REFLECTION=off` disables it. Test: `turn-reflection.test.mjs` |
 | 9. Ask Zero jobs | pending | | |
 | 10. Chat Commands | pending | | |
 | 11. Full test run, merge to main | pending | | |
