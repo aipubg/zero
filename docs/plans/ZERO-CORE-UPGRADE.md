@@ -77,7 +77,7 @@ live terminal sessions, sandboxed code execution, a clarify/question tool.
 | 3. Skill Catalog + `skill_read` | done | (this commit) | Prompt lists enabled skills (name + one line); `skill_read` returns the full instructions or a file inside the skill folder (no path escape); owner-only skills hidden. Test: `skill-catalog.test.mjs` |
 | 4. Context Fold | done | (this commit) | At `ZERO_FOLD_AT` (default 50%) of the model window: old tool outputs trimmed each model turn; if still over, the part before the recent tail is summarised (goal, preferences, done, in progress, open, details) and archived from the model context only. The note says “reference only, newest message wins, tools still work”. Prompt rebuilt only on a fold. Test: `context-fold.test.mjs` |
 | 5. Turn Budget wrap-up | done | (this commit) | Closing report without tools already existed; added a one-turn budget warning when ≤2 turns or ≤5 actions are left, and raised defaults to 30 turns / 60 actions (`ZERO_MAX_ASSISTANT_TURNS`, `ZERO_MAX_ACTIONS`). Test: `turn-budget.test.mjs` |
-| 6. Chat Recall + `chat_search` | pending | | |
+| 6. Chat Recall + `chat_search` | done | (this commit) | FTS5 index `zero_messages_search` kept in sync by triggers (backfilled once); owner + Zero messages only; all-words then any-word; current chat excluded; works for Hindi. Tool `chat_search`. Test: `chat-recall.test.mjs` |
 | 7. Key Guard | pending | | |
 | 8. Turn Reflection | pending | | |
 | 9. Ask Zero jobs | pending | | |

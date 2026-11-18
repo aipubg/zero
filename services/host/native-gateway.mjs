@@ -377,6 +377,8 @@ export class ZeroNativeHost {
     // Zero Notebook: owner + zero books, read into each new chat's prompt.
     this.notebook = new ZeroNotebook({ dir: path.join(dataDir, 'notebook') });
     canonicalCapabilityEngine.registerHandler('notebook', async params => this.notebook.handle(params));
+    // Chat Recall: full-text search over past chats (the current chat is excluded).
+    canonicalCapabilityEngine.registerHandler('chat_search', async ({ query, limit }, signal, meta = {}) => this.sessions.searchChats(query, { limit: Math.min(10, Number(limit) || 6), excludeSession: meta?.context?.sessionKey || null }));
     canonicalCapabilityEngine.registerHandler('memory_remember', async ({ content, layer = 'semantic' }, signal) => {
       return { memory: this.unifiedMemory.remember({ layer, content }) };
     });

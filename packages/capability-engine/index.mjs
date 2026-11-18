@@ -72,6 +72,10 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Retrieve previously stored context from Zero memory.',
     allowedActions: ['recall'],
   },
+  'chat_search': {
+    description: 'Search the past chats between the owner and Zero by words (owner and Zero messages, not tool output). Use it when the owner refers to something discussed before ("like last time", "what did we decide about…"). Returns matching chats with dated snippets.',
+    allowedActions: ['search'],
+  },
   'notebook': {
     description: "Zero's Notebook: two short notes read into every new chat. Book 'owner' = who the owner is (preferences, language, how they like things done). Book 'zero' = facts about this computer and setup (paths, quirks, what works). Write only things the owner said or a tool showed, and only lasting facts (not one-off requests). One fact goes in one book. Books are small: replace or remove old entries instead of piling up. For long or searchable knowledge use memory_remember.",
     allowedActions: ['read', 'add', 'replace', 'remove'],
@@ -190,6 +194,7 @@ export const CAPABILITY_PARAMETERS = Object.freeze({
   web_extract: params({ url: str('HTTP(S) URL to fetch and extract text from') }, ['url']),
   research_search: params({ query: str('Research query') }, ['query']),
   memory_recall: params({ query: str('What to recall from memory') }, ['query']),
+  chat_search: params({ query: str('Words to look for, e.g. "Goa trip hotel"'), limit: { type: 'integer', minimum: 1, maximum: 10, description: 'How many chats (default 6)' } }, ['query']),
   notebook: params({
     action: { type: 'string', enum: ['read', 'add', 'replace', 'remove'], description: 'What to do (default read)' },
     book: { type: 'string', enum: ['owner', 'zero'], description: "'owner' = about the owner; 'zero' = about this computer" },

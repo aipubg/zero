@@ -74,6 +74,68 @@ export class SessionManager {
     if (!columns.has('run_id')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN run_id TEXT');
     if (!columns.has('status')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN status TEXT');
     if (!columns.has('context_archived')) this.db.exec('ALTER TABLE zero_messages ADD COLUMN context_archived INTEGER NOT NULL DEFAULT 0');
+    this._setupChatRecall();
+  }
+
+  /** Chat Recall: a full-text index over message text, kept in sync by triggers. */
+  _setupChatRecall() {
+    try {
+      const existed = Boolean(this.db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'zero_messages_search'").get());
+      this.db.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS zero_messages_search USING fts5(
+          content, content='zero_messages', content_rowid='rowid', tokenize='unicode61 remove_diacritics 2'
+        );
+        CREATE TRIGGER IF NOT EXISTS zero_messages_search_ai AFTER INSERT ON zero_messages BEGIN
+          INSERT INTO zero_messages_search(rowid, content) VALUES (new.rowid, new.content);
+        END;
+        CREATE TRIGGER IF NOT EXISTS zero_messages_search_ad AFTER DELETE ON zero_messages BEGIN
+          INSERT INTO zero_messages_search(zero_messages_search, rowid, content) VALUES ('delete', old.rowid, old.content);
+        END;
+        CREATE TRIGGER IF NOT EXISTS zero_messages_search_au AFTER UPDATE OF content ON zero_messages BEGIN
+          INSERT INTO zero_messages_search(zero_messages_search, rowid, content) VALUES ('delete', old.rowid, old.content);
+          INSERT INTO zero_messages_search(rowid, content) VALUES (new.rowid, new.content);
+        END;
+      `);
+      if (!existed) this.db.exec("INSERT INTO zero_messages_search(zero_messages_search) VALUES ('rebuild')");
+      this.chatRecall = true;
+    } catch (error) {
+      // SQLite without FTS5: everything else keeps working, search is off.
+      this.chatRecall = false;
+      this.chatRecallError = error.message;
+    }
+  }
+
+  /**
+   * Chat Recall: find past chats about a topic. Only owner and Zero messages are
+   * searched (not tool output). Returns chats with their best matching snippets.
+   */
+  searchChats(query, { limit = 6, perChat = 3, excludeSession = null } = {}) {
+    if (!this.chatRecall) return { ok: false, error: 'Chat search is not available on this computer (SQLite has no full-text search).' };
+    const words = String(query || '').match(/[\p{L}\p{N}_]+/gu) || [];
+    if (!words.length) return { ok: false, error: 'Give a few words to search for' };
+    const run = expression => this.db.prepare(`
+      SELECT m.session_id AS sessionId, m.role, m.created_at AS createdAt,
+             snippet(zero_messages_search, 0, '[', ']', '…', 18) AS snippet, s.title, bm25(zero_messages_search) AS rank
+      FROM zero_messages_search
+      JOIN zero_messages m ON m.rowid = zero_messages_search.rowid
+      JOIN zero_sessions s ON s.id = m.session_id
+      WHERE zero_messages_search MATCH ? AND m.role IN ('user', 'assistant') AND (? IS NULL OR m.session_id != ?)
+      ORDER BY rank LIMIT 200`).all(expression, excludeSession, excludeSession);
+    const quoted = words.slice(0, 12).map(word => `"${word.replace(/"/g, '')}"`);
+    let rows = run(quoted.join(' '));
+    let matched = 'all words';
+    if (!rows.length && quoted.length > 1) { rows = run(quoted.join(' OR ')); matched = 'any word'; }
+    const chats = new Map();
+    for (const row of rows) {
+      if (!chats.has(row.sessionId)) {
+        if (chats.size >= limit) continue;
+        chats.set(row.sessionId, { sessionId: row.sessionId, title: row.title, lastMatchAt: row.createdAt, snippets: [] });
+      }
+      const chat = chats.get(row.sessionId);
+      chat.lastMatchAt = Math.max(chat.lastMatchAt, row.createdAt);
+      if (chat.snippets.length < perChat) chat.snippets.push({ from: row.role === 'user' ? 'owner' : 'zero', at: new Date(row.createdAt).toISOString(), text: row.snippet });
+    }
+    return { ok: true, query: String(query), matched, chats: [...chats.values()] };
   }
 
   createSession(id, title = 'New Conversation', metadata = {}) {
