@@ -68,6 +68,7 @@ import { createAssistantReceipts } from './assistant-receipts.mjs';
 import { canonicalCapabilityEngine, CAPABILITY_DEFINITIONS, CAPABILITY_PARAMETERS } from '../../packages/capability-engine/index.mjs';
 import { defaultUnifiedLoop, MULTI_GOAL_EXECUTION_GUIDANCE } from '../../packages/capability-engine/memory-planner.mjs';
 import { ZeroNotebook } from '../../packages/memory/notebook.mjs';
+import { readSkillForModel } from '../../packages/skill-sdk/skill-read.mjs';
 import { composeZeroPrompt, operatingRules, placeLayer, readIdentity, identityPathFor, PROMPT_LAYERS_VERSION } from '../../packages/agent-runtime/prompt-layers.mjs';
 import { defaultOsController } from '../../packages/capability-engine/computer-control.mjs';
 import { defaultEmbedEngine } from '../../packages/capability-engine/embed-engine.mjs';
@@ -379,6 +380,8 @@ export class ZeroNativeHost {
     });
     this.skillLoader.executionContext = { stateMachine: this.tasks, modelFabric: this.modelFabric, capabilityEngine: canonicalCapabilityEngine };
     canonicalCapabilityEngine.registerHandler('skills_list', async () => ({ skills: this.skillLoader.listSkills() }));
+    // Skill Catalog: the prompt lists skills by name; skill_read loads one on demand.
+    canonicalCapabilityEngine.registerHandler('skill_read', async ({ name, file }) => readSkillForModel(this.skillLoader, name, file));
     canonicalCapabilityEngine.registerHandler('skill_execute', async ({ name, goal }, signal) => {
       return this.skillLoader.executeSkill(name, goal, { signal });
     });

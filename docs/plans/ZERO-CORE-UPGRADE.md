@@ -74,7 +74,7 @@ live terminal sessions, sandboxed code execution, a clarify/question tool.
 | 0. Plan, worktree, reference clone | done | — | this file |
 | 1. Prompt Layers + IDENTITY.md | done | (this commit) | Old hard-coded prompt (with YouTube/Spotify/WhatsApp scripts) replaced; prompt frozen per chat in session metadata `zeroPrompt`; matched learned procedures moved to a per-turn hint. Tests: `prompt-layers*.test.mjs` |
 | 2. Zero Notebook + `notebook` tool | done | (this commit) | Books `owner` (1,400 chars) and `zero` (2,200 chars) as editable markdown in `.zero-data/notebook/`; secrets and model-directed instructions refused; snapshot goes into each new chat (running chats keep their frozen prompt). Tests: `notebook.test.mjs` |
-| 3. Skill Catalog + `skill_read` | pending | | |
+| 3. Skill Catalog + `skill_read` | done | (this commit) | Prompt lists enabled skills (name + one line); `skill_read` returns the full instructions or a file inside the skill folder (no path escape); owner-only skills hidden. Test: `skill-catalog.test.mjs` |
 | 4. Context Fold | pending | | |
 | 5. Turn Budget wrap-up | pending | | |
 | 6. Chat Recall + `chat_search` | pending | | |

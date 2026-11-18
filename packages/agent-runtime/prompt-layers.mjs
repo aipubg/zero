@@ -73,7 +73,7 @@ export function notebookLayer(notebook) {
 
 /** Skill Catalog: names and one-line descriptions; the full text is loaded on demand. */
 export function skillCatalogLayer(skills = []) {
-  const usable = skills.filter(s => s && s.name && s.enabled !== false);
+  const usable = skills.filter(s => s && s.name && s.enabled !== false && s.disableModelInvocation !== true);
   if (!usable.length) return '';
   const lines = usable.slice(0, 60).map(s => `- ${s.name}: ${String(s.description || '').replace(/\s+/g, ' ').slice(0, 140)}`);
   return `SKILLS (step-by-step guides you have; call skill_read with the name to load one before following it)\n${lines.join('\n')}`;

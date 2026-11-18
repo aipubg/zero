@@ -88,6 +88,10 @@ export const CAPABILITY_DEFINITIONS = Object.freeze({
     description: 'Inspect what is currently displayed on the user desktop or browser screen. Returns active window title, on-screen text via OCR, interactive UI elements, and screen dimensions.',
     allowedActions: ['inspect'],
   },
+  'skill_read': {
+    description: 'Load one skill (a step-by-step guide listed under SKILLS in your instructions) before following it. Returns its full instructions and the names of its extra files; pass file to read one of them.',
+    allowedActions: ['read'],
+  },
   'skills_list': {
     description: 'Discover installed skills and their descriptions.',
     allowedActions: ['list'],
@@ -202,6 +206,7 @@ export const CAPABILITY_PARAMETERS = Object.freeze({
   procedure_learn: params({ name: str('Short procedure name'), trigger: str('When this procedure applies'), steps: { type: 'array', items: { type: 'string' } }, verification: str('How success was verified'), tags: { type: 'array', items: { type: 'string' } } }, ['trigger', 'steps']),
   procedure_recall: params({ query: str('Task to find a learned procedure for'), limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['query']),
   zero_skill_learn: params({ name: str('Skill name'), description: str('What the skill does'), triggers: { type: 'array', items: { type: 'string' } }, capabilities: { type: 'array', items: { type: 'string' } }, workflowSteps: { type: 'array', items: { type: 'string' } }, examples: { type: 'array', items: { type: 'string' } }, overwrite: { type: 'boolean' } }, ['name']),
+  skill_read: params({ name: str('Skill name, exactly as listed under SKILLS'), file: str('Optional: a file inside the skill folder, e.g. scripts/run.ps1') }, ['name']),
   skills_list: params({}),
   goal_status: params({}),
   system_info: params({}),
