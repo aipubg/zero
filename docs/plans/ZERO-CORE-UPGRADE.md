@@ -51,6 +51,9 @@ own names, and wired into the code that actually runs.
 Not in this pass (bigger, separate work): messaging platforms (Telegram etc.),
 live terminal sessions, sandboxed code execution, a clarify/question tool.
 
+Phase 2 (merge into main, UI surfaces, and the four items above) is described for the next agent in
+`docs/prompts/ZERO-CORE-UPGRADE-AGENT.md`.
+
 ## Name map (Hermes → Zero)
 
 | Hermes | Zero |
