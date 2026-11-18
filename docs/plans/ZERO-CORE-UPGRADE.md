@@ -70,20 +70,66 @@ Phase 2 (merge into main, UI surfaces, and the four items above) is described fo
 | background review | Turn Reflection |
 | `COMMAND_REGISTRY` | Chat Commands |
 
+## Deferred capabilities — design notes (Steps 14–17)
+
+### Step 14 — Zero Terminal
+
+**Hermes idea:** long-lived shell sessions (PowerShell/cmd) with `run`, `open`, `send`, `read`, `list`, `close`, `open_external` actions; per-session cwd persistence; background process tracking.
+
+**Zero design:**
+- New tool `zero_terminal` in `CAPABILITY_DEFINITIONS` (`packages/capability-engine/index.mjs`), actions: `run` (foreground, waits for exit, returns output, cwd persists), `open` (create a session), `send` (text to an open session), `read` (poll output), `list` (sessions), `close` (end session), `open_external` (visible Windows Terminal window, output not readable by Zero).
+- Host RPCs: `zero.terminal.open`, `zero.terminal.send`, `zero.terminal.read`, `zero.terminal.list`, `zero.terminal.close`, `zero.terminal.open_external`; broadcast events `zero.terminal.output`.
+- A Terminal surface in the UI; Zero's own sessions marked as "Zero's".
+- **Alias resolution:** `packages/capability-engine/aliases.mjs` currently maps `terminal` → `run_process`. Resolve deliberately: keep `terminal` → `run_process` for one-shot commands (no session), and add `zero_terminal` as the sessionful tool. Do not break the existing alias.
+- State: in-memory map of session key → {process, cwd, output buffer, createdAt}. Host-scoped (no cross-host leakage).
+- Risk: long-lived processes must be cleaned up on host shutdown. Windows process groups need careful handling.
+
+### Step 15 — Clarify
+
+**Hermes idea:** mid-task user question with optional choices and timeout; delivered through chat UI and voice.
+
+**Zero design:**
+- New tool `zero_clarify` in `CAPABILITY_DEFINITIONS`, parameter `questions`: array of `{question, choices?, multi_select?}`, max 5 questions, max 4 choices each, optional `multi_select`, optional `timeoutMs`.
+- Host-side pending clarify store (thread-safe map: clarify_id → {sessionKey, question, choices, event, response}); agent thread blocks on `waitForResponse` with timeout.
+- Delivered through chat UI: the host sends a `zero.clarify.pending` event to the UI; the UI renders the question + choices; the owner's reply resolves the pending entry.
+- Voice delivery: when a voice session is active, the clarify question is spoken and the owner's spoken answer is captured.
+- Timeout default 120s; on timeout, return `outcome: "timed_out"` with `user_response: null`.
+- Risk: must not deadlock the chat loop; the clarify wait runs in a background task with an abort signal tied to the turn.
+
+### Step 16 — Code Runner
+
+**Hermes idea:** `execute_code` — sandboxed script runner, separate process, time/memory limits, optional network, working folder under data dir, output caps, callbacks into an allow-list of Zero tools.
+
+**Zero design:**
+- New tool `zero_code_run` in `CAPABILITY_DEFINITIONS`, parameters: `script` (JavaScript/Python), `timeoutMs` (default 30000, max 300000), `memoryMb` (default 256, max 2048), `allowNetwork` (boolean, default false), `cwd` (under data dir, default temp subfolder).
+- Runs in a separate `child_process` with `resource` limits (Node: `--max-old-space-size`, timeout via `AbortController`; no network by default via sandboxing).
+- Working folder: `dataDir/code-runner/<runId>/`, cleaned up after run.
+- Callbacks: the script can request specific Zero tools via a JSON protocol on stdin/stdout; only allow-listed tools (`read_file`, `write_file`, `system_info`, `web_search`) are permitted.
+- Output caps: stdout/stderr truncated to 100000 chars.
+- Risk: on Windows, true sandboxing is limited. Document precisely: process isolation yes, filesystem restricted to working folder, network blocked unless `allowNetwork`, no desktop access, no registry access. Not a security boundary against malicious code — only a safety rail.
+
+### Step 17 — Messaging Gateway, Telegram first
+
+**Hermes idea:** platform adapter interface, chat key per chat, owner allow-list + pairing code, `/stop` during work, reply delivery, Ask Zero job delivery, bot token as secret.
+
+**Zero design:**
+- Platform adapter interface (`packages/messaging/platform-adapter.mjs`): `connect()`, `disconnect()`, `send(chatKey, message)`, `handleInbound(event)`.
+- Telegram adapter first: long polling or webhook, `node-telegram-bot-api` or `telegraf`.
+- Chat key format: `agent:main:telegram:{chat_type}:{chat_id}` (e.g. `agent:main:telegram:private:123456789`).
+- Authorization: platform allow-all flag → allowlist → DM pairing code → global allow-all → deny.
+- `/stop` while Zero is working: guard in the inbound handler, interrupt the active turn.
+- Bot token stored as a secret (`.zero-data/provider-secrets.json` or env), never in config or logs; message content never logged.
+- Delivery: replies to the same chat; Ask Zero job results to a chosen chat (`/sethome` or explicit target).
+- The owner must create the bot and provide the token — do not create accounts or enter tokens.
+- Risk: Telegram bot API rate limits, polling vs webhook choice, token rotation.
+
 ## Progress log
 
 | Step | Status | Commit | Notes |
 |---|---|---|---|
-| 0. Plan, worktree, reference clone | done | — | this file |
-| 1. Prompt Layers + IDENTITY.md | done | (this commit) | Old hard-coded prompt (with YouTube/Spotify/WhatsApp scripts) replaced; prompt frozen per chat in session metadata `zeroPrompt`; matched learned procedures moved to a per-turn hint. Tests: `prompt-layers*.test.mjs` |
-| 2. Zero Notebook + `notebook` tool | done | (this commit) | Books `owner` (1,400 chars) and `zero` (2,200 chars) as editable markdown in `.zero-data/notebook/`; secrets and model-directed instructions refused; snapshot goes into each new chat (running chats keep their frozen prompt). Tests: `notebook.test.mjs` |
-| 3. Skill Catalog + `skill_read` | done | (this commit) | Prompt lists enabled skills (name + one line); `skill_read` returns the full instructions or a file inside the skill folder (no path escape); owner-only skills hidden. Test: `skill-catalog.test.mjs` |
-| 4. Context Fold | done | (this commit) | At `ZERO_FOLD_AT` (default 50%) of the model window: old tool outputs trimmed each model turn; if still over, the part before the recent tail is summarised (goal, preferences, done, in progress, open, details) and archived from the model context only. The note says “reference only, newest message wins, tools still work”. Prompt rebuilt only on a fold. Test: `context-fold.test.mjs` |
-| 5. Turn Budget wrap-up | done | (this commit) | Closing report without tools already existed; added a one-turn budget warning when ≤2 turns or ≤5 actions are left, and raised defaults to 30 turns / 60 actions (`ZERO_MAX_ASSISTANT_TURNS`, `ZERO_MAX_ACTIONS`). Test: `turn-budget.test.mjs` |
-| 6. Chat Recall + `chat_search` | done | (this commit) | FTS5 index `zero_messages_search` kept in sync by triggers (backfilled once); owner + Zero messages only; all-words then any-word; current chat excluded; works for Hindi. Tool `chat_search`. Test: `chat-recall.test.mjs` |
-| 7. Key Guard | done | (this commit) | Well-known env keys (OPENAI, GEMINI, NVIDIA, ANTHROPIC, OPENROUTER, GROQ, …) are only sent to their own host; look-alike hosts refused; keys the owner saved for a provider are unchanged; the reason is kept in `keyGuardNotes`. Test: `key-guard.test.mjs` |
-| 8. Turn Reflection | done | (this commit) | After a reply with ≥3 tool actions, or every `ZERO_REFLECT_EVERY` (6) owner messages, a background review may add a grounded Notebook entry or a procedure (only `notebook` + `procedure_learn` offered). Never blocks the reply, never writes into the chat; `ZERO_TURN_REFLECTION=off` disables it. Test: `turn-reflection.test.mjs` |
-| 9. Ask Zero jobs | done | (this commit) | `assistant.prompt` jobs run a prompt as a Zero request in chat `automation-<job>` (named after the job), with optional `skills` named for `skill_read`; `schedule_task`/`goal_plan` not offered inside a job; `cron.run {id}` runs one job now (a disabled job stays disabled); job list returns cron, action and params. Test: `ask-zero-jobs.test.mjs` |
-| 10. Chat Commands | done | (this commit) | One table (`chat-commands.mjs`) for `/help`, `/fold` (aliases `/compact`, `/compress`), `/notebook [owner|zero]`, `/skills`, `/budget`; answered without a model call and kept in the chat; `/status` unchanged; unknown `/words` go to the model. Test: `chat-commands.test.mjs` |
-| 11. Full test run, merge to main | tests done; merge waits | — | All offline tests on a clean checkout of main (`fb345dff2`): 57 pass / 15 fail. On this branch: 68 pass / 15 fail — the same 15 files fail on both (pre-existing), the 11 new test files all pass. Merge into `main` waits: the main working tree has another agent's uncommitted edits in the same files (`native-gateway.mjs`, `capability-engine/index.mjs`, `model-fabric/index.mjs`). Owner asked to wait for that agent to commit first. |
-| 11.5. Phase 2 — orientation | done | — | Architecture understood: Zero is a Node.js ESM host on port 18789; tools in `packages/capability-engine` (`CAPABILITY_DEFINITIONS` + `registerHandler`, "Single Room"); phase 1 built 10 Hermes-inspired capabilities under Zero-native names on branch `zero/hermes-merge`. `E:\zero` (main) has 42 modified + 20 untracked files from another agent, including the 3 files the branch modifies. Hermes reference cloned at `E:\zero-reference\hermes-agent`. |
+| 12. Integrate phase 1 into `main` | blocked | — | Merge `zero/hermes-merge` onto latest `main`. Blocked: `E:\zero` has another agent's uncommitted edits in `native-gateway.mjs`, `capability-engine/index.mjs`, `model-fabric/index.mjs`. Owner asked to wait for that agent to commit first. |
+| 13. UI surfaces | pending | — | Notebook view, Context Fold indicator, Chat Commands suggestions, Ask Zero jobs in Automations, Turn Reflection setting. Extend `app/zero-control-ui` in existing style. Build with `node app/zero-control-ui/build.mjs`. Verify in browser with screenshots. |
+| 14. Zero Terminal | pending | — | Sessionful `zero_terminal` tool (run/open/send/read/list/close/open_external), host RPCs, UI Terminal surface. Resolve `aliases.mjs` `terminal`→`run_process` deliberately. |
+| 15. Clarify | pending | — | `zero_clarify` tool with questions/choices/timeout, chat UI delivery, voice delivery, background wait with abort. |
+| 16. Code Runner | pending | — | `zero_code_run` sandboxed script runner, time/memory limits, optional network, allow-listed tool callbacks, output caps. |
+| 17. Messaging Gateway (Telegram) | pending | — | Platform adapter interface, Telegram adapter, chat keys, allow-list + pairing, `/stop`, reply + Ask Zero job delivery, token as secret. Owner provides token. |
